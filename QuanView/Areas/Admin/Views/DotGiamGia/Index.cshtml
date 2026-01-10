@@ -1,0 +1,191 @@
+﻿@using QuanApi.Dtos
+@model QuanApi.Dtos.PagedResultGeneric<QuanApi.Data.DotGiamGia>
+
+
+@{
+    ViewData["Title"] = "Quản lý đợt giảm giá";
+}
+
+<div class="container-fluid">
+    <h2 class="my-4">@ViewData["Title"]</h2>
+
+    <!-- Hiển thị thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Bộ lọc -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white fw-bold">
+            <i class="bi bi-funnel-fill me-2"></i> Bộ lọc
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Mã khuyến mãi</label>
+                    <input type="text" class="form-control" name="maDot" value="@ViewBag.MaKhuyenMai" placeholder="KM001" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Giá trị</label>
+                    <input type="text" class="form-control" name="phanTramGiam" value="@ViewBag.GiaTri" placeholder="20" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Từ ngày</label>
+                    <input type="date" class="form-control" name="tuNgay" value="@ViewBag.TuNgay" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Đến ngày</label>
+                    <input type="date" class="form-control" name="denNgay" value="@ViewBag.DenNgay" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tên khuyến mãi</label>
+                    <input type="text" class="form-control" name="tenDot" value="@ViewBag.TenKhuyenMai" placeholder="Giảm hè" />
+
+                </div>
+                    <div class="col-md-3 mt-2">
+                        <label for="trangThai" class="form-label fw-bold">Trạng thái:</label>
+                        <select id="trangThai" class="form-select shadow-sm" name="trangThai">
+                            <option value="">Tất cả</option>
+                            @foreach (var option in new[] { ("true", "Đang kích hoạt"), ("false", "Tạm ngưng") })
+                            {
+                                <option value="@option.Item1" selected="@(ViewBag.TrangThai == option.Item1 ? "selected" : null)">
+                                    @option.Item2
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 align-self-end">
+                        <button type="submit" class="btn btn-primary">Lọc</button>
+                    </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-3">
+                    <a asp-action="Index" asp-route-pageSize="5" class="btn btn-secondary w-100">
+                        <i class="bi bi-arrow-clockwise"></i> Làm mới
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách đợt giảm giá -->
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span>Danh sách đợt giảm giá</span>
+            <a asp-action="Create" class="btn btn-success">+ Thêm</a>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr class="bg-warning text-dark">
+                        <th>STT</th>
+                        <th>Mã</th>
+                        <th>Tên đợt giảm giá</th>
+                        <th>Giá trị</th>
+                        <th>Ngày bắt đầu</th>
+                        <th>Ngày kết thúc</th>
+                        <th>Ngày cập nhật</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Data.Any())
+                    {
+                        int stt = (Model.Page - 1) * Model.PageSize + 1;
+                        foreach (var item in Model.Data)
+                        {
+                            <tr>
+                                <td>@stt</td>
+                                <td>@item.MaDot</td>
+                                <td>@item.TenDot</td>
+                                <td>@item.PhanTramGiam%</td>
+                                <td>@item.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@item.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
+                                <td>
+                                    @if (item.TrangThai)
+                                    {
+                                        <span class="badge bg-success">Đang kích hoạt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Tạm ngưng</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-primary">✏️</a>
+                                    <a asp-action="Delete" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-danger">🗑️</a>
+                                    
+
+
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="9" class="text-center">Không có dữ liệu</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-end">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize">Trước</a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(Model.Page == i ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@Model.PageSize">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+@section Styles {
+    <style>
+        .table th { font-weight: bold; }
+        .badge { font-size: 100%; }
+        .btn-sm { padding: 2px 6px; }
+    </style>
+}
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    var bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+    </script>
+}
+

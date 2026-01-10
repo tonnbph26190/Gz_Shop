@@ -1,0 +1,107 @@
+@model QuanApi.Data.HoaTiet
+
+<form id="editForm" asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IDHoaTiet" />
+    <div class="form-group">
+        <label asp-for="MaHoaTiet" class="control-label"></label>
+        <div class="input-group">
+            <input asp-for="MaHoaTiet" class="form-control" readonly />
+            <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary" onclick="generateMaHoaTiet()">
+                    <i class="fas fa-sync-alt"></i> Tạo mã mới
+                </button>
+            </div>
+        </div>
+        <small class="form-text text-muted">Mã họa tiết hiện tại hoặc tạo mã mới</small>
+        <span asp-validation-for="MaHoaTiet" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TenHoaTiet" class="control-label"></label>
+        <input asp-for="TenHoaTiet" class="form-control" id="tenHoaTietInput" />
+        <div id="tenHoaTietError" class="text-danger" style="display: none;"></div>
+        <span asp-validation-for="TenHoaTiet" class="text-danger"></span>
+        <small class="form-text text-muted">Không được chứa khoảng trắng, không bắt đầu bằng số hoặc ký tự đặc biệt</small>
+    </div>
+    <div class="form-group">
+        <label asp-for="TrangThai" class="control-label"></label>
+        <select asp-for="TrangThai" class="form-control">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+        <span asp-validation-for="TrangThai" class="text-danger"></span>
+    </div>
+</form>
+
+<script>
+    // Setup validation when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        setupTenHoaTietValidation();
+    });
+    
+    // Generate MaHoaTiet function
+    function generateMaHoaTiet() {
+        const now = new Date();
+        const year = now.getFullYear().toString().substr(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        
+        const maHoaTiet = `HT${year}${month}${day}${hour}${minute}${second}${random}`;
+        document.querySelector('input[name="MaHoaTiet"]').value = maHoaTiet;
+        
+        // Show confirmation
+        alert(`Đã tạo mã họa tiết mới: ${maHoaTiet}`);
+    }
+    
+    // Setup validation for TenHoaTiet
+    function setupTenHoaTietValidation() {
+        const input = document.getElementById('tenHoaTietInput');
+        const errorDiv = document.getElementById('tenHoaTietError');
+        
+        input.addEventListener('input', function() {
+            validateTenHoaTiet(this.value, errorDiv, this);
+        });
+        
+        input.addEventListener('blur', function() {
+            validateTenHoaTiet(this.value, errorDiv, this);
+        });
+    }
+    
+    function validateTenHoaTiet(value, errorDiv, input) {
+        let isValid = true;
+        let errorMessage = '';
+        
+        // Check for whitespace
+        if (/\s/.test(value)) {
+            isValid = false;
+            errorMessage = 'Tên họa tiết không được chứa khoảng trắng!';
+        }
+        // Check if starts with number or special character
+        else if (value && !/^[a-zA-ZÀ-ỹ]/.test(value)) {
+            isValid = false;
+            errorMessage = 'Tên họa tiết phải bắt đầu bằng chữ cái!';
+        }
+        
+        if (!isValid) {
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = 'block';
+            input.classList.add('is-invalid');
+        } else {
+            errorDiv.style.display = 'none';
+            input.classList.remove('is-invalid');
+        }
+        
+        return isValid;
+    }
+</script>
+
+<style>
+    .is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+</style> 

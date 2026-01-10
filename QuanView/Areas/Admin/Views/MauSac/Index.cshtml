@@ -1,0 +1,430 @@
+@using System.Security.Claims
+@using System.Web
+@model IEnumerable<QuanApi.Data.MauSac>
+
+@{
+    ViewData["Title"] = "Danh Sách màu sắc";
+    var currentKeyword = ViewBag.Keyword as string ?? "";
+    var currentStatus = ViewBag.Status as string ?? "";
+}
+<h2>@ViewData["Title"]</h2>
+<partial name="_Notification" />
+
+<style>
+    .mausac-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .mausac-table th {
+        background: #f8f9fa;
+        border: none;
+        font-weight: 600;
+        color: #333;
+    }
+    .mausac-table td {
+        vertical-align: middle;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-edit {
+        background: #ffc107;
+        color: white;
+    }
+    .btn-edit:hover {
+        background: #e0a800;
+        color: white;
+    }
+    .btn-details {
+        background: #17a2b8;
+        color: white;
+    }
+    .btn-details:hover {
+        background: #117a8b;
+        color: white;
+    }
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-delete:hover {
+        background: #bd2130;
+        color: white;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #e6f4ea;
+        color: #218838;
+        border: none;
+    }
+    .status-inactive {
+        background: #f0f0f0;
+        color: #888;
+    }
+    .status-active {
+        background: #e6f4ea;
+        color: #218838;
+    }
+</style>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Danh Sách màu sắc</h6>
+        <a class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" asp-area="Admin" asp-controller="MauSac" asp-action="Create">+ Thêm màu sắc mới</a>
+    </div>
+    <div class="card-body">
+        <!-- Form tìm kiếm và bộ lọc -->
+        <form method="get" class="mb-3 row g-2 align-items-end">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="keyword" name="keyword" value="@currentKeyword" class="form-control border-start-0" placeholder="Tìm kiếm màu sắc..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="trangThai" name="trangThai">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="active">Kích hoạt</option>
+                    <option value="inactive">Ẩn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Lọc</button>
+            </div>
+            <div class="col-md-2">
+                <a href="@Url.Action("Index")" class="btn btn-secondary w-100">Xóa lọc</a>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover mausac-table">
+                <thead>
+                    <tr>
+                        <th>@Html.DisplayNameFor(model => model.First().MaMauSac)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().TenMauSac)</th>
+                        <th>Ngày tạo</th>
+                        <th>Người tạo</th>
+                        <th>Cập nhật</th>
+                        <th>Người cập nhật</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@Html.Raw(item.MaMauSac)</td>
+                            <td>@Html.Raw(item.TenMauSac)</td>
+                            <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@Html.Raw(item.NguoiTao ?? "Không rõ")</td>
+                            <td>@(item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
+                            <td>@Html.Raw(item.NguoiCapNhat ?? "Không rõ")</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input toggle-status" data-id="@item.IDMauSac" @(item.TrangThai ? "checked" : "") />
+                                    <span class="status-badge @(item.TrangThai ? "status-active" : "status-inactive")">
+                                        @(item.TrangThai ? "Kích hoạt" : "Ẩn")
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-action btn-edit edit-btn" data-id="@item.IDMauSac" data-bs-toggle="modal" data-bs-target="#editModal">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-action btn-details details-btn" data-id="@item.IDMauSac" data-bs-toggle="modal" data-bs-target="#detailsModal">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-action btn-delete delete-btn" data-id="@item.IDMauSac">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @{
+                int totalItems = ViewBag.TotalItems ?? 0;
+                int pageSize = ViewBag.PageSize ?? 10;
+                int currentPage = ViewBag.Page ?? 1;
+                int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            }
+            <nav>
+                <ul class="pagination">
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = pageSize, keyword = ViewBag.Keyword, trangThai = currentStatus })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token -->
+<input type="hidden" name="__RequestVerificationToken" value="@Html.AntiForgeryToken()
+
+<!-- Modal Thêm mới -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createModalLabel">Thêm màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="createModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveCreateBtn">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="editModalLabel">Sửa màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="editModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-warning" id="saveEditBtn">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chi tiết -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="detailsModalLabel">Chi tiết màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="detailsModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS cho spinner -->
+<style>
+    .spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        vertical-align: text-bottom;
+        border: 0.25em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border 0.75s linear infinite;
+    }
+
+    @@keyframes spinner-border {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#createModal').on('show.bs.modal', function () {
+                $('#createModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
+                $.get('@Url.Action("Create", "MauSac", new { area = "Admin" })', function (data) {
+                    $('#createModalBody').html(data);
+                    $.validator.unobtrusive.parse('#createForm');
+                }).fail(function (xhr) {
+                    $('#createModalBody').html('<div class="text-danger">Lỗi khi tải form</div>');
+                    alert("Lỗi khi tải form tạo màu sắc: " + (xhr.responseJSON?.message || xhr.statusText));
+                });
+            });
+
+            $('#saveCreateBtn').click(function () {
+                var form = $('#createForm');
+                if (form.valid()) {
+                    var formData = form.serializeArray();
+                    formData.push({ name: 'NguoiTao', value: '@Html.Raw(HttpUtility.JavaScriptStringEncode(User?.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"))' });
+
+                    $.ajax({
+                        url: '@Url.Action("Create", "MauSac", new { area = "Admin" })',
+                        type: 'POST',
+                        data: $.param(formData),
+                        beforeSend: function () {
+                            $('#saveCreateBtn').prop('disabled', true).html('<span class="spinner"></span> Đang xử lý...');
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                $('#createModal').modal('hide');
+                                location.reload();
+                            } else {
+                              location.reload();
+                            }
+                        },
+                        error: function (xhr) {
+                            alert("Lỗi thêm: " + (xhr.responseJSON?.message || xhr.statusText));
+                        },
+                        complete: function () {
+                            $('#saveCreateBtn').prop('disabled', false).text('Thêm');
+                        }
+                    });
+                }
+            });
+
+            $(document).on('click', '.edit-btn', function (e) {
+                e.preventDefault();
+                var id = encodeURIComponent($(this).data('id'));
+                $('#editModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
+                $.get('@Url.Action("Edit", "MauSac", new { area = "Admin" })/' + id, function (data) {
+                    $('#editModalBody').html(data);
+                    $.validator.unobtrusive.parse('#editForm');
+                }).fail(function (xhr) {
+                    $('#editModalBody').html('<div class="text-danger">Lỗi khi tải form</div>');
+                    alert("Lỗi khi tải form sửa: " + (xhr.responseJSON?.message || xhr.statusText));
+                });
+            });
+
+            $('#saveEditBtn').click(function () {
+                var form = $('#editForm');
+                if (form.valid()) {
+                    var formData = form.serializeArray();
+                    formData.push({ name: '__RequestVerificationToken', value: $('input[name="__RequestVerificationToken"]').val() });
+                    formData.push({ name: 'NguoiCapNhat', value: '@Html.Raw(HttpUtility.JavaScriptStringEncode(User?.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"))' });
+
+                    var id = $('#editForm input[name="IDMauSac"]').val();
+                    $.post({
+                        url: '@Url.Action("Edit", "MauSac", new { area = "Admin" })/' + encodeURIComponent(id),
+                        data: $.param(formData),
+                        beforeSend: function () {
+                            $('#saveEditBtn').prop('disabled', true).html('<span class="spinner"></span> Đang xử lý...');
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                $('#editModal').modal('hide');
+                                location.reload();
+                            } else {
+                                alert(response.message || "Cập nhật thất bại");
+                            }
+                        },
+                        error: function (xhr) {
+                            alert("Lỗi cập nhật: " + (xhr.responseJSON?.message || xhr.statusText));
+                        },
+                        complete: function () {
+                            $('#saveEditBtn').prop('disabled', false).text('Lưu');
+                        }
+                    });
+                }
+            });
+
+            $(document).on('click', '.details-btn', function (e) {
+                e.preventDefault();
+                var id = encodeURIComponent($(this).data('id'));
+                $('#detailsModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
+                $.get('@Url.Action("Details", "MauSac", new { area = "Admin" })/' + id, function (data) {
+                    $('#detailsModalBody').html(data);
+                }).fail(function (xhr) {
+                    $('#detailsModalBody').html('<div class="text-danger">Lỗi khi tải chi tiết</div>');
+                    alert("Lỗi khi tải chi tiết: " + (xhr.responseJSON?.message || xhr.statusText));
+                });
+            });
+
+            $(document).on('click', '.delete-btn', function (e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var id = $btn.data('id');
+                if (confirm('Bạn có chắc muốn xóa màu sắc này?')) {
+                    $.post({
+                        url: '@Url.Action("Delete", "MauSac", new { area = "Admin" })',
+                        data: { id: id, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                        beforeSend: function () {
+                            $btn.prop('disabled', true).html('<span class="spinner"></span> Đang xóa...');
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert(response.message || "Xóa thất bại");
+                            }
+                        },
+                        error: function (xhr) {
+                            alert("Lỗi xóa: " + (xhr.responseJSON?.message || xhr.statusText));
+                        },
+                        complete: function () {
+                            $btn.prop('disabled', false).text('🗑️');
+                        }
+                    });
+                }
+            });
+
+            $(document).on('change', '.toggle-status', function () {
+                var checkbox = $(this);
+                var id = checkbox.data('id');
+                var isChecked = checkbox.is(':checked');
+
+                $.ajax({
+                    url: '@Url.Action("ToggleStatus", "MauSac", new { area = "Admin" })',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: id }),
+                    beforeSend: function () {
+                        checkbox.prop('disabled', true);
+                        checkbox.siblings('span').html('<span class="spinner"></span> Đang xử lý...').removeClass('status-active status-inactive');
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            var isActive = response.trangThai === true;
+                            checkbox.siblings('span')
+                                .text(isActive ? 'Kích hoạt' : 'Ẩn')
+                                .removeClass('status-active status-inactive')
+                                .addClass(isActive ? 'status-active' : 'status-inactive');
+                        } else {
+                            alert("Không cập nhật được trạng thái");
+                            checkbox.prop('checked', !isChecked);
+                        }
+                    },
+                    error: function (xhr) {
+                        alert("Lỗi khi gọi ToggleStatus: " + (xhr.responseJSON?.message || xhr.statusText));
+                        checkbox.prop('checked', !isChecked);
+                    },
+                    complete: function () {
+                        checkbox.prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        $(function() {
+            $('#trangThai').val('@currentStatus');
+        });
+    </script>
+} 

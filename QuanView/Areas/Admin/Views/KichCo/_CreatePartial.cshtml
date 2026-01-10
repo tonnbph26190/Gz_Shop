@@ -1,0 +1,53 @@
+@model QuanApi.Data.KichCo
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaKichCo" class="form-label">Mã kích cỡ</label>
+        <div class="input-group">
+            <input asp-for="MaKichCo" class="form-control" readonly required />
+            <button type="button" class="btn btn-outline-secondary" onclick="generateMaKichCo()">
+                <i class="fas fa-sync-alt"></i> Tạo mã
+            </button>
+        </div>
+        <small class="form-text text-muted">Mã kích cỡ sẽ được tự động tạo</small>
+        <span asp-validation-for="MaKichCo" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenKichCo" class="form-label">Tên kích cỡ</label>
+        <select asp-for="TenKichCo" class="form-control" required>
+            <option value="">-- Chọn kích cỡ --</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+        </select>
+        <span asp-validation-for="TenKichCo" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>
+
+<script>
+    // Auto-generate MaKichCo when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        generateMaKichCo();
+    });
+    
+    // Generate MaKichCo function
+    function generateMaKichCo() {
+        const now = new Date();
+        const year = now.getFullYear().toString().substr(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        
+        const maKichCo = `KC${year}${month}${day}${hour}${minute}${second}${random}`;
+        document.querySelector('input[name="MaKichCo"]').value = maKichCo;
+    }
+</script>

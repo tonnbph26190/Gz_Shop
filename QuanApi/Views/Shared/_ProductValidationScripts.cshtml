@@ -1,0 +1,98 @@
+@* Validation scripts cho sản phẩm - ngăn nhập số âm *@
+<script src="~/js/product-validation.js"></script>
+
+<style>
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 5px;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .quantity-input, .price-input {
+        position: relative;
+    }
+    
+    .quantity-input input[type="number"]::-webkit-outer-spin-button,
+    .quantity-input input[type="number"]::-webkit-inner-spin-button,
+    .price-input input[type="number"]::-webkit-outer-spin-button,
+    .price-input input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .quantity-input input[type="number"],
+    .price-input input[type="number"] {
+        -moz-appearance: textfield;
+    }
+</style>
+
+<script>
+// Thêm validation cho các input động
+function addValidationToInput(input, fieldType) {
+    if (!input) return;
+    
+    const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
+    const minValue = fieldType === 'price' ? 0.01 : 0;
+    
+    // Set attributes
+    input.type = 'number';
+    input.min = minValue;
+    input.step = fieldType === 'price' ? '0.01' : '1';
+    
+    // Ngăn nhập số âm
+    input.addEventListener('keydown', function(e) {
+        if (e.key === '-' || e.key === 'Minus') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Validation khi nhập
+    input.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value < 0 || this.value.includes('-')) {
+            this.value = '';
+            showError(this, `${fieldName} không được là số âm!`);
+        } else if (fieldType === 'price' && value === 0) {
+            showError(this, 'Giá bán phải lớn hơn 0!');
+        } else {
+            clearError(this);
+        }
+    });
+}
+
+function showError(input, message) {
+    clearError(input);
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'validation-error';
+    errorDiv.textContent = message;
+    errorDiv.id = input.id + '_error';
+    
+    input.parentNode.appendChild(errorDiv);
+    input.classList.add('is-invalid');
+}
+
+function clearError(input) {
+    const error = document.getElementById(input.id + '_error');
+    if (error) error.remove();
+    input.classList.remove('is-invalid');
+}
+
+// Auto-apply validation khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+    // Tìm và apply validation cho các input
+    document.querySelectorAll('input[name*="SoLuong"], input[id*="SoLuong"]').forEach(input => {
+        addValidationToInput(input, 'quantity');
+    });
+    
+    document.querySelectorAll('input[name*="GiaBan"], input[id*="GiaBan"]').forEach(input => {
+        addValidationToInput(input, 'price');
+    });
+});
+</script>

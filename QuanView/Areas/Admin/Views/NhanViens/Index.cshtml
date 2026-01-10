@@ -1,0 +1,415 @@
+﻿@using QuanApi.Dtos
+@model PagedResultGeneric<NhanVienResponseDto>
+
+@{
+    ViewData["Title"] = "Quản lý Nhân viên";
+    var vaiTroList = ViewBag.IDVaiTro as SelectList;
+    var currentSearchTerm = ViewBag.SearchTerm as string;
+    var currentIDVaiTro = ViewBag.IDVaiTro as Guid?;
+    var currentTrangThai = ViewBag.TrangThai as bool?;
+    var currentPageNumber = Model.PageNumber;
+    var currentPageSize = Model.PageSize;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+    :root {
+        --primary-color: #007bff;
+        --secondary-color: #6c757d;
+        --success-color: #28a745;
+        --info-color: #17a2b8;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --light-bg: #f8f9fa;
+        --white-bg: #ffffff;
+        --dark-text: #212529;
+        --muted-text: #6c757d;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--light-bg);
+    }
+
+    .container-fluid {
+        padding: 30px;
+    }
+
+    .page-title {
+        color: var(--primary-color);
+        font-weight: 700;
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card {
+        border-radius: 1.25rem;
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        border: none;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.08);
+        }
+
+    .card-header {
+        background: linear-gradient(45deg, #0056b3, #007bff);
+        color: white;
+        border-bottom: none;
+        border-top-left-radius: 1.25rem;
+        border-top-right-radius: 1.25rem;
+        padding: 1.5rem;
+    }
+
+        .card-header h5 {
+            color: white !important;
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+
+    .stats-card {
+        background-color: var(--white-bg);
+        border: 1px solid #e9ecef;
+        padding: 2rem;
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+    }
+
+        .stats-card:hover {
+            background-color: #e9f5ff;
+            border-color: #007bff;
+            transform: scale(1.02);
+        }
+
+        .stats-card .icon-circle {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stats-card .icon-primary {
+            background-color: #007bff;
+        }
+
+        .stats-card .icon-success {
+            background-color: #28a745;
+        }
+
+        .stats-card .icon-danger {
+            background-color: #dc3545;
+        }
+
+    .filter-form {
+        background-color: #e9f3ff;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 30px;
+        border: 1px solid #cce5ff;
+    }
+
+        .filter-form .form-label {
+            font-weight: 500;
+            color: var(--dark-text);
+        }
+
+    .form-control, .form-select {
+        border-radius: 0.75rem;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+    .table thead th {
+        background-color: #e9ecef;
+        color: var(--dark-text);
+        font-weight: 600;
+        vertical-align: middle;
+        padding: 1rem 1.5rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .table tbody td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f1f7ff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transform: translateY(-2px);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-action {
+        border-radius: 0.6rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.875rem;
+        margin: 0 4px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-primary, .btn-warning, .btn-info, .btn-danger {
+        color: white;
+    }
+
+        .btn-primary:hover, .btn-warning:hover, .btn-info:hover, .btn-danger:hover {
+            filter: brightness(0.9);
+            transform: translateY(-1px);
+        }
+
+    .pagination .page-link {
+        border-radius: 0.6rem;
+        margin: 0 3px;
+        transition: all 0.2s ease-in-out;
+        color: var(--primary-color);
+        border: 1px solid #dee2e6;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+    }
+
+    .alert-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+    }
+
+    .alert-custom {
+        border-radius: 0.75rem;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 300px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="alert-container">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-custom alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="page-title"><i class="bi bi-people-fill me-3"></i>Quản lý Nhân viên</h2>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm">
+            <i class="bi bi-person-plus-fill me-2"></i> Tạo mới
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stats-card d-flex align-items-center">
+                <div class="icon-circle icon-primary me-4">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Tổng số nhân viên</h6>
+                    <h3 class="fw-bold mb-0">@Model.TotalCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card d-flex align-items-center">
+                <div class="icon-circle icon-success me-4">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Đang hoạt động</h6>
+                    <h3 class="fw-bold mb-0">@Model.Data.Count(nv => nv.TrangThai)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card d-flex align-items-center">
+                <div class="icon-circle icon-danger me-4">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Không hoạt động</h6>
+                    <h3 class="fw-bold mb-0">@Model.Data.Count(nv => !nv.TrangThai)</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-info d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Danh sách Chi tiết</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Index" method="get" class="filter-form">
+                <h5 class="mb-4 text-primary"><i class="bi bi-funnel-fill me-2"></i>Bộ lọc tìm kiếm</h5>
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-5 col-md-12">
+                        <label for="searchTerm" class="form-label">Tìm kiếm</label>
+                        <input type="text" name="searchTerm" id="searchTerm" class="form-control" value="@currentSearchTerm" placeholder="Mã, tên, email, SĐT...">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label for="idVaiTro" class="form-label">Vai trò</label>
+                        <select name="idVaiTro" id="idVaiTro" class="form-select" asp-items="vaiTroList">
+                            <option value="">Tất cả</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label for="trangThai" class="form-label">Trạng thái</label>
+                        <select name="trangThai" id="trangThai" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Không hoạt động</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-12">
+                        <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-search me-2"></i>Tìm</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã NV</th>
+                            <th>Tên nhân viên</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Ngày sinh</th>
+                            <th>Giới tính</th>
+                            <th>Quê quán</th>
+                            <th>CCCD</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Data != null && Model.Data.Any())
+                        {
+                            @foreach (var item in Model.Data)
+                            {
+                                <tr>
+                                    <td>@Html.DisplayFor(modelItem => item.MaNhanVien)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.TenNhanVien)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
+                                    <td>@(item.NgaySinh.HasValue ? item.NgaySinh.Value.ToString("dd/MM/yyyy") : "N/A")</td>
+                                    <td>@(item.GioiTinh.HasValue ? (item.GioiTinh.Value ? "Nam" : "Nữ") : "N/A")</td>
+                                    <td>@Html.DisplayFor(modelItem => item.QueQuan)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.CCCD)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.TenVaiTro)</td>
+                                    <td>
+                                        <span class="badge @(item.TrangThai ? "bg-success" : "bg-danger") fs-6 py-2 px-3">
+                                            @(item.TrangThai ? "Hoạt động" : "Không hoạt động")
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        <a asp-action="Edit" asp-route-id="@item.IDNhanVien" class="btn btn-warning btn-sm btn-action" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i> Sửa</a>
+                                        <a asp-action="Details" asp-route-id="@item.IDNhanVien" class="btn btn-info btn-sm btn-action" title="Chi tiết"><i class="bi bi-info-circle"></i> Chi tiết</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-5 fs-5">
+                                    <i class="bi bi-exclamation-circle-fill me-2"></i>Không tìm thấy nhân viên nào phù hợp với bộ lọc.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <nav aria-label="Page navigation example" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-pageNumber="@(Model.PageNumber - 1)"
+                           asp-route-pageSize="@currentPageSize"
+                           asp-route-searchTerm="@currentSearchTerm"
+                           asp-route-idVaiTro="@currentIDVaiTro"
+                           asp-route-trangThai="@currentTrangThai">Trước</a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-pageNumber="@i"
+                               asp-route-pageSize="@currentPageSize"
+                               asp-route-searchTerm="@currentSearchTerm"
+                               asp-route-idVaiTro="@currentIDVaiTro"
+                               asp-route-trangThai="@currentTrangThai">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-pageNumber="@(Model.PageNumber + 1)"
+                           asp-route-pageSize="@currentPageSize"
+                           asp-route-searchTerm="@currentSearchTerm"
+                           asp-route-idVaiTro="@currentIDVaiTro"
+                           asp-route-trangThai="@currentTrangThai">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        setTimeout(function () {
+            $(".alert-custom").alert('close');
+        }, 5000);
+
+    
+        var selectedVaiTroId = '@(ViewBag.IDVaiTro != null ? ViewBag.IDVaiTro.ToString() : "")';
+        $('#idVaiTro').val(selectedVaiTroId || ''); 
+
+    
+        var selectedTrangThai = '@(currentTrangThai.HasValue ? currentTrangThai.Value.ToString().ToLower() : "")';
+        $('#trangThai').val(selectedTrangThai);
+    });
+</script>

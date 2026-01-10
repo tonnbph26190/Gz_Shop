@@ -1,0 +1,274 @@
+﻿@model QuanApi.Data.PhieuGiamGia
+
+@{
+    ViewData["Title"] = "Chi tiết phiếu giảm giá";
+    
+    var now = DateTime.Now;
+    var status = "";
+    var statusClass = "";
+    
+    if (!Model.TrangThai)
+    {
+        status = "Ngưng áp dụng";
+        statusClass = "badge-secondary";
+    }
+    else if (now < Model.NgayBatDau)
+    {
+        status = "Sắp diễn ra";
+        statusClass = "badge-info";
+    }
+    else if (now >= Model.NgayBatDau && now <= Model.NgayKetThuc)
+    {
+        status = "Đang hoạt động";
+        statusClass = "badge-success";
+    }
+    else
+    {
+        status = "Hết hạn";
+        statusClass = "badge-danger";
+    }
+}
+
+<style>
+    .details-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    .detail-row {
+        display: flex;
+        margin-bottom: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #333;
+        min-width: 200px;
+        flex-shrink: 0;
+    }
+    .detail-value {
+        color: #666;
+        flex: 1;
+    }
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-right: 0.5rem;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-warning {
+        background: #ffc107;
+        color: white;
+    }
+    .btn-warning:hover {
+        background: #e0a800;
+        color: white;
+    }
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background: #545b62;
+        color: white;
+    }
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+    .btn-info:hover {
+        background: #117a8b;
+        color: white;
+    }
+    .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+    .badge-info {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .badge-secondary {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    .alert {
+        border-radius: 6px;
+        border: none;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Chi tiết phiếu giảm giá</h1>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.IDPhieuGiamGia" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Sửa
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="details-container">
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <strong>Thông tin:</strong> Phiếu giảm giá này được phân phối công khai cho tất cả khách hàng (mỗi người 1 phiếu).
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Mã Code:</div>
+            <div class="detail-value">@Model.MaCode</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Tên phiếu:</div>
+            <div class="detail-value">@Model.TenPhieu</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Phần trăm giảm giá:</div>
+            <div class="detail-value">@($"{Model.GiaTriGiam}%")</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Giảm tối đa:</div>
+            <div class="detail-value">@(Model.GiaTriGiamToiDa?.ToString("n0") + " VNĐ" ?? "Không giới hạn")</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Đơn tối thiểu:</div>
+            <div class="detail-value">@(Model.DonToiThieu?.ToString("n0") ?? "0") VNĐ</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Ngày bắt đầu:</div>
+            <div class="detail-value">@Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Ngày kết thúc:</div>
+            <div class="detail-value">@Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Trạng thái:</div>
+            <div class="detail-value">
+                <span class="badge @statusClass">@status</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Ngày tạo:</div>
+            <div class="detail-value">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Người tạo:</div>
+            <div class="detail-value">@Model.NguoiTao</div>
+        </div>
+
+        <div class="mt-4">
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#customerModal">
+                <i class="fas fa-users"></i> Xem danh sách khách hàng
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal hiển thị danh sách khách hàng -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalLabel">Danh sách khách hàng được phân phối phiếu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Phiếu giảm giá này được phân phối cho tất cả khách hàng (mỗi người 1 phiếu).</p>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã khách hàng</th>
+                                <th>Tên khách hàng</th>
+                                <th>Số điện thoại</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#customerModal').on('show.bs.modal', function () {
+                // Load customer data when modal opens
+                loadCustomerData();
+            });
+
+            function loadCustomerData() {
+                $.ajax({
+                    url: '@Url.Action("GetKhachHangsByPhieuGiamGia", "PhieuGiamGia")',
+                    type: 'GET',
+                    data: { phieuGiamGiaId: '@Model.IDPhieuGiamGia' },
+                    success: function(data) {
+                        var tbody = $('#customerTableBody');
+                        tbody.empty();
+                        
+                        if (data && data.length > 0) {
+                            data.forEach(function(customer) {
+                                tbody.append(`
+                                    <tr>
+                                        <td>${customer.maKhachHang || '-'}</td>
+                                        <td>${customer.tenKhachHang || '-'}</td>
+                                        <td>${customer.soDienThoai || '-'}</td>
+                                        <td>${customer.email || '-'}</td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            tbody.append('<tr><td colspan="4" class="text-center">Không có dữ liệu khách hàng</td></tr>');
+                        }
+                    },
+                    error: function() {
+                        $('#customerTableBody').html('<tr><td colspan="4" class="text-center text-danger">Lỗi khi tải dữ liệu</td></tr>');
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,131 @@
+﻿@model IEnumerable<QuanApi.Dtos.KhachHangDto>
+
+@{
+    ViewData["Title"] = "Danh Sách Khách Hàng";
+}
+
+<div class="container-fluid py-4">
+    <h2 class="mb-4 text-primary fw-bold">@ViewData["Title"]</h2>
+
+    <!-- Thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Card tìm kiếm -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a class="btn btn-primary" asp-area="Admin" asp-controller="KhachHang" asp-action="Create">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm khách hàng mới
+                </a>
+                <form asp-action="Index" asp-controller="KhachHang" asp-area="Admin" method="get" class="d-flex w-50">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" value="@ViewData["CurrentSearch"]" 
+                               class="form-control" placeholder="Tìm theo mã, tên, email, SĐT..." />
+                        <button class="btn btn-outline-primary" type="submit">Tìm</button>
+                        <a asp-action="Index" asp-controller="KhachHang" asp-area="Admin" 
+                           class="btn btn-outline-secondary">Xóa</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card bảng dữ liệu -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="khachHangTable" class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>@Html.DisplayNameFor(model => model.MaKhachHang)</th>
+                            <th>@Html.DisplayNameFor(model => model.TenKhachHang)</th>
+                            <th>@Html.DisplayNameFor(model => model.Email)</th>
+                            <th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
+                            <th>@Html.DisplayNameFor(model => model.NgayTao)</th>
+                            <th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
+@*                             <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
+                            <th>@Html.DisplayNameFor(model => model.NguoiCapNhat)</th> *@
+                            <th>@Html.DisplayNameFor(model => model.TrangThai)</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@Html.DisplayFor(modelItem => item.MaKhachHang)</td>
+                                <td>@Html.DisplayFor(modelItem => item.TenKhachHang)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                                <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
+                                <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
+@*                                 <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td> *@
+                                <td>
+                                    @if (item.TrangThai)
+                                    {
+                                        <span class="badge bg-success rounded-pill">Kích hoạt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary rounded-pill">Ẩn</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-info me-1" 
+                                       asp-area="Admin" asp-controller="KhachHang" asp-action="Delete" 
+                                       asp-route-id="@item.IDKhachHang">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus" 
+                                          asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
+                                      @*   <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-toggle-on"></i>
+                                        </button> *@
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#khachHangTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json'
+                },
+                pageLength: 10,
+                lengthMenu: [5, 10, 25, 50],
+                order: [[0, 'asc']],
+                responsive: true
+            });
+        });
+    </script>
+}

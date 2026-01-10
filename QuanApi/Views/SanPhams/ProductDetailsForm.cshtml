@@ -1,0 +1,150 @@
+@model QuanApi.Dtos.SanPhamChiTietDto
+
+@{
+    ViewData["Title"] = "Chi tiết sản phẩm";
+}
+
+<div class="container">
+    <h2>Thông tin chi tiết sản phẩm</h2>
+    
+    <form id="productDetailsForm" method="post">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group quantity-input">
+                    <label for="SoLuong" class="form-label">Số lượng <span class="text-danger">*</span></label>
+                    <input type="number" 
+                           id="SoLuong" 
+                           name="SoLuong" 
+                           class="form-control" 
+                           min="0" 
+                           step="1"
+                           value="@Model?.SoLuong"
+                           required />
+                    <div class="form-text">Số lượng phải là số nguyên không âm</div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-group price-input">
+                    <label for="GiaBan" class="form-label">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                    <input type="number" 
+                           id="GiaBan" 
+                           name="GiaBan" 
+                           class="form-control" 
+                           min="0.01" 
+                           step="0.01"
+                           value="@Model?.GiaBan"
+                           required />
+                    <div class="form-text">Giá bán phải lớn hơn 0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">Đặt lại</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ProductValidationScripts");}
+    
+    <script>
+        // Custom validation cho form này
+        document.getElementById('productDetailsForm').addEventListener('submit', function(e) {
+            const soLuong = document.getElementById('SoLuong').value;
+            const giaBan = document.getElementById('GiaBan').value;
+            
+            let hasError = false;
+            
+            if (!soLuong || parseInt(soLuong) < 0) {
+                showError(document.getElementById('SoLuong'), 'Số lượng không được để trống và không được âm!');
+                hasError = true;
+            }
+            
+            if (!giaBan || parseFloat(giaBan) <= 0) {
+                showError(document.getElementById('GiaBan'), 'Giá bán phải lớn hơn 0!');
+                hasError = true;
+            }
+            
+            if (hasError) {
+                e.preventDefault();
+                alert('Vui lòng kiểm tra lại thông tin nhập vào!');
+                return false;
+            }
+        });
+        
+        function resetForm() {
+            document.getElementById('productDetailsForm').reset();
+            // Clear all errors
+            document.querySelectorAll('.validation-error').forEach(error => error.remove());
+            document.querySelectorAll('.is-invalid').forEach(input => input.classList.remove('is-invalid'));
+        }
+        
+        // Thêm validation real-time cho số lượng
+        document.getElementById('SoLuong').addEventListener('input', function() {
+            const value = parseInt(this.value);
+            if (value < 0) {
+                this.value = 0;
+                showError(this, 'Số lượng không được âm, đã tự động đặt về 0');
+            }
+        });
+        
+        // Thêm validation real-time cho giá bán
+        document.getElementById('GiaBan').addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0) {
+                this.value = '';
+                showError(this, 'Giá bán không được âm!');
+            } else if (value === 0) {
+                showError(this, 'Giá bán phải lớn hơn 0!');
+            }
+        });
+    </script>
+}
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    .form-text {
+        font-size: 0.875em;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+</style>

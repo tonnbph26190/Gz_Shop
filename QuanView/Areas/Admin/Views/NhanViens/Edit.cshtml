@@ -1,0 +1,453 @@
+﻿@model QuanApi.Dtos.NhanVienUpdateDto
+
+@using System.Security.Claims
+
+
+
+@{
+
+    ViewData["Title"] = "Chỉnh sửa Nhân viên";
+
+    Guid nhanVienId = ViewBag.NhanVienId;
+
+    string nhanVienBanHangGuidString = "baa270f1-20dc-4eff-864d-9d78befa278b";
+
+}
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation/1.19.3/jquery.validate.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+
+
+
+<style>
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8f9fa;
+    }
+
+
+
+    .container {
+        max-width: 900px;
+        margin-top: 25px;
+    }
+
+
+
+    .card {
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+
+
+    .card-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        font-weight: bold;
+        padding: 1.25rem 1.75rem;
+        border-bottom: none;
+    }
+
+
+
+        .card-header h2 {
+            color: white !important;
+        }
+
+
+
+    .form-group label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+
+
+
+    .form-control, .form-select {
+        border-radius: 0.6rem;
+        border: 1px solid #ced4da;
+        padding: 0.75rem 1rem;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,.075);
+    }
+
+
+
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        }
+
+
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        border-radius: 0.6rem;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+        }
+
+
+
+    .btn-secondary {
+        border-radius: 0.6rem;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+
+
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+
+
+    .text-danger {
+        font-size: 0.875em;
+    }
+
+
+
+    .form-check-label {
+        color: #495057;
+    }
+
+</style>
+
+
+
+<div class="container">
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <h2 class="mb-0"><i class="bi bi-person-gear me-3"></i>Chỉnh sửa Nhân viên</h2>
+
+        </div>
+
+        <div class="card-body p-4">
+
+            <form asp-action="Edit" asp-route-id="@nhanVienId">
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4" role="alert"></div>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="MaNhanVien" class="control-label"></label>
+
+                            <input asp-for="MaNhanVien" class="form-control" />
+
+                            <span asp-validation-for="MaNhanVien" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="TenNhanVien" class="control-label"></label>
+
+                            <input asp-for="TenNhanVien" class="form-control" />
+
+                            <span asp-validation-for="TenNhanVien" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="Email" class="control-label"></label>
+
+                            <input asp-for="Email" class="form-control" type="email" />
+
+                            <span asp-validation-for="Email" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="MatKhau" class="control-label"></label>
+
+                            <input asp-for="MatKhau" class="form-control" type="password" placeholder="Để trống nếu không đổi mật khẩu" />
+
+                            <span asp-validation-for="MatKhau" class="text-danger"></span>
+
+                            @* <small class="form-text text-muted">Để trống nếu không muốn thay đổi mật khẩu.</small> *@
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="SoDienThoai" class="control-label"></label>
+
+                            <input asp-for="SoDienThoai" class="form-control" />
+
+                            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="NgaySinh" class="control-label"></label>
+
+                            <input asp-for="NgaySinh" class="form-control" type="date" />
+
+                            <span asp-validation-for="NgaySinh" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="GioiTinh" class="control-label">Giới tính</label>
+
+                            <div>
+
+                                <div class="form-check form-check-inline">
+
+                                    <input class="form-check-input" type="radio" asp-for="GioiTinh" id="editGioiTinhNam" value="true">
+
+                                    <label class="form-check-label" for="editGioiTinhNam">Nam</label>
+
+                                </div>
+
+                                <div class="form-check form-check-inline">
+
+                                    <input class="form-check-input" type="radio" asp-for="GioiTinh" id="editGioiTinhNu" value="false">
+
+                                    <label class="form-check-label" for="editGioiTinhNu">Nữ</label>
+
+                                </div>
+
+                                <div class="form-check form-check-inline">
+
+                                    <input class="form-check-input" type="radio" asp-for="GioiTinh" id="editGioiTinhKhac" value="">
+
+                                    <label class="form-check-label" for="editGioiTinhKhac">Khác/Không xác định</label>
+
+                                </div>
+
+                            </div>
+
+                            <span asp-validation-for="GioiTinh" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="QueQuan" class="control-label"></label>
+
+                            <input asp-for="QueQuan" class="form-control" />
+
+                            <span asp-validation-for="QueQuan" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="CCCD" class="control-label"></label>
+
+                            <input asp-for="CCCD" class="form-control" />
+
+                            <span asp-validation-for="CCCD" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="IDVaiTro" class="control-label">Vai trò</label>
+
+                            <select id="IDVaiTro" name="IDVaiTro" class="form-select">
+
+                                <option value="">-- Chọn vai trò --</option>
+
+                                <option value="@nhanVienBanHangGuidString">Admin</option>
+
+                            </select>
+
+                            <span asp-validation-for="IDVaiTro" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-group">
+
+                            <label asp-for="TrangThai" class="control-label">Trạng thái</label>
+
+                            <div class="form-check form-switch mt-2">
+
+                                <input class="form-check-input" asp-for="TrangThai" type="checkbox" role="switch" id="trangThaiCheckbox">
+
+                                <label class="form-check-label" for="trangThaiCheckbox">
+
+                                    Hoạt động
+
+                                </label>
+
+                            </div>
+
+                            <span asp-validation-for="TrangThai" class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="form-group mt-4 pt-3 border-top">
+
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-save me-2"></i>Lưu thay đổi</button>
+
+                    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left-circle me-2"></i>Quay lại danh sách</a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@section Scripts {
+
+    @{
+
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+
+    }
+
+    <script>
+
+        $(document).ready(function() {
+
+            var gioiTinhValue = '@(Model.GioiTinh.HasValue ? Model.GioiTinh.Value.ToString().ToLower() : "")';
+
+            if (gioiTinhValue === 'true') {
+
+                $('#editGioiTinhNam').prop('checked', true);
+
+            } else if (gioiTinhValue === 'false') {
+
+                $('#editGioiTinhNu').prop('checked', true);
+
+            } else {
+
+                $('#editGioiTinhKhac').prop('checked', true);
+
+            }
+
+
+
+            var currentVaiTroId = '@(Model.IDVaiTro.ToString().ToLower())';
+
+            $('#IDVaiTro').val(currentVaiTroId);
+
+
+
+
+
+            var nhanVienId = '@ViewBag.NhanVienId.ToString().ToLower()';
+
+        var currentUserId = '@(User.FindFirstValue("custom:id_nhanvien")?.ToLower())';
+
+        console.log('ID nhân viên đang chỉnh sửa:', nhanVienId);
+
+        console.log('ID người dùng hiện tại:', currentUserId);
+
+        console.log('Hai ID có khớp không?', nhanVienId === currentUserId);
+
+            if (nhanVienId === currentUserId) {
+
+                $('#trangThaiCheckbox').prop('disabled',true);
+
+
+
+                $('#trangThaiCheckbox').closest('.form-check').find('.form-check-label').after(
+
+                    '<small class="form-text text-muted d-block mt-2">' +
+
+                    'Bạn không thể tự thay đổi trạng thái của mình.' +
+
+                    '</small>'
+
+                );
+
+            }
+
+        });
+
+    </script>
+
+}

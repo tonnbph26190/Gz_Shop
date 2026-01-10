@@ -1,9 +1,12 @@
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-using BanQuanAu1.Web.Data;
-using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
+using Microsoft.EntityFrameworkCore;
+using BanQuanAu1.Web.Data;
+using QuanApi.Models;
+using Microsoft.Extensions.Logging;
 
 namespace QuanApi.Services
 {
