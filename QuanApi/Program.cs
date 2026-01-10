@@ -1,18 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
-using BanQuanAu1.Web.Data;
-
-using QuanApi.Repository;
-using QuanApi.Repository.IRepository;
-
-using QuanApi.Models; 
-using QuanApi.Services; 
-
-using AutoMapper;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection;
-using QuanApi.MappingProfiles;
+using BanQuanAu1.Web.Data;
+using Microsoft.EntityFrameworkCore;
+using QuanApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+//builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 // Đăng ký các dịch vụ
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -28,10 +18,10 @@ builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
 builder.Services.AddScoped<SanPhamValidationService>();
 
 // Đăng ký Shipping Service
-builder.Services.AddScoped<IShippingService, ShippingService>();
+//builder.Services.AddScoped<IShippingService, ShippingService>();
 
-builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
-builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
+//builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
+//builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
