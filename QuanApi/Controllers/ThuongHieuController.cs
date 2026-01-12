@@ -9,6 +9,10 @@ namespace QuanApi.Controllers
     public class ThuongHieuController : ControllerBase
     {
         private readonly IThuongHieuService _service;
+             
+
+
+
 
         public ThuongHieuController(IThuongHieuService service)
         {
