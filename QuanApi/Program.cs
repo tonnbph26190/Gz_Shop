@@ -16,6 +16,8 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
 builder.Services.AddScoped<SanPhamValidationService>();
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
+builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
