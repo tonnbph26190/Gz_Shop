@@ -21,9 +21,8 @@ builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
-
-
-
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
+builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
