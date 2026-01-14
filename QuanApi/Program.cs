@@ -16,6 +16,11 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
 builder.Services.AddScoped<SanPhamValidationService>();
+builder.Services.AddScoped<IDanhMucService, DanhMucService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 
