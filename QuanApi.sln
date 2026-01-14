@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuanApi", "QuanApi\QuanApi.csproj", "{B4568497-6FAD-42A4-82E7-1254FF048E18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuanApi", "QuanApi\QuanApi.csproj", "{B4568497-6FAD-42A4-82E7-1254FF048E18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuanView", "QuanView\QuanView.csproj", "{7D455415-89BC-46F2-BE55-A6970221E96F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuanView", "QuanView\QuanView.csproj", "{7D455415-89BC-46F2-BE55-A6970221E96F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

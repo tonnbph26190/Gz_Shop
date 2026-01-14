@@ -15,6 +15,12 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 // Đăng ký các dịch vụ
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
+builder.Services.AddScoped<IKhachHangService, KhachHangService>();
+builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
+builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
+builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
+builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
+
 builder.Services.AddScoped<SanPhamValidationService>();
 builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
