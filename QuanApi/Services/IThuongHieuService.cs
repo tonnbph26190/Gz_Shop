@@ -1,0 +1,104 @@
+﻿using BanQuanAu1.Web.Data;
+using Microsoft.EntityFrameworkCore;
+using QuanApi.Data;
+
+namespace QuanApi.Services
+{
+    public interface IThuongHieuService
+    {
+        Task<List<ThuongHieu>> GetAllAsync(string? keyword);
+        Task<ThuongHieu?> GetByIdAsync(Guid id);
+        Task<bool> CreateAsync(ThuongHieu th);
+        Task<bool> UpdateAsync(Guid id, ThuongHieu th);
+        Task<bool> DeleteAsync(Guid id);
+        Task<bool> ToggleStatusAsync(Guid id);
+        Task<(int total, List<ThuongHieu> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
+    }
+    public class ThuongHieuService : IThuongHieuService
+    {
+        private readonly BanQuanAu1DbContext _context;
+
+        public ThuongHieuService(BanQuanAu1DbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<List<ThuongHieu>> GetAllAsync(string? keyword)
+        {
+            var query = _context.ThuongHieus.AsQueryable();
+            if (!string.IsNullOrEmpty(keyword))
+                query = query.Where(x => x.TenThuongHieu.Contains(keyword) || x.MaThuongHieu.Contains(keyword));
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<ThuongHieu?> GetByIdAsync(Guid id)
+        {
+            return await _context.ThuongHieus.FindAsync(id);
+        }
+
+        public async Task<bool> CreateAsync(ThuongHieu th)
+        {
+            th.IDThuongHieu = Guid.NewGuid();
+            th.NgayTao = DateTime.Now;
+            if (string.IsNullOrEmpty(th.NguoiTao)) th.NguoiTao = "unknown";
+
+            _context.ThuongHieus.Add(th);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateAsync(Guid id, ThuongHieu th)
+        {
+            var entity = await _context.ThuongHieus.FindAsync(id);
+            if (entity == null) return false;
+
+            entity.TenThuongHieu = th.TenThuongHieu;
+            entity.MaThuongHieu = th.MaThuongHieu;
+            entity.LanCapNhatCuoi = DateTime.Now;
+            entity.NguoiCapNhat = string.IsNullOrEmpty(th.NguoiCapNhat) ? "unknown" : th.NguoiCapNhat;
+            entity.TrangThai = th.TrangThai;
+
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _context.ThuongHieus.FindAsync(id);
+            if (entity == null) return false;
+
+            _context.ThuongHieus.Remove(entity);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> ToggleStatusAsync(Guid id)
+        {
+            var th = await _context.ThuongHieus.FindAsync(id);
+            if (th == null) return false;
+
+            th.TrangThai = !th.TrangThai;
+            th.LanCapNhatCuoi = DateTime.Now;
+            th.NguoiCapNhat = "auto-toggle";
+
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        public async Task<(int total, List<ThuongHieu> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
+        {
+            var query = _context.ThuongHieus.AsQueryable();
+
+            if (!string.IsNullOrEmpty(keyword))
+                query = query.Where(x => x.TenThuongHieu.Contains(keyword) || x.MaThuongHieu.Contains(keyword));
+
+            if (!string.IsNullOrEmpty(trangThai))
+            {
+                if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
+                else if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);
+            }
+
+            var total = await query.CountAsync();
+            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            return (total, data);
+        }
+    }
+}

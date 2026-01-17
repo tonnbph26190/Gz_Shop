@@ -15,7 +15,24 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 // Đăng ký các dịch vụ
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOrderHistoryService, OrderHistoryService>();
+builder.Services.AddScoped<IKhachHangService, KhachHangService>();
+builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
+builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
+builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
+builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
+
+builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
+builder.Services.AddScoped<ISanPhamService, SanPhamService>();
+builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
 builder.Services.AddScoped<SanPhamValidationService>();
+builder.Services.AddScoped<IDanhMucService, DanhMucService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 
