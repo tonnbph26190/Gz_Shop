@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QuanApi.Services;
+using QuanApi.Repository.IRepository;
+using QuanApi.Data;
 
 namespace QuanApi.Controllers
 {
@@ -7,43 +8,43 @@ namespace QuanApi.Controllers
     [ApiController]
     public class GioHangsController : ControllerBase
     {
-        private readonly IGioHangService _gioHangService;
+        private readonly GioHangIRepository _gioHangRepo;
 
-        public GioHangsController(IGioHangService gioHangService)
+        public GioHangsController(GioHangIRepository gioHangRepo)
         {
-            _gioHangService = gioHangService;
+            _gioHangRepo = gioHangRepo;
         }
 
         // POST: api/GioHangs/add
         [HttpPost("add")]
-        public async Task<IActionResult> AddToGioHang(Guid iduser, Guid idsp, int soluong)
+        public IActionResult AddToGioHang(Guid iduser, Guid idsp, int soluong)
         {
-            var result = await _gioHangService.AddToGioHangAsync(iduser, idsp, soluong);
-            return result ? Ok("Đã thêm vào giỏ hàng") : BadRequest();
+            _gioHangRepo.AddGioHang(iduser, idsp, soluong);
+            return Ok("Đã thêm vào giỏ hàng");
         }
 
         // GET: api/GioHangs/user/{userId}
         [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetByUser(Guid userId)
+        public IActionResult GetByUser(Guid userId)
         {
-            var gioHang = await _gioHangService.GetByUserIdAsync(userId);
+            var gioHang = _gioHangRepo.GetByUserId(userId);
             return Ok(gioHang);
         }
 
         // DELETE: api/GioHangs/item/{id}
         [HttpDelete("item/{idgiohang}")]
-        public async Task<IActionResult> XoaChiTiet(Guid idgiohang)
+        public IActionResult XoaChiTiet(Guid idgiohang)
         {
-            var result = await _gioHangService.XoaChiTietGioHangAsync(idgiohang);
-            return result ? Ok("Đã xóa sản phẩm khỏi giỏ hàng") : NotFound();
+            _gioHangRepo.XoaChiTietGioHang(idgiohang);
+            return Ok("Đã xóa sản phẩm khỏi giỏ hàng");
         }
 
         // PUT: api/GioHangs/item/{idghct}
         [HttpPut("item/{idghct}")]
-        public async Task<IActionResult> UpdateChiTiet(Guid idghct, [FromQuery] int soluong)
+        public IActionResult UpdateChiTiet(Guid idghct, [FromQuery] int soluong)
         {
-            var result = await _gioHangService.UpdateChiTietGioHangAsync(idghct, soluong);
-            return result ? Ok("Cập nhật giỏ hàng thành công") : NotFound();
+            _gioHangRepo.UpdateChiTietGioHang(idghct, soluong);
+            return Ok("Cập nhật giỏ hàng thành công");
         }
     }
 }

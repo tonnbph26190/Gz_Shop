@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BanQuanAu1.Web.Data;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
-using QuanApi.Services;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace QuanApi.Controllers
 {
@@ -8,44 +11,98 @@ namespace QuanApi.Controllers
     [ApiController]
     public class PhuongThucThanhToansController : ControllerBase
     {
-        private readonly IPhuongThucThanhToanService _service;
+        private readonly BanQuanAu1DbContext _context;
 
-        public PhuongThucThanhToansController(IPhuongThucThanhToanService service)
+        public PhuongThucThanhToansController(BanQuanAu1DbContext context)
         {
-            _service = service;
+            _context = context;
         }
 
+        // GET: api/PhuongThucThanhToans
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<PhuongThucThanhToan>>> GetPhuongThucThanhToans()
         {
-            return Ok(await _service.GetAllAsync());
+            return await _context.PhuongThucThanhToans
+                .Where(p => p.TrangThai)
+                .ToListAsync();
         }
 
+        // GET: api/PhuongThucThanhToans/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<ActionResult<PhuongThucThanhToan>> GetPhuongThucThanhToan(Guid id)
         {
-            var result = await _service.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
+            var phuongThucThanhToan = await _context.PhuongThucThanhToans.FindAsync(id);
+
+            if (phuongThucThanhToan == null)
+            {
+                return NotFound();
+            }
+
+            return phuongThucThanhToan;
         }
 
+        // POST: api/PhuongThucThanhToans
         [HttpPost]
-        public async Task<IActionResult> Create(PhuongThucThanhToan entity)
+        public async Task<ActionResult<PhuongThucThanhToan>> CreatePhuongThucThanhToan(PhuongThucThanhToan phuongThucThanhToan)
         {
-            return Ok(await _service.CreateAsync(entity));
+            if (phuongThucThanhToan.IDPhuongThucThanhToan == Guid.Empty)
+                phuongThucThanhToan.IDPhuongThucThanhToan = Guid.NewGuid();
+
+            _context.PhuongThucThanhToans.Add(phuongThucThanhToan);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetPhuongThucThanhToan), new { id = phuongThucThanhToan.IDPhuongThucThanhToan }, phuongThucThanhToan);
         }
 
+        // PUT: api/PhuongThucThanhToans/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, PhuongThucThanhToan entity)
+        public async Task<IActionResult> UpdatePhuongThucThanhToan(Guid id, PhuongThucThanhToan phuongThucThanhToan)
         {
-            var result = await _service.UpdateAsync(id, entity);
-            return result ? Ok("Cập nhật thành công") : NotFound();
+            if (id != phuongThucThanhToan.IDPhuongThucThanhToan)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(phuongThucThanhToan).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!PhuongThucThanhToanExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
         }
 
+        // DELETE: api/PhuongThucThanhToans/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> DeletePhuongThucThanhToan(Guid id)
         {
-            var result = await _service.DeleteAsync(id);
-            return result ? Ok("Xóa thành công") : NotFound();
+            var phuongThucThanhToan = await _context.PhuongThucThanhToans.FindAsync(id);
+            if (phuongThucThanhToan == null)
+            {
+                return NotFound();
+            }
+
+            _context.PhuongThucThanhToans.Remove(phuongThucThanhToan);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private bool PhuongThucThanhToanExists(Guid id)
+        {
+            return _context.PhuongThucThanhToans.Any(e => e.IDPhuongThucThanhToan == id);
         }
     }
 }
