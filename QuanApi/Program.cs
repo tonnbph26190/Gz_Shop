@@ -21,6 +21,12 @@ builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 
+builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
+builder.Services.AddScoped<ISanPhamService, SanPhamService>();
+builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
 builder.Services.AddScoped<SanPhamValidationService>();
 builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
