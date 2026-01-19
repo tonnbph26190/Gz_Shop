@@ -1,77 +1,78 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using QuanApi.Data;
+﻿using Azure;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Services;
 
-namespace QuanApi.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class KhachHangController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class KhachHangController : ControllerBase
+    private readonly IKhachHangService _service;
+
+    public KhachHangController(IKhachHangService service)
     {
-        private readonly IKhachHangService _service;
+        _service = service;
+    }
 
-        public KhachHangController(IKhachHangService service)
-        {
-            _service = service;
-        }
+    [HttpGet]
+    public async Task<IActionResult> Get(
+        string? search = null,
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? sortBy = "NgayTao",
+        bool sortAscending = false)
+    {
+        var (data, total) = await _service.GetAllAsync(search, pageNumber, pageSize, sortBy, sortAscending);
 
-        // GET: api/KhachHang?keyword=
-        [HttpGet]
-        public async Task<IActionResult> GetAll(string? keyword)
-            => Ok(await _service.GetAllAsync(keyword));
+        Response.Headers.Append("X-Total-Count", total.ToString());
+        return Ok(data);
+    }
 
-        // GET: api/KhachHang/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
-        {
-            var result = await _service.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
-        }
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var kh = await _service.GetByIdAsync(id);
+        if (kh == null) return NotFound();
+        return Ok(kh);
+    }
 
-        // POST: api/KhachHang/Create
-        [HttpPost("Create")]
-        public async Task<IActionResult> Create(KhachHang kh)
-        {
-            var success = await _service.CreateAsync(kh);
-            return success ? Ok(new { success = true }) : BadRequest();
-        }
+    [HttpPost]
+    public async Task<IActionResult> Create(KhachHang dto)
+    {
+        var result = await _service.CreateAsync(dto, User.Identity?.Name);
+        return CreatedAtAction(nameof(GetById), new { id = result.IDKhachHang }, result);
+    }
 
-        // PUT: api/KhachHang/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] KhachHang kh)
-        {
-            var success = await _service.UpdateAsync(id, kh);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, KhachHang dto)
+    {
+        if (id != dto.IDKhachHang) return BadRequest();
 
-        // DELETE: api/KhachHang/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var success = await _service.DeleteAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
+        var ok = await _service.UpdateAsync(id, dto, User.Identity?.Name);
+        if (!ok) return NotFound();
 
-        // PUT: api/KhachHang/ToggleStatus/{id}
-        [HttpPut("ToggleStatus/{id}")]
-        public async Task<IActionResult> ToggleStatus(Guid id)
-        {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
+        return NoContent();
+    }
 
-        // GET: api/KhachHang/paged
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged(
-            int page = 1,
-            int pageSize = 10,
-            string? keyword = null,
-            string? trangThai = null)
-        {
-            var (total, data) = await _service.GetPagedAsync(
-                page, pageSize, keyword, trangThai);
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var ok = await _service.DeleteAsync(id);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
 
-            return Ok(new { total, data });
-        }
+    [HttpGet("{id}/addresses")]
+    public async Task<IActionResult> GetAddresses(Guid id)
+    {
+        var data = await _service.GetAddressesAsync(id);
+        return Ok(data);
+    }
+
+    [HttpGet("{id}/default-address")]
+    public async Task<IActionResult> GetDefaultAddress(Guid id)
+    {
+        var dc = await _service.GetDefaultAddressAsync(id);
+        if (dc == null) return NotFound();
+        return Ok(dc);
     }
 }
