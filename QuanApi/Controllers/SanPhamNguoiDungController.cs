@@ -15,47 +15,53 @@ namespace QuanApi.Controllers
             _service = service;
         }
 
-        // GET: api/SanPhamNguoiDung?keyword=
+        // GET: api/SanPhamNguoiDungs?pageNumber=1&pageSize=10
         [HttpGet]
-        public async Task<IActionResult> GetAll(string? keyword)
+        public async Task<IActionResult> GetSanPhamChiTiets(
+            int pageNumber = 1, int pageSize = 10,
+            string? search = null, int? priceFrom = null, int? priceTo = null,
+            string? category = null, string? size = null, string? color = null)
         {
-            var data = await _service.GetAllAsync(keyword);
-            return Ok(data);
-        }
+            try
+            {
+                var result = await _service.GetSanPhamChiTietsAsync(
+                    pageNumber, pageSize,
+                    search, priceFrom, priceTo,
+                    category, size, color);
 
-        // GET: api/SanPhamNguoiDung/{id}
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+            }
+        }
+        // GET: api/SanPhamNguoiDungs/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<IActionResult> GetDetail(Guid id)
         {
-            var result = await _service.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
+            var result = await _service.GetDetailAsync(id);
+
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy sản phẩm." });
+
+            return Ok(result);
         }
 
-        // PUT: api/SanPhamNguoiDung/ToggleStatus/{id}
-        [HttpPut("ToggleStatus/{id}")]
-        public async Task<IActionResult> ToggleStatus(Guid id)
+        // GET: api/SanPhamNguoiDungs/filter-options
+        [HttpGet("filter-options")]
+        public async Task<IActionResult> GetFilterOptions()
         {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
-
-        // GET: api/SanPhamNguoiDung/paged
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged(
-            int page = 1,
-            int pageSize = 10,
-            string? keyword = null,
-            decimal? giaTu = null,
-            decimal? giaDen = null)
-        {
-            var (total, data) = await _service.GetPagedAsync(
-                page,
-                pageSize,
-                keyword,
-                giaTu,
-                giaDen);
-
-            return Ok(new { total, data });
+            try
+            {
+                var filterOptions = await _service.GetFilterOptionsAsync();
+                return Ok(filterOptions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
+            }
         }
     }
+
 }

@@ -6,42 +6,57 @@ using QuanApi.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace QuanApi.Services
 {
     public interface IKhachHangService
     {
-        Task<(IEnumerable<KhachHangDto> Data, int TotalCount)> GetAllAsync(
-            string? search, int pageNumber, int pageSize, string? sortBy, bool sortAscending);
-
-        Task<KhachHangDto?> GetByIdAsync(Guid id);
-
-        Task<KhachHangDto> CreateAsync(KhachHang dto, string? nguoiTao);
-        Task<bool> UpdateAsync(Guid id, KhachHang dto, string? nguoiCapNhat);
-
-
+        Task<(IEnumerable<KhachHang> Data, int TotalCount)> GetKhachHangAsync(
+           string? search,
+           int pageNumber,
+           int pageSize,
+           string? sortBy,
+           bool sortAscending
+         );
+        Task<KhachHang?> GetKhachHangByIdAsync(Guid id);
+        Task<KhachHang> CreateKhachHangAsync(CreateKhachHangDto dto, string? currentUser);
+        Task<bool> UpdateAsync(Guid id, UpdateKhachHangDto dto, string? currentUser);
         Task<bool> DeleteAsync(Guid id);
-
-        Task<IEnumerable<DiaChiDto>> GetAddressesAsync(Guid id);
-
-        Task<DiaChiDto?> GetDefaultAddressAsync(Guid id);
+        Task<bool> ExistsAsync(Guid id);
+        Task<IEnumerable<DiaChi>> GetAddressesAsync(Guid id);
+        Task<DiaChi?> GetDefaultAddressAsync(Guid customerId);
     }
     public class KhachHangService : IKhachHangService
     {
         private readonly BanQuanAu1DbContext _context;
+        private readonly ILogger<KhachHangService> _logger;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
 
-        public KhachHangService(BanQuanAu1DbContext context, IMapper mapper)
+        public KhachHangService(BanQuanAu1DbContext context, ILogger<KhachHangService> logger, IMapper mapper,
+        IEmailService emailService)
         {
             _context = context;
+            _logger = logger;
             _mapper = mapper;
+            _emailService = emailService;
         }
 
-        public async Task<(IEnumerable<KhachHangDto>, int)> GetAllAsync(
-            string? search, int pageNumber, int pageSize, string? sortBy, bool sortAscending)
+        public async Task<(IEnumerable<KhachHang> Data, int TotalCount)> GetKhachHangAsync(
+            string? search,
+            int pageNumber,
+            int pageSize,
+            string? sortBy,
+            bool sortAscending)
         {
-            var query = _context.KhachHang.Include(kh => kh.DiaChis).AsQueryable();
+            _logger.LogInformation("Đang lấy danh sách khách hàng với tìm kiếm: {Search}, trang: {PageNumber}, kích thước trang: {PageSize}",
+                search, pageNumber, pageSize);
+
+            var query = _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -52,106 +67,312 @@ namespace QuanApi.Services
                     kh.SoDienThoai.Contains(search));
             }
 
-            query = sortBy?.ToLower() switch
+            switch (sortBy?.ToLower())
             {
-                "makhachhang" => sortAscending ? query.OrderBy(x => x.MaKhachHang) : query.OrderByDescending(x => x.MaKhachHang),
-                "tenkhachhang" => sortAscending ? query.OrderBy(x => x.TenKhachHang) : query.OrderByDescending(x => x.TenKhachHang),
-                "ngaytao" => sortAscending ? query.OrderBy(x => x.NgayTao) : query.OrderByDescending(x => x.NgayTao),
-                _ => query.OrderByDescending(x => x.NgayTao)
-            };
+                case "makhachhang":
+                    query = sortAscending
+                        ? query.OrderBy(kh => kh.MaKhachHang)
+                        : query.OrderByDescending(kh => kh.MaKhachHang);
+                    break;
 
-            var total = await query.CountAsync();
+                case "tenkhachhang":
+                    query = sortAscending
+                        ? query.OrderBy(kh => kh.TenKhachHang)
+                        : query.OrderByDescending(kh => kh.TenKhachHang);
+                    break;
+
+                case "ngaytao":
+                    query = sortAscending
+                        ? query.OrderBy(kh => kh.NgayTao)
+                        : query.OrderByDescending(kh => kh.NgayTao);
+                    break;
+
+                default:
+                    query = query.OrderByDescending(kh => kh.NgayTao);
+                    break;
+            }
+
+            var totalCount = await query.CountAsync();
 
             var data = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (_mapper.Map<IEnumerable<KhachHangDto>>(data), total);
+            return (data, totalCount);
         }
-
-        public async Task<KhachHangDto?> GetByIdAsync(Guid id)
+        public async Task<KhachHang?> GetKhachHangByIdAsync(Guid id)
         {
-            var kh = await _context.KhachHang
-                .Include(x => x.DiaChis)
-                .FirstOrDefaultAsync(x => x.IDKhachHang == id);
+            _logger.LogInformation("Đang lấy chi tiết khách hàng với ID: {CustomerId}", id);
 
-            return kh == null ? null : _mapper.Map<KhachHangDto>(kh);
+            return await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
         }
-
-        public async Task<KhachHangDto> CreateAsync(KhachHang dto, string? nguoiTao)
+        public async Task<KhachHang> CreateKhachHangAsync(
+       CreateKhachHangDto dto,
+       string? currentUser)
         {
-            var kh = _mapper.Map<KhachHang>(dto);
-            kh.IDKhachHang = Guid.NewGuid();
-            kh.NgayTao = DateTime.UtcNow;
-            kh.NguoiTao = nguoiTao ?? "System";
-            kh.TrangThai = true;
+            _logger.LogInformation("Đang tạo khách hàng mới với Mã khách hàng: {MaKhachHang}", dto.MaKhachHang);
 
-            if (dto.DiaChis != null)
+            // Validate trùng
+            if (await _context.KhachHang.AnyAsync(kh => kh.MaKhachHang == dto.MaKhachHang))
+                throw new InvalidOperationException("DUPLICATE_MAKHACHHANG");
+
+            if (!string.IsNullOrEmpty(dto.Email) &&
+                await _context.KhachHang.AnyAsync(kh => kh.Email == dto.Email))
+                throw new InvalidOperationException("DUPLICATE_EMAIL");
+
+            if (!string.IsNullOrEmpty(dto.SoDienThoai) &&
+                await _context.KhachHang.AnyAsync(kh => kh.SoDienThoai == dto.SoDienThoai))
+                throw new InvalidOperationException("DUPLICATE_PHONE");
+
+            if (string.IsNullOrEmpty(dto.MatKhau))
+                throw new InvalidOperationException("PASSWORD_REQUIRED");
+
+            var khachHang = _mapper.Map<KhachHang>(dto);
+
+            khachHang.IDKhachHang = Guid.NewGuid();
+            khachHang.NgayTao = DateTime.UtcNow;
+            khachHang.NguoiTao = currentUser ?? "System";
+            khachHang.LanCapNhatCuoi = null;
+            khachHang.NguoiCapNhat = null;
+            khachHang.TrangThai = true;
+            khachHang.MatKhau = dto.MatKhau;
+
+            // ===== Xử lý địa chỉ =====
+            if (dto.DiaChis != null && dto.DiaChis.Any())
             {
-                kh.DiaChis = dto.DiaChis.Select(d =>
+                var duplicateMaDiaChiInDto = dto.DiaChis
+                    .GroupBy(d => d.MaDiaChi)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+
+                if (duplicateMaDiaChiInDto.Any())
+                    throw new InvalidOperationException("DUPLICATE_MADIACHI_IN_DTO");
+
+                khachHang.DiaChis = new List<DiaChi>();
+
+                foreach (var diaChiDto in dto.DiaChis)
                 {
-                    var dc = _mapper.Map<DiaChi>(d);
-                    dc.IDDiaChi = Guid.NewGuid();
-                    dc.IDKhachHang = kh.IDKhachHang;
-                    dc.NgayTao = DateTime.UtcNow;
-                    dc.NguoiTao = nguoiTao ?? "System";
-                    dc.TrangThai = true;
-                    return dc;
-                }).ToList();
+                    var diaChi = _mapper.Map<DiaChi>(diaChiDto);
+                    diaChi.IDDiaChi = Guid.NewGuid();
+                    diaChi.IDKhachHang = khachHang.IDKhachHang;
+                    diaChi.NgayTao = DateTime.UtcNow;
+                    diaChi.NguoiTao = currentUser ?? "System";
+                    diaChi.LanCapNhatCuoi = null;
+                    diaChi.NguoiCapNhat = null;
+                    diaChi.TrangThai = true;
+
+                    khachHang.DiaChis.Add(diaChi);
+                }
             }
 
-            _context.KhachHang.Add(kh);
+            _context.KhachHang.Add(khachHang);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<KhachHangDto>(kh);
+            // ===== Gửi email =====
+            if (!string.IsNullOrEmpty(khachHang.Email))
+            {
+                var subject = "Chào mừng bạn đến với Cửa hàng bán quần âu Dazio!";
+                var emailBody = new StringBuilder();
+
+                emailBody.AppendLine($"<p>Xin chào <strong>{khachHang.TenKhachHang}</strong>,</p>");
+                emailBody.AppendLine("<p>Bạn đã đăng ký tài khoản thành công.</p>");
+                emailBody.AppendLine("<ul>");
+                emailBody.AppendLine($"<li><strong>Mã khách hàng:</strong> {khachHang.MaKhachHang}</li>");
+                emailBody.AppendLine($"<li><strong>Email:</strong> {khachHang.Email}</li>");
+                emailBody.AppendLine($"<li><strong>Số điện thoại:</strong> {khachHang.SoDienThoai}</li>");
+                emailBody.AppendLine("</ul>");
+
+                try
+                {
+                    await _emailService.SendEmailAsync(khachHang.Email, subject, emailBody.ToString());
+                    _logger.LogInformation("Đã gửi email cho khách hàng: {Email}", khachHang.Email);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email cho {Email}", khachHang.Email);
+                }
+            }
+
+            return khachHang;
         }
-
-        public async Task<bool> UpdateAsync(Guid id, KhachHang dto, string? nguoiCapNhat)
+        public async Task<bool> UpdateAsync(Guid id, UpdateKhachHangDto dto, string? currentUser)
         {
-            var kh = await _context.KhachHang
-                .Include(x => x.DiaChis)
-                .FirstOrDefaultAsync(x => x.IDKhachHang == id);
+            if (id != dto.IDKhachHang)
+                throw new ArgumentException("ID trong URL không khớp với ID khách hàng trong dữ liệu.");
 
-            if (kh == null) return false;
+            var originalKhachHang = await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
 
-            _mapper.Map(dto, kh);
-            kh.LanCapNhatCuoi = DateTime.UtcNow;
-            kh.NguoiCapNhat = nguoiCapNhat ?? "System";
+            if (originalKhachHang == null)
+                throw new KeyNotFoundException("Không tìm thấy khách hàng để cập nhật.");
+
+            if (await _context.KhachHang.AnyAsync(kh => kh.MaKhachHang == dto.MaKhachHang && kh.IDKhachHang != id))
+                throw new InvalidOperationException("Mã khách hàng đã tồn tại.");
+
+            if (!string.IsNullOrEmpty(dto.Email) &&
+                await _context.KhachHang.AnyAsync(kh => kh.Email == dto.Email && kh.IDKhachHang != id))
+                throw new InvalidOperationException("Email đã tồn tại.");
+
+            if (!string.IsNullOrEmpty(dto.SoDienThoai) &&
+                await _context.KhachHang.AnyAsync(kh => kh.SoDienThoai == dto.SoDienThoai && kh.IDKhachHang != id))
+                throw new InvalidOperationException("Số điện thoại đã tồn tại.");
+
+            // Map dữ liệu chính
+            _mapper.Map(dto, originalKhachHang);
+            originalKhachHang.LanCapNhatCuoi = DateTime.UtcNow;
+            originalKhachHang.NguoiCapNhat = currentUser ?? "System";
+
+            if (!string.IsNullOrEmpty(dto.MatKhau))
+                originalKhachHang.MatKhau = dto.MatKhau;
+
+            // ==== XỬ LÝ ĐỊA CHỈ ====
+            var existingDiaChis = originalKhachHang.DiaChis.ToList();
+            var updatedDiaChisDto = dto.DiaChis ?? new List<DiaChiDto>();
+
+            var duplicateMa = updatedDiaChisDto
+                .GroupBy(d => d.MaDiaChi)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (duplicateMa.Any())
+                throw new InvalidOperationException($"Mã địa chỉ bị trùng: {string.Join(", ", duplicateMa)}");
+
+            // Xóa địa chỉ bị remove
+            foreach (var existing in existingDiaChis)
+            {
+                if (!updatedDiaChisDto.Any(d => d.IDDiaChi == existing.IDDiaChi))
+                {
+                    _context.DiaChis.Remove(existing);
+                    _logger.LogInformation("Xóa địa chỉ ID: {DiaChiId}", existing.IDDiaChi);
+                }
+            }
+
+            // Thêm / cập nhật
+            foreach (var diaChiDto in updatedDiaChisDto)
+            {
+                var existing = existingDiaChis.FirstOrDefault(d => d.IDDiaChi == diaChiDto.IDDiaChi);
+
+                if (existing == null)
+                {
+                    if (await _context.DiaChis.AnyAsync(d =>
+                            d.IDKhachHang == originalKhachHang.IDKhachHang &&
+                            d.MaDiaChi == diaChiDto.MaDiaChi))
+                    {
+                        throw new InvalidOperationException($"Mã địa chỉ '{diaChiDto.MaDiaChi}' đã tồn tại.");
+                    }
+
+                    var newDiaChi = _mapper.Map<DiaChi>(diaChiDto);
+                    newDiaChi.IDDiaChi = Guid.NewGuid();
+                    newDiaChi.IDKhachHang = originalKhachHang.IDKhachHang;
+                    newDiaChi.NgayTao = DateTime.UtcNow;
+                    newDiaChi.NguoiTao = currentUser ?? "System";
+                    newDiaChi.TrangThai = true;
+
+                    _context.DiaChis.Add(newDiaChi);
+                    _logger.LogInformation("Thêm địa chỉ mới ID: {DiaChiId}", newDiaChi.IDDiaChi);
+                }
+                else
+                {
+                    if (await _context.DiaChis.AnyAsync(d =>
+                            d.IDKhachHang == originalKhachHang.IDKhachHang &&
+                            d.MaDiaChi == diaChiDto.MaDiaChi &&
+                            d.IDDiaChi != diaChiDto.IDDiaChi))
+                    {
+                        throw new InvalidOperationException($"Mã địa chỉ '{diaChiDto.MaDiaChi}' đã tồn tại cho địa chỉ khác.");
+                    }
+
+                    _mapper.Map(diaChiDto, existing);
+                    existing.LanCapNhatCuoi = DateTime.UtcNow;
+                    existing.NguoiCapNhat = currentUser ?? "System";
+
+                    _logger.LogInformation("Cập nhật địa chỉ ID: {DiaChiId}", existing.IDDiaChi);
+                }
+            }
 
             await _context.SaveChangesAsync();
             return true;
         }
-
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var kh = await _context.KhachHang.FindAsync(id);
-            if (kh == null) return false;
+            _logger.LogInformation("Đang xóa khách hàng với ID: {CustomerId}", id);
 
-            _context.KhachHang.Remove(kh);
-            await _context.SaveChangesAsync();
+            var khachHang = await _context.KhachHang
+                                          .Include(kh => kh.DiaChis)
+                                          .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId} để xóa.", id);
+                throw new KeyNotFoundException("Không tìm thấy khách hàng để xóa.");
+            }
+
+            // Nếu có ràng buộc FK (ví dụ: hóa đơn), có thể soft-delete thay vì remove
+            _context.KhachHang.Remove(khachHang);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Đã xóa khách hàng ID: {CustomerId} thành công.", id);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Lỗi cơ sở dữ liệu khi xóa khách hàng ID: {CustomerId}.", id);
+                throw; // để controller bắt và trả 500
+            }
+
             return true;
         }
-
-        public async Task<IEnumerable<DiaChiDto>> GetAddressesAsync(Guid id)
+        public async Task<bool> ExistsAsync(Guid id)
         {
-            var kh = await _context.KhachHang
-                .Include(x => x.DiaChis)
-                .FirstOrDefaultAsync(x => x.IDKhachHang == id);
-
-            if (kh == null) return Enumerable.Empty<DiaChiDto>();
-
-            return _mapper.Map<IEnumerable<DiaChiDto>>(kh.DiaChis.Where(x => x.TrangThai));
+            return await _context.KhachHang.AnyAsync(e => e.IDKhachHang == id);
         }
 
-        public async Task<DiaChiDto?> GetDefaultAddressAsync(Guid id)
+        public async Task<IEnumerable<DiaChi>> GetAddressesAsync(Guid id)
         {
-            var kh = await _context.KhachHang
-                .Include(x => x.DiaChis)
-                .FirstOrDefaultAsync(x => x.IDKhachHang == id);
+            _logger.LogInformation("Đang lấy danh sách địa chỉ của khách hàng ID: {CustomerId}", id);
 
-            var dc = kh?.DiaChis?.FirstOrDefault(x => x.TrangThai && x.LaMacDinh);
-            return dc == null ? null : _mapper.Map<DiaChiDto>(dc);
+            var khachHang = await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId}", id);
+                throw new KeyNotFoundException("Không tìm thấy khách hàng.");
+            }
+
+            var addresses = khachHang.DiaChis?
+                .Where(d => d.TrangThai)
+                .ToList() ?? new List<DiaChi>();
+
+            return addresses;
         }
+
+        public async Task<DiaChi?> GetDefaultAddressAsync(Guid customerId)
+        {
+            _logger.LogInformation("Đang lấy địa chỉ mặc định của khách hàng ID: {CustomerId}", customerId);
+
+            var khachHang = await _context.KhachHang
+                .Include(kh => kh.DiaChis)
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == customerId);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId}", customerId);
+                throw new KeyNotFoundException("Không tìm thấy khách hàng.");
+            }
+
+            var defaultAddress = khachHang.DiaChis?
+                .FirstOrDefault(d => d.TrangThai && d.LaMacDinh);
+
+            return defaultAddress; // có thể null nếu không có địa chỉ mặc định
+        }
+
     }
 }

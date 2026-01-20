@@ -39,7 +39,6 @@
   <ItemGroup>
     <Folder Include="Migrations\" />
     <Folder Include="Profiles\" />
-    <Folder Include="Repository\IRepository\" />
     <Folder Include="Views\KhachHangPhieuGiams\" />
     <Folder Include="Views\SanPhams\" />
     <Folder Include="wwwroot\" />
