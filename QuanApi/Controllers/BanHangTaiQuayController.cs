@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using System;
@@ -34,13 +34,13 @@ namespace QuanApi.Controllers
             var hoaDon = new HoaDon
             {
                 IDHoaDon = Guid.NewGuid(),
-                MaHoaDon = $"HD{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDNhanVien = dto.IDNhanVien,
                 IDKhachHang = dto.IDKhachHang,
                 IDPhuongThucThanhToan = Guid.Empty, // Chưa chọn
                 TongTien = 0,
                 TrangThai = "ChuaThanhToan",
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true
             };
             _context.HoaDons.Add(hoaDon);
@@ -69,13 +69,13 @@ namespace QuanApi.Controllers
                     var cthd = new ChiTietHoaDon
                     {
                         IDChiTietHoaDon = Guid.NewGuid(),
-                        MaChiTietHoaDon = $"CTHD{DateTime.Now:yyyyMMddHHmmssfff}",
+                        MaChiTietHoaDon = $"CTHD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                         IDHoaDon = hoaDon.IDHoaDon,
                         IDSanPhamChiTiet = sp.IDSanPhamChiTiet,
                         SoLuong = sp.SoLuong,
                         DonGia = giaSauGiam,
                         ThanhTien = giaSauGiam * sp.SoLuong,
-                        NgayTao = DateTime.Now,
+                        NgayTao = DateTime.UtcNow,
                         TrangThai = true
                     };
                     _context.ChiTietHoaDons.Add(cthd);
@@ -123,13 +123,13 @@ namespace QuanApi.Controllers
                 cthd = new ChiTietHoaDon
                 {
                     IDChiTietHoaDon = Guid.NewGuid(),
-                    MaChiTietHoaDon = $"CTHD{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaChiTietHoaDon = $"CTHD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDHoaDon = dto.IDHoaDon,
                     IDSanPhamChiTiet = dto.IDSanPhamChiTiet,
                     SoLuong = dto.SoLuong,
                     DonGia = giaSauGiam,
                     ThanhTien = giaSauGiam * dto.SoLuong,
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
                 _context.ChiTietHoaDons.Add(cthd);
@@ -204,10 +204,10 @@ namespace QuanApi.Controllers
             var kh = new KhachHang
             {
                 IDKhachHang = Guid.NewGuid(),
-                MaKhachHang = $"KH{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaKhachHang = $"KH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 TenKhachHang = dto.TenKhachHang,
                 SoDienThoai = dto.SoDienThoai,
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 TrangThai = true
             };
             _context.KhachHang.Add(kh);
@@ -218,6 +218,7 @@ namespace QuanApi.Controllers
         [HttpGet("danh-sach-san-pham")]
         public async Task<IActionResult> GetProducts()
         {
+            var now = DateTime.UtcNow;
             var products = await _context.SanPhamChiTiets
                 .Include(x => x.SanPham)
                 .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
@@ -225,7 +226,8 @@ namespace QuanApi.Controllers
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet)
                 .Where(x => x.TrangThai)
-                .Select(x => new {
+                .Select(x => new
+                {
                     id = x.IDSanPhamChiTiet,
                     name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
                     // Giá gốc
@@ -236,8 +238,8 @@ namespace QuanApi.Controllers
                          join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                          where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
                             && dgg.TrangThai == true
-                            && dgg.NgayBatDau <= DateTime.Now
-                            && dgg.NgayKetThuc >= DateTime.Now
+                            && dgg.NgayBatDau <= now
+                            && dgg.NgayKetThuc >= now
                          select dgg.PhanTramGiam
                         ).FirstOrDefault() > 0
                         ? x.GiaBan * (1 - (decimal)(
@@ -245,8 +247,8 @@ namespace QuanApi.Controllers
                              join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                              where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
                                 && dgg.TrangThai == true
-                                && dgg.NgayBatDau <= DateTime.Now
-                                && dgg.NgayKetThuc >= DateTime.Now
+                                && dgg.NgayBatDau <= now
+                                && dgg.NgayKetThuc >= now
                              select dgg.PhanTramGiam
                             ).FirstOrDefault() / 100.0m))
                         : x.GiaBan
@@ -275,7 +277,8 @@ namespace QuanApi.Controllers
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
                         .ThenBy(a => a.NgayTao)
-                        .Select(a => new {
+                        .Select(a => new
+                        {
                             id = a.IDAnhSanPham,
                             url = a.UrlAnh,
                             isMain = a.LaAnhChinh
@@ -289,7 +292,8 @@ namespace QuanApi.Controllers
         {
             var customers = await _context.KhachHang
                 .Where(x => x.TrangThai)
-                .Select(x => new {
+                .Select(x => new
+                {
                     id = x.IDKhachHang,
                     name = x.TenKhachHang,
                     email = x.Email,
@@ -305,7 +309,8 @@ namespace QuanApi.Controllers
         {
             var customers = await _context.KhachHang
                 .Where(x => x.TenKhachHang.Contains(query) || x.SoDienThoai.Contains(query))
-                .Select(x => new {
+                .Select(x => new
+                {
                     id = x.IDKhachHang,
                     name = x.TenKhachHang,
                     email = x.Email,
@@ -327,10 +332,10 @@ namespace QuanApi.Controllers
             var kh = new KhachHang
             {
                 IDKhachHang = Guid.NewGuid(),
-                MaKhachHang = $"KH{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaKhachHang = $"KH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 TenKhachHang = dto.TenKhachHang,
                 SoDienThoai = dto.SoDienThoai,
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 TrangThai = true
             };
             _context.KhachHang.Add(kh);
@@ -411,14 +416,14 @@ namespace QuanApi.Controllers
             var hoaDon = new HoaDon
             {
                 IDHoaDon = Guid.NewGuid(),
-                MaHoaDon = $"HD{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDKhachHang = dto.CustomerId,
                 TenNguoiNhan = dto.CustomerName,
                 SoDienThoaiNguoiNhan = dto.CustomerPhone,
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
                 TrangThai = trangThaiHoaDon,
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true,
                 IDPhuongThucThanhToan = paymentMethodId
             };
@@ -457,13 +462,13 @@ namespace QuanApi.Controllers
                 var cthd = new ChiTietHoaDon
                 {
                     IDChiTietHoaDon = Guid.NewGuid(),
-                    MaChiTietHoaDon = $"CTHD{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaChiTietHoaDon = $"CTHD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDHoaDon = hoaDon.IDHoaDon,
                     IDSanPhamChiTiet = p.ProductDetailId,
                     SoLuong = p.Quantity,
                     DonGia = giaSauGiam,
                     ThanhTien = giaSauGiam * p.Quantity,
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
                 Console.WriteLine($"[PayInvoice] Add Product: {spct.IDSanPhamChiTiet}, Qty: {p.Quantity}, Price: {spct.GiaBan}");
@@ -558,15 +563,17 @@ namespace QuanApi.Controllers
         [HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
         public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
         {
+            var now = DateTime.UtcNow;
             var vouchers = await _context.KhachHangPhieuGiams
                 .Include(k => k.PhieuGiamGia)
                 .Where(x => x.IDKhachHang == customerId &&
                            x.TrangThai &&
                            x.PhieuGiamGia.TrangThai &&
                            x.SoLuongDaSuDung < x.SoLuong && // Chỉ lấy phiếu còn số lượng
-                           x.PhieuGiamGia.NgayBatDau <= DateTime.UtcNow && // Kiểm tra thời gian hiệu lực
-                           x.PhieuGiamGia.NgayKetThuc >= DateTime.UtcNow)
-                .Select(x => new {
+                           x.PhieuGiamGia.NgayBatDau <= now && // Kiểm tra thời gian hiệu lực
+                           x.PhieuGiamGia.NgayKetThuc >= now)
+                .Select(x => new
+                {
                     id = x.IDPhieuGiamGia,
                     maCode = x.PhieuGiamGia.MaCode,
                     tenPhieu = x.PhieuGiamGia.TenPhieu,
@@ -599,7 +606,8 @@ namespace QuanApi.Controllers
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet) // Thêm include này để tránh lỗi
                 .Where(x => x.IDSanPhamChiTiet == id && x.TrangThai)
-                .Select(x => new {
+                .Select(x => new
+                {
                     id = x.IDSanPhamChiTiet,
                     productId = x.IDSanPham,
                     name = x.SanPham.TenSanPham,
@@ -628,7 +636,8 @@ namespace QuanApi.Controllers
                         .Where(a => a.TrangThai)
                         .OrderByDescending(a => a.LaAnhChinh)
                         .ThenBy(a => a.NgayTao)
-                        .Select(a => new {
+                        .Select(a => new
+                        {
                             id = a.IDAnhSanPham,
                             url = a.UrlAnh,
                             isMain = a.LaAnhChinh,
@@ -706,13 +715,13 @@ namespace QuanApi.Controllers
                 var diaChi = new DiaChi
                 {
                     IDDiaChi = Guid.NewGuid(),
-                    MaDiaChi = $"DC{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaDiaChi = $"DC{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDKhachHang = dto.IDKhachHang,
                     DiaChiChiTiet = dto.DiaChiChiTiet,
                     LaMacDinh = dto.LaMacDinh,
                     TenNguoiNhan = dto.TenNguoiNhan ?? khachHang.TenKhachHang,
                     SdtNguoiNhan = dto.SdtNguoiNhan ?? khachHang.SoDienThoai,
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     NguoiTao = "System",
                     TrangThai = true
                 };
@@ -787,7 +796,7 @@ namespace QuanApi.Controllers
                 bool wasDefault = diaChi.LaMacDinh;
                 diaChi.TrangThai = false;
                 diaChi.LaMacDinh = false;
-                diaChi.LanCapNhatCuoi = DateTime.Now;
+                diaChi.LanCapNhatCuoi = DateTime.UtcNow;
                 diaChi.NguoiCapNhat = "System";
 
                 // Nếu đây là địa chỉ mặc định, gán địa chỉ khác làm mặc định (nếu có)
@@ -801,7 +810,7 @@ namespace QuanApi.Controllers
                     if (other != null)
                     {
                         other.LaMacDinh = true;
-                        other.LanCapNhatCuoi = DateTime.Now;
+                        other.LanCapNhatCuoi = DateTime.UtcNow;
                         other.NguoiCapNhat = "System";
                     }
                 }
@@ -822,6 +831,7 @@ namespace QuanApi.Controllers
         {
             try
             {
+                var now = DateTime.UtcNow;
                 // Tìm đợt giảm giá đang áp dụng cho sản phẩm này
                 var dotGiamGia = await _context.DotGiamGias
                     .Join(_context.SanPhamDotGiams,
@@ -830,8 +840,8 @@ namespace QuanApi.Controllers
                           (dgg, spdg) => new { dgg, spdg })
                     .Where(x => x.spdg.IDSanPhamChiTiet == sanPhamChiTietId &&
                                x.dgg.TrangThai == true &&
-                               x.dgg.NgayBatDau <= DateTime.Now &&
-                               x.dgg.NgayKetThuc >= DateTime.Now)
+                               x.dgg.NgayBatDau <= now &&
+                               x.dgg.NgayKetThuc >= now)
                     .Select(x => x.dgg)
                     .FirstOrDefaultAsync();
 
@@ -861,9 +871,9 @@ namespace QuanApi.Controllers
             var gioHang = new GioHang
             {
                 IDGioHang = Guid.NewGuid(),
-                MaGioHang = $"GH{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaGioHang = $"GH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDKhachHang = dto.IDKhachHang,
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 NguoiTao = dto.NguoiTao ?? "System",
                 TrangThai = true
             };
@@ -902,7 +912,7 @@ namespace QuanApi.Controllers
 
                 // Cập nhật số lượng
                 cthd.SoLuong += dto.SoLuong;
-                cthd.LanCapNhatCuoi = DateTime.Now;
+                cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
             }
             else
@@ -914,12 +924,12 @@ namespace QuanApi.Controllers
                 cthd = new ChiTietGioHang
                 {
                     IDChiTietGioHang = Guid.NewGuid(),
-                    MaChiTietGioHang = $"CTGH{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaChiTietGioHang = $"CTGH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDGioHang = dto.IDGioHang,
                     IDSanPhamChiTiet = dto.IDSanPhamChiTiet,
                     SoLuong = dto.SoLuong,
                     GiaBan = giaSauGiam,
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     NguoiTao = dto.NguoiCapNhat ?? "System",
                     TrangThai = true
                 };
@@ -928,7 +938,7 @@ namespace QuanApi.Controllers
 
             // Trừ tồn kho ngay lập tức
             spct.SoLuong -= dto.SoLuong;
-            spct.LanCapNhatCuoi = DateTime.Now;
+            spct.LanCapNhatCuoi = DateTime.UtcNow;
             spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
 
             await _context.SaveChangesAsync();
@@ -973,14 +983,14 @@ namespace QuanApi.Controllers
 
                 // Cập nhật số lượng
                 cthd.SoLuong = soLuongMoi;
-                cthd.LanCapNhatCuoi = DateTime.Now;
+                cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
 
                 // Cập nhật tồn kho
                 spct.SoLuong = tongTru - soLuongMoi;
             }
 
-            spct.LanCapNhatCuoi = DateTime.Now;
+            spct.LanCapNhatCuoi = DateTime.UtcNow;
             spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
 
             await _context.SaveChangesAsync();
@@ -1008,7 +1018,7 @@ namespace QuanApi.Controllers
             {
                 // Trả lại tồn kho
                 spct.SoLuong += cthd.SoLuong;
-                spct.LanCapNhatCuoi = DateTime.Now;
+                spct.LanCapNhatCuoi = DateTime.UtcNow;
                 spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
             }
 
@@ -1098,7 +1108,7 @@ namespace QuanApi.Controllers
                 if (spct != null)
                 {
                     spct.SoLuong += cthd.SoLuong;
-                    spct.LanCapNhatCuoi = DateTime.Now;
+                    spct.LanCapNhatCuoi = DateTime.UtcNow;
                     spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
                 }
             }
@@ -1160,14 +1170,14 @@ namespace QuanApi.Controllers
             var hoaDon = new HoaDon
             {
                 IDHoaDon = Guid.NewGuid(),
-                MaHoaDon = $"HD{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDKhachHang = gioHang.IDKhachHang,
                 TenNguoiNhan = dto.CustomerName,
                 SoDienThoaiNguoiNhan = dto.CustomerPhone,
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
                 TrangThai = trangThaiHoaDon,
-                NgayTao = DateTime.Now,
+                NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true,
                 IDPhuongThucThanhToan = paymentMethodId
             };
@@ -1179,13 +1189,13 @@ namespace QuanApi.Controllers
                 var cthdHoaDon = new ChiTietHoaDon
                 {
                     IDChiTietHoaDon = Guid.NewGuid(),
-                    MaChiTietHoaDon = $"CTHD{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaChiTietHoaDon = $"CTHD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDHoaDon = hoaDon.IDHoaDon,
                     IDSanPhamChiTiet = cthd.IDSanPhamChiTiet,
                     SoLuong = cthd.SoLuong,
                     DonGia = cthd.GiaBan,
                     ThanhTien = cthd.SoLuong * cthd.GiaBan,
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
                 _context.ChiTietHoaDons.Add(cthdHoaDon);
