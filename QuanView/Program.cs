@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
+using QuanView.Areas.Admin.Services;
+using QuanView.Areas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -133,6 +135,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
