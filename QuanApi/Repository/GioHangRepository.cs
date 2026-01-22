@@ -56,40 +56,37 @@ namespace QuanApi.Repository
         }
 
 
-        public SanPhamKhachHangViewModel? detailSpct(Guid id)
+        public SanPhamChiTietDto detailSpct(Guid id)
         {
             var spct = _db.SanPhamChiTiets
-                .Include(x => x.SanPham)
-                .Include(x => x.KichCo)
-                .Include(x => x.MauSac)
-                .Include(x => x.AnhSanPhams)
-                .FirstOrDefault(x => x.IDSanPhamChiTiet == id);
+                .Include(ct => ct.SanPham)
+                    .ThenInclude(sp => sp.DanhMuc)
+                .Include(ct => ct.KichCo)
+                .Include(ct => ct.MauSac)
+                .Include(ct => ct.AnhSanPhams)
+                .Include(ct => ct.DotGiamGia)
+                .FirstOrDefault(ct => ct.IDSanPhamChiTiet == id);
 
-            if (spct == null) return null;
+            if (spct == null)
+                throw new KeyNotFoundException("Không tìm thấy sản phẩm chi tiết.");
 
-            return new SanPhamKhachHangViewModel
+            return new SanPhamChiTietDto
             {
-                TenSanPham = spct.SanPham.TenSanPham,
-                DanhMuc = spct.SanPham.DanhMuc.TenDanhMuc,
-                UrlAnh = spct.AnhSanPhams
-                    .Where(a => a.TrangThai && a.LaAnhChinh)
-                    .Select(a => a.UrlAnh)
-                    .FirstOrDefault() ?? "/img/default-product.jpg",
-
-                BienThes = new List<BienTheSanPhamViewModel>
-        {
-            new BienTheSanPhamViewModel
-            {
-                IDSanPhamChiTiet = spct.IDSanPhamChiTiet,
-                Size = spct.KichCo.TenKichCo,
-                Mau = spct.MauSac.TenMauSac,
-              GiaSauGiam = TinhGiaSauGiam(spct)
-
-            }
-        }
+                IdSanPhamChiTiet = spct.IDSanPhamChiTiet,
+                IdSanPham = spct.IDSanPham,
+                TenSanPham = spct.SanPham?.TenSanPham ?? "",
+                TenDanhMuc = spct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
+                AnhDaiDien = spct.AnhSanPhams?.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "",
+                TenKichCo = spct.KichCo?.TenKichCo ?? "",
+                TenMauSac = spct.MauSac?.TenMauSac ?? "",
+                GiaBan = spct.GiaBan,
+                price = (spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.Now && spct.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                    ? spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100m)
+                    : spct.GiaBan,
+                SoLuong = spct.SoLuong,
+                TrangThai = spct.TrangThai
             };
         }
-
 
         public void AddGioHang(Guid iduser, Guid idsp, int soluong)
         {

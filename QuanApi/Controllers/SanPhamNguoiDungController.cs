@@ -17,14 +17,14 @@ namespace QuanApi.Controllers
 
         // GET: api/SanPhamNguoiDungs?pageNumber=1&pageSize=10
         [HttpGet]
-        public async Task<IActionResult> GetSanPhamChiTiets(
-            int pageNumber = 1, int pageSize = 10,
-            string? search = null, int? priceFrom = null, int? priceTo = null,
-            string? category = null, string? size = null, string? color = null)
+        public IActionResult GetSanPhamChiTiets(
+        int pageNumber = 1, int pageSize = 10,
+        string? search = null, int? priceFrom = null, int? priceTo = null,
+        string? category = null, string? size = null, string? color = null)
         {
             try
             {
-                var result = await _service.GetSanPhamChiTietsAsync(
+                var result = _service.GetSanPhamChiTietsAsync(
                     pageNumber, pageSize,
                     search, priceFrom, priceTo,
                     category, size, color);

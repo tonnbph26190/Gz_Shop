@@ -6,8 +6,7 @@ namespace QuanApi.Repository.IRepository
     public interface GioHangIRepository
     {
         List<SanPhamKhachHangViewModel> ListSPCT(int pageNumber, int pageSize);
-        SanPhamKhachHangViewModel? detailSpct(Guid id);
-
+        SanPhamChiTietDto detailSpct(Guid id);
         void AddGioHang(Guid iduser, Guid idsp, int soluong);
         GioHang GetByUserId(Guid userId);
         void XoaChiTietGioHang(Guid idgiohang);
