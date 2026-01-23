@@ -1,117 +1,121 @@
 ﻿using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
+using QuanApi.Dtos;
+using QuanApi.Repository;
+using QuanApi.Repository.IRepository;
 
 namespace QuanApi.Services
 {
     // ================= INTERFACE =================
     public interface ISanPhamNguoiDungService
     {
-        Task<List<SanPhamChiTiet>> GetAllAsync(string? keyword);
-        Task<SanPhamChiTiet?> GetByIdAsync(Guid id);
-        Task<(int total, List<SanPhamChiTiet> data)> GetPagedAsync(
-            int page,
-            int pageSize,
-            string? keyword,
-            decimal? giaTu,
-            decimal? giaDen);
+        List<SanPhamKhachHangViewModel> GetSanPhamChiTietsAsync(
+        int pageNumber, int pageSize,
+        string? search, int? priceFrom, int? priceTo,
+        string? category, string? size, string? color);
+        Task<SanPhamKhachHangViewModel?> GetDetailAsync(Guid id);
 
-        Task<bool> ToggleStatusAsync(Guid id);
+        Task<object> GetFilterOptionsAsync();
     }
 
-    // ================= SERVICE =================
     public class SanPhamNguoiDungService : ISanPhamNguoiDungService
     {
-        private readonly BanQuanAu1DbContext _context;
+        private readonly GioHangIRepository _gioHangRepo;
 
-        public SanPhamNguoiDungService(BanQuanAu1DbContext context)
+        public SanPhamNguoiDungService(GioHangIRepository gioHangRepo)
         {
-            _context = context;
+            _gioHangRepo = gioHangRepo;
         }
 
-        // ---------- GET ALL ----------
-        public async Task<List<SanPhamChiTiet>> GetAllAsync(string? keyword)
+        public List<SanPhamKhachHangViewModel> GetSanPhamChiTietsAsync(
+          int pageNumber, int pageSize,
+          string? search, int? priceFrom, int? priceTo,
+          string? category, string? size, string? color)
         {
-            var query = _context.SanPhamChiTiets
-                .Include(x => x.SanPham)
-                .Include(x => x.KichCo)
-                .Include(x => x.MauSac)
-                .Include(x => x.SanPham.DanhMuc)
-                .Where(x => x.TrangThai)
-                .AsQueryable();
+            var query = _gioHangRepo.ListSPCT(pageNumber, pageSize);
 
-            if (!string.IsNullOrEmpty(keyword))
+            if (!string.IsNullOrEmpty(search))
+                query = query
+                    .Where(x => x.TenSanPham.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            if (priceFrom.HasValue)
+                query = query
+                    .Where(x => x.BienThes.Any(b => b.GiaSauGiam >= priceFrom.Value))
+                    .ToList();
+
+            if (priceTo.HasValue)
+                query = query
+                    .Where(x => x.BienThes.Any(b => b.GiaSauGiam <= priceTo.Value))
+                    .ToList();
+
+            if (!string.IsNullOrEmpty(category))
+                query = query
+                    .Where(x => x.DanhMuc.Contains(category, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            if (!string.IsNullOrEmpty(size))
+                query = query
+                    .Where(x => x.BienThes.Any(b => b.Size.Contains(size, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+            if (!string.IsNullOrEmpty(color))
+                query = query
+                    .Where(x => x.BienThes.Any(b => b.Mau.Contains(color, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+            // Đảm bảo mỗi sản phẩm có ảnh
+            foreach (var sp in query)
             {
-                query = query.Where(x =>
-                    x.SanPham.TenSanPham.Contains(keyword) ||
-                    x.MaSPChiTiet.Contains(keyword));
+                if (string.IsNullOrEmpty(sp.UrlAnh))
+                {
+                    sp.UrlAnh = "/img/default-product.jpg";
+                }
             }
 
-            return await query.ToListAsync();
+            return query;
         }
-
-        // ---------- GET BY ID ----------
-        public async Task<SanPhamChiTiet?> GetByIdAsync(Guid id)
+        public async Task<SanPhamKhachHangViewModel?> GetDetailAsync(Guid id)
         {
-            return await _context.SanPhamChiTiets
-                .Include(x => x.SanPham)
-                .Include(x => x.KichCo)
-                .Include(x => x.MauSac)
-                .Include(x => x.SanPham.DanhMuc)
-                .FirstOrDefaultAsync(x =>
-                    x.IDSanPhamChiTiet == id &&
-                    x.TrangThai);
-        }
+            var dto = await Task.Run(() => _gioHangRepo.detailSpct(id));
 
-        // ---------- PAGING ----------
-        public async Task<(int total, List<SanPhamChiTiet> data)> GetPagedAsync(
-            int page,
-            int pageSize,
-            string? keyword,
-            decimal? giaTu,
-            decimal? giaDen)
-        {
-            var query = _context.SanPhamChiTiets
-                .Include(x => x.SanPham)
-                .Include(x => x.KichCo)
-                .Include(x => x.MauSac)
-                .Include(x => x.SanPham.DanhMuc)
-                .Where(x => x.TrangThai)
-                .AsQueryable();
+            if (dto == null) return null;
 
-            if (!string.IsNullOrEmpty(keyword))
+            return new SanPhamKhachHangViewModel
             {
-                query = query.Where(x =>
-                    x.SanPham.TenSanPham.Contains(keyword) ||
-                    x.MaSPChiTiet.Contains(keyword));
+                TenSanPham = dto.TenSanPham,
+                DanhMuc = dto.TenDanhMuc,
+
+                UrlAnh = string.IsNullOrEmpty(dto.AnhDaiDien)
+                            ? "/img/default-product.jpg"
+                            : dto.AnhDaiDien,
+
+                BienThes = new List<BienTheSanPhamViewModel>
+        {
+            new BienTheSanPhamViewModel
+            {
+                IDSanPhamChiTiet = dto.IdSanPhamChiTiet,
+                Size = dto.TenKichCo,
+                Mau = dto.TenMauSac,
+                GiaGoc = dto.originalPrice,   // map đúng
+                GiaSauGiam = dto.price,       // map đúng
+                SoLuong = dto.SoLuong
             }
-
-            if (giaTu.HasValue)
-                query = query.Where(x => x.GiaBan >= giaTu.Value);
-
-            if (giaDen.HasValue)
-                query = query.Where(x => x.GiaBan <= giaDen.Value);
-
-            var total = await query.CountAsync();
-            var data = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (total, data);
+        }
+            };
         }
 
-        // ---------- TOGGLE STATUS ----------
-        public async Task<bool> ToggleStatusAsync(Guid id)
+
+
+        public async Task<object> GetFilterOptionsAsync()
         {
-            var sp = await _context.SanPhamChiTiets.FindAsync(id);
-            if (sp == null) return false;
-
-            sp.TrangThai = !sp.TrangThai;
-            sp.LanCapNhatCuoi = DateTime.Now;
-            sp.NguoiCapNhat = "auto-toggle";
-
-            return await _context.SaveChangesAsync() > 0;
+            return await Task.Run(() =>
+            {
+                return _gioHangRepo.GetFilterOptions();
+            });
         }
     }
+
+
 }

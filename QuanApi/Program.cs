@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
+using QuanApi.Repository;
 using QuanApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,7 @@ builder.Services.AddScoped<IKhachHangService, KhachHangService>();
 builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
 builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
+builder.Services.AddScoped<DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 
 builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
@@ -35,6 +37,12 @@ builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
+builder.Services.AddScoped<IShippingService, ShippingService>();
+builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
+builder.Services.AddScoped<IHoaDonService, HoaDonService>();
+builder.Services.AddScoped<IGioHangService, GioHangService>();
+builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
+
 
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
