@@ -8,25 +8,16 @@
 
   <ItemGroup>
     <Compile Remove="Controllers\**" />
-    <Compile Remove="Models\**" />
     <Compile Remove="Services\**" />
-    <Compile Remove="ViewModels\**" />
     <Content Remove="Controllers\**" />
-    <Content Remove="Models\**" />
     <Content Remove="Services\**" />
-    <Content Remove="ViewModels\**" />
     <EmbeddedResource Remove="Controllers\**" />
-    <EmbeddedResource Remove="Models\**" />
     <EmbeddedResource Remove="Services\**" />
-    <EmbeddedResource Remove="ViewModels\**" />
     <None Remove="Controllers\**" />
-    <None Remove="Models\**" />
     <None Remove="Services\**" />
-    <None Remove="ViewModels\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Admin\Controllers\" />
     <Folder Include="Areas\Admin\Data\" />
     <Folder Include="Areas\Admin\Views\Banner\" />
     <Folder Include="Areas\Admin\Views\BaoCaoThongKe\" />
