@@ -1,163 +1,159 @@
 ﻿using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
+using QuanApi.Dtos;
+using QuanApi.Repository.IRepository;
 
 namespace QuanApi.Services
 {
     public interface IDotGiamGiaService
     {
-        Task<List<DotGiamGia>> GetAllAsync(string? keyword);
+        Task<PagedResultGeneric<DotGiamGia>> GetAllAsync(DotGiamGiaFilterDto filter);
         Task<DotGiamGia?> GetByIdAsync(Guid id);
-        Task<bool> CreateAsync(DotGiamGia dot, List<Guid> sanPhamChiTietIds);
-        Task<bool> UpdateAsync(Guid id, DotGiamGia dot, List<Guid> sanPhamChiTietIds);
+        Task<bool> CreateAsync(DotGiamGiaCreateDto dto);
+        Task<bool> UpdateAsync(Guid id, DotGiamGiaUpdateDto dto);
+        Task<List<object>> GetSanPhamsCuaDotAsync(Guid id);
+        Task<(bool HasActive, List<Guid> ProductIds)> CheckActiveDiscountsAsync(List<Guid> productIds);
         Task<bool> DeleteAsync(Guid id);
-        Task<bool> ToggleStatusAsync(Guid id);
-        Task<(int total, List<DotGiamGia> data)> GetPagedAsync(
-            int page, int pageSize, string? keyword, string? trangThai);
+        Task<bool> UpdateTrangThaiAsync(Guid id, bool trangThai);
     }
 
     public class DotGiamGiaService : IDotGiamGiaService
     {
-        private readonly BanQuanAu1DbContext _context;
+        private readonly DotGiamGiaIRepository _repository;
+        private readonly ILogger<DotGiamGiaService> _logger;
 
-        public DotGiamGiaService(BanQuanAu1DbContext context)
+        public DotGiamGiaService(
+            DotGiamGiaIRepository repository,
+            ILogger<DotGiamGiaService> logger)
         {
-            _context = context;
+            _repository = repository;
+            _logger = logger;
         }
 
-        // ================= GET ALL =================
-        public async Task<List<DotGiamGia>> GetAllAsync(string? keyword)
+        public async Task<PagedResultGeneric<DotGiamGia>> GetAllAsync(DotGiamGiaFilterDto filter)
         {
-            var query = _context.DotGiamGias.AsQueryable();
+            var result = await _repository.GetDotGiamGia(
+                filter.MaDot,
+                filter.TenDot,
+                filter.PhanTramGiam,
+                filter.TuNgay,
+                filter.DenNgay,
+                filter.TrangThai,
+                filter.Page,
+                filter.PageSize
+            );
 
-            if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x =>
-                    x.MaDot.Contains(keyword) ||
-                    x.TenDot.Contains(keyword));
+            var now = DateTime.Now;
 
-            return await query
-                .Include(x => x.SanPhamDotGiams)
-                .ToListAsync();
+            foreach (var item in result.Data)
+            {
+                bool trangThaiMoi =
+                    item.NgayBatDau <= now &&
+                    item.NgayKetThuc >= now;
+
+                if (item.TrangThai != trangThaiMoi)
+                {
+                    item.TrangThai = trangThaiMoi;
+
+                    _logger.LogInformation(
+                        "Cập nhật trạng thái đợt giảm giá {Id} => {TrangThai}",
+                        item.IDDotGiamGia,
+                        trangThaiMoi);
+
+                    await _repository.UpdateTrangThaiAsync(
+                        item.IDDotGiamGia,
+                        trangThaiMoi);
+                }
+            }
+
+            return result;
         }
-
-        // ================= GET BY ID =================
         public async Task<DotGiamGia?> GetByIdAsync(Guid id)
         {
-            return await _context.DotGiamGias
-                .Include(x => x.SanPhamDotGiams)
-                .FirstOrDefaultAsync(x => x.IDDotGiamGia == id);
+            _logger.LogInformation("Lấy đợt giảm giá theo ID: {Id}", id);
+            return await _repository.GetByIdAsync(id);
         }
 
-        // ================= CREATE =================
-        public async Task<bool> CreateAsync(DotGiamGia dot, List<Guid> sanPhamChiTietIds)
+        public async Task<bool> CreateAsync(DotGiamGiaCreateDto dto)
         {
-            dot.IDDotGiamGia = Guid.NewGuid();
-            dot.NgayTao = DateTime.Now;
-            dot.TrangThai = dot.NgayBatDau <= DateTime.Now && dot.NgayKetThuc >= DateTime.Now;
-
-            _context.DotGiamGias.Add(dot);
-
-            foreach (var spctId in sanPhamChiTietIds)
+            if (dto == null || dto.Dot == null)
             {
-                _context.SanPhamDotGiams.Add(new SanPhamDotGiam
-                {
-                    IDSanPhamDotGiam = Guid.NewGuid(),
-                    IDDotGiamGia = dot.IDDotGiamGia,
-                    IDSanPhamChiTiet = spctId
-                });
+                _logger.LogWarning("Dữ liệu tạo đợt giảm giá không hợp lệ");
+                return false;
             }
 
-            return await _context.SaveChangesAsync() > 0;
+            _logger.LogInformation("Tạo / cập nhật đợt giảm giá: {TenDot}", dto.Dot.TenDot);
+
+            var result = await _repository.CreateAsync(
+                dto.Dot,
+                dto.ChiTietIds ?? new List<Guid>()
+            );
+
+            return result;
         }
-
-        // ================= UPDATE =================
-        public async Task<bool> UpdateAsync(Guid id, DotGiamGia dot, List<Guid> sanPhamChiTietIds)
+        public async Task<bool> UpdateAsync(Guid id, DotGiamGiaUpdateDto dto)
         {
-            var entity = await _context.DotGiamGias
-                .Include(x => x.SanPhamDotGiams)
-                .FirstOrDefaultAsync(x => x.IDDotGiamGia == id);
-
-            if (entity == null) return false;
-
-            entity.MaDot = dot.MaDot;
-            entity.TenDot = dot.TenDot;
-            entity.PhanTramGiam = dot.PhanTramGiam;
-            entity.NgayBatDau = dot.NgayBatDau;
-            entity.NgayKetThuc = dot.NgayKetThuc;
-            entity.LanCapNhatCuoi = DateTime.Now;
-            entity.NguoiCapNhat = string.IsNullOrEmpty(dot.NguoiCapNhat) ? "unknown" : dot.NguoiCapNhat;
-            entity.TrangThai = dot.NgayBatDau <= DateTime.Now && dot.NgayKetThuc >= DateTime.Now;
-
-            // Xóa liên kết cũ
-            _context.SanPhamDotGiams.RemoveRange(entity.SanPhamDotGiams);
-
-            // Thêm lại liên kết mới
-            foreach (var spctId in sanPhamChiTietIds)
+            if (dto == null)
             {
-                _context.SanPhamDotGiams.Add(new SanPhamDotGiam
-                {
-                    IDSanPhamDotGiam = Guid.NewGuid(),
-                    IDDotGiamGia = id,
-                    IDSanPhamChiTiet = spctId
-                });
+                _logger.LogWarning("DTO null khi update DotGiamGia");
+                return false;
             }
 
-            return await _context.SaveChangesAsync() > 0;
+            if (id != dto.IDDotGiamGia)
+            {
+                _logger.LogWarning("ID route không khớp body: {RouteId} - {BodyId}", id, dto.IDDotGiamGia);
+                return false;
+            }
+
+            var dot = new DotGiamGia
+            {
+                IDDotGiamGia = dto.IDDotGiamGia,
+                MaDot = dto.MaDot,
+                TenDot = dto.TenDot,
+                PhanTramGiam = dto.PhanTramGiam,
+                NgayBatDau = dto.NgayBatDau,
+                NgayKetThuc = dto.NgayKetThuc
+            };
+
+            return await _repository.UpdateAsync(dot, dto.SanPhamChiTietIds);
         }
 
-        // ================= DELETE =================
+     
+        public async Task<List<object>> GetSanPhamsCuaDotAsync(Guid id)
+        {
+            _logger.LogInformation("Lấy danh sách sản phẩm của đợt giảm giá: {Id}", id);
+
+            var data = await _repository.GetAllSanPhamChiTietWithSelected(id);
+            return data.Cast<object>().ToList();
+        }
+        public async Task<(bool HasActive, List<Guid> ProductIds)> CheckActiveDiscountsAsync(List<Guid> productIds)
+        {
+            if (productIds == null || !productIds.Any())
+            {
+                _logger.LogWarning("Danh sách sản phẩm không hợp lệ khi check đợt giảm giá.");
+                return (false, new List<Guid>());
+            }
+
+            _logger.LogInformation("Check đợt giảm giá đang hoạt động cho {Count} sản phẩm", productIds.Count);
+
+            var productsWithActiveDiscounts =
+                await _repository.GetProductsWithActiveDiscounts(productIds);
+
+            return (productsWithActiveDiscounts.Any(), productsWithActiveDiscounts);
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var entity = await _context.DotGiamGias.FindAsync(id);
-            if (entity == null) return false;
-
-            var links = _context.SanPhamDotGiams
-                .Where(x => x.IDDotGiamGia == id);
-
-            _context.SanPhamDotGiams.RemoveRange(links);
-            _context.DotGiamGias.Remove(entity);
-
-            return await _context.SaveChangesAsync() > 0;
+            _logger.LogInformation("Xóa đợt giảm giá ID: {Id}", id);
+            return await _repository.DeleteAsync(id);
         }
 
-        // ================= TOGGLE STATUS =================
-        public async Task<bool> ToggleStatusAsync(Guid id)
+        public async Task<bool> UpdateTrangThaiAsync(Guid id, bool trangThai)
         {
-            var dot = await _context.DotGiamGias.FindAsync(id);
-            if (dot == null) return false;
-
-            dot.TrangThai = !dot.TrangThai;
-            dot.LanCapNhatCuoi = DateTime.Now;
-            dot.NguoiCapNhat = "auto-toggle";
-
-            return await _context.SaveChangesAsync() > 0;
+            _logger.LogInformation("Cập nhật trạng thái đợt giảm giá ID: {Id} => {TrangThai}", id, trangThai);
+            return await _repository.UpdateTrangThaiAsync(id, trangThai);
         }
 
-        // ================= PAGED =================
-        public async Task<(int total, List<DotGiamGia> data)> GetPagedAsync(
-            int page, int pageSize, string? keyword, string? trangThai)
-        {
-            var query = _context.DotGiamGias.AsQueryable();
-
-            if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x =>
-                    x.MaDot.Contains(keyword) ||
-                    x.TenDot.Contains(keyword));
-
-            if (!string.IsNullOrEmpty(trangThai))
-            {
-                if (trangThai == "active") query = query.Where(x => x.TrangThai);
-                else if (trangThai == "inactive") query = query.Where(x => !x.TrangThai);
-            }
-
-            var total = await query.CountAsync();
-            var data = await query
-                .OrderByDescending(x => x.NgayTao)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (total, data);
-        }
     }
 }
