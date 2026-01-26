@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
-using QuanApi.Services;
+using QuanView.Services;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -44,10 +44,7 @@ builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://lo
 //builder.Services.AddSingleton<IEmailService, EmailService>();
 
 //Connect VNPay API
-//builder.Services.AddScoped<IVnPayService, VnPayService>();
-builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
-builder.Services.AddScoped<ILungQuanService, LungQuanService>();
-builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<QuanApi.Services.IVnPayService, QuanApi.Services.VnPayService>();
 
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
@@ -141,6 +138,11 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

@@ -6,7 +6,31 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-	<ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Controllers\**" />
+    <Compile Remove="Services\**" />
+    <Compile Remove="ViewModels\**" />
+    <Content Remove="Controllers\**" />
+    <Content Remove="Services\**" />
+    <Content Remove="ViewModels\**" />
+    <EmbeddedResource Remove="Controllers\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <EmbeddedResource Remove="ViewModels\**" />
+    <None Remove="Controllers\**" />
+    <None Remove="Services\**" />
+    <None Remove="ViewModels\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Services\IChatLieuService.cs" />
+    <Compile Include="Services\IKichCoService.cs" />
+    <Compile Include="Services\IKieuDangService.cs" />
+    <Compile Include="Services\IVnPayService.cs" />
+    <Compile Include="Services\VnPayLibraryApi.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\Admin\Controllers\" />
     <Folder Include="Areas\Admin\Data\" />
     <Folder Include="Areas\Admin\Views\Banner\" />
     <Folder Include="Areas\Admin\Views\BaoCaoThongKe\" />
@@ -25,6 +49,7 @@
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />
     <Folder Include="Areas\Admin\Views\SanPham\" />
+    <Folder Include="Models\" />
     <Folder Include="Views\Checkout\" />
     <Folder Include="Views\DonHang\" />
     <Folder Include="Views\GioHang\" />
