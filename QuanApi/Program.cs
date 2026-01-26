@@ -23,7 +23,26 @@ builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
 builder.Services.AddScoped<DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 
+builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
+builder.Services.AddScoped<ISanPhamService, SanPhamService>();
+builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
 builder.Services.AddScoped<SanPhamValidationService>();
+builder.Services.AddScoped<IDanhMucService, DanhMucService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
+builder.Services.AddScoped<IVaiTroService, VaiTroService>();
+builder.Services.AddScoped<IShippingService, ShippingService>();
+builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
+builder.Services.AddScoped<IHoaDonService, HoaDonService>();
+builder.Services.AddScoped<IGioHangService, GioHangService>();
+builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
+
 
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();

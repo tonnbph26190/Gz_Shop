@@ -1,16 +1,16 @@
-using System.Security.Claims;
-using System.Text.Json;
 using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
+using QuanApi.Services;
+using System.Security.Claims;
+using System.Text.Json;
 using QuanView.Areas.Admin.Services;
 using QuanView.Areas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
@@ -47,8 +47,16 @@ builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://lo
 
 //Connect VNPay API
 //builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<ILungQuanService, LungQuanService>();
+builder.Services.AddScoped<IMauSacService, MauSacService>();
 
-
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 builder.Services.AddAuthentication(options =>
 {
