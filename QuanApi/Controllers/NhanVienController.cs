@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QuanApi.Data;
+using QuanApi.Dtos;
 using QuanApi.Services;
+using System.Security.Claims;
 
 namespace QuanApi.Controllers
 {
@@ -9,55 +10,67 @@ namespace QuanApi.Controllers
     public class NhanVienController : ControllerBase
     {
         private readonly INhanVienService _service;
+        private readonly ILogger<NhanVienController> _logger;
 
-        public NhanVienController(INhanVienService service)
+        public NhanVienController(INhanVienService service, ILogger<NhanVienController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(string? keyword) => Ok(await _service.GetAllAsync(keyword));
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<ActionResult<PagedResultGeneric<NhanVienResponseDto>>> GetNhanViens([FromQuery] NhanVienFilterDto filter)
         {
-            var result = await _service.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
+            _logger.LogInformation("Retrieving employees with filter: {@Filter}", filter);
+            var result = await _service.GetNhanViensAsync(filter);
+            return Ok(result);
         }
 
-        [HttpPost("Create")]
-        public async Task<IActionResult> Create(NhanVien nv)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<NhanVienResponseDto>> GetNhanVien(Guid id)
         {
-            var success = await _service.CreateAsync(nv);
-            return success ? Ok(new { success = true }) : BadRequest();
+            var result = await _service.GetNhanVienByIdAsync(id);
+            if (result == null) return NotFound($"Employee with ID {id} not found.");
+            return Ok(result);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<NhanVienResponseDto>> PostNhanVien([FromBody] NhanVienCreateDto dto)
+        {
+            try
+            {
+                var result = await _service.CreateNhanVienAsync(dto);
+                return CreatedAtAction(nameof(GetNhanVien), new { id = result.IDNhanVien }, result);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, NhanVien nv)
+        public async Task<IActionResult> PutNhanVien(Guid id, [FromBody] NhanVienUpdateDto dto)
         {
-            var success = await _service.UpdateAsync(id, nv);
-            return success ? Ok(new { success = true }) : NotFound();
+            var currentUserId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            try
+            {
+                await _service.UpdateNhanVienAsync(id, dto, currentUserId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException) { return NotFound(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> DeleteNhanVien(Guid id)
         {
-            var success = await _service.DeleteAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
+            var deleted = await _service.DeleteNhanVienAsync(id);
+            if (!deleted) return NotFound();
+            return NoContent();
         }
 
-        [HttpPut("ToggleStatus/{id}")]
-        public async Task<IActionResult> ToggleStatus(Guid id)
+        [HttpGet("employee-role-stats")]
+        public async Task<IActionResult> GetEmployeeRoleStats()
         {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
-
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged(int page = 1, int pageSize = 10, string? keyword = null, string? trangThai = null)
-        {
-            var (total, data) = await _service.GetPagedAsync(page, pageSize, keyword, trangThai);
-            return Ok(new { total, data });
+            var stats = await _service.GetEmployeeRoleStatsAsync();
+            return Ok(stats);
         }
     }
 }

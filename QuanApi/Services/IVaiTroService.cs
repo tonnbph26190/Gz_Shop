@@ -6,13 +6,11 @@ namespace QuanApi.Services
 {
     public interface IVaiTroService
     {
-        Task<List<VaiTro>> GetAllAsync(string? keyword);
+        Task<IEnumerable<VaiTro>> GetAllAsync();
         Task<VaiTro?> GetByIdAsync(Guid id);
-        Task<bool> CreateAsync(VaiTro vt);
-        Task<bool> UpdateAsync(Guid id, VaiTro vt);
+        Task<VaiTro> CreateAsync(VaiTro vaiTro);
+        Task<bool> UpdateAsync(Guid id, VaiTro vaiTro);
         Task<bool> DeleteAsync(Guid id);
-        Task<bool> ToggleStatusAsync(Guid id);
-        Task<(int total, List<VaiTro> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
     }
     public class VaiTroService : IVaiTroService
     {
@@ -23,13 +21,9 @@ namespace QuanApi.Services
             _context = context;
         }
 
-        public async Task<List<VaiTro>> GetAllAsync(string? keyword)
+        public async Task<IEnumerable<VaiTro>> GetAllAsync()
         {
-            var query = _context.VaiTro.AsQueryable();
-            if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenVaiTro.Contains(keyword) || x.MaVaiTro.Contains(keyword));
-
-            return await query.ToListAsync();
+            return await _context.VaiTro.ToListAsync();
         }
 
         public async Task<VaiTro?> GetByIdAsync(Guid id)
@@ -37,70 +31,39 @@ namespace QuanApi.Services
             return await _context.VaiTro.FindAsync(id);
         }
 
-        public async Task<bool> CreateAsync(VaiTro vt)
+        public async Task<VaiTro> CreateAsync(VaiTro vaiTro)
         {
-            vt.IDVaiTro = Guid.NewGuid();
-            vt.NgayTao = DateTime.Now;
-            if (string.IsNullOrEmpty(vt.NguoiTao)) vt.NguoiTao = "unknown";
-
-            _context.VaiTro.Add(vt);
-            return await _context.SaveChangesAsync() > 0;
+            _context.VaiTro.Add(vaiTro);
+            await _context.SaveChangesAsync();
+            return vaiTro;
         }
 
-        public async Task<bool> UpdateAsync(Guid id, VaiTro vt)
+        public async Task<bool> UpdateAsync(Guid id, VaiTro vaiTro)
         {
-            var entity = await _context.VaiTro.FindAsync(id);
-            if (entity == null) return false;
+            if (id != vaiTro.IDVaiTro) return false;
 
-            entity.TenVaiTro = vt.TenVaiTro;
-            entity.MaVaiTro = vt.MaVaiTro;
-            entity.NgayTao = vt.NgayTao;
-            entity.NguoiTao = vt.NguoiTao;
-            entity.LanCapNhatCuoi = DateTime.Now;
-            entity.NguoiCapNhat = string.IsNullOrEmpty(vt.NguoiCapNhat) ? "unknown" : vt.NguoiCapNhat;
-            entity.TrangThai = vt.TrangThai;
+            _context.Entry(vaiTro).State = EntityState.Modified;
 
-            return await _context.SaveChangesAsync() > 0;
+            try
+            {
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.VaiTro.Any(e => e.IDVaiTro == id)) return false;
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var entity = await _context.VaiTro.FindAsync(id);
-            if (entity == null) return false;
+            var vaiTro = await _context.VaiTro.FindAsync(id);
+            if (vaiTro == null) return false;
 
-            _context.VaiTro.Remove(entity);
-            return await _context.SaveChangesAsync() > 0;
-        }
-
-        public async Task<bool> ToggleStatusAsync(Guid id)
-        {
-            var vt = await _context.VaiTro.FindAsync(id);
-            if (vt == null) return false;
-
-            vt.TrangThai = !vt.TrangThai;
-            vt.LanCapNhatCuoi = DateTime.Now;
-            vt.NguoiCapNhat = "auto-toggle";
-
-            return await _context.SaveChangesAsync() > 0;
-        }
-
-        public async Task<(int total, List<VaiTro> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
-        {
-            var query = _context.VaiTro.AsQueryable();
-
-            if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenVaiTro.Contains(keyword) || x.MaVaiTro.Contains(keyword));
-
-            if (!string.IsNullOrEmpty(trangThai))
-            {
-                if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
-                else if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);
-            }
-
-            var total = await query.CountAsync();
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            return (total, data);
+            _context.VaiTro.Remove(vaiTro);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

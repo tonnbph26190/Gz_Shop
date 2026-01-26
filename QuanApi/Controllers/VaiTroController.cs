@@ -4,8 +4,8 @@ using QuanApi.Services;
 
 namespace QuanApi.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class VaiTroController : ControllerBase
     {
         private readonly IVaiTroService _service;
@@ -16,48 +16,40 @@ namespace QuanApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(string? keyword) => Ok(await _service.GetAllAsync(keyword));
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<ActionResult<IEnumerable<VaiTro>>> GetVaiTro()
         {
-            var result = await _service.GetByIdAsync(id);
-            return result == null ? NotFound() : Ok(result);
+            return Ok(await _service.GetAllAsync());
         }
 
-        [HttpPost("Create")]
-        public async Task<IActionResult> Create(VaiTro vt)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<VaiTro>> GetVaiTro(Guid id)
         {
-            var success = await _service.CreateAsync(vt);
-            return success ? Ok(new { success = true }) : BadRequest();
+            var result = await _service.GetByIdAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, VaiTro vt)
+        public async Task<IActionResult> PutVaiTro(Guid id, VaiTro vaiTro)
         {
-            var success = await _service.UpdateAsync(id, vt);
-            return success ? Ok(new { success = true }) : NotFound();
+            var success = await _service.UpdateAsync(id, vaiTro);
+            if (!success) return BadRequest("ID mismatch or record not found.");
+            return NoContent();
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<VaiTro>> PostVaiTro(VaiTro vaiTro)
+        {
+            var result = await _service.CreateAsync(vaiTro);
+            return CreatedAtAction(nameof(GetVaiTro), new { id = result.IDVaiTro }, result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> DeleteVaiTro(Guid id)
         {
             var success = await _service.DeleteAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
-
-        [HttpPut("ToggleStatus/{id}")]
-        public async Task<IActionResult> ToggleStatus(Guid id)
-        {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
-        }
-
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged(int page = 1, int pageSize = 10, string? keyword = null, string? trangThai = null)
-        {
-            var (total, data) = await _service.GetPagedAsync(page, pageSize, keyword, trangThai);
-            return Ok(new { total, data });
+            if (!success) return NotFound();
+            return NoContent();
         }
     }
 }
