@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using QuanApi.Services;
 using System.Security.Claims;
 using System.Text.Json;
+using QuanView.Areas.Admin.Services;
+using QuanView.Areas.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ CẤU HÌNH DbContext
@@ -141,6 +143,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
