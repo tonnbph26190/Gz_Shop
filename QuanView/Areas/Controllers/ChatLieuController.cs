@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
-using QuanView.Areas.Services;
+using QuanView.Services;
 using System.Security.Claims;
 
 [Area("Admin")]

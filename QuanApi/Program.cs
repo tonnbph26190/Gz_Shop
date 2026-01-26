@@ -34,7 +34,6 @@ builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
-builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
@@ -42,8 +41,7 @@ builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanServi
 builder.Services.AddScoped<IHoaDonService, HoaDonService>();
 builder.Services.AddScoped<IGioHangService, GioHangService>();
 builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
-
-
+builder.Services.AddScoped<ILungQuanService, LungQuanService>();
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
 

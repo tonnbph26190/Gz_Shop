@@ -4,7 +4,7 @@ using QuanView.ViewModels;
 using System.Text.Json;
 using System.Text;
 
-namespace QuanView.Areas.Admin.Services
+namespace QuanView.Services
 {
     public interface IKichCoService
     {

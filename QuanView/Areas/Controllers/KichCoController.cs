@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
-using QuanView.Areas.Admin.Services;
-
+using QuanView.Services;
 using System.Security.Claims;
 
 namespace QuanView.Areas.Admin.Controllers

@@ -3,7 +3,7 @@ using QuanView.ViewModels;
 using System.Text;
 using System.Text.Json;
 
-namespace QuanView.Areas.Services
+namespace QuanView.Services
 {
     public interface IChatLieuService
     {

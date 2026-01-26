@@ -1,11 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System;
-using System.Net.Http.Json;
 using QuanApi.Dtos;
-using QuanView.Services;
+using QuanApi.Services;
 using QuanView.Models;
 
 
