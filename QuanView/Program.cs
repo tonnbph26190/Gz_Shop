@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlServerOptionsAction: sqlOptions =>
         {
             sqlOptions.CommandTimeout(120); // 2 phút timeout
@@ -101,7 +101,7 @@ builder.Services.AddAuthorization(options =>
     // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
     options.AddPolicy("AdminPolicy", policy =>
         policy.RequireRole("admin", "nhanvien"));
-    
+
     // Policy cho khách hàng
     options.AddPolicy("CustomerPolicy", policy =>
         policy.RequireRole("KhachHang"));
@@ -131,19 +131,19 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
+// 7️⃣ ĐĂNG KÝ CÁC SERVICE
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+
 var app = builder.Build();
 
-// 7️⃣ MIDDLEWARE PIPELINE
+// 8️⃣ MIDDLEWARE PIPELINE
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
-builder.Services.AddScoped<IKichCoService, KichCoService>();
-builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
