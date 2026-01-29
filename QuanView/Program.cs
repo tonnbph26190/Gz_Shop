@@ -132,9 +132,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddHttpContextAccessor();
 
 // 7️⃣ ĐĂNG KÝ CÁC SERVICE
-builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
-builder.Services.AddScoped<IKichCoService, KichCoService>();
-builder.Services.AddScoped<IKieuDangService, KieuDangService>();
+
 
 var app = builder.Build();
 
