@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
+using QuanApi.Services;
 using QuanView.Services;
 using System.Security.Claims;
 using System.Text.Json;
@@ -130,6 +131,10 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<ILungQuanService, LungQuanService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+
 var app = builder.Build();
 
 // 7️⃣ MIDDLEWARE PIPELINE
@@ -138,11 +143,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
-builder.Services.AddScoped<IKichCoService, KichCoService>();
-builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

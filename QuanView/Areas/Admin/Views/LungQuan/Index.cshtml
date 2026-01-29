@@ -1,0 +1,37 @@
+﻿@model IEnumerable<QuanApi.Data.LungQuan>
+
+@{
+    ViewData["Title"] = "Danh sách Lưng Quần";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Quản lý Lưng Quần</h1>
+    <a asp-action="Create" class="btn btn-success">Thêm mới</a>
+</div>
+
+<table class="table table-hover border">
+    <thead class="table-light">
+        <tr>
+            <th>Loại Lưng</th>
+            <th>Trạng thái</th>
+            <th class="text-center">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>@item.TenLungQuan</td>
+            <td>
+                <span class="badge @(item.TrangThai == true ? "bg-success" : "bg-secondary")">
+                    @(item.TrangThai == false ? "Hoạt động" : "Ngừng hoạt động")
+                </span>
+            </td>
+            <td class="text-center">
+                <a asp-action="Edit" asp-route-id="@item.IDLungQuan" class="btn btn-sm btn-outline-primary">Sửa</a>
+                <a asp-action="Details" asp-route-id="@item.IDLungQuan" class="btn btn-sm btn-outline-info">Chi tiết</a>
+                <a asp-action="Delete" asp-route-id="@item.IDLungQuan" class="btn btn-sm btn-outline-danger">Xóa</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

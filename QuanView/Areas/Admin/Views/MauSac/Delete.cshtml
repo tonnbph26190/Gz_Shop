@@ -1,0 +1,25 @@
+﻿@model QuanApi.Data.MauSac
+
+@{
+    ViewData["Title"] = "Xóa Màu sắc";
+}
+
+<div class="alert alert-danger">
+    <h3>Xác nhận xóa?</h3>
+    <p>Bạn có chắc chắn muốn xóa Màu sắc này không?</p>
+</div>
+
+<div class="card border-danger shadow-sm">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Tên màu sắc</dt>
+            <dd class="col-sm-9">@Model.TenMauSac</dd>
+        </dl>
+
+        <form asp-action="Delete">
+            <input type="hidden" name="id" value="@Model.IDMauSac" />
+            <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy bỏ</a>
+        </form>
+    </div>
+</div>

@@ -30,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Admin\Controllers\" />
     <Folder Include="Areas\Admin\Data\" />
     <Folder Include="Areas\Admin\Views\Banner\" />
     <Folder Include="Areas\Admin\Views\BaoCaoThongKe\" />
@@ -41,9 +40,6 @@
     <Folder Include="Areas\Admin\Views\KhachHang\" />
     <Folder Include="Areas\Admin\Views\KichCo\" />
     <Folder Include="Areas\Admin\Views\KieuDang\" />
-    <Folder Include="Areas\Admin\Views\LoaiOng\" />
-    <Folder Include="Areas\Admin\Views\LungQuan\" />
-    <Folder Include="Areas\Admin\Views\MauSac\" />
     <Folder Include="Areas\Admin\Views\NhanViens\" />
     <Folder Include="Areas\Admin\Views\PhieuGiamGia\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
@@ -64,7 +60,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.23" />
     <PackageReference Include="MimeKit" Version="4.13.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
