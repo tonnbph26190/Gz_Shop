@@ -43,7 +43,7 @@ var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailCon
 
 // Đăng ký cấu hình và dịch vụ Email
 builder.Services.AddSingleton(emailConfig);
-builder.Services.AddSingleton<IEmailService, EmailService>();
+//builder.Services.AddSingleton<IEmailService, EmailService>();
 
 //Connect VNPay API
 builder.Services.AddScoped<QuanApi.Services.IVnPayService, QuanApi.Services.VnPayService>();
