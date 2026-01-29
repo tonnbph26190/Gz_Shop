@@ -3,13 +3,16 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using QuanApi.Services;
 using QuanView.Models;
 using QuanView.Services;
 using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
 // 1️⃣ CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
@@ -42,23 +45,18 @@ var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailCon
 
 // Đăng ký cấu hình và dịch vụ Email
 builder.Services.AddSingleton(emailConfig);
-builder.Services.AddSingleton<IEmailService, EmailService>();
+//builder.Services.AddSingleton<IEmailService, EmailService>();
 
 //Connect VNPay API
-builder.Services.AddScoped<QuanApi.Services.IVnPayService, QuanApi.Services.VnPayService>();
+builder.Services.AddScoped<IVnPayService, VnPayService>();
 
-builder.Services.AddControllersWithViews()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
+
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 })
 .AddCookie(options =>
 {
@@ -131,14 +129,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
-// 7️⃣ ĐĂNG KÝ CÁC SERVICE
-builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
-builder.Services.AddScoped<IKichCoService, KichCoService>();
-builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-
 var app = builder.Build();
 
-// 8️⃣ MIDDLEWARE PIPELINE
+// 7️⃣ MIDDLEWARE PIPELINE
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

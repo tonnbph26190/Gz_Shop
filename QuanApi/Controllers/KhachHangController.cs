@@ -27,23 +27,55 @@ public class KhachHangController : ControllerBase
     [HttpGet("Index")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<KhachHangDto>>> GetKhachHang(
-        string? search = null,
-        int pageNumber = 1,
-        int pageSize = 10,
-        string? sortBy = "NgayTao",
-        bool sortAscending = false)
+          string? search = null,
+          int pageNumber = 1,
+          int pageSize = 10,
+          string? sortBy = "NgayTao",
+          bool sortAscending = false)
     {
-        var (data, totalCount) = await _khachHangService.GetKhachHangAsync(
-            search, pageNumber, pageSize, sortBy, sortAscending);
+        _logger.LogInformation("Đang lấy danh sách khách hàng với tìm kiếm: {Search}, trang: {PageNumber}, kích thước trang: {PageSize}", search, pageNumber, pageSize);
+
+        var query = _context.KhachHang.Include(kh => kh.DiaChis).AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(kh =>
+                kh.MaKhachHang.Contains(search) ||
+                kh.TenKhachHang.Contains(search) ||
+                (kh.Email != null && kh.Email.Contains(search)) ||
+                kh.SoDienThoai.Contains(search));
+        }
+
+        switch (sortBy?.ToLower())
+        {
+            case "makhachhang":
+                query = sortAscending ? query.OrderBy(kh => kh.MaKhachHang) : query.OrderByDescending(kh => kh.MaKhachHang);
+                break;
+            case "tenkhachhang":
+                query = sortAscending ? query.OrderBy(kh => kh.TenKhachHang) : query.OrderByDescending(kh => kh.TenKhachHang);
+                break;
+            case "ngaytao":
+                query = sortAscending ? query.OrderBy(kh => kh.NgayTao) : query.OrderByDescending(kh => kh.NgayTao);
+                break;
+            default:
+                query = query.OrderByDescending(kh => kh.NgayTao);
+                break;
+        }
+
+        var totalCount = await query.CountAsync();
+        var khachHangs = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
         Response.Headers.Append("X-Total-Count", totalCount.ToString());
         Response.Headers.Append("X-Page-Size", pageSize.ToString());
         Response.Headers.Append("X-Current-Page", pageNumber.ToString());
-        Response.Headers.Append("X-Total-Pages",
-            ((int)Math.Ceiling((double)totalCount / pageSize)).ToString());
+        Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling((double)totalCount / pageSize)).ToString());
 
-        return Ok(_mapper.Map<IEnumerable<KhachHangDto>>(data));
+        return Ok(_mapper.Map<IEnumerable<KhachHangDto>>(khachHangs));
     }
+
     [HttpGet("{id}")]
     [HttpGet("Details/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
