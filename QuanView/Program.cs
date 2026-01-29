@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Services;
+using QuanView.Models;
 using QuanView.Services;
 using System.Security.Claims;
 using System.Text.Json;
@@ -38,11 +39,11 @@ builder.Services.AddHttpClient("MyApi", client =>
 builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
 
 // Đọc cấu hình từ appsettings
-//var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();
+var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();
 
 // Đăng ký cấu hình và dịch vụ Email
-//builder.Services.AddSingleton(emailConfig);
-//builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddSingleton(emailConfig);
+builder.Services.AddSingleton<IEmailService, EmailService>();
 
 //Connect VNPay API
 builder.Services.AddScoped<QuanApi.Services.IVnPayService, QuanApi.Services.VnPayService>();
