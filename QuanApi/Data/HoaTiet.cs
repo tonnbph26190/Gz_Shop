@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Data
 {
@@ -15,7 +15,7 @@ namespace QuanApi.Data
         [MaxLength(100)]
         public string TenHoaTiet { get; set; } // Ví dụ: Caro, Trơn, Sọc dọc
 
-        public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
         public string? NguoiTao { get; set; }

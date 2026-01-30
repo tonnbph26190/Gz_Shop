@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Data
@@ -23,7 +23,7 @@ namespace QuanApi.Data
         public int SoLuong { get; set; }
         public decimal GiaBan { get; set; }
 
-        public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
         public string? NguoiTao { get; set; }

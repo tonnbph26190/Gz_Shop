@@ -37,7 +37,7 @@ namespace QuanApi.Data
 
         public string? MoTa { get; set; }
 
-        public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
         public string? NguoiTao { get; set; }

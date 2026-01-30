@@ -1,4 +1,4 @@
-﻿namespace QuanView.Areas.Admin.Models
+namespace QuanView.Areas.Admin.Models
 {
     public class VnPaymentResponseModel
     {
@@ -18,7 +18,7 @@
         public string Fullname { get; set; }
         public string Description { get; set; }
         public decimal Amount { get; set; }  // Số tiền cần thanh toán
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
 
 }

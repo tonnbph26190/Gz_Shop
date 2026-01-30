@@ -83,7 +83,7 @@ namespace QuanApi.Services
 
             var nhanVien = _mapper.Map<NhanVien>(createDto);
             nhanVien.IDNhanVien = Guid.NewGuid();
-            nhanVien.NgayTao = DateTime.Now;
+            nhanVien.NgayTao = DateTime.UtcNow;
 
             _context.NhanViens.Add(nhanVien);
             await _context.SaveChangesAsync();
@@ -102,7 +102,7 @@ namespace QuanApi.Services
                 throw new InvalidOperationException("Bạn không thể thay đổi trạng thái của chính mình.");
 
             _mapper.Map(updateDto, existing);
-            existing.LanCapNhatCuoi = DateTime.Now;
+            existing.LanCapNhatCuoi = DateTime.UtcNow;
             existing.NguoiCapNhat = currentUserId;
 
             await _context.SaveChangesAsync();
