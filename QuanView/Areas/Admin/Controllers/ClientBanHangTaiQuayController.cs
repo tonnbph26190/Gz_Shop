@@ -8,7 +8,7 @@ using QuanView.Models;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class ClientBanHangTaiQuayController : Controller
     {
         private readonly HttpClient _httpClient;
