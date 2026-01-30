@@ -1,0 +1,27 @@
+﻿@model QuanApi.Data.LungQuan
+
+@{
+    ViewData["Title"] = "Chi tiết Lưng Quần";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header bg-info text-white">
+        <h4>Chi tiết Lưng Quần</h4>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Mã lưng</dt>
+            <dd class="col-sm-9">@Model.IDLungQuan</dd>
+
+            <dt class="col-sm-3">Loại lưng</dt>
+            <dd class="col-sm-9">@Model.TenLungQuan</dd>
+
+            <dt class="col-sm-3">Trạng thái</dt>
+            <dd class="col-sm-9">@(Model.TrangThai == true ? "Hoạt động" : "Ngừng hoạt động")</dd>
+        </dl>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Edit" asp-route-id="@Model.IDLungQuan" class="btn btn-primary">Chỉnh sửa</a>
+        <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+    </div>
+</div>

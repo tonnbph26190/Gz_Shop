@@ -1,0 +1,38 @@
+﻿@model IEnumerable<QuanApi.Data.MauSac>
+
+@{
+    ViewData["Title"] = "Danh sách Màu sắc";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Quản lý Màu sắc</h1>
+    <a asp-action="Create" class="btn btn-success">Thêm mới</a>
+</div>
+
+<table class="table table-hover border">
+    <thead class="table-light">
+        <tr>
+            <th>Tên Màu sắc</th>
+            <th>Trạng thái</th>
+            <th class="text-center">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.TenMauSac</td>
+                <td>
+                    <span class="badge @(item.TrangThai == true ? "bg-success" : "bg-secondary")">
+                        @(item.TrangThai == true ? "Hoạt động" : "Ngừng hoạt động")
+                    </span>
+                </td>
+                <td class="text-center">
+                    <a asp-action="Edit" asp-route-id="@item.IDMauSac" class="btn btn-sm btn-outline-primary">Sửa</a>
+                    <a asp-action="Details" asp-route-id="@item.IDMauSac" class="btn btn-sm btn-outline-info">Chi tiết</a>
+                    <a asp-action="Delete" asp-route-id="@item.IDMauSac" class="btn btn-sm btn-outline-danger">Xóa</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

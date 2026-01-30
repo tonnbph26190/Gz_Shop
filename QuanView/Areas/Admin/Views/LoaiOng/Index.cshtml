@@ -1,0 +1,35 @@
+﻿@model IEnumerable<QuanApi.Data.LoaiOng>
+
+@{
+    ViewData["Title"] = "Danh sách";
+}
+
+<h1>Danh sách</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Tạo mới</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên</th>
+            <th>Trạng Thái</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.TenLoaiOng</td> @* Change 'TenLoai' to your actual property name *@
+                <td>@item.TrangThai</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.IDLoaiOng">Sửa</a> |
+                    <a asp-action="Details" asp-route-id="@item.IDLoaiOng">Chi tiết</a> |
+                    <a asp-action="Delete" asp-route-id="@item.IDLoaiOng">Xóa</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

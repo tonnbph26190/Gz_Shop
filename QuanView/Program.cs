@@ -1,14 +1,7 @@
 using BanQuanAu1.Web.Data;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.OAuth;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Services;
 using QuanView.Models;
-using QuanView.Services;
-using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,7 +42,6 @@ builder.Services.AddSingleton(emailConfig);
 
 //Connect VNPay API
 builder.Services.AddScoped<IVnPayService, VnPayService>();
-
 
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 //builder.Services.AddAuthentication(options =>
@@ -129,6 +121,11 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddScoped<IMauSacService, MauSacService>();
+builder.Services.AddScoped<ILungQuanService, LungQuanService>();
+builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
+
 var app = builder.Build();
 
 // 7️⃣ MIDDLEWARE PIPELINE
@@ -161,4 +158,3 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-

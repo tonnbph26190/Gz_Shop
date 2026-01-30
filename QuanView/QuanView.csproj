@@ -39,6 +39,7 @@
     <Folder Include="Areas\Admin\Views\LoaiOng\" />
     <Folder Include="Areas\Admin\Views\LungQuan\" />
     <Folder Include="Areas\Admin\Views\MauSac\" />
+    <Folder Include="Areas\Admin\Views\NhanViens\" />
     <Folder Include="Areas\Admin\Views\PhieuGiamGia\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />

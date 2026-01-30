@@ -1,367 +1,402 @@
-﻿using BanQuanAu1.Web.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using BanQuanAu1.Web.Data;
+using QuanApi.Data;
+using Microsoft.Extensions.Logging;
+using AutoMapper;
 using QuanApi.Dtos;
-using System.Security.Claims;
 using System.Text.Json;
+using System.Security.Claims;
 
-namespace QuanView.Areas.Admin.Controllers
+namespace QuanApi.Controllers
 {
-    [Area("Admin")]
-    public class NhanViensController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class NhanVienController : ControllerBase
     {
-
         private readonly BanQuanAu1DbContext _context;
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<NhanViensController> _logger;
+        private readonly ILogger<NhanVienController> _logger;
+        private readonly IMapper _mapper;
 
-        public NhanViensController(IHttpClientFactory httpClientFactory, ILogger<NhanViensController> logger, BanQuanAu1DbContext context)
+        public NhanVienController(BanQuanAu1DbContext context, ILogger<NhanVienController> logger, IMapper mapper)
         {
-            _httpClient = httpClientFactory.CreateClient("MyApi");
-            _logger = logger;
             _context = context;
+            _logger = logger;
+            _mapper = mapper;
         }
 
-        // GET: Admin/NhanViens
-        public async Task<IActionResult> Index(string? searchTerm, Guid? idVaiTro, bool? trangThai, int pageNumber = 1, int pageSize = 10)
+        // GET: api/NhanVien
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResultGeneric<NhanVienResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PagedResultGeneric<NhanVienResponseDto>>> GetNhanViens([FromQuery] NhanVienFilterDto filter)
         {
-
-            _logger.LogInformation("Truy cập trang Index của NhanViensController với filter: searchTerm={SearchTerm}, idVaiTro={IDVaiTro}, trangThai={TrangThai}, pageNumber={PageNumber}, pageSize={PageSize}.",
-                                    searchTerm, idVaiTro, trangThai, pageNumber, pageSize);
+            _logger.LogInformation("Retrieving employees with filter: {@Filter}", filter);
             try
             {
-                var filter = new NhanVienFilterDto
+                var query = _context.NhanViens.Include(n => n.VaiTro).AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
                 {
-                    SearchTerm = searchTerm,
-                    IDVaiTro = idVaiTro,
-                    TrangThai = trangThai,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize
+                    query = query.Where(nv =>
+                        nv.MaNhanVien.Contains(filter.SearchTerm) ||
+                        nv.TenNhanVien.Contains(filter.SearchTerm) ||
+                        nv.Email.Contains(filter.SearchTerm) ||
+                        nv.SoDienThoai.Contains(filter.SearchTerm) ||
+                        (nv.QueQuan != null && nv.QueQuan.Contains(filter.SearchTerm)) ||
+                        (nv.CCCD != null && nv.CCCD.Contains(filter.SearchTerm)));
+                }
+
+                if (filter.IDVaiTro.HasValue && filter.IDVaiTro.Value != Guid.Empty)
+                {
+                    query = query.Where(nv => nv.IDVaiTro == filter.IDVaiTro.Value);
+                }
+
+                if (filter.TrangThai.HasValue)
+                {
+                    query = query.Where(nv => nv.TrangThai == filter.TrangThai.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.SortBy))
+                {
+                    switch (filter.SortBy.ToLower())
+                    {
+                        case "manhanvien":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.MaNhanVien) : query.OrderBy(nv => nv.MaNhanVien);
+                            break;
+
+                        case "tennhanvien":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.TenNhanVien) : query.OrderBy(nv => nv.TenNhanVien);
+                            break;
+
+                        case "email":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.Email) : query.OrderBy(nv => nv.Email);
+                            break;
+
+                        case "sodienthoai":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.SoDienThoai) : query.OrderBy(nv => nv.SoDienThoai);
+                            break;
+
+                        case "ngaysinh":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgaySinh) : query.OrderBy(nv => nv.NgaySinh);
+                            break;
+
+                        case "gioitinh":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.GioiTinh) : query.OrderBy(nv => nv.GioiTinh);
+                            break;
+
+                        case "quequan":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.QueQuan) : query.OrderBy(nv => nv.QueQuan);
+                            break;
+
+                        case "cccd":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.CCCD) : query.OrderBy(nv => nv.CCCD);
+                            break;
+
+                        case "tenvaitro":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.VaiTro.TenVaiTro) : query.OrderBy(nv => nv.VaiTro.TenVaiTro);
+                            break;
+
+                        case "trangthai":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.TrangThai) : query.OrderBy(nv => nv.TrangThai);
+                            break;
+
+                        case "ngaytao":
+                            query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgayTao) : query.OrderBy(nv => nv.NgayTao);
+                            break;
+
+                        default:
+                            query = query.OrderBy(nv => nv.NgayTao);
+                            break;
+                    }
+                }
+                else
+                {
+                    query = query.OrderBy(nv => nv.NgayTao);
+                }
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((filter.PageNumber - 1) * filter.PageSize)
+                    .Take(filter.PageSize)
+                    .ToListAsync();
+
+                var itemDtos = _mapper.Map<List<NhanVienResponseDto>>(items);
+
+                var pagedResult = new PagedResultGeneric<NhanVienResponseDto>
+                {
+                    Data = itemDtos,
+                    TotalCount = totalCount,
+                    PageNumber = filter.PageNumber,
+                    PageSize = filter.PageSize,
                 };
 
-                var response = await _httpClient.GetAsync($"NhanVien?{filter.ToQueryString()}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var pagedResult = await response.Content.ReadFromJsonAsync<PagedResultGeneric<NhanVienResponseDto>>();
-
-                    ViewBag.SearchTerm = searchTerm;
-                    ViewBag.IDVaiTro = idVaiTro;
-                    ViewBag.TrangThai = trangThai;
-                    ViewBag.PageNumber = pageNumber;
-                    ViewBag.PageSize = pageSize;
-
-                    return View(pagedResult);
-                }
-                else
-                {
-                    _logger.LogError("Lỗi khi lấy danh sách nhân viên từ API: {StatusCode} - {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
-                    TempData["ErrorMessage"] = "Không thể tải danh sách nhân viên từ API.";
-                    return View(new PagedResultGeneric<NhanVienResponseDto>());
-                }
+                return Ok(pagedResult);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception khi lấy danh sách nhân viên.");
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải dữ liệu nhân viên.";
-                return View(new PagedResultGeneric<NhanVienResponseDto>());
+                _logger.LogError(ex, "Error retrieving employees with filter: {@Filter}", filter);
+                return StatusCode(500, "Internal server error when retrieving employees.");
             }
         }
 
-        // GET: Admin/NhanViens/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        // GET: api/NhanVien/5
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NhanVienResponseDto))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<NhanVienResponseDto>> GetNhanVien(Guid id)
         {
-            if (id == null)
-            {
-                _logger.LogWarning("Details: ID nhân viên là null.");
-                return NotFound();
-            }
-
+            _logger.LogInformation("Retrieving employee with ID: {Id}", id);
             try
             {
-                var response = await _httpClient.GetAsync($"NhanVien/{id}");
+                var nhanVien = await _context.NhanViens
+                    .Include(n => n.VaiTro)
+                    .FirstOrDefaultAsync(m => m.IDNhanVien == id);
 
-                if (response.IsSuccessStatusCode)
+                if (nhanVien == null)
                 {
-                    var nhanVien = await response.Content.ReadFromJsonAsync<NhanVienResponseDto>();
-                    if (nhanVien == null)
-                    {
-                        _logger.LogWarning("Details: Không tìm thấy nhân viên với ID: {Id} từ API.", id);
-                        return NotFound();
-                    }
-                    return View(nhanVien);
+                    _logger.LogWarning("Employee with ID: {Id} not found.", id);
+                    return NotFound($"Employee with ID {id} not found.");
                 }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    _logger.LogWarning("Details: API trả về 404 cho ID: {Id}.", id);
-                    return NotFound();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Lỗi khi lấy chi tiết nhân viên từ API: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    TempData["ErrorMessage"] = "Không thể tải chi tiết nhân viên từ API.";
-                    return BadRequest("Không thể tải thông tin nhân viên");
-                }
+
+                var nhanVienDto = _mapper.Map<NhanVienResponseDto>(nhanVien);
+                return Ok(nhanVienDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception khi lấy chi tiết nhân viên {Id}.", id);
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải dữ liệu chi tiết nhân viên.";
-                return BadRequest("Có lỗi xảy ra khi tải dữ liệu");
+                _logger.LogError(ex, "Error retrieving employee with ID: {Id}", id);
+                return StatusCode(500, $"Internal server error when retrieving employee with ID {id}.");
             }
         }
 
-        // GET: Admin/NhanViens/Create
-        public IActionResult Create()
-        {
+        // POST: api/NhanVien
 
-            return View(new NhanVienCreateDto());
-        }
-
-        // POST: Admin/NhanViens/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MaNhanVien,TenNhanVien,Email,MatKhau,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiTao")] NhanVienCreateDto createDto)
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(NhanVienResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<NhanVienResponseDto>> PostNhanVien([FromBody] NhanVienCreateDto nhanVienCreateDto)
         {
-            if (!ModelState.IsValid)
-            {
-                var modelErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                _logger.LogWarning("Create: ModelState không hợp lệ. Lỗi: {Errors}", modelErrors);
-                return View(createDto);
-            }
-
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("NhanVien", createDto);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    TempData["SuccessMessage"] = "Tạo nhân viên thành công!";
-                    return RedirectToAction(nameof(Index));
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Lỗi khi tạo nhân viên qua API: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    try
-                    {
-                        var apiError = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(errorContent);
-                        if (apiError != null && apiError.ContainsKey("errors"))
-                        {
-                            foreach (var propError in apiError["errors"].EnumerateObject())
-                            {
-                                foreach (var errorValue in propError.Value.EnumerateArray())
-                                {
-                                    ModelState.AddModelError(propError.Name, errorValue.GetString() ?? "Lỗi không xác định");
-                                }
-                            }
-                        }
-                        else if (apiError != null && apiError.ContainsKey("message"))
-                        {
-                            ModelState.AddModelError(string.Empty, apiError["message"].GetString() ?? "Có lỗi xảy ra khi tạo nhân viên");
-                        }
-                        else
-                        {
-                            ModelState.AddModelError(string.Empty, $"Có lỗi xảy ra khi tạo nhân viên: {errorContent}");
-                        }
-                    }
-                    catch (JsonException)
-                    {
-                        ModelState.AddModelError(string.Empty, $"Có lỗi xảy ra khi tạo nhân viên: {errorContent}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception khi tạo nhân viên.");
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi tạo nhân viên.");
-            }
-
-            return View(createDto);
-        }
-        // GET: Admin/NhanViens/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
-        {
-            if (id == null)
-            {
-                _logger.LogWarning("Edit: ID nhân viên là null.");
-                return NotFound();
-            }
-
-            try
-            {
-                var response = await _httpClient.GetAsync($"NhanVien/{id}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var nhanVienResponseDto = await response.Content.ReadFromJsonAsync<NhanVienResponseDto>();
-                    if (nhanVienResponseDto == null)
-                    {
-                        _logger.LogWarning("Edit: Không tìm thấy nhân viên với ID: {Id} từ API.", id);
-                        return NotFound();
-                    }
-
-                    var updateDto = new NhanVienUpdateDto
-                    {
-                        MaNhanVien = nhanVienResponseDto.MaNhanVien,
-                        TenNhanVien = nhanVienResponseDto.TenNhanVien,
-                        Email = nhanVienResponseDto.Email,
-                        SoDienThoai = nhanVienResponseDto.SoDienThoai,
-                        NgaySinh = nhanVienResponseDto.NgaySinh,
-                        GioiTinh = nhanVienResponseDto.GioiTinh,
-                        QueQuan = nhanVienResponseDto.QueQuan,
-                        CCCD = nhanVienResponseDto.CCCD,
-                        IDVaiTro = nhanVienResponseDto.IDVaiTro,
-                        TrangThai = nhanVienResponseDto.TrangThai,
-                        MatKhau = null
-                    };
-
-                    var currentUserId = GetCurrentUserId();
-                    ViewBag.IsCurrentUser = currentUserId.HasValue && currentUserId.Value == id;
-                    _logger.LogInformation("Is current user editing their own profile? {IsCurrentUser}", (bool?)ViewBag.IsCurrentUser);
-
-                    await LoadVaiTroDropdown();
-                    ViewBag.NhanVienId = id;
-                    return View(updateDto);
-                }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    _logger.LogWarning("Edit: API trả về 404 cho ID: {Id}.", id);
-                    return NotFound();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Lỗi khi lấy chi tiết nhân viên để chỉnh sửa từ API: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    TempData["ErrorMessage"] = "Không thể tải thông tin nhân viên để chỉnh sửa từ API.";
-                    return BadRequest("Không thể tải thông tin nhân viên");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception khi tải trang chỉnh sửa nhân viên {Id}.", id);
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải trang chỉnh sửa nhân viên.";
-                return BadRequest("Có lỗi xảy ra khi tải dữ liệu");
-            }
-        }
-
-        // POST: Admin/NhanViens/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("MaNhanVien,TenNhanVien,Email,MatKhau,SoDienThoai,NgaySinh,GioiTinh,QueQuan,CCCD,IDVaiTro,TrangThai,IDNguoiCapNhat")] NhanVienUpdateDto updateDto)
-        {
-            var currentUserId = GetCurrentUserId();
-            if (currentUserId.HasValue && id == currentUserId.Value)
-            {
-                var nhanVienHienTai = await _httpClient.GetFromJsonAsync<NhanVienResponseDto>($"NhanVien/{id}");
-                if (nhanVienHienTai != null && nhanVienHienTai.TrangThai != updateDto.TrangThai)
-                {
-                    ModelState.AddModelError(string.Empty, "Bạn không thể tự thay đổi trạng thái của mình.");
-                    await LoadVaiTroDropdown();
-                    ViewBag.NhanVienId = id;
-                    ViewBag.IsCurrentUser = true;
-                    return View(updateDto);
-                }
-            }
+            _logger.LogInformation("Attempting to create new employee: {@Dto}", nhanVienCreateDto);
 
             if (!ModelState.IsValid)
             {
-                var modelErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                _logger.LogWarning("Edit: ModelState không hợp lệ cho nhân viên ID: {Id}. Lỗi: {Errors}", id, modelErrors);
-                await LoadVaiTroDropdown();
-                ViewBag.NhanVienId = id;
-                return View(updateDto);
+                _logger.LogWarning("Invalid model state for employee creation. Errors: {@ModelStateErrors}",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
+                return BadRequest(ModelState);
             }
 
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"NhanVien/{id}", updateDto);
+                var emailExists = await _context.NhanViens.AnyAsync(nv => nv.Email == nhanVienCreateDto.Email);
+                if (emailExists)
+                {
+                    _logger.LogWarning("Email '{Email}' already exists.", nhanVienCreateDto.Email);
+                    return BadRequest($"Email '{nhanVienCreateDto.Email}' đã tồn tại.");
+                }
 
-                if (response.IsSuccessStatusCode)
+                var maNhanVienExists = await _context.NhanViens.AnyAsync(nv => nv.MaNhanVien == nhanVienCreateDto.MaNhanVien);
+                if (maNhanVienExists)
                 {
-                    TempData["SuccessMessage"] = "Cập nhật nhân viên thành công!";
-                    return RedirectToAction(nameof(Details), new { id });
+                    _logger.LogWarning("MaNhanVien '{MaNhanVien}' already exists.", nhanVienCreateDto.MaNhanVien);
+                    return BadRequest($"Mã nhân viên '{nhanVienCreateDto.MaNhanVien}' đã tồn tại.");
                 }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+                if (nhanVienCreateDto.IDVaiTro == Guid.Empty || !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienCreateDto.IDVaiTro))
                 {
-                    _logger.LogWarning("Edit: API trả về 404 khi cập nhật nhân viên ID: {Id}.", id);
-                    TempData["ErrorMessage"] = "Không tìm thấy nhân viên để cập nhật.";
-                    return NotFound();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Lỗi khi cập nhật nhân viên qua API: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    try
+                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.ToLower() == "admin");
+                    if (adminRole == null)
                     {
-                        var apiError = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(errorContent);
-                        if (apiError != null && apiError.ContainsKey("errors"))
-                        {
-                            foreach (var propError in apiError["errors"].EnumerateObject())
-                            {
-                                foreach (var errorValue in propError.Value.EnumerateArray())
-                                {
-                                    ModelState.AddModelError(propError.Name, errorValue.GetString() ?? "Lỗi không xác định");
-                                }
-                            }
-                        }
-                        else if (apiError != null && apiError.ContainsKey("message"))
-                        {
-                            ModelState.AddModelError(string.Empty, apiError["message"].GetString() ?? "Có lỗi xảy ra khi cập nhật nhân viên");
-                        }
-                        else
-                        {
-                            ModelState.AddModelError(string.Empty, $"Có lỗi xảy ra khi cập nhật nhân viên: {errorContent}");
-                        }
+                        return BadRequest("Không tìm thấy vai trò Admin trong hệ thống. Vui lòng tạo trước.");
                     }
-                    catch (JsonException)
-                    {
-                        ModelState.AddModelError(string.Empty, $"Có lỗi xảy ra khi cập nhật nhân viên: {errorContent}");
-                    }
+                    nhanVienCreateDto.IDVaiTro = adminRole.IDVaiTro;
                 }
+
+                var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
+                nhanVien.IDNhanVien = Guid.NewGuid();
+                nhanVien.NgayTao = DateTime.Now;
+                nhanVien.NguoiTao = nhanVienCreateDto.IDNguoiTao.ToString();
+                nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
+
+                _context.NhanViens.Add(nhanVien);
+                await _context.SaveChangesAsync();
+
+                await _context.Entry(nhanVien).Reference(n => n.VaiTro).LoadAsync();
+
+                var response = _mapper.Map<NhanVienResponseDto>(nhanVien);
+                return CreatedAtAction(nameof(GetNhanVien), new { id = nhanVien.IDNhanVien }, response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception khi cập nhật nhân viên {Id}.", id);
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi cập nhật nhân viên.");
+                _logger.LogError(ex, "Error creating employee: {@Dto}", nhanVienCreateDto);
+                return StatusCode(500, new
+                {
+                    message = "Internal server error when creating employee.",
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
-
-            await LoadVaiTroDropdown();
-            ViewBag.NhanVienId = id;
-            return View(updateDto);
         }
 
-        private Guid? GetCurrentUserId()
+        // PUT: api/NhanVien/5
+        [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> PutNhanVien(Guid id, [FromBody] NhanVienUpdateDto nhanVienUpdateDto)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (Guid.TryParse(userIdClaim, out Guid userId))
+            _logger.LogInformation("Attempting to update employee with ID: {Id}. DTO: {@Dto}", id, nhanVienUpdateDto);
+
+            if (!ModelState.IsValid)
             {
-                return userId;
+                _logger.LogWarning("Invalid model state for employee update (ID: {Id}). Errors: {@ModelStateErrors}",
+                    id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
+                return BadRequest(ModelState);
             }
-            return null;
+
+            try
+            {
+                var nhanVienToUpdate = await _context.NhanViens.FindAsync(id);
+                if (nhanVienToUpdate == null)
+                {
+                    _logger.LogWarning("Employee with ID: {Id} not found for update.", id);
+                    return NotFound($"Employee with ID {id} not found.");
+                }
+
+                var maNhanVienExists = await _context.NhanViens
+                                                     .AnyAsync(nv => nv.MaNhanVien == nhanVienUpdateDto.MaNhanVien && nv.IDNhanVien != id);
+                if (maNhanVienExists)
+                {
+                    _logger.LogWarning("MaNhanVien '{MaNhanVien}' already exists for another employee.", nhanVienUpdateDto.MaNhanVien);
+                    return BadRequest($"Mã nhân viên '{nhanVienUpdateDto.MaNhanVien}' đã tồn tại.");
+                }
+
+                var currentUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(currentUserIdClaim) && id.ToString() == currentUserIdClaim)
+                {
+                    if (nhanVienToUpdate.TrangThai != nhanVienUpdateDto.TrangThai)
+                    {
+                        _logger.LogWarning("User with ID {currentUserIdClaim} attempted to change their own status from {oldStatus} to {newStatus}.",
+                            currentUserIdClaim, nhanVienToUpdate.TrangThai, nhanVienUpdateDto.TrangThai);
+                        return BadRequest("Bạn không thể thay đổi trạng thái của chính mình.");
+                    }
+                }
+
+                if (nhanVienUpdateDto.IDVaiTro == Guid.Empty || !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienUpdateDto.IDVaiTro))
+                {
+                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.ToLower() == "admin");
+                    if (adminRole == null)
+                    {
+                        return BadRequest("Không tìm thấy vai trò Admin trong hệ thống. Vui lòng tạo trước.");
+                    }
+                    nhanVienUpdateDto.IDVaiTro = adminRole.IDVaiTro;
+                }
+
+                _mapper.Map(nhanVienUpdateDto, nhanVienToUpdate);
+                if (!string.IsNullOrEmpty(nhanVienUpdateDto.MatKhau))
+                {
+                    nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau;
+                }
+                nhanVienToUpdate.LanCapNhatCuoi = DateTime.Now;
+                nhanVienToUpdate.NguoiCapNhat = currentUserIdClaim;
+
+                _context.Entry(nhanVienToUpdate).State = EntityState.Modified;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Employee with ID: {Id} updated successfully.", id);
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    if (!NhanVienExists(id))
+                    {
+                        _logger.LogWarning(ex, "Put: Employee with ID: {Id} not found during update (concurrency check).", id);
+                        return NotFound($"Employee with ID {id} not found.");
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "Put: Concurrency error when updating employee with ID: {Id}", id);
+                        throw;
+                    }
+                }
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating employee with ID: {Id}", id);
+                return StatusCode(500, $"Internal server error when updating employee with ID {id}.");
+            }
         }
 
-        private async Task LoadVaiTroDropdown()
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteNhanVien(Guid id)
+        {
+            _logger.LogInformation("Deleting employee with ID: {Id}", id);
+            try
+            {
+                var nhanVien = await _context.NhanViens.FindAsync(id);
+                if (nhanVien == null)
+                {
+                    _logger.LogWarning("Delete: Employee with ID: {Id} not found.", id);
+                    return NotFound($"Employee with ID {id} not found.");
+                }
+
+                _context.NhanViens.Remove(nhanVien);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Employee with ID: {Id} deleted successfully.", id);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting employee with ID: {Id}", id);
+                return StatusCode(500, $"Internal server error when deleting employee with ID {id}.");
+            }
+        }
+
+        private bool NhanVienExists(Guid id)
+        {
+            return _context.NhanViens.Any(e => e.IDNhanVien == id);
+        }
+
+        [HttpGet]
+        [Route("employee-role-stats")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<object>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetEmployeeRoleStats()
         {
             try
             {
-                var response = await _httpClient.GetAsync("VaiTro");
-                if (response.IsSuccessStatusCode)
-                {
-                    var vaiTros = await response.Content.ReadFromJsonAsync<List<VaiTroDto>>();
-                    ViewData["IDVaiTro"] = new SelectList(vaiTros, "IDVaiTro", "TenVaiTro");
-                }
-                else
-                {
-                    _logger.LogWarning("Không thể tải danh sách vai trò từ API: {StatusCode}", response.StatusCode);
-                    ViewData["IDVaiTro"] = new SelectList(new List<VaiTroDto>(), "IDVaiTro", "TenVaiTro");
-                }
+                var stats = await _context.NhanViens
+                    .Include(nv => nv.VaiTro)
+                    .Where(nv => nv.TrangThai)
+                    .GroupBy(nv => nv.VaiTro.TenVaiTro)
+                    .Select(g => new
+                    {
+                        RoleName = g.Key,
+                        EmployeeCount = g.Count()
+                    })
+                    .OrderBy(x => x.RoleName)
+                    .ToListAsync();
+
+                _logger.LogInformation("Retrieved employee role stats: {StatsCount} roles.", stats.Count);
+                return Ok(stats);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi tải danh sách vai trò cho dropdown.");
-                ViewData["IDVaiTro"] = new SelectList(new List<VaiTroDto>(), "IDVaiTro", "TenVaiTro");
+                _logger.LogError(ex, "Error retrieving employee role stats.");
+                return StatusCode(500, new { message = "Lỗi khi tải dữ liệu thống kê vai trò nhân viên." });
             }
         }
     }

@@ -8,7 +8,6 @@ using QuanApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -21,13 +20,10 @@ builder.Services.AddScoped<IKhachHangService, KhachHangService>();
 builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
 builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
-
-builder.Services.AddScoped<DotGiamGiaIRepository,DotGiamGiaRepository>();
+builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
-
-
-
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
 builder.Services.AddScoped<ISanPhamService, SanPhamService>();
 builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
@@ -38,7 +34,7 @@ builder.Services.AddScoped<SanPhamValidationService>();
 builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
+builder.Services.AddScoped<IHoaTietService, HoaTietService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
@@ -77,7 +73,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
