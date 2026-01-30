@@ -52,58 +52,58 @@ builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie(options =>
-{
-    options.LoginPath = "/Login/Index";
-    options.LogoutPath = "/Login/Logout";
-    options.AccessDeniedPath = "/Login/AccessDenied";
-})
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
-    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.CallbackPath = "/signin-google";
-    options.Scope.Add("profile");
-    options.ClaimActions.MapJsonKey("picture", "picture", "url");
+//builder.Services.AddAuthentication(options =>
+//{
+//    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+//})
+//.AddCookie(options =>
+//{
+//    options.LoginPath = "/Login/Index";
+//    options.LogoutPath = "/Login/Logout";
+//    options.AccessDeniedPath = "/Login/AccessDenied";
+//})
+//.AddGoogle(options =>
+//{
+//    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
+//    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
+//    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.CallbackPath = "/signin-google";
+//    options.Scope.Add("profile");
+//    options.ClaimActions.MapJsonKey("picture", "picture", "url");
 
-    options.Events = new OAuthEvents
-    {
-        OnRemoteFailure = context =>
-        {
-            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
-            context.HandleResponse();
-            return Task.CompletedTask;
-        },
-        OnCreatingTicket = ctx =>
-        {
-            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(name))
-            {
-                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
+//    options.Events = new OAuthEvents
+//    {
+//        OnRemoteFailure = context =>
+//        {
+//            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
+//            context.HandleResponse();
+//            return Task.CompletedTask;
+//        },
+//        OnCreatingTicket = ctx =>
+//        {
+//            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
+//            if (!string.IsNullOrEmpty(name))
+//            {
+//                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
+//            }
+//            return Task.CompletedTask;
+//        }
+//    };
+//});
 
 // 3️⃣ CẤU HÌNH AUTHORIZATION
-builder.Services.AddAuthorization(options =>
-{
-    // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
-    options.AddPolicy("AdminPolicy", policy =>
-        policy.RequireRole("admin", "nhanvien"));
+//builder.Services.AddAuthorization(options =>
+//{
+//    // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
+//    options.AddPolicy("AdminPolicy", policy =>
+//        policy.RequireRole("admin", "nhanvien"));
 
-    // Policy cho khách hàng
-    options.AddPolicy("CustomerPolicy", policy =>
-        policy.RequireRole("KhachHang"));
-});
+//    // Policy cho khách hàng
+//    options.AddPolicy("CustomerPolicy", policy =>
+//        policy.RequireRole("KhachHang"));
+//});
 
 // 4️⃣ CẤU HÌNH CORS CHO FRONTEND
 builder.Services.AddCors(options =>
