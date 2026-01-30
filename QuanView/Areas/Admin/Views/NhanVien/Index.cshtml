@@ -1,0 +1,52 @@
+﻿@model IEnumerable<QuanApi.Dtos.NhanVienResponseDto>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Quản Lý Nhân Viên</h3>
+        <a asp-action="Create" class="btn btn-primary">Thêm Nhân Viên Mới</a>
+    </div>
+
+    <div class="table-responsive bg-white p-3 shadow-sm rounded">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Họ Tên</th>
+                    <th>Liên Hệ</th>
+                    <th>Vai Trò</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-center">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@item.MaNhanVien</td>
+                        <td>
+                            <div>@item.TenNhanVien</div>
+                            <small class="text-muted">@item.CCCD</small>
+                        </td>
+                        <td>
+                            <div class="small">@item.Email</div>
+                            <div class="small text-muted">@item.SoDienThoai</div>
+                        </td>
+                        <td>@item.TenVaiTro</td>
+                        <td>
+                            <span class="badge @(item.TrangThai ? "bg-success" : "bg-danger")">
+                                @(item.TrangThai ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <a asp-action="Details" asp-route-id="@item.IDNhanVien" class="btn btn-sm btn-outline-info">Xem</a>
+                                <a asp-action="Edit" asp-route-id="@item.IDNhanVien" class="btn btn-sm btn-outline-warning">Sửa</a>
+                                <a asp-action="Delete" asp-route-id="@item.IDNhanVien" class="btn btn-sm btn-outline-danger">Xóa</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

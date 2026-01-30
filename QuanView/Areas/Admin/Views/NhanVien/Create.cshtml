@@ -1,0 +1,75 @@
+﻿@model QuanApi.Dtos.NhanVienCreateDto
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Create New Staff Member</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="TenNhanVien" class="form-label font-weight-bold">Full Name</label>
+                            <input asp-for="TenNhanVien" class="form-control" placeholder="Nguyen Van A" />
+                            <span asp-validation-for="TenNhanVien" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email Address</label>
+                            <input asp-for="Email" type="email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CCCD" class="form-label">Citizen ID (CCCD)</label>
+                            <input asp-for="CCCD" class="form-control" />
+                            <span asp-validation-for="CCCD" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SoDienThoai" class="form-label">Phone Number</label>
+                            <input asp-for="SoDienThoai" class="form-control" />
+                            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="NgaySinh" class="form-label">Date of Birth</label>
+                            <input asp-for="NgaySinh" type="date" class="form-control" />
+                            <span asp-validation-for="NgaySinh" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="GioiTinh" class="form-label">Gender</label>
+                            <select asp-for="GioiTinh" class="form-select">
+                                <option value="true">Male</option>
+                                <option value="false">Female</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="QueQuan" class="form-label">Hometown (Que Quan)</label>
+                            <input asp-for="QueQuan" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3 mt-3">
+                    <button type="submit" class="btn btn-primary px-4">Save Employee</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
