@@ -22,10 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Services\IChatLieuService.cs" />
     <Compile Include="Services\IEmailService.cs" />
-    <Compile Include="Services\IKichCoService.cs" />
-    <Compile Include="Services\IKieuDangService.cs" />
     <Compile Include="Services\IVnPayService.cs" />
     <Compile Include="Services\VnPayLibraryApi.cs" />
   </ItemGroup>
@@ -48,6 +45,7 @@
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />
     <Folder Include="Areas\Admin\Views\SanPham\" />
+    <Folder Include="Areas\Controllers\" />
     <Folder Include="Views\Checkout\" />
     <Folder Include="Views\DonHang\" />
     <Folder Include="Views\GioHang\" />
