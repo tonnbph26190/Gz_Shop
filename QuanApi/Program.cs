@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Repository;
+using QuanApi.Repository.IRepository;
 using QuanApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -20,9 +20,10 @@ builder.Services.AddScoped<IKhachHangService, KhachHangService>();
 builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
 builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
-builder.Services.AddScoped<DotGiamGiaRepository>();
+builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
-
+builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
 builder.Services.AddScoped<ISanPhamService, SanPhamService>();
 builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
@@ -33,8 +34,7 @@ builder.Services.AddScoped<SanPhamValidationService>();
 builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-builder.Services.AddScoped<IHoaTietService,  HoaTietService>();
-builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<IHoaTietService, HoaTietService>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
@@ -42,13 +42,13 @@ builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanServi
 builder.Services.AddScoped<IHoaDonService, HoaDonService>();
 builder.Services.AddScoped<IGioHangService, GioHangService>();
 builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
-
-
+builder.Services.AddScoped<ILungQuanService, LungQuanService>();
+builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
 
 //builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
-//builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
+builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
@@ -73,7 +73,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
