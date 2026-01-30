@@ -8,25 +8,27 @@ namespace QuanApi.Services
 {
     public interface INhanVienService
     {
-        Task<PagedResultGeneric<NhanVienResponseDto>> GetNhanViensAsync(NhanVienFilterDto filter);
-        Task<NhanVienResponseDto> GetNhanVienByIdAsync(Guid id);
-        Task<NhanVienResponseDto> CreateNhanVienAsync(NhanVienCreateDto createDto);
-        Task UpdateNhanVienAsync(Guid id, NhanVienUpdateDto updateDto, string currentUserId);
-        Task<bool> DeleteNhanVienAsync(Guid id);
-        Task<IEnumerable<object>> GetEmployeeRoleStatsAsync();
+        Task<PagedResultGeneric<NhanVienResponseDto>> GetPagedEmployeesAsync(NhanVienFilterDto filter);
+        Task<NhanVienResponseDto> GetByIdAsync(Guid id);
+        Task<NhanVienResponseDto> CreateAsync(NhanVienCreateDto createDto);
+        Task UpdateAsync(Guid id, NhanVienUpdateDto updateDto, string currentUserId);
+        Task DeleteAsync(Guid id);
+        Task<IEnumerable<object>> GetRoleStatsAsync();
     }
     public class NhanVienService : INhanVienService
     {
         private readonly BanQuanAu1DbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<NhanVienService> _logger;
 
-        public NhanVienService(BanQuanAu1DbContext context, IMapper mapper)
+        public NhanVienService(BanQuanAu1DbContext context, IMapper mapper, ILogger<NhanVienService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
-        public async Task<PagedResultGeneric<NhanVienResponseDto>> GetNhanViensAsync(NhanVienFilterDto filter)
+        public async Task<PagedResultGeneric<NhanVienResponseDto>> GetPagedEmployeesAsync(NhanVienFilterDto filter)
         {
             var query = _context.NhanViens.Include(n => n.VaiTro).AsQueryable();
 
@@ -38,15 +40,19 @@ namespace QuanApi.Services
                                          nv.Email.Contains(filter.SearchTerm));
             }
 
-            if (filter.IDVaiTro.HasValue && filter.IDVaiTro.Value != Guid.Empty)
-                query = query.Where(nv => nv.IDVaiTro == filter.IDVaiTro.Value);
+            if (filter.IDVaiTro.HasValue && filter.IDVaiTro != Guid.Empty)
+                query = query.Where(nv => nv.IDVaiTro == filter.IDVaiTro);
+
+            if (filter.TrangThai.HasValue)
+                query = query.Where(nv => nv.TrangThai == filter.TrangThai);
 
             // 2. Sorting logic (Simplified for brevity, keep your switch statement here)
-            query = ApplySorting(query, filter);
+            query = ApplySorting(query, filter.SortBy, filter.SortOrder);
 
             // 3. Paging
             var totalCount = await query.CountAsync();
-            var items = await query.Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize).ToListAsync();
+            var items = await query.Skip((filter.PageNumber - 1) * filter.PageSize)
+                                   .Take(filter.PageSize).ToListAsync();
 
             return new PagedResultGeneric<NhanVienResponseDto>
             {
@@ -57,16 +63,17 @@ namespace QuanApi.Services
             };
         }
 
-        public async Task<NhanVienResponseDto> GetNhanVienByIdAsync(Guid id)
+        public async Task<NhanVienResponseDto> GetByIdAsync(Guid id)
         {
-            var nhanVien = await _context.NhanViens.Include(n => n.VaiTro).FirstOrDefaultAsync(m => m.IDNhanVien == id);
-            return _mapper.Map<NhanVienResponseDto>(nhanVien);
+            var entity = await _context.NhanViens.Include(n => n.VaiTro)
+                .FirstOrDefaultAsync(m => m.IDNhanVien == id);
+            return _mapper.Map<NhanVienResponseDto>(entity);
         }
 
-        public async Task<NhanVienResponseDto> CreateNhanVienAsync(NhanVienCreateDto createDto)
+        public async Task<NhanVienResponseDto> CreateAsync(NhanVienCreateDto createDto)
         {
             if (await _context.NhanViens.AnyAsync(nv => nv.Email == createDto.Email))
-                throw new InvalidOperationException($"Email '{createDto.Email}' đã tồn tại.");
+                throw new ArgumentException($"Email '{createDto.Email}' đã tồn tại.");
 
             var nhanVien = _mapper.Map<NhanVien>(createDto);
             nhanVien.IDNhanVien = Guid.NewGuid();
@@ -79,12 +86,13 @@ namespace QuanApi.Services
             return _mapper.Map<NhanVienResponseDto>(nhanVien);
         }
 
-        public async Task UpdateNhanVienAsync(Guid id, NhanVienUpdateDto updateDto, string currentUserId)
+        public async Task UpdateAsync(Guid id, NhanVienUpdateDto updateDto, string currentUserId)
         {
             var existing = await _context.NhanViens.FindAsync(id);
             if (existing == null) throw new KeyNotFoundException("Employee not found");
 
-            if (id.ToString() == currentUserId && existing.TrangThai != updateDto.TrangThai)
+            // Prevent self-deactivation logic
+            if (currentUserId == id.ToString() && existing.TrangThai != updateDto.TrangThai)
                 throw new InvalidOperationException("Bạn không thể thay đổi trạng thái của chính mình.");
 
             _mapper.Map(updateDto, existing);
@@ -94,31 +102,28 @@ namespace QuanApi.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> DeleteNhanVienAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
-            var nhanVien = await _context.NhanViens.FindAsync(id);
-
-            if (nhanVien == null)
-                return false;
-
-            _context.NhanViens.Remove(nhanVien);
+            var entity = await _context.NhanViens.FindAsync(id);
+            if (entity == null) throw new KeyNotFoundException();
+            _context.NhanViens.Remove(entity);
             await _context.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<IEnumerable<object>> GetEmployeeRoleStatsAsync()
+        public async Task<IEnumerable<object>> GetRoleStatsAsync()
         {
-            return await _context.NhanViens
-                .Include(nv => nv.VaiTro)
+            return await _context.NhanViens.Include(nv => nv.VaiTro)
                 .Where(nv => nv.TrangThai)
                 .GroupBy(nv => nv.VaiTro.TenVaiTro)
                 .Select(g => new { RoleName = g.Key, EmployeeCount = g.Count() })
                 .ToListAsync();
         }
 
-        // Helper for sorting
-        private IQueryable<NhanVien> ApplySorting(IQueryable<NhanVien> query, NhanVienFilterDto filter)
-        { /* Paste your existing switch-case logic here */ return query; }
+        // Helper for sorting to keep the main method clean
+        private IQueryable<NhanVien> ApplySorting(IQueryable<NhanVien> query, string sortBy, string order)
+        {
+            // Insert your switch case logic here...
+            return query.OrderBy(n => n.NgayTao);
+        }
     }
 }

@@ -21,13 +21,10 @@ builder.Services.AddScoped<IKhachHangService, KhachHangService>();
 builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
 builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
-
 builder.Services.AddScoped<DotGiamGiaIRepository,DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
-
-
-
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IThuongHieuService, ThuongHieuService>();
 builder.Services.AddScoped<ISanPhamService, SanPhamService>();
 builder.Services.AddScoped<ISanPhamChiTietService, SanPhamChiTietService>();
