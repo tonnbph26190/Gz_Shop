@@ -14,6 +14,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Profiles\AutoMapperProfile.cs" />
+    <Compile Include="Profiles\DiaChiMappingProfile.cs" />
+    <Compile Include="Profiles\KhachHangMappingProfile.cs" />
+    <Compile Include="Profiles\MappingProfile.cs" />
+    <Compile Include="Profiles\NhanVienProfile.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
     <PackageReference Include="EPPlus" Version="8.0.5" />
@@ -45,7 +53,6 @@
 
 	<ItemGroup>
 		<Folder Include="Migrations\" />
-		<Folder Include="Profiles\" />
 		<Folder Include="Repository\" />
 		<Folder Include="Views\KhachHangPhieuGiams\" />
 		<Folder Include="Views\SanPhams\" />
