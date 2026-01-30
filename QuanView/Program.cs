@@ -124,6 +124,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IMauSacService, MauSacService>();
 builder.Services.AddScoped<ILungQuanService, LungQuanService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
+builder.Services.AddScoped<INhanVienService, NhanVienService>();
 
 var app = builder.Build();
 
