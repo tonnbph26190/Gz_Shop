@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -198,7 +198,7 @@ namespace QuanApi.Services
             var anhSanPham = new AnhSanPham
             {
                 IDAnhSanPham = Guid.NewGuid(),
-                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaAnh = $"IMG_{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDSanPhamChiTiet = sanPhamChiTietId,
                 UrlAnh = dto.UrlAnh,
                 LaAnhChinh = dto.LaAnhChinh,

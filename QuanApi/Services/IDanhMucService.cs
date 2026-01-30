@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 
@@ -43,7 +43,7 @@ namespace QuanApi.Services
         public async Task<bool> CreateAsync(DanhMuc dm)
         {
             dm.IDDanhMuc = Guid.NewGuid();
-            dm.NgayTao = DateTime.Now;
+            dm.NgayTao = DateTime.UtcNow;
             dm.NguoiTao ??= "unknown";
 
             _context.DanhMucs.Add(dm);
@@ -59,7 +59,7 @@ namespace QuanApi.Services
             entity.MaDanhMuc = dm.MaDanhMuc;
             entity.TrangThai = dm.TrangThai;
 
-            entity.LanCapNhatCuoi = DateTime.Now;
+            entity.LanCapNhatCuoi = DateTime.UtcNow;
             entity.NguoiCapNhat = string.IsNullOrEmpty(dm.NguoiCapNhat) ? "unknown" : dm.NguoiCapNhat;
 
             return await _context.SaveChangesAsync() > 0;
@@ -80,7 +80,7 @@ namespace QuanApi.Services
             if (dm == null) return false;
 
             dm.TrangThai = !dm.TrangThai;
-            dm.LanCapNhatCuoi = DateTime.Now;
+            dm.LanCapNhatCuoi = DateTime.UtcNow;
             dm.NguoiCapNhat = "auto-toggle";
 
             return await _context.SaveChangesAsync() > 0;

@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 public interface IHoaDonService
@@ -35,7 +35,7 @@ public class HoaDonService : IHoaDonService
     public async Task<HoaDon> CreateAsync(HoaDon hoaDon)
     {
         hoaDon.IDHoaDon = Guid.NewGuid();
-        hoaDon.NgayTao = DateTime.Now;
+        hoaDon.NgayTao = DateTime.UtcNow;
         hoaDon.TrangThai ??= "Chờ xác nhận";
 
         _context.HoaDons.Add(hoaDon);
@@ -50,7 +50,7 @@ public class HoaDonService : IHoaDonService
         if (hoaDon == null) return false;
 
         hoaDon.TrangThai = trangThai;
-        hoaDon.LanCapNhatCuoi = DateTime.Now;
+        hoaDon.LanCapNhatCuoi = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return true;

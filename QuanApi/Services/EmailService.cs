@@ -156,7 +156,7 @@ namespace QuanApi.Services
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
             sb.AppendLine($"<p><strong>Trạng thái cũ:</strong> <span style='color: #6c757d;'>{oldStatus}</span></p>");
             sb.AppendLine($"<p><strong>Trạng thái mới:</strong> <span style='color: #28a745; font-weight: bold;'>{newStatus}</span></p>");
-            sb.AppendLine($"<p><strong>Thời gian cập nhật:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>");
+            sb.AppendLine($"<p><strong>Thời gian cập nhật:</strong> {DateTime.UtcNow:dd/MM/yyyy HH:mm}</p>");
             sb.AppendLine("</div>");
 
             // Order details
@@ -223,7 +223,7 @@ namespace QuanApi.Services
                 sb.AppendLine("</div>");
             }
 
-            sb.AppendLine($"<p><strong>Thời gian hủy:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>");
+            sb.AppendLine($"<p><strong>Thời gian hủy:</strong> {DateTime.UtcNow:dd/MM/yyyy HH:mm}</p>");
             sb.AppendLine($"<p><strong>Tổng tiền đơn hàng:</strong> {hoaDon.TongTien:N0} VNĐ</p>");
             
             sb.AppendLine("<p>Nếu bạn đã thanh toán, chúng tôi sẽ hoàn tiền trong vòng 3-7 ngày làm việc.</p>");

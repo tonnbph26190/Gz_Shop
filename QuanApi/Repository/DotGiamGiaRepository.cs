@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Repository.IRepository;
@@ -76,8 +76,8 @@ namespace QuanApi.Repository
                     .Include(spdg => spdg.DotGiamGia)
                     .Where(spdg => chiTietIds.Contains(spdg.IDSanPhamChiTiet) &&
                                    spdg.DotGiamGia.TrangThai == true &&
-                                   spdg.DotGiamGia.NgayBatDau <= DateTime.Now &&
-                                   spdg.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                                   spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                                   spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                     .ToListAsync();
 
                 if (existingActiveDiscounts.Any())
@@ -90,7 +90,7 @@ namespace QuanApi.Repository
                         existingDiscount.DotGiamGia.PhanTramGiam = dot.PhanTramGiam;
                         existingDiscount.DotGiamGia.NgayBatDau = dot.NgayBatDau;
                         existingDiscount.DotGiamGia.NgayKetThuc = dot.NgayKetThuc;
-                        existingDiscount.DotGiamGia.LanCapNhatCuoi = DateTime.Now;
+                        existingDiscount.DotGiamGia.LanCapNhatCuoi = DateTime.UtcNow;
                         existingDiscount.DotGiamGia.NguoiCapNhat = dot.NguoiTao;
                     }
 
@@ -114,7 +114,7 @@ namespace QuanApi.Repository
                                 IDSanPhamChiTiet = ct.IDSanPhamChiTiet,
                                 MaSanPhamDotGiam = "SPDG_" + Guid.NewGuid().ToString("N").Substring(0, 8),
                                 GiaGoc = ct.GiaBan,
-                                NgayTao = DateTime.Now,
+                                NgayTao = DateTime.UtcNow,
                                 TrangThai = true
                             });
                             ct.IDDotGiamGia = existingDotId;
@@ -128,7 +128,7 @@ namespace QuanApi.Repository
 
             // Nếu không có đợt giảm giá đang hoạt động, tạo mới
             dot.IDDotGiamGia = Guid.NewGuid();
-            dot.NgayTao = DateTime.Now;
+            dot.NgayTao = DateTime.UtcNow;
             dot.TrangThai = true;
 
             _context.DotGiamGias.Add(dot);
@@ -148,7 +148,7 @@ namespace QuanApi.Repository
                         IDSanPhamChiTiet = ct.IDSanPhamChiTiet,
                         MaSanPhamDotGiam = "SPDG_" + Guid.NewGuid().ToString("N").Substring(0, 8),
                         GiaGoc = ct.GiaBan,
-                        NgayTao = DateTime.Now,
+                        NgayTao = DateTime.UtcNow,
                         TrangThai = true
                     });
                     ct.IDDotGiamGia = dot.IDDotGiamGia;
@@ -164,7 +164,7 @@ namespace QuanApi.Repository
             if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.Today)
                 return false;
 
-            dot.LanCapNhatCuoi = DateTime.Now;
+            dot.LanCapNhatCuoi = DateTime.UtcNow;
             _context.DotGiamGias.Update(dot);
 
             var oldSpGiam = await _context.SanPhamDotGiams
@@ -206,7 +206,7 @@ namespace QuanApi.Repository
                         IDSanPhamChiTiet = ct.IDSanPhamChiTiet,
                         MaSanPhamDotGiam = "SPDG_" + Guid.NewGuid().ToString("N").Substring(0, 8),
                         GiaGoc = giaGoc,
-                        NgayTao = DateTime.Now,
+                        NgayTao = DateTime.UtcNow,
                         TrangThai = true
                     });
                     ct.IDDotGiamGia = dot.IDDotGiamGia;
@@ -288,7 +288,7 @@ namespace QuanApi.Repository
             if (dot == null) return false;
 
             dot.TrangThai = trangThai;
-            dot.LanCapNhatCuoi = DateTime.Now;
+            dot.LanCapNhatCuoi = DateTime.UtcNow;
 
             var spGiams = await _context.SanPhamDotGiams
                                         .Where(x => x.IDDotGiamGia == id)
@@ -328,8 +328,8 @@ namespace QuanApi.Repository
                 .Include(spdg => spdg.DotGiamGia)
                 .Where(spdg => productIds.Contains(spdg.IDSanPhamChiTiet) &&
                                spdg.DotGiamGia.TrangThai == true &&
-                               spdg.DotGiamGia.NgayBatDau <= DateTime.Now &&
-                               spdg.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                               spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                               spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                 .Select(spdg => spdg.IDSanPhamChiTiet)
                 .Distinct()
                 .ToListAsync();

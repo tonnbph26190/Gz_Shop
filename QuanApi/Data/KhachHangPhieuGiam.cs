@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace QuanApi.Data
@@ -26,7 +26,7 @@ namespace QuanApi.Data
         [Range(0, int.MaxValue, ErrorMessage = "Số lượng đã sử dụng không được âm")]
         public int SoLuongDaSuDung { get; set; } = 0;
 
-        public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
         public string? NguoiTao { get; set; }
