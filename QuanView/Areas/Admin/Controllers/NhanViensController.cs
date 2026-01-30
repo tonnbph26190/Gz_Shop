@@ -11,6 +11,7 @@ using AutoMapper;
 using QuanApi.Dtos;
 using System.Text.Json;
 using System.Security.Claims;
+
 namespace QuanApi.Controllers
 {
     [ApiController]
@@ -39,7 +40,6 @@ namespace QuanApi.Controllers
             {
                 var query = _context.NhanViens.Include(n => n.VaiTro).AsQueryable();
 
-
                 if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
                 {
                     query = query.Where(nv =>
@@ -61,7 +61,6 @@ namespace QuanApi.Controllers
                     query = query.Where(nv => nv.TrangThai == filter.TrangThai.Value);
                 }
 
-
                 if (!string.IsNullOrWhiteSpace(filter.SortBy))
                 {
                     switch (filter.SortBy.ToLower())
@@ -69,36 +68,47 @@ namespace QuanApi.Controllers
                         case "manhanvien":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.MaNhanVien) : query.OrderBy(nv => nv.MaNhanVien);
                             break;
+
                         case "tennhanvien":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.TenNhanVien) : query.OrderBy(nv => nv.TenNhanVien);
                             break;
+
                         case "email":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.Email) : query.OrderBy(nv => nv.Email);
                             break;
+
                         case "sodienthoai":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.SoDienThoai) : query.OrderBy(nv => nv.SoDienThoai);
                             break;
+
                         case "ngaysinh":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgaySinh) : query.OrderBy(nv => nv.NgaySinh);
                             break;
+
                         case "gioitinh":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.GioiTinh) : query.OrderBy(nv => nv.GioiTinh);
                             break;
+
                         case "quequan":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.QueQuan) : query.OrderBy(nv => nv.QueQuan);
                             break;
+
                         case "cccd":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.CCCD) : query.OrderBy(nv => nv.CCCD);
                             break;
+
                         case "tenvaitro":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.VaiTro.TenVaiTro) : query.OrderBy(nv => nv.VaiTro.TenVaiTro);
                             break;
+
                         case "trangthai":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.TrangThai) : query.OrderBy(nv => nv.TrangThai);
                             break;
+
                         case "ngaytao":
                             query = filter.SortOrder?.ToLower() == "desc" ? query.OrderByDescending(nv => nv.NgayTao) : query.OrderBy(nv => nv.NgayTao);
                             break;
+
                         default:
                             query = query.OrderBy(nv => nv.NgayTao);
                             break;
@@ -108,7 +118,6 @@ namespace QuanApi.Controllers
                 {
                     query = query.OrderBy(nv => nv.NgayTao);
                 }
-
 
                 var totalCount = await query.CountAsync();
                 var items = await query
@@ -134,7 +143,6 @@ namespace QuanApi.Controllers
                 return StatusCode(500, "Internal server error when retrieving employees.");
             }
         }
-
 
         // GET: api/NhanVien/5
         [HttpGet("{id}")]
@@ -185,7 +193,6 @@ namespace QuanApi.Controllers
 
             try
             {
-
                 var emailExists = await _context.NhanViens.AnyAsync(nv => nv.Email == nhanVienCreateDto.Email);
                 if (emailExists)
                 {
@@ -210,13 +217,11 @@ namespace QuanApi.Controllers
                     nhanVienCreateDto.IDVaiTro = adminRole.IDVaiTro;
                 }
 
-
                 var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
                 nhanVien.IDNhanVien = Guid.NewGuid();
                 nhanVien.NgayTao = DateTime.Now;
                 nhanVien.NguoiTao = nhanVienCreateDto.IDNguoiTao.ToString();
                 nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
-
 
                 _context.NhanViens.Add(nhanVien);
                 await _context.SaveChangesAsync();
@@ -257,14 +262,12 @@ namespace QuanApi.Controllers
 
             try
             {
-
                 var nhanVienToUpdate = await _context.NhanViens.FindAsync(id);
                 if (nhanVienToUpdate == null)
                 {
                     _logger.LogWarning("Employee with ID: {Id} not found for update.", id);
                     return NotFound($"Employee with ID {id} not found.");
                 }
-
 
                 var maNhanVienExists = await _context.NhanViens
                                                      .AnyAsync(nv => nv.MaNhanVien == nhanVienUpdateDto.MaNhanVien && nv.IDNhanVien != id);
@@ -274,11 +277,9 @@ namespace QuanApi.Controllers
                     return BadRequest($"Mã nhân viên '{nhanVienUpdateDto.MaNhanVien}' đã tồn tại.");
                 }
 
-
                 var currentUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
                 if (!string.IsNullOrEmpty(currentUserIdClaim) && id.ToString() == currentUserIdClaim)
                 {
-
                     if (nhanVienToUpdate.TrangThai != nhanVienUpdateDto.TrangThai)
                     {
                         _logger.LogWarning("User with ID {currentUserIdClaim} attempted to change their own status from {oldStatus} to {newStatus}.",
@@ -334,10 +335,6 @@ namespace QuanApi.Controllers
             }
         }
 
-
-
-
-
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -371,7 +368,6 @@ namespace QuanApi.Controllers
         {
             return _context.NhanViens.Any(e => e.IDNhanVien == id);
         }
-
 
         [HttpGet]
         [Route("employee-role-stats")]

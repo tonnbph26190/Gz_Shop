@@ -9,12 +9,18 @@ namespace QuanApi.Services
     public interface INhanVienService
     {
         Task<PagedResultGeneric<NhanVienResponseDto>> GetPagedEmployeesAsync(NhanVienFilterDto filter);
+
         Task<NhanVienResponseDto> GetByIdAsync(Guid id);
+
         Task<NhanVienResponseDto> CreateAsync(NhanVienCreateDto createDto);
+
         Task UpdateAsync(Guid id, NhanVienUpdateDto updateDto, string currentUserId);
+
         Task DeleteAsync(Guid id);
+
         Task<IEnumerable<object>> GetRoleStatsAsync();
     }
+
     public class NhanVienService : INhanVienService
     {
         private readonly BanQuanAu1DbContext _context;
