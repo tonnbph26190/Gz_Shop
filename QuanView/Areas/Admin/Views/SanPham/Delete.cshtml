@@ -1,0 +1,85 @@
+﻿@model QuanView.Areas.Admin.Models.SanPhamDto
+
+@{
+    ViewData["Title"] = "Xóa sản phẩm";
+}
+
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        Xác nhận xóa sản phẩm
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">@Model.TenSanPham</h4>
+
+        <dl class="row">
+            <dt class="col-sm-3">Mã sản phẩm</dt>
+            <dd class="col-sm-9">@Model.MaSanPham</dd>
+
+            <dt class="col-sm-3">Danh mục</dt>
+            <dd class="col-sm-9">@Model.TenDanhMuc</dd>
+
+            <dt class="col-sm-3">Thương hiệu</dt>
+            <dd class="col-sm-9">@Model.TenThuongHieu</dd>
+
+            <dt class="col-sm-3">Chất liệu</dt>
+            <dd class="col-sm-9">@Model.TenChatLieu</dd>
+
+            <dt class="col-sm-3">Loại ống</dt>
+            <dd class="col-sm-9">@Model.TenLoaiOng</dd>
+
+            <dt class="col-sm-3">Kiểu dáng</dt>
+            <dd class="col-sm-9">@Model.TenKieuDang</dd>
+
+            <dt class="col-sm-3">Lưng quần</dt>
+            <dd class="col-sm-9">@Model.TenLungQuan</dd>
+
+            <dt class="col-sm-3">Xếp ly</dt>
+            <dd class="col-sm-9">@(Model.CoXepLy ? "Có" : "Không")</dd>
+
+            <dt class="col-sm-3">Co giãn</dt>
+            <dd class="col-sm-9">@(Model.CoGian ? "Có" : "Không")</dd>
+
+            <dt class="col-sm-3">Trạng thái</dt>
+            <dd class="col-sm-9">
+                <span class="badge @(Model.TrangThai ? "bg-success" : "bg-secondary")">
+                    @(Model.TrangThai ? "Hoạt động" : "Ngưng")
+                </span>
+            </dd>
+        </dl>
+
+        @* Hiển thị bảng biến thể nếu có *@
+        @if (Model.ChiTietSanPhams != null && Model.ChiTietSanPhams.Any())
+        {
+            <h5 class="mt-4">Biến thể sản phẩm</h5>
+            <table class="table table-bordered table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kích cỡ</th>
+                        <th>Màu sắc</th>
+                        <th>Họa tiết</th>
+                        <th>Số lượng</th>
+                        <th>Giá bán</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ct in Model.ChiTietSanPhams)
+                    {
+                        <tr>
+                            <td>@ct.TenKichCo</td>
+                            <td>@ct.TenMauSac</td>
+                            <td>@ct.TenHoaTiet</td>
+                            <td>@ct.SoLuong</td>
+                            <td>@ct.GiaBan.ToString("N0") ₫</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <form asp-area="Admin" asp-controller="SanPham" asp-action="Delete" method="post">
+            <input type="hidden" asp-for="IDSanPham" />
+            <button type="submit" class="btn btn-danger me-2">Xác nhận xóa</button>
+            <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </form>
+    </div>
+</div>

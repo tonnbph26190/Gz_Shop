@@ -1,0 +1,431 @@
+﻿@model QuanView.Areas.Admin.Models.SanPhamDto
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm";
+}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        Thêm sản phẩm
+    </div>
+    <div class="card-body">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <form asp-area="Admin" asp-controller="SanPham" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <!-- Chọn sản phẩm đã có -->
+            <div class="form-group">
+                <label for="sanPhamDaCo">Chọn sản phẩm đã có (nếu muốn thêm biến thể):</label>
+                <select id="sanPhamDaCo" name="SanPhamDaCoId" class="form-control">
+                    <option value="">-- Tạo sản phẩm mới --</option>
+                    @if (ViewBag.SanPhams != null)
+                    {
+                        foreach (var sp in ViewBag.SanPhams as List<SelectListItem>)
+                        {
+                            <option value="@sp.Value">@sp.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Thông tin sản phẩm mới -->
+            <div id="thongTinSanPhamMoi">
+                <div class="form-group">
+                    <label asp-for="MaSanPham"></label>
+                    <div class="input-group">
+                        <input asp-for="MaSanPham" class="form-control" readonly />
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
+                                <i class="fas fa-sync-alt"></i> Tạo mã
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Mã sản phẩm sẽ được tự động tạo</small>
+                    <span asp-validation-for="MaSanPham" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="TenSanPham"></label>
+                    <input asp-for="TenSanPham" class="form-control" />
+                    <span asp-validation-for="TenSanPham" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDDanhMuc">Danh mục</label>
+                    <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="IDDanhMuc" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDThuongHieu">Thương hiệu</label>
+                    <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus">
+                        <option value="">-- Chọn thương hiệu --</option>
+                    </select>
+                    <span asp-validation-for="IDThuongHieu" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDChatLieu">Chất liệu</label>
+                    <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus">
+                        <option value="">-- Chọn chất liệu --</option>
+                    </select>
+                    <span asp-validation-for="IDChatLieu" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDLoaiOng">Loại ống</label>
+                    <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs">
+                        <option value="">-- Chọn loại ống --</option>
+                    </select>
+                    <span asp-validation-for="IDLoaiOng" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDKieuDang">Kiểu dáng</label>
+                    <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs">
+                        <option value="">-- Chọn kiểu dáng --</option>
+                    </select>
+                    <span asp-validation-for="IDKieuDang" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="IDLungQuan">Lưng quần</label>
+                    <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans">
+                        <option value="">-- Chọn lưng quần --</option>
+                    </select>
+                    <span asp-validation-for="IDLungQuan" class="text-danger"></span>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="CoXepLy" class="form-check-input" />
+                    <label asp-for="CoXepLy" class="form-check-label"></label>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="CoGian" class="form-check-input" />
+                    <label asp-for="CoGian" class="form-check-label"></label>
+                </div>
+
+                <div class="form-group form-check">
+                    <input asp-for="TrangThai" class="form-check-input" />
+                    <label asp-for="TrangThai" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <!-- PHẦN TẠO BIẾN THỂ LUÔN HIỆN -->
+            <h4 class="mt-4">Chọn biến thể sản phẩm</h4>
+            <div class="form-group">
+                <label>Kích cỡ:</label>
+                <select id="kichCoSelect" multiple class="form-control">
+                    @if (ViewBag.KichCos != null)
+                    {
+                        foreach (var item in ViewBag.KichCos as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Màu sắc:</label>
+                <select id="mauSacSelect" multiple class="form-control">
+                    @if (ViewBag.MauSacs != null)
+                    {
+                        foreach (var item in ViewBag.MauSacs as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Họa tiết:</label>
+                <select id="hoaTietSelect" multiple class="form-control">
+                    @if (ViewBag.HoaTiets != null)
+                    {
+                        foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="button" class="btn btn-info mb-3" onclick="generateVariants()">Tạo biến thể</button>
+            <!-- 🧮 Bảng biến thể -->
+            <table class="table" id="variantTable">
+                <thead>
+                    <tr>
+                        <th>Kích cỡ</th>
+                        <th>Màu sắc</th>
+                        <th>Họa tiết</th>
+                        <th>Số lượng</th>
+                        <th>Giá bán</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button type="submit" class="btn btn-success">Lưu</button>
+            <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        document.getElementById("sanPhamDaCo").addEventListener("change", function() {
+            var isNew = !this.value;
+            document.getElementById("thongTinSanPhamMoi").style.display = isNew ? "block" : "none";
+        });
+        window.addEventListener("DOMContentLoaded", function() {
+            var isNew = !document.getElementById("sanPhamDaCo").value;
+            document.getElementById("thongTinSanPhamMoi").style.display = isNew ? "block" : "none";
+
+            // Auto-generate product code when page loads
+            if (isNew) {
+                generateProductCode();
+            }
+        });
+
+        // Function to generate product code
+        function generateProductCode() {
+            const now = new Date();
+            const year = now.getFullYear().toString().substr(-2);
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hour = now.getHours().toString().padStart(2, '0');
+            const minute = now.getMinutes().toString().padStart(2, '0');
+            const second = now.getSeconds().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+            const productCode = `SP${year}${month}${day}${hour}${minute}${second}${random}`;
+            document.querySelector('input[name="MaSanPham"]').value = productCode;
+        }
+
+        function generateVariants() {
+            const kichCos = [...document.getElementById("kichCoSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
+            const mauSacs = [...document.getElementById("mauSacSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
+            const hoaTiets = [...document.getElementById("hoaTietSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
+
+            const tbody = document.querySelector("#variantTable tbody");
+
+            // Store existing variants to merge with new ones
+            const existingVariants = [];
+            const existingRows = tbody.querySelectorAll('tr');
+            existingRows.forEach(row => {
+                const kichCoInput = row.querySelector('input[name*=".IdKichCo"]');
+                const mauSacInput = row.querySelector('input[name*=".IdMauSac"]');
+                const hoaTietInput = row.querySelector('input[name*=".IdHoaTiet"]');
+                const soLuongInput = row.querySelector('input[name*=".SoLuong"]');
+                const giaBanInput = row.querySelector('input[name*=".GiaBan"]');
+
+                if (kichCoInput && mauSacInput && hoaTietInput && soLuongInput && giaBanInput) {
+                    existingVariants.push({
+                        kichCo: kichCoInput.value,
+                        mauSac: mauSacInput.value,
+                        hoaTiet: hoaTietInput.value,
+                        soLuong: parseInt(soLuongInput.value) || 0,
+                        giaBan: parseFloat(giaBanInput.value) || 0
+                    });
+                }
+            });
+
+            tbody.innerHTML = "";
+
+            // Create a map to track variants and merge duplicates
+            const variantMap = new Map();
+
+            // Add existing variants to map
+            existingVariants.forEach(variant => {
+                const key = `${variant.kichCo}-${variant.mauSac}-${variant.hoaTiet}`;
+                variantMap.set(key, variant);
+            });
+
+            let index = 0;
+            kichCos.forEach(kc => {
+                mauSacs.forEach(ms => {
+                    const hoaTietData = hoaTiets.length > 0 ? hoaTiets : [{ id: "", text: "Không" }];
+                    hoaTietData.forEach(ht => {
+                        const key = `${kc.id}-${ms.id}-${ht.id}`;
+
+                        // Check if variant already exists
+                        if (variantMap.has(key)) {
+                            // Use existing variant data
+                            const existing = variantMap.get(key);
+                            const row = createVariantRow(index, kc, ms, ht, existing.soLuong, existing.giaBan, true);
+                            tbody.insertAdjacentHTML("beforeend", row);
+                        } else {
+                            // Create new variant
+                            const row = createVariantRow(index, kc, ms, ht, 0, 0, false);
+                            tbody.insertAdjacentHTML("beforeend", row);
+                        }
+
+                        // Apply validation to newly created inputs
+                        setTimeout(() => {
+                            const quantityInput = document.querySelector(`input[name="ChiTietSanPhams[${index}].SoLuong"]`);
+                            const priceInput = document.querySelector(`input[name="ChiTietSanPhams[${index}].GiaBan"]`);
+                            if (quantityInput) addValidationToInput(quantityInput, 'quantity');
+                            if (priceInput) addValidationToInput(priceInput, 'price');
+                        }, 100);
+
+                        index++;
+                    });
+                });
+            });
+
+            // Show warning if duplicates were found
+            const duplicateCount = existingVariants.length;
+            if (duplicateCount > 0) {
+                showWarning(`Đã tìm thấy ${duplicateCount} biến thể trùng lặp. Số lượng sẽ được cộng dồn khi lưu.`);
+            }
+        }
+
+        function createVariantRow(index, kichCo, mauSac, hoaTiet, soLuong, giaBan, isDuplicate) {
+            const duplicateClass = isDuplicate ? 'table-warning' : '';
+            const duplicateIcon = isDuplicate ? '<i class="fas fa-exclamation-triangle text-warning" title="Biến thể trùng lặp"></i> ' : '';
+
+            return `<tr class="${duplicateClass}">
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kichCo.id}" />
+                            ${duplicateIcon}${kichCo.text}
+                        </td>
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${mauSac.id}" />
+                            ${mauSac.text}
+                        </td>
+                        <td>
+                            <input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${hoaTiet.id}" />
+                            ${hoaTiet.text}
+                        </td>
+                        <td>
+                            <input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control quantity-input" min="0" step="1" value="${soLuong}" />
+                        </td>
+                        <td>
+                            <input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control price-input" min="0.01" step="0.01" value="${giaBan}" />
+                        </td>
+                    </tr>`;
+        }
+
+        function showWarning(message) {
+            // Remove existing warnings
+            const existingWarning = document.querySelector('.duplicate-warning');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning duplicate-warning mt-2';
+            warningDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+
+            const variantTable = document.getElementById('variantTable');
+            variantTable.parentNode.insertBefore(warningDiv, variantTable);
+        }
+
+        // Validation functions
+        function addValidationToInput(input, fieldType) {
+            const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
+
+            // Prevent negative input
+            input.addEventListener('keydown', function(e) {
+                if (e.key === '-' || e.key === 'Minus') {
+                    e.preventDefault();
+                    showError(this, `${fieldName} không được là số âm!`);
+                    return false;
+                }
+            });
+
+            // Validate on input
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                if (value < 0 || this.value.includes('-')) {
+                    this.value = '';
+                    showError(this, `${fieldName} không được là số âm!`);
+                } else if (fieldType === 'price' && value === 0) {
+                    showError(this, 'Giá bán phải lớn hơn 0!');
+                } else {
+                    clearError(this);
+                }
+            });
+        }
+
+        function showError(input, message) {
+            clearError(input);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'text-danger validation-error';
+            errorDiv.style.fontSize = '0.875em';
+            errorDiv.textContent = message;
+            errorDiv.id = input.name + '_error';
+            input.parentNode.appendChild(errorDiv);
+            input.classList.add('is-invalid');
+        }
+
+        function clearError(input) {
+            const error = document.getElementById(input.name + '_error');
+            if (error) error.remove();
+            input.classList.remove('is-invalid');
+        }
+
+        // Form validation on submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            let hasError = false;
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const priceInputs = document.querySelectorAll('.price-input');
+
+            quantityInputs.forEach(input => {
+                const value = parseInt(input.value);
+                if (value < 0) {
+                    showError(input, 'Số lượng không được là số âm!');
+                    hasError = true;
+                }
+            });
+
+            priceInputs.forEach(input => {
+                const value = parseFloat(input.value);
+                if (value < 0) {
+                    showError(input, 'Giá bán không được là số âm!');
+                    hasError = true;
+                } else if (value === 0) {
+                    showError(input, 'Giá bán phải lớn hơn 0!');
+                    hasError = true;
+                }
+            });
+
+            if (hasError) {
+                e.preventDefault();
+                alert('Vui lòng kiểm tra lại thông tin. Số lượng và giá bán không được là số âm!');
+                return false;
+            }
+        });
+    </script>
+
+    <style>
+        .is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .validation-error {
+            margin-top: 5px;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

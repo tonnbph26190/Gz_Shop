@@ -43,7 +43,6 @@
     <Folder Include="Areas\Admin\Views\PhieuGiamGia\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />
-    <Folder Include="Areas\Admin\Views\SanPham\" />
     <Folder Include="Areas\Controllers\" />
     <Folder Include="Views\Checkout\" />
     <Folder Include="Views\DonHang\" />

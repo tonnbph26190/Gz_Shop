@@ -12,7 +12,7 @@ using AddAnhSanPhamDto = QuanApi.Dtos.AddAnhSanPhamDto;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class SanPhamController : Controller
     {
         private readonly HttpClient _http;
