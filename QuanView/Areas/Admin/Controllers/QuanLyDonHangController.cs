@@ -5,7 +5,7 @@ using QuanApi.Data;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class QuanLyDonHangController : Controller
     {
         private readonly HttpClient _httpClient;

@@ -1,0 +1,97 @@
+﻿@model QuanApi.Data.ChatLieu
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaChatLieu" class="form-label">Mã chất liệu</label>
+        <div class="input-group">
+            <input asp-for="MaChatLieu" class="form-control" readonly required />
+            <button type="button" class="btn btn-outline-secondary" onclick="generateMaChatLieu()">
+                <i class="fas fa-sync-alt"></i> Tạo mã
+            </button>
+        </div>
+        <small class="form-text text-muted">Mã chất liệu sẽ được tự động tạo</small>
+        <span asp-validation-for="MaChatLieu" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenChatLieu" class="form-label">Tên chất liệu</label>
+        <input asp-for="TenChatLieu" class="form-control" id="tenChatLieuInput" required />
+        <div id="tenChatLieuError" class="text-danger" style="display: none;"></div>
+        <span asp-validation-for="TenChatLieu" class="text-danger"></span>
+        <small class="form-text text-muted">Không được chứa khoảng trắng, không bắt đầu bằng số hoặc ký tự đặc biệt</small>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>
+
+<script>
+    // Auto-generate MaChatLieu when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        generateMaChatLieu();
+        setupTenChatLieuValidation();
+    });
+
+    // Generate MaChatLieu function
+    function generateMaChatLieu() {
+        const now = new Date();
+        const year = now.getFullYear().toString().substr(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+        const maChatLieu = `CL${year}${month}${day}${hour}${minute}${second}${random}`;
+        document.querySelector('input[name="MaChatLieu"]').value = maChatLieu;
+    }
+
+    // Setup validation for TenChatLieu
+    function setupTenChatLieuValidation() {
+        const input = document.getElementById('tenChatLieuInput');
+        const errorDiv = document.getElementById('tenChatLieuError');
+
+        input.addEventListener('input', function () {
+            validateTenChatLieu(this.value, errorDiv, this);
+        });
+
+        input.addEventListener('blur', function () {
+            validateTenChatLieu(this.value, errorDiv, this);
+        });
+    }
+
+    function validateTenChatLieu(value, errorDiv, input) {
+        let isValid = true;
+        let errorMessage = '';
+
+        // Check for whitespace
+        if (/\s/.test(value)) {
+            isValid = false;
+            errorMessage = 'Tên chất liệu không được chứa khoảng trắng!';
+        }
+        // Check if starts with number or special character
+        else if (value && !/^[a-zA-ZÀ-ỹ]/.test(value)) {
+            isValid = false;
+            errorMessage = 'Tên chất liệu phải bắt đầu bằng chữ cái!';
+        }
+
+        if (!isValid) {
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = 'block';
+            input.classList.add('is-invalid');
+        } else {
+            errorDiv.style.display = 'none';
+            input.classList.remove('is-invalid');
+        }
+
+        return isValid;
+    }
+</script>
+
+<style>
+    .is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+</style>
