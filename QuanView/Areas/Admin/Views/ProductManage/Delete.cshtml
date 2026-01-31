@@ -1,0 +1,24 @@
+﻿@model QuanApi.Data.DanhMuc
+
+@{
+    ViewData["Title"] = "Xóa danh mục";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<h3>Bạn có chắc muốn xóa danh mục này?</h3>
+<div>
+    <h4>@Model.TenDanhMuc</h4>
+    <dl class="row">
+        <dt class="col-sm-3">Mã danh mục</dt>
+        <dd class="col-sm-9">@Model.MaDanhMuc</dd>
+        <dt class="col-sm-3">Trạng thái</dt>
+        <dd class="col-sm-9">@((Model.TrangThai) ? "Kích hoạt" : "Ẩn")</dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="IDDanhMuc" />
+    <button type="submit" class="btn btn-danger">Xóa</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>
