@@ -50,7 +50,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Create()
         {
-            return PartialView("_CreatePartial", new HoaTiet());
+            return PartialView("Create", new HoaTiet());
         }
 
         [HttpPost]
@@ -81,10 +81,11 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             var ht = await _httpClient.GetFromJsonAsync<HoaTiet>($"HoaTiet/{id}");
-            return PartialView("_EditPartial", ht);
-        }
+            return PartialView("Edit", ht);
+        }   
 
         [HttpPost]
+       
         public async Task<IActionResult> Edit(HoaTiet model)
         {
             model.LanCapNhatCuoi = DateTime.Now;
@@ -99,7 +100,7 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Details(Guid id)
         {
             var ht = await _httpClient.GetFromJsonAsync<HoaTiet>($"HoaTiet/{id}");
-            return PartialView("_DetailsPartial", ht);
+            return PartialView("Details", ht);
         }
 
         [HttpPost]

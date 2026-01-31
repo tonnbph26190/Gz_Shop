@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class ProductManageController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -54,7 +54,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Create()
         {
-            return PartialView("_CreatePartial", new DanhMuc());
+            return PartialView("Create", new DanhMuc());
         }
 
         [HttpPost]
@@ -86,7 +86,7 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             var dm = await _httpClient.GetFromJsonAsync<DanhMuc>($"DanhMucs/{id}");
-            return PartialView("_EditPartial", dm);
+            return PartialView("Edit", dm);
         }
 
         [HttpPost]
@@ -104,7 +104,7 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Details(Guid id)
         {
             var dm = await _httpClient.GetFromJsonAsync<DanhMuc>($"DanhMucs/{id}");
-            return PartialView("_DetailsPartial", dm);
+            return PartialView("Details", dm);
         }
 
         [HttpPost]
