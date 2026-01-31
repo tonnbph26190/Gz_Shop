@@ -54,58 +54,58 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie(options =>
-{
-    options.LoginPath = "/Login/Index";
-    options.LogoutPath = "/Login/Logout";
-    options.AccessDeniedPath = "/Login/AccessDenied";
-})
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
-    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.CallbackPath = "/signin-google";
-    options.Scope.Add("profile");
-    options.ClaimActions.MapJsonKey("picture", "picture", "url");
+//builder.Services.AddAuthentication(options =>
+//{
+//    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+//})
+//.AddCookie(options =>
+//{
+//    options.LoginPath = "/Login/Index";
+//    options.LogoutPath = "/Login/Logout";
+//    options.AccessDeniedPath = "/Login/AccessDenied";
+//})
+//.AddGoogle(options =>
+//{
+//    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
+//    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
+//    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    options.CallbackPath = "/signin-google";
+//    options.Scope.Add("profile");
+//    options.ClaimActions.MapJsonKey("picture", "picture", "url");
 
-    options.Events = new OAuthEvents
-    {
-        OnRemoteFailure = context =>
-        {
-            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
-            context.HandleResponse();
-            return Task.CompletedTask;
-        },
-        OnCreatingTicket = ctx =>
-        {
-            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(name))
-            {
-                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
+//    options.Events = new OAuthEvents
+//    {
+//        OnRemoteFailure = context =>
+//        {
+//            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
+//            context.HandleResponse();
+//            return Task.CompletedTask;
+//        },
+//        OnCreatingTicket = ctx =>
+//        {
+//            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
+//            if (!string.IsNullOrEmpty(name))
+//            {
+//                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
+//            }
+//            return Task.CompletedTask;
+//        }
+//    };
+//});
 
 // 3️⃣ CẤU HÌNH AUTHORIZATION
-builder.Services.AddAuthorization(options =>
-{
-    // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
-    options.AddPolicy("AdminPolicy", policy =>
-        policy.RequireRole("admin", "nhanvien"));
+//builder.Services.AddAuthorization(options =>
+//{
+//    // Policy cho Admin area - chỉ admin và nhân viên mới được truy cập
+//    options.AddPolicy("AdminPolicy", policy =>
+//        policy.RequireRole("admin", "nhanvien"));
     
-    // Policy cho khách hàng
-    options.AddPolicy("CustomerPolicy", policy =>
-        policy.RequireRole("KhachHang"));
-});
+//    // Policy cho khách hàng
+//    options.AddPolicy("CustomerPolicy", policy =>
+//        policy.RequireRole("KhachHang"));
+//});
 
 // 4️⃣ CẤU HÌNH CORS CHO FRONTEND
 builder.Services.AddCors(options =>
@@ -120,7 +120,6 @@ builder.Services.AddCors(options =>
 });
 
 // 5️⃣ CẤU HÌNH JSON VÀ MVC
-builder.Services.AddControllersWithViews();
 builder.Services.AddSession();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -131,6 +130,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
+builder.Services.AddScoped<IKichCoService, KichCoService>();
+builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 var app = builder.Build();
 
 // 7️⃣ MIDDLEWARE PIPELINE
@@ -139,11 +141,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-builder.Services.AddScoped<IChatLieuService, ChatLieuService>();
-builder.Services.AddScoped<IKichCoService, KichCoService>();
-builder.Services.AddScoped<IKieuDangService, KieuDangService>();
-
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -153,15 +150,21 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
+//app.UseEndpoints(endpoints =>
+//{
+//    endpoints.MapControllers();
+//});
 
 // 8️⃣ ROUTING
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/Admin/Banner");
+    return Task.CompletedTask;
+});
+
 app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=ProductManage}/{action=Index}/{id?}");
+    name: "areas",  /*controller=ProductManage*/
+    pattern: "{area:exists}/{controller=Banner}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",

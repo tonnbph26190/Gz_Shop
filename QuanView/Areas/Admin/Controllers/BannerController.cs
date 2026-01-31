@@ -7,7 +7,7 @@ using QuanApi.Data;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class BannerController : Controller
     {
         private readonly BanQuanAu1DbContext _context;

@@ -1,0 +1,49 @@
+﻿@model IEnumerable<QuanApi.Data.Banner>
+
+@{
+    ViewData["Title"] = "Banners";
+}
+
+<h1 class="mb-4">Danh sách Banner</h1>
+
+<div class="mb-3">
+    <a asp-action="Create" class="btn btn-success">
+        <i class="fa fa-plus"></i> Thêm Banner Mới
+    </a>
+</div>
+
+<table class="table table-bordered table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>Hình ảnh</th>
+            <th>Tiêu đề</th>
+            <th>Liên kết</th>
+            <th class="text-center" style="width: 150px;">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    {
+                        <img src="@item.ImageUrl" width="120" height="auto" style="object-fit: cover;" />
+                    }
+                </td>
+                <td>@item.Title</td>
+                <td>
+                    <a href="@item.Link" target="_blank">@item.Link</a>
+                </td>
+                <td class="text-center">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
+                        <i class="fa fa-edit"></i> Sửa
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                        <i class="fa fa-trash"></i> Xóa
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
