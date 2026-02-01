@@ -1,0 +1,24 @@
+@model QuanApi.Data.LungQuan
+
+<form id="editForm" asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IDLungQuan" />
+    <div class="form-group">
+        <label asp-for="MaLungQuan" class="control-label">Mã lưng quần <small class="text-muted">(Không thể chỉnh sửa)</small></label>
+        <input asp-for="MaLungQuan" class="form-control" readonly style="background-color: #f8f9fa;" />
+        <span asp-validation-for="MaLungQuan" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TenLungQuan" class="control-label"></label>
+        <input asp-for="TenLungQuan" class="form-control" />
+        <span asp-validation-for="TenLungQuan" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TrangThai" class="control-label"></label>
+        <select asp-for="TrangThai" class="form-control">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+        <span asp-validation-for="TrangThai" class="text-danger"></span>
+    </div>
+</form>
