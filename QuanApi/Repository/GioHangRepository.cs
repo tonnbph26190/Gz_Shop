@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
@@ -44,7 +44,7 @@ namespace QuanApi.Repository
                         Size = spct.KichCo.TenKichCo,
                         Mau = spct.MauSac.TenMauSac,
                         GiaGoc = spct.GiaBan,
-                        GiaSauGiam = spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.Now && spct.DotGiamGia.NgayKetThuc >= DateTime.Now
+                        GiaSauGiam = spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.UtcNow && spct.DotGiamGia.NgayKetThuc >= DateTime.UtcNow
                             ? spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100m)
                             : spct.GiaBan,
                         SoLuong = spct.SoLuong
@@ -80,7 +80,7 @@ namespace QuanApi.Repository
                 TenKichCo = spct.KichCo?.TenKichCo ?? "",
                 TenMauSac = spct.MauSac?.TenMauSac ?? "",
                 GiaBan = spct.GiaBan,
-                price = (spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.Now && spct.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                price = (spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.UtcNow && spct.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                     ? spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100m)
                     : spct.GiaBan,
                 SoLuong = spct.SoLuong,
@@ -96,8 +96,8 @@ namespace QuanApi.Repository
                 nguoidung = new GioHang
                 {
                     IDKhachHang = iduser,
-                    MaGioHang = "GH" + DateTime.Now.Ticks,
-                    NgayTao = DateTime.Now,
+                    MaGioHang = "GH" + DateTime.UtcNow.Ticks,
+                    NgayTao = DateTime.UtcNow,
                     TrangThai = true,
                     ChiTietGioHangs = new List<ChiTietGioHang>()
                 };
@@ -116,8 +116,8 @@ namespace QuanApi.Repository
             var giaSauGiam = sp.GiaBan;
             if (sp.DotGiamGia != null &&
                 sp.DotGiamGia.TrangThai &&
-                sp.DotGiamGia.NgayBatDau <= DateTime.Now &&
-                sp.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                sp.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                sp.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
             {
                 giaSauGiam = sp.GiaBan * (1 - sp.DotGiamGia.PhanTramGiam / 100m);
             }
@@ -164,8 +164,8 @@ namespace QuanApi.Repository
         private decimal TinhGiaSauGiam(SanPhamChiTiet spct)
         {
             if (spct.DotGiamGia != null &&
-                spct.DotGiamGia.NgayBatDau <= DateTime.Now &&
-                spct.DotGiamGia.NgayKetThuc >= DateTime.Now)
+                spct.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                spct.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
             {
                 return spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100);
             }

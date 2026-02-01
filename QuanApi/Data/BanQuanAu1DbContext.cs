@@ -49,7 +49,40 @@ namespace BanQuanAu1.Web.Data
                 .WithMany(vt => vt.NhanViens)
                 .HasForeignKey(nv => nv.IDVaiTro);
 
-            // Seed data
+            // Seed data cho Vai Trò
+            var adminRoleId = Guid.Parse("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d");
+            var nhanVienRoleId = Guid.Parse("b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e");
+            var khachHangRoleId = Guid.Parse("c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f");
+
+            modelBuilder.Entity<VaiTro>().HasData(
+                new VaiTro
+                {
+                    IDVaiTro = adminRoleId,
+                    MaVaiTro = "ADMIN",
+                    TenVaiTro = "Quản trị viên",
+                    NgayTao = DateTime.UtcNow,
+                    NguoiTao = "System",
+                    TrangThai = true
+                },
+                new VaiTro
+                {
+                    IDVaiTro = nhanVienRoleId,
+                    MaVaiTro = "NHANVIEN",
+                    TenVaiTro = "Nhân viên",
+                    NgayTao = DateTime.UtcNow,
+                    NguoiTao = "System",
+                    TrangThai = true
+                },
+                new VaiTro
+                {
+                    IDVaiTro = khachHangRoleId,
+                    MaVaiTro = "KHACHHANG",
+                    TenVaiTro = "Khách hàng",
+                    NgayTao = DateTime.UtcNow,
+                    NguoiTao = "System",
+                    TrangThai = true
+                }
+            );
         }
         public DbSet<QuanApi.Data.HoaTiet> HoaTiet { get; set; } = default!;
         public DbSet<QuanApi.Data.VaiTro> VaiTro { get; set; } = default!;

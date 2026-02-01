@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 public interface IBanHangTaiQuayService
@@ -42,7 +42,7 @@ public class BanHangTaiQuayService : IBanHangTaiQuayService
         {
             IDHoaDon = Guid.NewGuid(),
             IDNhanVien = idNhanVien,
-            NgayTao = DateTime.Now,
+            NgayTao = DateTime.UtcNow,
             TrangThai = "ChoThanhToan"
         };
 
@@ -82,7 +82,7 @@ public class BanHangTaiQuayService : IBanHangTaiQuayService
         if (hoaDon == null) return false;
 
         hoaDon.TrangThai = "DaThanhToan";
-        hoaDon.LanCapNhatCuoi = DateTime.Now;
+        hoaDon.LanCapNhatCuoi = DateTime.UtcNow;
 
         return await _context.SaveChangesAsync() > 0;
     }

@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 
@@ -32,8 +32,8 @@ namespace QuanApi.Services
                 {
                     IDGioHang = Guid.NewGuid(),
                     IDKhachHang = idUser,
-                    MaGioHang = "GH_" + DateTime.Now.Ticks,
-                    NgayTao = DateTime.Now
+                    MaGioHang = "GH_" + DateTime.UtcNow.Ticks,
+                    NgayTao = DateTime.UtcNow
                 };
                 _context.GioHangs.Add(gioHang);
             }

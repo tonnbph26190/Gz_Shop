@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -281,7 +281,7 @@ namespace QuanApi.Controllers
                 var hoaDon = new HoaDon
                 {
                     IDHoaDon = Guid.NewGuid(),
-                    MaHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}",
+                    MaHoaDon = $"HD_{DateTime.UtcNow:yyyyMMddHHmmss}",
                     IDKhachHang = dto.KhachHangId,
                     IDNhanVien = dto.NhanVienId,
                     IDPhieuGiamGia = dto.PhieuGiamGiaId,
@@ -306,7 +306,7 @@ namespace QuanApi.Controllers
                     var chiTietHoaDon = new ChiTietHoaDon
                     {
                         IDChiTietHoaDon = Guid.NewGuid(),
-                        MaChiTietHoaDon = $"CTHD_{DateTime.Now:yyyyMMddHHmmss}_{chiTiet.IDSanPhamChiTiet.ToString().Substring(0, 8)}",
+                        MaChiTietHoaDon = $"CTHD_{DateTime.UtcNow:yyyyMMddHHmmss}_{chiTiet.IDSanPhamChiTiet.ToString().Substring(0, 8)}",
                         IDHoaDon = hoaDon.IDHoaDon,
                         IDSanPhamChiTiet = chiTiet.IDSanPhamChiTiet,
                         SoLuong = chiTiet.SoLuong,

@@ -1,0 +1,533 @@
+﻿@{
+    ViewData["Title"] = "Thống kê";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">Thống kê tổng quan</h1>
+
+    <!-- Thống kê doanh thu -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh thu hôm nay</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuHomNay">0 đ</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh thu tháng này</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuThang">0 đ</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sản phẩm đã bán</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soLuongDaBan">0 sản phẩm</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Đơn vận chuyển tháng</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenThang">0 đơn</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shipping-fast fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê phí vận chuyển -->
+    <div class="row mb-4">
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tổng phí vận chuyển tháng này</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongPhiVanChuyenThang">0 đ</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Đơn có phí vận chuyển hôm nay</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenHomNay">0 đơn</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê kho hàng -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Tổng sản phẩm</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoSanPham">0 sản phẩm</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Tồn kho</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoLuongTonKho">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-warehouse fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Sắp hết hàng</div>
+                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="sanPhamSapHetHang">0 sản phẩm</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Hết hàng</div>
+                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="sanPhamHetHang">0 sản phẩm</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ chính -->
+    <div class="row">
+        <!-- Biểu đồ doanh thu -->
+        <div class="col-xl-12 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Biểu đồ doanh thu theo tháng (VNĐ)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="myAreaChart" height="120"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng biểu đồ thứ hai -->
+    <div class="row">
+        <!-- Biểu đồ sản phẩm bán chạy -->
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top sản phẩm bán chạy</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="myBarChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ doanh thu theo danh mục -->
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Doanh thu theo danh mục</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-2">
+                        <canvas id="myPieChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng biểu đồ thứ ba -->
+    <div class="row">
+        <!-- Trạng thái đơn hàng -->
+        <div class="col-xl-6 col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Trạng thái đơn hàng trong tháng</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-2">
+                        <canvas id="donHangChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê kho hàng theo danh mục -->
+        <div class="col-xl-6 col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Kho hàng theo danh mục</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-2">
+                        <canvas id="inventoryChart" height="200"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="small text-gray-500 mb-2"><strong>Chi tiết thống kê:</strong></div>
+                        <div id="inventoryDetails" class="inventory-details">
+                            <!-- Chi tiết sẽ được load bằng JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Cải thiện layout tổng thể */
+    .container-fluid {
+        padding: 0 1.5rem;
+    }
+
+    /* Styling cho các card thống kê */
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Icon styling */
+    .fas {
+        opacity: 0.8;
+    }
+
+    /* Chart containers */
+    .chart-area, .chart-bar, .chart-pie {
+        position: relative;
+        min-height: 200px;
+    }
+
+    .chart-area {
+        min-height: 300px;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Inventory details styling */
+    .inventory-details {
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+    }
+
+        .inventory-details::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .inventory-details::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+
+        .inventory-details::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
+        }
+
+            .inventory-details::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .container-fluid {
+            padding: 0 1rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .h5 {
+            font-size: 1.1rem;
+        }
+
+        .h6 {
+            font-size: 1rem;
+        }
+
+        .fas {
+            font-size: 1.5rem !important;
+        }
+
+        .chart-area {
+            min-height: 250px;
+        }
+
+        .chart-bar, .chart-pie {
+            min-height: 200px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .text-xs {
+            font-size: 0.7rem;
+        }
+
+        .inventory-details {
+            max-height: 150px;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Spacing improvements */
+    .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+
+    .row {
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+
+        .row > [class*="col-"] {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+    /* Card header improvements */
+    .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+    }
+
+    /* Text improvements */
+    .text-gray-800 {
+        word-wrap: break-word;
+    }
+
+    /* Animation for loading states */
+    .card-body[data-loading="true"] {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+</style>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Chỉ load script một lần và có delay
+            setTimeout(function () {
+                $.getScript('/admin/js/demo/chart-area-demo.js');
+                $.getScript('/admin/js/demo/chart-bar-demo.js');
+                $.getScript('/admin/js/demo/chart-pie-demo.js');
+                $.getScript('/admin/js/demo/donhangtrongthang.js');
+            }, 100);
+
+            // Thống kê nhanh
+            $.get('/api/ChartsApi/today-revenue', function (data) {
+                $('#doanhThuHomNay').text(data.toLocaleString('vi-VN') + ' đ');
+            });
+
+            $.get('/api/ChartsApi/month-revenue', function (data) {
+                $('#doanhThuThang').text(data.toLocaleString('vi-VN') + ' đ');
+            });
+
+            $.get('/api/ChartsApi/month-product-quantity', function (data) {
+                $('#soLuongDaBan').text(data + ' sản phẩm');
+            });
+
+            // Thống kê phí vận chuyển hôm nay
+            $.get('/api/ChartsApi/today-shipping-stats', function (res) {
+                if (res && typeof res === 'object') {
+                    $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
+                    $('#tongPhiVanChuyenHomNay').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
+                }
+            });
+            // Thống kê phí vận chuyển tháng này
+            $.get('/api/ChartsApi/month-shipping-stats', function (res) {
+                if (res && typeof res === 'object') {
+                    $('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
+                    $('#tongPhiVanChuyenThang').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
+                }
+            });
+
+            // Thống kê tổng quan kho hàng
+            $.get('/api/ChartsApi/inventory-summary', function (res) {
+                if (res && res.success && res.data) {
+                    const data = res.data;
+                    $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
+                    $('#tongSoLuongTonKho').text((data.totalQuantity || 0).toLocaleString('vi-VN'));
+                    $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
+                    $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+                }
+            });
+
+            // Load biểu đồ thống kê sản phẩm theo danh mục
+            loadInventoryChart();
+        });
+
+        // Hàm load biểu đồ thống kê kho hàng
+        function loadInventoryChart() {
+            $.get('/api/ChartsApi/product-category-inventory', function (res) {
+                if (res && res.success && res.data) {
+                    const chartData = res.data;
+                    const ctx = document.getElementById('inventoryChart').getContext('2d');
+
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [{
+                                data: chartData.datasets[0].data,
+                                backgroundColor: chartData.datasets[0].backgroundColor,
+                                borderColor: chartData.datasets[0].borderColor,
+                                borderWidth: chartData.datasets[0].borderWidth,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${label}: ${value.toLocaleString('vi-VN')} sản phẩm (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            cutout: '50%'
+                        }
+                    });
+
+                    // Hiển thị chi tiết thống kê
+                    let detailsHtml = '';
+                    chartData.details.forEach(function(item, index) {
+                        const color = chartData.datasets[0].backgroundColor[index];
+                        detailsHtml += `
+                            <div class="d-flex align-items-center mb-2">
+                                <div style="width: 12px; height: 12px; background-color: ${color}; border-radius: 50%; margin-right: 8px;"></div>
+                                <div class="flex-grow-1">
+                                    <strong>${item.categoryName}</strong>: ${item.totalQuantity.toLocaleString('vi-VN')} sản phẩm
+                                    <small class="text-muted d-block">
+                                        ${item.productCount} loại sản phẩm • ${item.variantCount} biến thể
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    $('#inventoryDetails').html(detailsHtml);
+                }
+            }).fail(function() {
+                $('#inventoryDetails').html('<div class="text-danger">Không thể tải dữ liệu thống kê kho hàng</div>');
+            });
+        }
+    </script>
+}

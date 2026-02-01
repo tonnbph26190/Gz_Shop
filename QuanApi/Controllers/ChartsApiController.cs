@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Services;
@@ -21,8 +21,8 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var startDate = DateTime.Now.AddMonths(-11).Date; // 12 tháng gần nhất
-            var endDate = DateTime.Now.Date.AddDays(1).AddTicks(-1); // Cuối ngày hôm nay
+            var startDate = DateTime.UtcNow.AddMonths(-11).Date; // 12 tháng gần nhất
+            var endDate = DateTime.UtcNow.Date.AddDays(1).AddTicks(-1); // Cuối ngày hôm nay
 
             var monthlyData = await _context.HoaDons
                 .Where(h => h.TrangThai == "DaThanhToan" || h.TrangThai == "Giao hàng thành công" &&
@@ -46,7 +46,7 @@ public class ChartsApiController : ControllerBase
 
             for (int i = 11; i >= 0; i--)
             {
-                var targetDate = DateTime.Now.AddMonths(-i);
+                var targetDate = DateTime.UtcNow.AddMonths(-i);
                 var monthData = monthlyData.FirstOrDefault(x => x.Year == targetDate.Year && x.Month == targetDate.Month);
 
                 labels.Add($"Tháng {targetDate.Month}/{targetDate.Year}");
@@ -113,7 +113,7 @@ public class ChartsApiController : ControllerBase
                 .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
                            ct.TrangThai == true &&
-                           ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3)) // 3 tháng gần nhất
+                           ct.HoaDon.NgayTao >= DateTime.UtcNow.AddMonths(-3)) // 3 tháng gần nhất
                 .GroupBy(ct => new
                 {
                     ct.SanPhamChiTiet.SanPham.IDSanPham,
@@ -212,7 +212,7 @@ public class ChartsApiController : ControllerBase
                 .Include(ct => ct.HoaDon)
                 .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
-                           ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3) &&
+                           ct.HoaDon.NgayTao >= DateTime.UtcNow.AddMonths(-3) &&
                            ct.TrangThai == true)
                 .SumAsync(ct => ct.ThanhTien);
 
@@ -242,7 +242,7 @@ public class ChartsApiController : ControllerBase
                 .Include(ct => ct.HoaDon)
                 .Where(ct => ct.HoaDon.TrangThai == "DaThanhToan" || ct.HoaDon.TrangThai == "Giao hàng thành công" &&
                            ct.HoaDon.TrangThaiHoaDon == true &&
-                           ct.HoaDon.NgayTao >= DateTime.Now.AddMonths(-3) &&
+                           ct.HoaDon.NgayTao >= DateTime.UtcNow.AddMonths(-3) &&
                            ct.TrangThai == true)
                 .GroupBy(ct => ct.SanPhamChiTiet.SanPham.DanhMuc.TenDanhMuc)
                 .Select(g => new
@@ -343,7 +343,7 @@ public class ChartsApiController : ControllerBase
     [HttpGet("trang-thai-don-hang-trong-thang")]
     public async Task<IActionResult> GetTrangThaiDonHangTrongThang()
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         var firstDay = new DateTime(now.Year, now.Month, 1);
         var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
@@ -410,7 +410,7 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var firstDay = new DateTime(now.Year, now.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
@@ -431,7 +431,7 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var firstDay = new DateTime(now.Year, now.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
@@ -476,7 +476,7 @@ public class ChartsApiController : ControllerBase
     private async Task<object> GetAreaChartDataInternal()
     {
         // Copy logic từ GetAreaChartData() nhưng return object thay vì IActionResult
-        var startDate = DateTime.Now.AddMonths(-11).Date;
+        var startDate = DateTime.UtcNow.AddMonths(-11).Date;
         var monthlyData = await _context.HoaDons
             .Where(h => h.TrangThai == "Hoàn thành" && h.TrangThaiHoaDon == true && h.NgayTao >= startDate)
             .GroupBy(h => new { h.NgayTao.Year, h.NgayTao.Month })
@@ -489,7 +489,7 @@ public class ChartsApiController : ControllerBase
 
         for (int i = 11; i >= 0; i--)
         {
-            var targetDate = DateTime.Now.AddMonths(-i);
+            var targetDate = DateTime.UtcNow.AddMonths(-i);
             var monthData = monthlyData.FirstOrDefault(x => x.Year == targetDate.Year && x.Month == targetDate.Month);
 
             labels.Add($"Tháng {targetDate.Month}/{targetDate.Year}");
@@ -539,8 +539,8 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var currentMonth = DateTime.Now.Month;
-            var currentYear = DateTime.Now.Year;
+            var currentMonth = DateTime.UtcNow.Month;
+            var currentYear = DateTime.UtcNow.Year;
             var today = DateTime.Today;
 
             var monthlyRevenue = await _context.HoaDons
@@ -602,7 +602,7 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var firstDay = new DateTime(now.Year, now.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
             var query = _context.HoaDons

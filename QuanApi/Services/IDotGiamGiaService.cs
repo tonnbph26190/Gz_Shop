@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
@@ -44,7 +44,7 @@ namespace QuanApi.Services
                 filter.PageSize
             );
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
 
             foreach (var item in result.Data)
             {
