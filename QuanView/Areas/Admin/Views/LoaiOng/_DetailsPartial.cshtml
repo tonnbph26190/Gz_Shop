@@ -1,0 +1,65 @@
+﻿@model QuanApi.Data.LoaiOng
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <tr>
+            <th>Mã loại ống</th>
+            <td>@Model.MaLoaiOng</td>
+        </tr>
+        <tr>
+            <th>Tên loại ống</th>
+            <td>@Model.TenLoaiOng</td>
+        </tr>
+        <tr>
+            <th>Ngày tạo</th>
+            <td>@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+        </tr>
+        <tr>
+            <th>Người tạo</th>
+            <td>@(string.IsNullOrEmpty(Model.NguoiTao) || Model.NguoiTao == "unknown" ? "Không rõ" : Model.NguoiTao)</td>
+        </tr>
+        <tr>
+            <th>Lần cập nhật cuối</th>
+            <td>@(Model.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
+        </tr>
+        <tr>
+            <th>Người cập nhật</th>
+            <td>@(string.IsNullOrEmpty(Model.NguoiCapNhat) || Model.NguoiCapNhat == "unknown" ? "Không rõ" : Model.NguoiCapNhat)</td>
+
+        </tr>
+        <tr>
+            <th>Trạng thái</th>
+            <td>
+                @if (Model.TrangThai)
+                {
+                    <span class="status-badge status-active">Kích hoạt</span>
+                }
+                else
+                {
+                    <span class="status-badge status-inactive">Ẩn</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>
+
+<style>
+.status-badge {
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background: #e6f4ea;
+    color: #218838;
+    border: none;
+}
+.status-inactive {
+    background: #f0f0f0;
+    color: #888;
+}
+.status-active {
+    background: #e6f4ea;
+    color: #218838;
+}
+</style>

@@ -1,0 +1,46 @@
+@model QuanApi.Data.MauSac
+
+<form id="createForm" novalidate>
+    <div class="mb-3">
+        <label asp-for="MaMauSac" class="form-label">Mã màu sắc</label>
+        <div class="input-group">
+            <input asp-for="MaMauSac" class="form-control" readonly required />
+            <button type="button" class="btn btn-outline-secondary" onclick="generateMaMauSac()">
+                <i class="fas fa-sync-alt"></i> Tạo mã
+            </button>
+        </div>
+        <small class="form-text text-muted">Mã màu sắc sẽ được tự động tạo</small>
+        <span asp-validation-for="MaMauSac" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="TenMauSac" class="form-label">Tên màu sắc</label>
+        <input asp-for="TenMauSac" class="form-control" required />
+        <span asp-validation-for="TenMauSac" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" asp-for="TrangThai" class="form-check-input" checked />
+        <label asp-for="TrangThai" class="form-check-label">Kích hoạt</label>
+    </div>
+</form>
+
+<script>
+    // Auto-generate MaMauSac when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        generateMaMauSac();
+    });
+    
+    // Generate MaMauSac function
+    function generateMaMauSac() {
+        const now = new Date();
+        const year = now.getFullYear().toString().substr(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        
+        const maMauSac = `MS${year}${month}${day}${hour}${minute}${second}${random}`;
+        document.querySelector('input[name="MaMauSac"]').value = maMauSac;
+    }
+</script>
