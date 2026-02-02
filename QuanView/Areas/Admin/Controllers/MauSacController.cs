@@ -1,94 +1,134 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
-using QuanApi.Services;
+using QuanView.ViewModels;
+using System.Text;
+using System.Text.Json;
 
-namespace QuanView.Controllers
+namespace QuanView.Areas.Admin.Controllers
 {
-    // Created in the QuanView project
+    [Area("Admin")]
     public class MauSacController : Controller
     {
-        private readonly IMauSacService _mauSacService;
+        private readonly HttpClient _httpClient;
 
-        public MauSacController(IMauSacService mauSacService)
+        public MauSacController(IHttpClientFactory factory)
         {
-            _mauSacService = mauSacService;
+            _httpClient = factory.CreateClient("MyApi");
         }
 
-        // GET: MauSac
-        [HttpGet]
-        public async Task<IActionResult> Index(string? keyword)
+        public async Task<IActionResult> Index(string? keyword, string? trangThai, int page = 1, int pageSize = 10)
         {
-            var data = await _mauSacService.GetAllAsync(keyword);
-            return View(data); // Right-click -> Add View (Template: List)
-        }
+            // Gọi API GetPaged kèm keyword và trangThai nếu có
+            var url = $"MauSac/paged?page={page}&pageSize={pageSize}";
+            if (!string.IsNullOrEmpty(keyword))
+                url += $"&keyword={Uri.EscapeDataString(keyword)}";
+            if (!string.IsNullOrEmpty(trangThai))
+                url += $"&trangThai={Uri.EscapeDataString(trangThai)}";
 
-        // GET: MauSac/Details/id
-        [HttpGet]
-        public async Task<IActionResult> Details(Guid id)
-        {
-            var result = await _mauSacService.GetByIdAsync(id);
-            if (result == null) return NotFound();
-            return View(result); // Right-click -> Add View (Template: Details)
-        }
-
-        // GET: MauSac/Create
-        [HttpGet]
-        public IActionResult Create()
-        {
-            return View(); // Right-click -> Add View (Template: Create)
-        }
-
-        // POST: MauSac/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(MauSac ms)
-        {
-            if (ModelState.IsValid)
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
             {
-                var success = await _mauSacService.CreateAsync(ms);
-                if (success) return RedirectToAction(nameof(Index));
+                ViewBag.Error = "Không thể tải danh sách màu sắc.";
+                return View(new List<MauSac>());
             }
-            return View(ms);
+
+            var json = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            var result = JsonSerializer.Deserialize<PagedResult<MauSac>>(json, options);
+
+            // Gửi các biến ra view để làm phân trang và giữ lại giá trị lọc
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalItems = result.Total;
+            ViewBag.Keyword = keyword ?? "";
+            ViewBag.Status = trangThai ?? "";
+
+            return View(result.Data);
         }
 
-        // GET: MauSac/Edit/id
-        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            return PartialView("_CreatePartial", new MauSac());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(MauSac model)
+        {
+            Console.WriteLine("📥 MVC nhận Create từ View:");
+            Console.WriteLine($"MaMauSac: {model.MaMauSac}, TenMauSac: {model.TenMauSac}, TrangThai: {model.TrangThai}");
+
+            model.NgayTao = DateTime.Now;
+            model.NguoiTao = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+
+            var content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("MauSac/Create", content);
+
+            Console.WriteLine($"📤 Gửi API xong, Status: {response.StatusCode}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"❌ Lỗi từ API: {error}");
+                return Json(new { success = false, message = "Không thêm được màu sắc" });
+            }
+
+            TempData["message"] = "Tạo màu sắc thành công";
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> Edit(Guid id)
         {
-            var result = await _mauSacService.GetByIdAsync(id);
-            if (result == null) return NotFound();
-            return View(result); // Right-click -> Add View (Template: Edit)
+            var ms = await _httpClient.GetFromJsonAsync<MauSac>($"MauSac/{id}");
+            return PartialView("_EditPartial", ms);
         }
 
-        // POST: MauSac/Edit/id
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, MauSac ms)
+        public async Task<IActionResult> Edit(MauSac model)
         {
-            if (ModelState.IsValid)
-            {
-                var success = await _mauSacService.UpdateAsync(id, ms);
-                if (success) return RedirectToAction(nameof(Index));
-            }
-            return View(ms);
+            model.LanCapNhatCuoi = DateTime.Now;
+            model.NguoiCapNhat = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+
+            var content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PutAsync($"MauSac/{model.IDMauSac}", content);
+
+            return Json(new { success = response.IsSuccessStatusCode });
         }
 
-        // GET: MauSac/Delete/id
-        [HttpGet]
+        public async Task<IActionResult> Details(Guid id)
+        {
+            var ms = await _httpClient.GetFromJsonAsync<MauSac>($"MauSac/{id}");
+            return PartialView("_DetailsPartial", ms);
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _mauSacService.GetByIdAsync(id);
-            if (result == null) return NotFound();
-            return View(result); // Right-click -> Add View (Template: Delete)
+            var response = await _httpClient.DeleteAsync($"MauSac/{id}");
+            TempData["message"] = "Xóa màu sắc thành công";
+            return Json(new { success = response.IsSuccessStatusCode });
         }
 
-        // POST: MauSac/Delete/id
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public class ToggleStatusRequest
         {
-            await _mauSacService.DeleteAsync(id);
-            return RedirectToAction(nameof(Index));
+            public Guid Id { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
+        {
+            Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
+            var response = await _httpClient.PutAsync($"MauSac/ToggleStatus/{req.Id}", null);
+            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
+
+            var json = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"📩 Nội dung trả về: {json}");
+
+            if (!response.IsSuccessStatusCode)
+                return Json(new { success = false });
+
+            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            return Json(new { success = true, trangThai = data["trangThai"] });
         }
     }
 }
