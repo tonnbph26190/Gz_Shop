@@ -1,0 +1,207 @@
+﻿@model QuanApi.Data.PhieuGiamGia
+
+@{
+    ViewData["Title"] = "Sửa phiếu giảm giá";
+}
+
+<style>
+    .form-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+        transition: border-color 0.3s;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+
+    .btn-primary {
+        background: #007bff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+    .btn-secondary {
+        background: #6c757d;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+    .alert {
+        border-radius: 6px;
+        border: none;
+    }
+
+    .text-muted {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .form-check-input:checked {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Sửa phiếu giảm giá</h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="form-container">
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <strong>Lưu ý:</strong> Phiếu giảm giá sẽ được phân phối công khai cho tất cả khách hàng.
+        </div>
+
+        <form asp-action="Edit" method="post" id="editForm">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="IDPhieuGiamGia" />
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="MaCode" class="form-label">Mã Code <span class="text-danger">*</span></label>
+                        <input asp-for="MaCode" class="form-control" readonly style="background-color: #f8f9fa;" />
+                        <span asp-validation-for="MaCode" class="text-danger"></span>
+                        <small class="text-muted">Mã này không thể chỉnh sửa</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="TenPhieu" class="form-label">Tên phiếu <span class="text-danger">*</span></label>
+                        <input asp-for="TenPhieu" class="form-control" placeholder="Nhập tên phiếu..." />
+                        <span asp-validation-for="TenPhieu" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="GiaTriGiam" class="form-label">Phần trăm giảm (%) <span class="text-danger">*</span></label>
+                        <input asp-for="GiaTriGiam" class="form-control" type="number" min="1" max="99" placeholder="1-99" />
+                        <span asp-validation-for="GiaTriGiam" class="text-danger"></span>
+                        <small class="text-muted">Phần trăm giảm từ 1% đến 99%</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="GiaTriGiamToiDa" class="form-label">Giảm tối đa (VNĐ)</label>
+                        <input asp-for="GiaTriGiamToiDa" class="form-control" type="number" min="0" placeholder="0" />
+                        <span asp-validation-for="GiaTriGiamToiDa" class="text-danger"></span>
+                        <small class="text-muted">Để trống nếu không giới hạn</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="DonToiThieu" class="form-label">Đơn tối thiểu (VNĐ) <span class="text-danger">*</span></label>
+                        <input asp-for="DonToiThieu" class="form-control" type="number" min="0" placeholder="0" />
+                        <span asp-validation-for="DonToiThieu" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                        <input asp-for="NgayBatDau" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="NgayBatDau" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                        <input asp-for="NgayKetThuc" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input asp-for="TrangThai" class="form-check-input" />
+                    <label asp-for="TrangThai" class="form-check-label">Kích hoạt phiếu giảm giá</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Cập nhật
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function () {
+            // Custom validation
+            $('#editForm').on('submit', function (e) {
+                var ngayBatDau = new Date($('#NgayBatDau').val());
+                var ngayKetThuc = new Date($('#NgayKetThuc').val());
+                var giaTriGiam = parseInt($('#GiaTriGiam').val());
+
+                // Validate date range
+                if (ngayKetThuc <= ngayBatDau) {
+                    alert('Ngày kết thúc phải lớn hơn ngày bắt đầu!');
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Validate percentage
+                if (giaTriGiam < 1 || giaTriGiam > 99) {
+                    alert('Phần trăm giảm phải từ 1% đến 99%!');
+                    e.preventDefault();
+                    return false;
+                }
+
+                return true;
+            });
+        });
+    </script>
+}

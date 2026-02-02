@@ -8,19 +8,19 @@ using QuanApi.Services;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class PhieuGiamGiaController : Controller
     {
         private readonly HttpClient _http;
-        private readonly ILogger<PhieuGiamGiaController> _logger;
+        //private readonly ILogger<PhieuGiamGiaController> _logger;
 
-        private readonly IEmailService _emailService;
+        //private readonly IEmailService _emailService;
 
-        public PhieuGiamGiaController(IHttpClientFactory factory, ILogger<PhieuGiamGiaController> logger, IEmailService emailService)
+        public PhieuGiamGiaController(IHttpClientFactory factory/*, ILogger<PhieuGiamGiaController> logger, IEmailService emailService*/)
         {
             _http = factory.CreateClient("MyApi");
             _logger = logger;
-            _emailService = emailService;
+            //_emailService = emailService;
         }
 
         public async Task<IActionResult> Index(string keyword, string trangThai, int page = 1, int pageSize = 10)
