@@ -1,31 +1,26 @@
 using BanQuanAu1.Web.Data;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.OAuth;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Services;
 using QuanView.Models;
-using QuanView.Services;
-using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1️⃣ CẤU HÌNH DbContext
+// CẤU HÌNH DbContext
 builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlServerOptionsAction: sqlOptions =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions =>
         {
-            sqlOptions.CommandTimeout(120); // 2 phút timeout
-            sqlOptions.EnableRetryOnFailure(
+            npgsqlOptions.CommandTimeout(120); // 2 phút
+            npgsqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 3,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
+                errorCodesToAdd: null);
         });
 });
+
 
 // 2️⃣ CẤU HÌNH HttpClient GỌI API
 builder.Services.AddHttpClient("MyApi", client =>

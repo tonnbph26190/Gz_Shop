@@ -19,7 +19,7 @@ namespace QuanView.Areas.Admin.Controllers
         public PhieuGiamGiaController(IHttpClientFactory factory/*, ILogger<PhieuGiamGiaController> logger, IEmailService emailService*/)
         {
             _http = factory.CreateClient("MyApi");
-            _logger = logger;
+            //_logger = logger;
             //_emailService = emailService;
         }
 
@@ -82,7 +82,7 @@ namespace QuanView.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Không thể tải danh sách phiếu giảm giá.");
+                //_logger.LogError(ex, "Không thể tải danh sách phiếu giảm giá.");
                 TempData["ErrorMessage"] = "Không thể tải danh sách.";
                 return View(new List<PhieuGiamGia>());
             }
