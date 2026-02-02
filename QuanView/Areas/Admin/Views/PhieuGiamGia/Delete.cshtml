@@ -169,7 +169,7 @@
         </div>
 
         <div class="mt-4">
-            <form asp-action="Delete" method="post" style="display: inline;">
+            <form asp-area ="Admin" asp-controller="PhieuGiamGia" asp-action="Delete" method="post" style="display: inline;">
                 <input type="hidden" asp-for="IDPhieuGiamGia" />
                 <button type="submit" class="btn btn-action btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa phiếu giảm giá này?')">
                     <i class="fas fa-trash"></i> Xác nhận xóa

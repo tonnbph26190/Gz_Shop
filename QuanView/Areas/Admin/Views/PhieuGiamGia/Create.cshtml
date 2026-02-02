@@ -88,7 +88,7 @@
             <strong>Lưu ý:</strong> Phiếu giảm giá sẽ được phân phối công khai cho tất cả khách hàng.
         </div>
 
-        <form asp-action="Create" method="post" id="createForm">
+        <form asp-area="Admin" asp-controller="PhieuGiamGia" asp-action="Create" method="post" id="createForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="row">
