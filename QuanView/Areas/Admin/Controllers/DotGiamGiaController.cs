@@ -45,19 +45,10 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var ngayHienTai = DateTime.Today;
+            model.NgayBatDau = DateTime.SpecifyKind(model.NgayBatDau, DateTimeKind.Utc);
+            model.NgayKetThuc = DateTime.SpecifyKind(model.NgayKetThuc, DateTimeKind.Utc);
+            model.NgayTao = DateTime.UtcNow;
 
-            if (model.NgayBatDau.Date < ngayHienTai)
-            {
-                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
-                return View(model);
-            }
-
-            if (model.NgayKetThuc < model.NgayBatDau)
-            {
-                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
-                return View(model);
-            }
 
             if (string.IsNullOrWhiteSpace(selectedIds))
             {
@@ -95,18 +86,21 @@ namespace QuanView.Areas.Admin.Controllers
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var responseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
 
-                if (responseData.TryGetProperty("Message", out var messageElement))
+                // 👉 Nếu API trả true/false
+                if (bool.TryParse(responseContent, out bool isSuccess))
                 {
-                    TempData["SuccessMessage"] = messageElement.GetString();
+                    if (!isSuccess)
+                    {
+                        ModelState.AddModelError("", "Tạo đợt giảm giá thất bại (API không lưu được).");
+                        return View(model);
+                    }
                 }
-                else
-                {
-                    TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
-                }
+
+                TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
                 return RedirectToAction(nameof(Index));
             }
+
 
             var errorMessage = await response.Content.ReadAsStringAsync();
             ModelState.AddModelError("", $"Tạo đợt giảm giá thất bại: {errorMessage}");
