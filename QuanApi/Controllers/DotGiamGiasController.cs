@@ -20,6 +20,15 @@ namespace QuanApi.Controllers
             _logger = logger;
         }
 
+
+        // GET: api/DotGiamGias
+        [HttpGet]
+        public async Task<IActionResult> GetAll([FromQuery] DotGiamGiaFilterDto filter)
+        {
+            var result = await _service.GetAllAsync(filter);
+            return Ok(result);
+        }
+
         // GET: api/DotGiamGias/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)

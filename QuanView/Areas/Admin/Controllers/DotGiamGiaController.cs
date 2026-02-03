@@ -186,13 +186,28 @@ namespace QuanView.Areas.Admin.Controllers
 
 
         // GET: Xoá
+        [HttpGet]
         public async Task<IActionResult> Delete(Guid id)
         {
+            var res = await _httpClient.GetAsync($"DotGiamGias/{id}");
+            if (!res.IsSuccessStatusCode)
+                return NotFound();
+
+            var dot = await res.Content.ReadFromJsonAsync<DotGiamGia>();
+            return View(dot);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
             var res = await _httpClient.DeleteAsync($"DotGiamGias/{id}");
+
             TempData[res.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 res.IsSuccessStatusCode ? "Xóa đợt giảm giá thành công!" : "Xóa đợt giảm giá thất bại!";
+
             return RedirectToAction(nameof(Index));
         }
+
 
         // PUT: Cập nhật trạng thái
         [HttpGet]
