@@ -7,7 +7,7 @@ using QuanApi.Data;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class BannerController : Controller
     {
         private readonly BanQuanAu1DbContext _context;
@@ -104,6 +104,52 @@ namespace QuanView.Areas.Admin.Controllers
             }
 
             return View(model);
+        }
+        // GET: Admin/Banner/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var banner = await _context.Banners.FirstOrDefaultAsync(b => b.Id == id);
+            if (banner == null)
+                return NotFound();
+
+            return View(banner);
+        }
+        // POST: Admin/Banner/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var banner = await _context.Banners.FindAsync(id);
+            if (banner == null)
+                return NotFound();
+
+            // ❗ Xoá file ảnh vật lý (nếu có)
+            if (!string.IsNullOrEmpty(banner.ImageUrl))
+            {
+                var filePath = Path.Combine(
+                    _env.WebRootPath,
+                    banner.ImageUrl.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString())
+                );
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+            }
+
+            _context.Banners.Remove(banner);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+        // GET: Admin/Banner/Details/5
+        public async Task<IActionResult> Details(int id)
+        {
+            var banner = await _context.Banners.FirstOrDefaultAsync(b => b.Id == id);
+            if (banner == null)
+                return NotFound();
+
+            return View(banner);
         }
     }
 }

@@ -70,6 +70,8 @@ namespace QuanApi.Services
             var model = _mapper.Map<PhieuGiamGia>(dto);
             model.IDPhieuGiamGia = Guid.NewGuid();
             model.NgayTao = DateTime.UtcNow;
+            model.NgayBatDau = dto.NgayBatDau.ToUniversalTime();
+            model.NgayKetThuc = dto.NgayKetThuc.ToUniversalTime();
             model.LaCongKhai = true;   // mặc định công khai
             model.SoLuong = 1;        // mỗi khách hàng 1 phiếu
 
