@@ -1,0 +1,45 @@
+﻿@model QuanApi.Data.DotGiamGia
+
+@{
+    ViewData["Title"] = "Xóa đợt giảm giá";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-warning">
+    <strong>Cảnh báo:</strong> Thao tác này không thể hoàn tác.
+</div>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Mã đợt</th>
+        <td>@Model.MaDot</td>
+    </tr>
+    <tr>
+        <th>Tên đợt</th>
+        <td>@Model.TenDot</td>
+    </tr>
+    <tr>
+        <th>Phần trăm giảm</th>
+        <td>@Model.PhanTramGiam %</td>
+    </tr>
+    <tr>
+        <th>Ngày bắt đầu</th>
+        <td>@Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</td>
+    </tr>
+    <tr>
+        <th>Ngày kết thúc</th>
+        <td>@Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</td>
+    </tr>
+    <tr>
+        <th>Ngày tạo</th>
+        <td>@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+    </tr>
+</table>
+
+<form asp-action="DeleteConfirmed" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.IDDotGiamGia" />
+    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>

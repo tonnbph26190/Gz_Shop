@@ -29,13 +29,10 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Data\" />
-    <Folder Include="Areas\Admin\Views\Banner\" />
-    <Folder Include="Areas\Admin\Views\DotGiamGia\" />
     <Folder Include="Areas\Admin\Views\LoaiOng\" />
     <Folder Include="Areas\Admin\Views\LungQuan\" />
     <Folder Include="Areas\Admin\Views\MauSac\" />
     <Folder Include="Areas\Admin\Views\NhanViens\" />
-    <Folder Include="Areas\Admin\Views\PhieuGiamGia\" />
     <Folder Include="Areas\Admin\Views\SanPham\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />

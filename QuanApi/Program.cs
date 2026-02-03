@@ -20,7 +20,6 @@ builder.Services.AddScoped<IKhachHangService, KhachHangService>();
 builder.Services.AddScoped<IKhachHangPhieuGiamService, KhachHangPhieuGiamService>();
 builder.Services.AddScoped<IPhieuGiamGiaService, PhieuGiamGiaService>();
 builder.Services.AddScoped<IDotGiamGiaService, DotGiamGiaService>();
-builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 builder.Services.AddScoped<INhanVienService, NhanVienService>();
@@ -35,7 +34,6 @@ builder.Services.AddScoped<IDanhMucService, DanhMucService>();
 builder.Services.AddScoped<ILoaiOngService, LoaiOngService>();
 builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 builder.Services.AddScoped<IHoaTietService, HoaTietService>();
-builder.Services.AddScoped<INhanVienService, NhanVienService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
 builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
@@ -43,11 +41,11 @@ builder.Services.AddScoped<IHoaDonService, HoaDonService>();
 builder.Services.AddScoped<IGioHangService, GioHangService>();
 builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
 builder.Services.AddScoped<ILungQuanService, LungQuanService>();
-builder.Services.AddScoped<ISanPhamNguoiDungService, SanPhamNguoiDungService>();
+
 // Đăng ký Shipping Service
 //builder.Services.AddScoped<IShippingService, ShippingService>();
 
-//builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
+builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
 builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");

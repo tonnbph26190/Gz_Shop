@@ -3,10 +3,6 @@ using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace QuanApi.Repository
@@ -66,7 +62,7 @@ namespace QuanApi.Repository
 
         public async Task<bool> CreateAsync(DotGiamGia dot, List<Guid> chiTietIds)
         {
-            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.Today)
+            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.UtcNow)
                 return false;
 
             // Kiểm tra xem các sản phẩm đã có đợt giảm giá đang hoạt động hay chưa
@@ -76,8 +72,8 @@ namespace QuanApi.Repository
                     .Include(spdg => spdg.DotGiamGia)
                     .Where(spdg => chiTietIds.Contains(spdg.IDSanPhamChiTiet) &&
                                    spdg.DotGiamGia.TrangThai == true &&
-                                   spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
-                                   spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
+                                    spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                                    spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                     .ToListAsync();
 
                 if (existingActiveDiscounts.Any())

@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Services;
 
-
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class PhieuGiamGiaController : Controller
     {
         private readonly HttpClient _http;
@@ -27,7 +25,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             try
             {
-                var list = await _http.GetFromJsonAsync<List<PhieuGiamGia>>("PhieuGiamGias")
+                var list = await _http.GetFromJsonAsync<List<PhieuGiamGia>>("PhieuGiamGia")
                            ?? new List<PhieuGiamGia>();
 
                 // Lọc theo từ khóa
@@ -82,7 +80,7 @@ namespace QuanView.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Không thể tải danh sách phiếu giảm giá.");
+                //_logger.LogError(ex, "Không thể tải danh sách phiếu giảm giá.");
                 TempData["ErrorMessage"] = "Không thể tải danh sách.";
                 return View(new List<PhieuGiamGia>());
             }
@@ -90,7 +88,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Details(Guid id)
         {
-            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
+            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGia/{id}");
             return phieu == null ? NotFound() : View(phieu);
         }
 
@@ -123,13 +121,13 @@ namespace QuanView.Areas.Admin.Controllers
                 DonToiThieu = model.DonToiThieu,
                 SoLuong = model.SoLuong,
                 LaCongKhai = model.LaCongKhai,
-                NgayBatDau = model.NgayBatDau,
-                NgayKetThuc = model.NgayKetThuc,
+                NgayBatDau = model.NgayBatDau.ToUniversalTime(),
+                NgayKetThuc = model.NgayKetThuc.ToUniversalTime(),
                 TrangThai = model.TrangThai,
                 NguoiTao = model.NguoiTao
             };
 
-            var response = await _http.PostAsJsonAsync("PhieuGiamGias", createDto);
+            var response = await _http.PostAsJsonAsync("PhieuGiamGia", createDto);
             if (response.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "Tạo phiếu giảm giá thành công! Tất cả khách hàng đã được nhận 1 phiếu mỗi người.";
@@ -145,7 +143,7 @@ namespace QuanView.Areas.Admin.Controllers
         // GET: Admin/PhieuGiamGia/Edit/{id}
         public async Task<IActionResult> Edit(Guid id)
         {
-            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
+            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGia/{id}");
             if (phieu == null) return NotFound();
 
             return View(phieu);
@@ -165,6 +163,8 @@ namespace QuanView.Areas.Admin.Controllers
 
             model.LaCongKhai = true; // Luôn là công khai
             model.SoLuong = 1; // Mỗi khách hàng 1 phiếu
+            model.NgayKetThuc = model.NgayKetThuc.ToUniversalTime();
+            model.NgayBatDau = model.NgayBatDau.ToUniversalTime();
             model.NguoiCapNhat = User.Identity?.Name ?? "Admin";
             model.LanCapNhatCuoi = DateTime.UtcNow;
 
@@ -174,7 +174,7 @@ namespace QuanView.Areas.Admin.Controllers
                 khachHangId = (Guid?)null // Không cần khách hàng cụ thể
             };
 
-            var res = await _http.PutAsJsonAsync($"PhieuGiamGias/{id}", payload);
+            var res = await _http.PutAsJsonAsync($"PhieuGiamGia/{id}", payload);
             if (res.IsSuccessStatusCode)
             {
                 TempData["SuccessMessage"] = "Cập nhật thành công!";
@@ -187,7 +187,7 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Delete(Guid id)
         {
-            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGias/{id}");
+            var phieu = await _http.GetFromJsonAsync<PhieuGiamGia>($"PhieuGiamGia/{id}");
             return phieu == null ? NotFound() : View(phieu);
         }
 
@@ -195,7 +195,7 @@ namespace QuanView.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var res = await _http.DeleteAsync($"PhieuGiamGias/{id}");
+            var res = await _http.DeleteAsync($"PhieuGiamGia/{id}");
 
             TempData[res.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 res.IsSuccessStatusCode ? "Đã xoá thành công." : "Xoá thất bại.";
