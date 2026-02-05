@@ -73,17 +73,16 @@ namespace QuanApi.Services
             _context.LoaiOngs.Remove(entity);
             return await _context.SaveChangesAsync() > 0;
         }
-
         public async Task<bool> ToggleStatusAsync(Guid id)
         {
             var lo = await _context.LoaiOngs.FindAsync(id);
-            if (lo == null) return false;
+            if (lo == null)
+                throw new KeyNotFoundException($"Entity with ID {id} not found.");
 
             lo.TrangThai = !lo.TrangThai;
-            lo.LanCapNhatCuoi = DateTime.UtcNow;
-            lo.NguoiCapNhat = "auto-toggle";
+            await _context.SaveChangesAsync();
 
-            return await _context.SaveChangesAsync() > 0;
+            return lo.TrangThai;
         }
 
         public async Task<(int total, List<LoaiOng> data)> GetPagedAsync(

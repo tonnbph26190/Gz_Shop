@@ -79,7 +79,9 @@ namespace QuanApi.Services
             th.LanCapNhatCuoi = DateTime.UtcNow;
             th.NguoiCapNhat = "auto-toggle";
 
-            return await _context.SaveChangesAsync() > 0;
+            await _context.SaveChangesAsync();
+
+            return th.TrangThai;
         }
 
         public async Task<(int total, List<ThuongHieu> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)

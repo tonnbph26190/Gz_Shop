@@ -52,8 +52,9 @@ namespace QuanApi.Controllers
         [HttpPut("ToggleStatus/{id}")]
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success }) : NotFound();
+            var newStatus = await _service.ToggleStatusAsync(id);
+            if (newStatus == null) return NotFound();
+            return Ok(new { success = true, trangThai = newStatus });
         }
 
         [HttpGet("paged")]

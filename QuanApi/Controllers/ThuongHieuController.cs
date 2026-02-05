@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Services;
 
@@ -49,8 +50,8 @@ namespace QuanApi.Controllers
         [HttpPut("ToggleStatus/{id}")]
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
-            var success = await _service.ToggleStatusAsync(id);
-            return success ? Ok(new { success = true }) : NotFound();
+            var newTrangThai = await _service.ToggleStatusAsync(id);
+            return Ok(new { success = true, trangThai = newTrangThai });
         }
 
         [HttpGet("paged")]

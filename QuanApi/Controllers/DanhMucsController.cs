@@ -52,8 +52,19 @@ namespace QuanApi.Controllers
         [HttpPut("ToggleStatus/{id}")]
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
-            var success = await _service.ToggleStatusAsync(id);
-            return Ok(new { success });
+            try
+            {
+                var currentStatus = await _service.ToggleStatusAsync(id);
+                return Ok(new { success = true, trangThai = currentStatus });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { success = false, message = "ID không tồn tại" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
         }
 
         [HttpGet("paged")]

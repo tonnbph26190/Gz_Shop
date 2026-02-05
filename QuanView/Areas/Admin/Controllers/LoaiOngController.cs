@@ -121,17 +121,27 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
         {
             Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
+
+            // 1. Call the API
             var response = await _httpClient.PutAsync($"LoaiOng/ToggleStatus/{req.Id}", null);
-            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
+
+            // 2. If API failed (404, 500, etc.), return success: false to the UI
+            if (!response.IsSuccessStatusCode)
+            {
+                return Json(new { success = false });
+            }
 
             var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 Nội dung trả về: {json}");
-
-            if (!response.IsSuccessStatusCode)
-                return Json(new { success = false });
-
             var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            return Json(new { success = true, trangThai = data["trangThai"] });
+
+            // 3. Check if "trangThai" actually exists before trying to use it
+            if (data != null && data.TryGetValue("trangThai", out var trangThaiValue))
+            {
+                return Json(new { success = true, trangThai = trangThaiValue });
+            }
+
+            // 4. Fallback: If trangThai is missing but API said OK, just return success
+            return Json(new { success = true });
         }
     }
 }

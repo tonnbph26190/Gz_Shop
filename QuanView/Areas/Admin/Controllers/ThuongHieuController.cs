@@ -118,18 +118,18 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
         {
-            Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
             var response = await _httpClient.PutAsync($"ThuongHieu/ToggleStatus/{req.Id}", null);
-            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
-
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 Nội dung trả về: {json}");
-
             if (!response.IsSuccessStatusCode)
+            {
                 return Json(new { success = false });
-
+            }
+            var json = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            return Json(new { success = true, trangThai = data["trangThai"] });
+            if (data != null && data.TryGetValue("trangThai", out var trangThaiValue))
+            {
+                return Json(new { success = true, trangThai = trangThaiValue });
+            }
+            return Json(new { success = true });
         }
     }
 }

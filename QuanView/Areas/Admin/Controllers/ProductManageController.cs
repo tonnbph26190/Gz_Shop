@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanView.ViewModels;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -122,22 +120,23 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
         {
-            Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
             var response = await _httpClient.PutAsync($"DanhMucs/ToggleStatus/{req.Id}", null);
-            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
+            if (!response.IsSuccessStatusCode)
+            {
+                var statusCode = response.StatusCode;
+                return Json(new { success = false, message = $"Lỗi: {statusCode}" });
+            }
 
             var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 Nội dung trả về: {json}");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
 
-            if (!response.IsSuccessStatusCode)
-                return Json(new { success = false });
+            if (root.TryGetProperty("trangThai", out var statusProp))
+            {
+                return Json(new { success = true, trangThai = statusProp.GetBoolean() });
+            }
 
-            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            return Json(new { success = true, trangThai = data["trangThai"] });
+            return Json(new { success = true });
         }
-
-
-
-
     }
 }

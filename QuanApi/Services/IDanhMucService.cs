@@ -73,17 +73,21 @@ namespace QuanApi.Services
             _context.DanhMucs.Remove(entity);
             return await _context.SaveChangesAsync() > 0;
         }
-
         public async Task<bool> ToggleStatusAsync(Guid id)
         {
             var dm = await _context.DanhMucs.FindAsync(id);
-            if (dm == null) return false;
+
+            if (dm == null)
+            {
+                throw new KeyNotFoundException();
+            }
 
             dm.TrangThai = !dm.TrangThai;
             dm.LanCapNhatCuoi = DateTime.UtcNow;
             dm.NguoiCapNhat = "auto-toggle";
 
-            return await _context.SaveChangesAsync() > 0;
+            await _context.SaveChangesAsync();
+            return dm.TrangThai;
         }
 
         public async Task<(int total, List<DanhMuc> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
