@@ -435,6 +435,8 @@ namespace QuanApi.Controllers
                 var spct = await _context.SanPhamChiTiets.FindAsync(p.ProductDetailId);
                 if (spct == null)
                     return BadRequest(new { message = "Sản phẩm không tồn tại" });
+                if (!spct.TrangThai)
+                    return BadRequest(new { message = $"Sản phẩm {spct.MaSPChiTiet ?? spct.IDSanPhamChiTiet.ToString()} đã ngưng bán, không thể thanh toán." });
 
                 // Kiểm tra số lượng tồn kho
                 if (spct.SoLuong <= 0)
@@ -1177,9 +1179,11 @@ namespace QuanApi.Controllers
             };
             _context.HoaDons.Add(hoaDon);
 
-            // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn (dùng giá hiện tại của sản phẩm)
+            // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn (dùng giá hiện tại, chỉ với SP đang bán)
             foreach (var cthd in gioHang.ChiTietGioHangs)
             {
+                if (!cthd.SanPhamChiTiet.TrangThai)
+                    return BadRequest(new { message = $"Sản phẩm {cthd.SanPhamChiTiet.MaSPChiTiet} đã ngưng bán, không thể tạo hóa đơn. Vui lòng xóa khỏi giỏ hoặc chọn sản phẩm khác." });
                 var giaSauGiam = await TinhGiaSauGiam(cthd.IDSanPhamChiTiet, cthd.SanPhamChiTiet.GiaBan);
                 var cthdHoaDon = new ChiTietHoaDon
                 {

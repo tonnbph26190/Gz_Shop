@@ -154,6 +154,7 @@ namespace QuanApi.Services
                 {
                     ct.IDSanPhamChiTiet = ct.IDSanPhamChiTiet == Guid.Empty ? Guid.NewGuid() : ct.IDSanPhamChiTiet;
                     ct.IDSanPham = sanPham.IDSanPham;
+                    ct.TrangThai = true; // Biến thể mới luôn ở trạng thái hoạt động (đang bán)
                 }
 
                 await _context.SanPhamChiTiets.AddRangeAsync(chiTiets);
@@ -187,6 +188,14 @@ namespace QuanApi.Services
             existing.TrangThai = sanPham.TrangThai;
             existing.LanCapNhatCuoi = DateTime.UtcNow;
             existing.NguoiCapNhat = sanPham.NguoiCapNhat;
+
+            // Nếu SP cha ngưng bán thì tất cả biến thể cũng ngưng bán
+            if (!sanPham.TrangThai)
+            {
+                var variants = await _context.SanPhamChiTiets.Where(ct => ct.IDSanPham == id).ToListAsync();
+                foreach (var ct in variants)
+                    ct.TrangThai = false;
+            }
 
             await _context.SaveChangesAsync();
             return new NoContentResult();
@@ -429,7 +438,7 @@ namespace QuanApi.Services
                         TrangThai = a.TrangThai
                     }).ToList(),
 
-                // Chi tiết sản phẩm
+                // Chi tiết sản phẩm (bao gồm TrangThai để Edit map đúng)
                 ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
                 {
                     IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
@@ -442,6 +451,7 @@ namespace QuanApi.Services
                     GiaBan = ct.GiaBan,
                     price = ct.GiaBan,
                     originalPrice = ct.GiaBan,
+                    TrangThai = ct.TrangThai,
 
                     TenKichCo = ct.KichCo.TenKichCo,
                     TenMauSac = ct.MauSac.TenMauSac,
