@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Services;
@@ -47,11 +47,19 @@ public class SanPhamsController : ControllerBase
     public async Task<ActionResult<SanPham>> GetSanPham(Guid id)
     {
         var sanPham = await _service.GetByIdAsync(id);
-
         if (sanPham == null)
             return NotFound();
-
         return sanPham;
+    }
+
+    /// <summary>Lấy sản phẩm đầy đủ (master + chi tiết + ảnh) cho Admin.</summary>
+    [HttpGet("{id}/full")]
+    public async Task<ActionResult<SanPhamDto>> GetSanPhamFull(Guid id)
+    {
+        var dto = await _service.GetByIdFullAsync(id);
+        if (dto == null)
+            return NotFound();
+        return dto;
     }
 
 
