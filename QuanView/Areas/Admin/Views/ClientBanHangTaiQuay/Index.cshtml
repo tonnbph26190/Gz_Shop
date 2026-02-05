@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewBag.Title = "Bán hàng";
 }
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
@@ -319,7 +319,6 @@
                     <div class="mb-2">
                         <label class="form-label">Phí vận chuyển:</label>
                         <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
-                        <small class="text-muted">Phí vận chuyển cố định: 50.000 VNĐ</small>
                     </div>
 
                     <div class="mb-2">
@@ -393,28 +392,58 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Khách hàng</h5>
+                <h5 class="modal-title">Chọn khách hàng</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm kiếm theo số điện thoại, tên">
-                <button class="btn btn-primary mb-2" onclick="searchCustomer()">Tìm kiếm</button>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>STT</th>
-                            <th>Ảnh</th>
-                            <th>Tên khách hàng</th>
-                            <th>Email</th>
-                            <th>Số điện thoại</th>
-                            <th>Điểm</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customerList"></tbody>
-                </table>
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button class="btn btn-success float-end" onclick="addNewCustomer()">Thêm khách hàng</button>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-secondary" onclick="selectGuestCustomer()">
+                        <i class="bi bi-person-x"></i> Khách vãng lai
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addCustomerForm" aria-expanded="false">
+                        <i class="bi bi-person-plus"></i> Thêm khách hàng mới
+                    </button>
+                </div>
+                <div class="collapse mb-3" id="addCustomerForm">
+                    <div class="card card-body bg-light">
+                        <h6 class="mb-2">Thêm khách hàng vào hệ thống</h6>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerName" placeholder="Tên khách hàng">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerPhone" placeholder="Số điện thoại">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-success btn-sm w-100" onclick="submitNewCustomer()">Lưu & chọn</button>
+                            </div>
+                        </div>
+                        <small class="text-muted">Sau khi lưu, khách hàng sẽ được chọn và có thể dùng phiếu giảm giá (nếu có).</small>
+                    </div>
+                </div>
+                <hr class="my-2" />
+                <p class="small text-muted mb-2">Hoặc chọn khách có sẵn trong hệ thống:</p>
+                <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
+                <button class="btn btn-primary btn-sm mb-2" onclick="searchCustomer()">Tìm kiếm</button>
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>STT</th>
+                                <th>Ảnh</th>
+                                <th>Tên</th>
+                                <th>Email</th>
+                                <th>SĐT</th>
+                                <th>Điểm</th>
+                                <th>Chọn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerList"></tbody>
+                    </table>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
@@ -608,9 +637,11 @@
         // Dữ liệu động
         let products = [];
         let customers = [];
+        let lastRenderedCustomerList = []; // Danh sách đang hiển thị (full hoặc kết quả tìm kiếm) để chọn đúng
         let selectedCustomer = null;
         let discountValue = 0; // Giá trị giảm giá hiện tại
         let useShipping = false; // Có sử dụng giao hàng không
+        let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
         let usePoint = false;
         let selectedPaymentCode;
         let shippingFee = 0;
@@ -717,36 +748,71 @@
             });
         }
 
-        // Tìm kiếm khách hàng
+        // Tìm kiếm khách hàng (theo tên hoặc SĐT)
         function searchCustomer() {
-            let q = $('#searchCustomer').val();
+            let q = ($('#searchCustomer').val() || '').trim();
             if (!q) {
+                lastRenderedCustomerList = customers;
                 renderCustomerList(customers);
                 return;
             }
             $.get('/Admin/ClientBanHangTaiQuay/tim-kiem-khach-hang', { query: q }, function(data) {
-                renderCustomerList(data);
+                lastRenderedCustomerList = Array.isArray(data) ? data : [];
+                renderCustomerList(lastRenderedCustomerList);
+            }).fail(function() {
+                lastRenderedCustomerList = [];
+                renderCustomerList([]);
             });
         }
 
-        // Thêm khách hàng mới
-        function addNewCustomer() {
-            let name = prompt('Nhập tên khách hàng mới:');
-            let phone = prompt('Nhập số điện thoại khách hàng:');
-            if (!name || !phone) return showWarning('Vui lòng nhập đủ thông tin!');
+        // Chọn khách vãng lai (không lưu DB, chỉ dùng cho đơn này)
+        function selectGuestCustomer() {
+            selectedCustomer = { id: null, name: 'Khách vãng lai', phone: '', email: '', point: 0, isGuest: true };
+            $('#customerModal').modal('hide');
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary').addClass('bg-warning text-dark');
+            $('#customerDetails').show();
+            $('#customerPhone').text('—');
+            $('#customerEmail').text('—');
+            $('#customerPoint').text('0');
+            $('#btnClearCustomer').show();
+            $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
+            $('#discountCode').val('');
+            discountValue = 0;
+            if (useShipping) {
+                $('#shippingFormCard').show();
+            }
+            updatePaymentInfo();
+        }
+
+        // Thêm khách hàng mới (form trong modal) — lưu DB rồi chọn
+        function submitNewCustomer() {
+            let name = ($('#newCustomerName').val() || '').trim();
+            let phone = ($('#newCustomerPhone').val() || '').trim();
+            if (!name || !phone) {
+                showWarning('Vui lòng nhập tên và số điện thoại.');
+                return;
+            }
             $.ajax({
                 url: '/Admin/ClientBanHangTaiQuay/them-khach-hang',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ tenKhachHang: name, soDienThoai: phone }),
                 success: function(res) {
-                    loadCustomers(function() {
-                        renderCustomerList(customers);
-                    });
                     showSuccess('Thêm khách hàng thành công!');
+                    $('#newCustomerName').val('');
+                    $('#newCustomerPhone').val('');
+                    $('#addCustomerForm').collapse('hide');
+                    loadCustomers(function() {
+                        lastRenderedCustomerList = customers;
+                        renderCustomerList(customers);
+                        var found = customers.find(function(c) { return c.phone === phone; });
+                        if (found) selectCustomer(found.id);
+                    });
                 },
-                error: function(err) {
-                    showWarning('Thêm khách hàng thất bại!');
+                error: function(xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || xhr.responseText || 'Thêm khách hàng thất bại.';
+                    showError(typeof msg === 'string' ? msg : 'Số điện thoại có thể đã tồn tại.');
                 }
             });
         }
@@ -757,13 +823,16 @@
                 showWarning('Vui lòng chọn khách hàng trước khi chọn phiếu giảm giá!');
                 return;
             }
-
-            // Load danh sách phiếu giảm giá của khách hàng
+            if (selectedCustomer.isGuest) {
+                showWarning('Khách vãng lai không có phiếu giảm giá. Chọn khách có tài khoản để dùng phiếu.');
+                return;
+            }
             loadCustomerDiscountVouchers();
         }
 
         // Load danh sách phiếu giảm giá của khách hàng
         function loadCustomerDiscountVouchers() {
+            if (!selectedCustomer || selectedCustomer.isGuest || !selectedCustomer.id) return;
             $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', { customerId: selectedCustomer.id }, function(data) {
                 if (data && data.length > 0) {
                     renderVoucherList(data);
@@ -895,7 +964,7 @@
         // Tạo giỏ hàng mới
         function taoGioHang() {
             const dto = {
-                idKhachHang: selectedCustomer ? selectedCustomer.id : null,
+                idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
                 nguoiTao: "Admin"
             };
 
@@ -1420,35 +1489,43 @@
         }
 
         function showCustomerModal() {
-            renderCustomerList(customers);
-            $('#customerModal').modal('show');
+            $('#searchCustomer').val('');
+            loadCustomers(function() {
+                lastRenderedCustomerList = customers;
+                renderCustomerList(customers);
+                $('#customerModal').modal('show');
+            });
         }
 
         function renderCustomerList(list) {
-            let html = list.map((c, i) => `
+            lastRenderedCustomerList = list || [];
+            let html = lastRenderedCustomerList.map((c, i) => `
                 <tr>
                     <td>${i+1}</td>
-                    <td><img src="${c.img}" width="40" class="rounded-circle"/></td>
-                    <td>${c.name}</td>
-                    <td>${c.email}</td>
-                    <td>${c.phone}</td>
-                    <td>${c.point}</td>
+                    <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td>
+                    <td>${(c.name || '—')}</td>
+                    <td>${(c.email || '—')}</td>
+                    <td>${(c.phone || '—')}</td>
+                    <td>${(c.point != null ? c.point : 0)}</td>
                     <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
                 </tr>
             `).join('');
+            if (!html) html = '<tr><td colspan="7" class="text-center text-muted">Không có khách hàng nào. Thêm mới hoặc chọn Khách vãng lai.</td></tr>';
             $('#customerList').html(html);
         }
 
         function selectCustomer(id) {
-            selectedCustomer = customers.find(c => c.id == id);
+            var c = lastRenderedCustomerList.find(function(x) { return x.id == id; });
+            if (!c) c = customers.find(function(x) { return x.id == id; });
+            if (!c) return showWarning('Không tìm thấy khách hàng.');
+            selectedCustomer = c;
+            selectedCustomer.isGuest = false;
             $('#customerModal').modal('hide');
-            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary').addClass('bg-info');
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-warning text-dark').addClass('bg-info');
             $('#customerDetails').show();
-            $('#customerPhone').text(selectedCustomer.phone);
-            $('#customerEmail').text(selectedCustomer.email);
-            $('#customerPoint').text(selectedCustomer.point);
-
-            // Hiển thị nút hủy chọn và các nút địa chỉ
+            $('#customerPhone').text(selectedCustomer.phone || '—');
+            $('#customerEmail').text(selectedCustomer.email || '—');
+            $('#customerPoint').text(selectedCustomer.point != null ? selectedCustomer.point : 0);
             $('#btnClearCustomer').show();
             $('#btnShowAddress').show();
             $('#btnAddAddress').show();
@@ -1476,7 +1553,7 @@
             selectedCustomer = null;
 
             // Reset thông tin hiển thị về khách lẻ
-            $('#customerName').text('khách lẻ').removeClass('bg-info').addClass('bg-secondary');
+            $('#customerName').text('khách lẻ').removeClass('bg-info bg-warning text-dark').addClass('bg-secondary');
             $('#customerDetails').hide();
             $('#customerPhone').text('');
             $('#customerEmail').text('');
@@ -1538,10 +1615,15 @@
             updatePaymentInfo();
         }
 
-        // Load địa chỉ khách hàng
+        // Load địa chỉ khách hàng (chỉ khi chọn khách có trong DB, không áp dụng cho khách vãng lai)
         function loadCustomerAddress() {
             if (!selectedCustomer) return;
-
+            if (selectedCustomer.isGuest) {
+                $('#shipName').val('');
+                $('#shipPhone').val('');
+                $('#shipAddress').val('');
+                return;
+            }
             $.get('/Admin/ClientBanHangTaiQuay/dia-chi-khach-hang', { customerId: selectedCustomer.id }, function(data) {
                 if (data && data.tenNguoiNhan) {
                     // Có địa chỉ, điền thông tin
@@ -1670,12 +1752,12 @@
                 return;
             }
 
-            // Dữ liệu gửi đi
+            // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
             let dto = {
                 idGioHang: gh.id,
-                customerName: selectedCustomer ? selectedCustomer.name : $('#shipName').val(),
-                customerPhone: selectedCustomer ? selectedCustomer.phone : $('#shipPhone').val(),
-                customerEmail: selectedCustomer ? selectedCustomer.email : $('#shipEmail').val(),
+                customerName: selectedCustomer ? (selectedCustomer.isGuest ? ($('#shipName').val() || 'Khách vãng lai') : selectedCustomer.name) : ($('#shipName').val() || ''),
+                customerPhone: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipPhone').val() : selectedCustomer.phone) : $('#shipPhone').val(),
+                customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
                 address: $('#shipAddress').val(),
                 discountCode: $('#discountCode').val(),
                 usePoint: usePoint,
@@ -2449,12 +2531,15 @@
             const tinhText = $('#shipTinh option:selected').text() || '';
             const quanText = $('#shipQuan option:selected').text() || '';
 
-            // Chỉ tính phí khi đã chọn đủ tỉnh và quận
-            if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện') {
+            // Khi dùng GHN: cần chọn đủ tỉnh, quận, phường. Không dùng GHN: chỉ cần tỉnh + quận
+            const phuongText = $('#shipPhuong option:selected').text() || '';
+            const needWard = useGHN;
+            const hasWard = phuongText && phuongText !== 'Phường Xã';
+            if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện' || (needWard && !hasWard)) {
                 shippingFee = 0;
                 $('#shippingFee').val(0);
                 $('#shippingFeeDisplay').html('');
-                return; // Không gọi updatePaymentInfo để tránh vòng lặp
+                return;
             }
 
             // Lấy tổng giá trị đơn hàng
@@ -2466,8 +2551,14 @@
                 District: quanText,
                 OrderValue: orderValue
             };
-
-            console.log('Sending shipping calculation request:', requestData);
+            // GHN: gửi thêm ToDistrictId, ToWardCode, Weight để API tính phí chính xác
+            const shipQuanVal = $('#shipQuan').val();
+            const shipPhuongVal = $('#shipPhuong').val();
+            if (useGHN && shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
+                requestData.ToDistrictId = parseInt(shipQuanVal, 10);
+                requestData.ToWardCode = String(shipPhuongVal);
+                requestData.Weight = 500; // gram, mặc định
+            }
 
             $.ajax({
                 url: '/Admin/ClientBanHangTaiQuay/tinh-phi-van-chuyen',
@@ -2686,74 +2777,115 @@
 
         // ===== ESGOO.NET ADDRESS DROPDOWN INTEGRATION =====
 
-        // Load tỉnh thành từ esgoo.net API
+        // Load tỉnh thành: ưu tiên GHN (nếu cấu hình) để tính phí ship chính xác, không thì dùng esgoo.net
         function loadProvinces() {
-            $.get("https://esgoo.net/api-tinhthanh/1/0.htm", function(data) {
-                if (data.error === 0) {
-                    // Load cho form chính
-                    if (document.getElementById('shipTinh')) {
-                        let html = '<option value="0">Tỉnh Thành</option>';
+            $.get('/Admin/ClientBanHangTaiQuay/ghn/provinces', function(ghnRes) {
+                if (ghnRes && ghnRes.configured === true && ghnRes.data && ghnRes.data.length > 0) {
+                    useGHN = true;
+                    var html = '<option value="0">Tỉnh Thành</option>';
+                    ghnRes.data.forEach(function(p) {
+                        html += '<option value="' + (p.provinceID || p.ProvinceID) + '">' + (p.provinceName || p.ProvinceName) + '</option>';
+                    });
+                    if (document.getElementById('shipTinh')) document.getElementById('shipTinh').innerHTML = html;
+                    if (document.getElementById('saveAddressTinh')) document.getElementById('saveAddressTinh').innerHTML = html;
+                    return;
+                }
+                useGHN = false;
+                $.get("https://esgoo.net/api-tinhthanh/1/0.htm", function(data) {
+                    if (data.error === 0) {
+                        if (document.getElementById('shipTinh')) {
+                            var html = '<option value="0">Tỉnh Thành</option>';
+                            data.data.forEach(function(province) {
+                                html += '<option value="' + province.id + '">' + province.full_name + '</option>';
+                            });
+                            document.getElementById('shipTinh').innerHTML = html;
+                        }
+                        if (document.getElementById('saveAddressTinh')) {
+                            var html2 = '<option value="0">Tỉnh Thành</option>';
+                            data.data.forEach(function(province) {
+                                html2 += '<option value="' + province.id + '">' + province.full_name + '</option>';
+                            });
+                            document.getElementById('saveAddressTinh').innerHTML = html2;
+                        }
+                    }
+                }).fail(function() {
+                    console.error('Không thể tải danh sách tỉnh thành từ esgoo.net');
+                });
+            }).fail(function() {
+                useGHN = false;
+                $.get("https://esgoo.net/api-tinhthanh/1/0.htm", function(data) {
+                    if (data.error === 0 && document.getElementById('shipTinh')) {
+                        var html = '<option value="0">Tỉnh Thành</option>';
                         data.data.forEach(function(province) {
-                            html += `<option value="${province.id}">${province.full_name}</option>`;
+                            html += '<option value="' + province.id + '">' + province.full_name + '</option>';
                         });
                         document.getElementById('shipTinh').innerHTML = html;
+                        if (document.getElementById('saveAddressTinh')) document.getElementById('saveAddressTinh').innerHTML = html;
                     }
-
-                    // Load cho modal lưu địa chỉ
-                    if (document.getElementById('saveAddressTinh')) {
-                        let html = '<option value="0">Tỉnh Thành</option>';
-                        data.data.forEach(function(province) {
-                            html += `<option value="${province.id}">${province.full_name}</option>`;
-                        });
-                        document.getElementById('saveAddressTinh').innerHTML = html;
-                    }
-                }
-            }).fail(function() {
-                console.error('Không thể tải danh sách tỉnh thành từ esgoo.net');
+                });
             });
         }
 
-        // Load quận huyện dựa trên tỉnh thành
+        // Load quận huyện: GHN hoặc esgoo tùy useGHN
         function loadDistricts(provinceId, targetSelectId) {
-            if (provinceId === "0") {
+            if (provinceId === "0" || !provinceId) {
                 document.getElementById(targetSelectId).innerHTML = '<option value="0">Quận Huyện</option>';
-                // Reset phường xã
-                const wardSelectId = targetSelectId.replace('Quan', 'Phuong');
-                if (document.getElementById(wardSelectId)) {
-                    document.getElementById(wardSelectId).innerHTML = '<option value="0">Phường Xã</option>';
-                }
+                var wardSelectId = targetSelectId.replace('Quan', 'Phuong');
+                if (document.getElementById(wardSelectId)) document.getElementById(wardSelectId).innerHTML = '<option value="0">Phường Xã</option>';
                 return;
             }
-
-            $.get(`https://esgoo.net/api-tinhthanh/2/${provinceId}.htm`, function(data) {
-                if (data.error === 0) {
-                    let html = '<option value="0">Quận Huyện</option>';
-                    data.data.forEach(function(district) {
-                        html += `<option value="${district.id}">${district.full_name}</option>`;
+            if (useGHN) {
+                $.get('/Admin/ClientBanHangTaiQuay/ghn/districts?provinceId=' + encodeURIComponent(provinceId), function(res) {
+                    var list = (res && res.data) ? res.data : [];
+                    var html = '<option value="0">Quận Huyện</option>';
+                    list.forEach(function(d) {
+                        var id = d.districtID !== undefined ? d.districtID : d.DistrictID;
+                        var name = d.districtName || d.DistrictName;
+                        html += '<option value="' + id + '">' + name + '</option>';
                     });
                     document.getElementById(targetSelectId).innerHTML = html;
-
-                    // Reset phường xã
-                    const wardSelectId = targetSelectId.replace('Quan', 'Phuong');
-                    if (document.getElementById(wardSelectId)) {
-                        document.getElementById(wardSelectId).innerHTML = '<option value="0">Phường Xã</option>';
-                    }
+                    var ws = targetSelectId.replace('Quan', 'Phuong');
+                    if (document.getElementById(ws)) document.getElementById(ws).innerHTML = '<option value="0">Phường Xã</option>';
+                });
+                return;
+            }
+            $.get("https://esgoo.net/api-tinhthanh/2/" + provinceId + ".htm", function(data) {
+                if (data.error === 0) {
+                    var html = '<option value="0">Quận Huyện</option>';
+                    data.data.forEach(function(district) {
+                        html += '<option value="' + district.id + '">' + district.full_name + '</option>';
+                    });
+                    document.getElementById(targetSelectId).innerHTML = html;
+                    var wardSelectId = targetSelectId.replace('Quan', 'Phuong');
+                    if (document.getElementById(wardSelectId)) document.getElementById(wardSelectId).innerHTML = '<option value="0">Phường Xã</option>';
                 }
             });
         }
 
-        // Load phường xã dựa trên quận huyện
+        // Load phường xã: GHN dùng WardCode (string), esgoo dùng id
         function loadWards(districtId, targetSelectId) {
-            if (districtId === "0") {
+            if (districtId === "0" || !districtId) {
                 document.getElementById(targetSelectId).innerHTML = '<option value="0">Phường Xã</option>';
                 return;
             }
-
-            $.get(`https://esgoo.net/api-tinhthanh/3/${districtId}.htm`, function(data) {
+            if (useGHN) {
+                $.get('/Admin/ClientBanHangTaiQuay/ghn/wards?districtId=' + encodeURIComponent(districtId), function(res) {
+                    var list = (res && res.data) ? res.data : [];
+                    var html = '<option value="0">Phường Xã</option>';
+                    list.forEach(function(w) {
+                        var code = w.wardCode || w.WardCode || '';
+                        var name = w.wardName || w.WardName || '';
+                        html += '<option value="' + code + '">' + name + '</option>';
+                    });
+                    document.getElementById(targetSelectId).innerHTML = html;
+                });
+                return;
+            }
+            $.get("https://esgoo.net/api-tinhthanh/3/" + districtId + ".htm", function(data) {
                 if (data.error === 0) {
-                    let html = '<option value="0">Phường Xã</option>';
+                    var html = '<option value="0">Phường Xã</option>';
                     data.data.forEach(function(ward) {
-                        html += `<option value="${ward.id}">${ward.full_name}</option>`;
+                        html += '<option value="' + ward.id + '">' + ward.full_name + '</option>';
                     });
                     document.getElementById(targetSelectId).innerHTML = html;
                 }

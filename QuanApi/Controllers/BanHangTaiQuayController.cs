@@ -377,26 +377,18 @@ namespace QuanApi.Controllers
         [HttpPost("thanh-toan")]
         public async Task<IActionResult> PayInvoice([FromBody] InvoiceDto dto)
         {
-            Console.WriteLine($"[PayInvoice] PaymentMethod from client: {dto.PaymentMethod}");
             // Map code sang ID phương thức thanh toán
             Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
             {
                 var method = await _context.PhuongThucThanhToans
                     .FirstOrDefaultAsync(x => x.MaPhuongThuc == dto.PaymentMethod && x.TrangThai);
-                Console.WriteLine($"[PayInvoice] Query method result: {(method == null ? "null" : method.IDPhuongThucThanhToan.ToString())}");
                 if (method == null)
-                {
-                    Console.WriteLine("[PayInvoice] ERROR: Phương thức thanh toán không hợp lệ.");
                     return BadRequest("Phương thức thanh toán không hợp lệ.");
-                }
                 paymentMethodId = method.IDPhuongThucThanhToan;
             }
             else
-            {
-                Console.WriteLine("[PayInvoice] ERROR: Chưa chọn phương thức thanh toán.");
                 return BadRequest("Chưa chọn phương thức thanh toán.");
-            }
 
             string trangThaiHoaDon;
             var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -412,12 +404,20 @@ namespace QuanApi.Controllers
                 trangThaiHoaDon = "DaThanhToan";
             }
 
+            // Khách vãng lai chọn giao hàng: tạo KhachHang + địa chỉ trong DB rồi gán vào hóa đơn
+            Guid? customerIdForInvoice = dto.CustomerId;
+            if (!dto.CustomerId.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+            {
+                var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName!, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
+                customerIdForInvoice = guest.IDKhachHang;
+            }
+
             // 1. Tạo hóa đơn
             var hoaDon = new HoaDon
             {
                 IDHoaDon = Guid.NewGuid(),
                 MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-                IDKhachHang = dto.CustomerId,
+                IDKhachHang = customerIdForInvoice,
                 TenNguoiNhan = dto.CustomerName,
                 SoDienThoaiNguoiNhan = dto.CustomerPhone,
                 DiaChiGiaoHang = dto.Address,
@@ -427,7 +427,6 @@ namespace QuanApi.Controllers
                 TrangThaiHoaDon = true,
                 IDPhuongThucThanhToan = paymentMethodId
             };
-            Console.WriteLine($"[PayInvoice] Create HoaDon: {hoaDon.MaHoaDon}, Customer: {hoaDon.TenNguoiNhan}, PaymentMethodId: {hoaDon.IDPhuongThucThanhToan}");
             _context.HoaDons.Add(hoaDon);
 
             // 2. Thêm chi tiết hóa đơn và kiểm tra tồn kho
@@ -435,27 +434,15 @@ namespace QuanApi.Controllers
             {
                 var spct = await _context.SanPhamChiTiets.FindAsync(p.ProductDetailId);
                 if (spct == null)
-                {
-                    Console.WriteLine($"[PayInvoice] ERROR: Sản phẩm không tồn tại: {p.ProductDetailId}");
                     return BadRequest(new { message = "Sản phẩm không tồn tại" });
-                }
 
                 // Kiểm tra số lượng tồn kho
                 if (spct.SoLuong <= 0)
-                {
-                    Console.WriteLine($"[PayInvoice] ERROR: Sản phẩm {spct.IDSanPhamChiTiet} đã hết hàng");
                     return BadRequest(new { message = $"Sản phẩm {spct.IDSanPhamChiTiet} đã hết hàng" });
-                }
                 if (p.Quantity <= 0)
-                {
-                    Console.WriteLine($"[PayInvoice] ERROR: Số lượng phải lớn hơn 0 cho sản phẩm {spct.IDSanPhamChiTiet}");
                     return BadRequest(new { message = $"Số lượng phải lớn hơn 0 cho sản phẩm {spct.IDSanPhamChiTiet}" });
-                }
                 if (p.Quantity > spct.SoLuong)
-                {
-                    Console.WriteLine($"[PayInvoice] ERROR: Sản phẩm {spct.IDSanPhamChiTiet} vượt quá tồn kho ({spct.SoLuong})");
                     return BadRequest(new { message = $"Sản phẩm {spct.IDSanPhamChiTiet} vượt quá tồn kho ({spct.SoLuong})" });
-                }
                 // Tính giá sau khi áp dụng đợt giảm giá
                 var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
 
@@ -471,7 +458,6 @@ namespace QuanApi.Controllers
                     NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
-                Console.WriteLine($"[PayInvoice] Add Product: {spct.IDSanPhamChiTiet}, Qty: {p.Quantity}, Price: {spct.GiaBan}");
                 hoaDon.TongTien += cthd.ThanhTien;
                 _context.ChiTietHoaDons.Add(cthd);
 
@@ -507,13 +493,9 @@ namespace QuanApi.Controllers
                                 customerVoucher.TrangThai = false;
                             }
 
-                            Console.WriteLine($"[PayInvoice] Use voucher: {discount.MaCode}, Used: {customerVoucher.SoLuongDaSuDung}/{customerVoucher.SoLuong}");
                         }
                         else
-                        {
-                            Console.WriteLine($"[PayInvoice] Customer voucher not found or used up: {dto.DiscountCode}");
                             return BadRequest(new { message = "Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết." });
-                        }
                     }
 
                     // Tính số tiền giảm theo phần trăm
@@ -525,13 +507,9 @@ namespace QuanApi.Controllers
                     hoaDon.TienGiam = tienGiam;
                     hoaDon.IDPhieuGiamGia = discount.IDPhieuGiamGia;
                     hoaDon.TongTien -= tienGiam;
-                    Console.WriteLine($"[PayInvoice] Apply Discount: {discount.MaCode}, Value: {tienGiam}");
                 }
                 else
-                {
-                    Console.WriteLine($"[PayInvoice] Discount code not found or inactive: {dto.DiscountCode}");
                     return BadRequest(new { message = "Mã giảm giá không hợp lệ." });
-                }
             }
 
             // 4. Thêm phí vận chuyển nếu có
@@ -539,14 +517,9 @@ namespace QuanApi.Controllers
             {
                 hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
                 hoaDon.TongTien += dto.ShippingFee.Value;
-                Console.WriteLine($"[PayInvoice] Add Shipping Fee: {dto.ShippingFee.Value}");
             }
 
-            // 5. (Tùy chọn) Lưu CustomerPaid vào ghi chú hoặc trường phù hợp nếu muốn
-            // hoaDon.GhiChu = $"Khách đưa: {dto.CustomerPaid}";
-
             await _context.SaveChangesAsync();
-            Console.WriteLine($"[PayInvoice] SUCCESS: HoaDon {hoaDon.MaHoaDon} created.");
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon });
         }
 
@@ -1166,12 +1139,20 @@ namespace QuanApi.Controllers
                 trangThaiHoaDon = "DaThanhToan";
             }
 
+            // Khách vãng lai (giỏ hàng không có IDKhachHang) chọn giao hàng: tạo KhachHang + địa chỉ trong DB
+            Guid? customerIdForInvoice = gioHang.IDKhachHang;
+            if (!gioHang.IDKhachHang.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+            {
+                var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
+                customerIdForInvoice = guest.IDKhachHang;
+            }
+
             // Tạo hóa đơn
             var hoaDon = new HoaDon
             {
                 IDHoaDon = Guid.NewGuid(),
                 MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-                IDKhachHang = gioHang.IDKhachHang,
+                IDKhachHang = customerIdForInvoice,
                 TenNguoiNhan = dto.CustomerName,
                 SoDienThoaiNguoiNhan = dto.CustomerPhone,
                 DiaChiGiaoHang = dto.Address,
@@ -1265,6 +1246,48 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
+        }
+
+        /// <summary>
+        /// Tạo khách hàng vãng lai khi chọn giao hàng: lưu tên, SĐT, email, địa chỉ vào DB.
+        /// </summary>
+        private async Task<KhachHang> TaoKhachHangVangLaiAsync(string ten, string soDienThoai, string? email, string? diaChiGiaoHang)
+        {
+            var maKhachHang = "GUEST-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+            var khachHang = new KhachHang
+            {
+                IDKhachHang = Guid.NewGuid(),
+                MaKhachHang = maKhachHang,
+                TenKhachHang = ten?.Trim() ?? "Khách vãng lai",
+                SoDienThoai = soDienThoai?.Trim() ?? "",
+                Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+                MatKhau = null,
+                NgayTao = DateTime.UtcNow,
+                NguoiTao = "POS",
+                TrangThai = true
+            };
+            _context.KhachHang.Add(khachHang);
+
+            if (!string.IsNullOrWhiteSpace(diaChiGiaoHang))
+            {
+                var diaChi = new DiaChi
+                {
+                    IDDiaChi = Guid.NewGuid(),
+                    MaDiaChi = "DC-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
+                    IDKhachHang = khachHang.IDKhachHang,
+                    DiaChiChiTiet = diaChiGiaoHang.Trim(),
+                    LaMacDinh = true,
+                    TenNguoiNhan = khachHang.TenKhachHang,
+                    SdtNguoiNhan = khachHang.SoDienThoai,
+                    NgayTao = DateTime.UtcNow,
+                    NguoiTao = "POS",
+                    TrangThai = true
+                };
+                _context.DiaChis.Add(diaChi);
+            }
+
+            await _context.SaveChangesAsync();
+            return khachHang;
         }
     }
 }

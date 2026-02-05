@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 
@@ -170,7 +170,6 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     // Đọc response content một lần duy nhất
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"API Response: {responseContent}");
 
                     try
                     {
@@ -240,7 +239,6 @@ namespace QuanView.Areas.Admin.Controllers
                     }
                     catch (System.Text.Json.JsonException jsonEx)
                     {
-                        Console.WriteLine($"JSON Deserialization Error: {jsonEx.Message}");
                         TempData["ErrorMessage"] = $"Lỗi khi xử lý dữ liệu từ API: {jsonEx.Message}";
                         return View(new List<HoaDon>());
                     }
@@ -248,14 +246,12 @@ namespace QuanView.Areas.Admin.Controllers
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
                     TempData["ErrorMessage"] = $"Lỗi API: {response.StatusCode} - {errorContent}";
                     return View(new List<HoaDon>());
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error: {ex.Message}");
                 TempData["ErrorMessage"] = $"Lỗi khi tải danh sách đơn hàng: {ex.Message}";
                 return View(new List<HoaDon>());
             }

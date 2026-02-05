@@ -36,6 +36,8 @@ builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 builder.Services.AddScoped<IHoaTietService, HoaTietService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
+builder.Services.Configure<QuanApi.Models.GHNSettings>(builder.Configuration.GetSection(QuanApi.Models.GHNSettings.SectionName));
+builder.Services.AddHttpClient<IGHNService, GHNService>();
 builder.Services.AddScoped<IPhuongThucThanhToanService, PhuongThucThanhToanService>();
 builder.Services.AddScoped<IHoaDonService, HoaDonService>();
 builder.Services.AddScoped<IGioHangService, GioHangService>();
