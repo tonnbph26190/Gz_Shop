@@ -883,7 +883,9 @@ namespace QuanApi.Controllers
                 if (spct.SoLuong < cthd.SoLuong + dto.SoLuong)
                     return BadRequest(new { message = $"Tổng số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}, Đã chọn: {cthd.SoLuong}" });
 
-                // Cập nhật số lượng
+                // Cập nhật số lượng và đồng bộ giá theo sản phẩm hiện tại
+                var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
+                cthd.GiaBan = giaSauGiam;
                 cthd.SoLuong += dto.SoLuong;
                 cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
@@ -1028,6 +1030,16 @@ namespace QuanApi.Controllers
             if (gioHang == null)
                 return NotFound("Không tìm thấy giỏ hàng.");
 
+            // Cập nhật giá từ sản phẩm hiện tại (giá có thể đã đổi sau khi thêm vào giỏ)
+            foreach (var ct in gioHang.ChiTietGioHangs)
+            {
+                var giaSauGiam = await TinhGiaSauGiam(ct.IDSanPhamChiTiet, ct.SanPhamChiTiet.GiaBan);
+                ct.GiaBan = giaSauGiam;
+                ct.LanCapNhatCuoi = DateTime.UtcNow;
+                ct.NguoiCapNhat = "System";
+            }
+            await _context.SaveChangesAsync();
+
             var result = new
             {
                 idGioHang = gioHang.IDGioHang,
@@ -1048,7 +1060,7 @@ namespace QuanApi.Controllers
                     hoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? ct.SanPhamChiTiet.HoaTiet.TenHoaTiet : null,
                     soLuong = ct.SoLuong,
                     giaBan = ct.GiaBan,
-                    giaGoc = ct.SanPhamChiTiet.GiaBan, // Thêm giá gốc
+                    giaGoc = ct.SanPhamChiTiet.GiaBan,
                     thanhTien = ct.SoLuong * ct.GiaBan,
                     anh = ct.SanPhamChiTiet.AnhSanPhams
                         .OrderByDescending(a => a.LaAnhChinh)
@@ -1102,6 +1114,7 @@ namespace QuanApi.Controllers
         {
             var gioHang = await _context.GioHangs
                 .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
+                    .ThenInclude(ct => ct.SanPhamChiTiet)
                 .FirstOrDefaultAsync(g => g.IDGioHang == dto.IDGioHang && g.TrangThai);
 
             if (gioHang == null)
@@ -1164,9 +1177,10 @@ namespace QuanApi.Controllers
             };
             _context.HoaDons.Add(hoaDon);
 
-            // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn
+            // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn (dùng giá hiện tại của sản phẩm)
             foreach (var cthd in gioHang.ChiTietGioHangs)
             {
+                var giaSauGiam = await TinhGiaSauGiam(cthd.IDSanPhamChiTiet, cthd.SanPhamChiTiet.GiaBan);
                 var cthdHoaDon = new ChiTietHoaDon
                 {
                     IDChiTietHoaDon = Guid.NewGuid(),
@@ -1174,8 +1188,8 @@ namespace QuanApi.Controllers
                     IDHoaDon = hoaDon.IDHoaDon,
                     IDSanPhamChiTiet = cthd.IDSanPhamChiTiet,
                     SoLuong = cthd.SoLuong,
-                    DonGia = cthd.GiaBan,
-                    ThanhTien = cthd.SoLuong * cthd.GiaBan,
+                    DonGia = giaSauGiam,
+                    ThanhTien = cthd.SoLuong * giaSauGiam,
                     NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
