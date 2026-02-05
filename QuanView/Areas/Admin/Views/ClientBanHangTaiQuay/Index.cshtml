@@ -1742,8 +1742,8 @@
             let gh = gioHangs[currentGioHang];
             if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
 
-            // Lấy lại các thông tin đã chọn từ ngoài giao diện
-            let paymentMethod = $('#selectedPaymentMethod').text() || "Tiền mặt";
+            // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
+            let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
             let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
             let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
 
@@ -1762,13 +1762,14 @@
                 discountCode: $('#discountCode').val(),
                 usePoint: usePoint,
                 shipping: useShipping,
-                paymentMethod: paymentMethod,
+                paymentMethod: paymentMethodCode,
                 customerPaid: customerPaid,
-                shippingFee: shippingFee // Phí vận chuyển động từ API
+                shippingFee: shippingFee
             };
 
-            // Nếu chọn chuyển khoản/thẻ -> chuyển hướng VNPay (POS)
-            const isPosVnpay = paymentMethod.trim().toLowerCase() === 'chuyển khoản' || paymentMethod.trim().toLowerCase() === 'thẻ';
+            // Nếu chọn chuyển khoản/thẻ (VNPay): theo mã thường là "vnpay", "bank", "chuyển khoản", "thẻ"
+            const codeLower = paymentMethodCode.toLowerCase();
+            const isPosVnpay = codeLower === 'vnpay' || codeLower === 'bank' || codeLower === 'chuyển khoản' || codeLower === 'thẻ' || codeLower === 'chuyenkhoan';
             if (isPosVnpay) {
                 const paymentInfo = {
                     orderType: 'billpayment',
@@ -1815,8 +1816,16 @@
                     loadGioHang();
                     clearDiscount();
                 },
-                error: function(err) {
-                    showError('Thanh toán thất bại!');
+                error: function(xhr) {
+                    let msg = 'Thanh toán thất bại!';
+                    try {
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        else if (xhr.responseText) {
+                            var o = JSON.parse(xhr.responseText);
+                            if (o.message) msg = o.message;
+                        }
+                    } catch (e) { }
+                    showError(msg);
                 }
             });
         }

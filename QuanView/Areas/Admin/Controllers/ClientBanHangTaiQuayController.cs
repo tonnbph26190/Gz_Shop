@@ -329,13 +329,18 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
-        // Chuyển giỏ hàng thành hóa đơn
+        // Chuyển giỏ hàng thành hóa đơn (trả đúng mã HTTP từ API để frontend nhận lỗi khi thanh toán thất bại)
         [HttpPost]
         [Route("Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don")]
         public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
         {
             var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don", dto);
             var result = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                Response.StatusCode = (int)response.StatusCode;
+                return Content(result, "application/json");
+            }
             return Content(result, "application/json");
         }
 

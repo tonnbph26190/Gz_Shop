@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Data.HoaDon>
+@model List<QuanApi.Data.HoaDon>
 @using QuanApi.Data
 @{
     ViewData["Title"] = "Quản lý đơn hàng";
@@ -130,17 +130,20 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="trangThai">Trạng thái:</label>
+                            @{
+                                var qTrangThai = Context.Request.Query["trangThai"].ToString();
+                            }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="Chờ xác nhận">Chờ xác nhận</option>
-                                <option value="Đã xác nhận">Đã xác nhận</option>
-                                <option value="Chờ lấy hàng">Chờ lấy hàng</option>
-                                <option value="Đã lấy hàng">Đã lấy hàng</option>
-                                <option value="Chờ giao hàng">Chờ giao hàng</option>
-                                <option value="Đang giao hàng">Đang giao hàng</option>
-                                <option value="Đã giao">Đã giao</option>
-                                <option value="Giao hàng thành công">Giao hàng thành công</option>
-                                <option value="Đã hủy">Đã hủy</option>
+                                <option value="" selected="@(string.IsNullOrEmpty(qTrangThai))">Tất cả trạng thái</option>
+                                <option value="Chờ xác nhận" selected="@(qTrangThai == "Chờ xác nhận")">Chờ xác nhận</option>
+                                <option value="Đã xác nhận" selected="@(qTrangThai == "Đã xác nhận")">Đã xác nhận</option>
+                                <option value="Chờ lấy hàng" selected="@(qTrangThai == "Chờ lấy hàng")">Chờ lấy hàng</option>
+                                <option value="Đã lấy hàng" selected="@(qTrangThai == "Đã lấy hàng")">Đã lấy hàng</option>
+                                <option value="Chờ giao hàng" selected="@(qTrangThai == "Chờ giao hàng")">Chờ giao hàng</option>
+                                <option value="Đang giao hàng" selected="@(qTrangThai == "Đang giao hàng")">Đang giao hàng</option>
+                                <option value="Đã giao" selected="@(qTrangThai == "Đã giao")">Đã giao</option>
+                                <option value="Giao hàng thành công" selected="@(qTrangThai == "Giao hàng thành công")">Giao hàng thành công</option>
+                                <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy")">Đã hủy</option>
                             </select>
                         </div>
                     </div>
@@ -159,10 +162,13 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="loaiDonHang">Loại đơn hàng:</label>
+                            @{
+                                var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                            }
                             <select class="form-control" id="loaiDonHang" name="loaiDonHang">
-                                <option value="">Tất cả</option>
-                                <option value="online">Đơn hàng Online</option>
-                                <option value="taiquay">Đơn hàng tại quầy</option>
+                                <option value="" selected="@(string.IsNullOrEmpty(qLoaiDon))">Tất cả</option>
+                                <option value="online" selected="@(qLoaiDon == "online")">Đơn hàng Online</option>
+                                <option value="taiquay" selected="@(qLoaiDon == "taiquay")">Đơn hàng tại quầy</option>
                             </select>
                         </div>
                     </div>
@@ -454,35 +460,38 @@
     </div>
 
     <script>
-        // Giữ lại giá trị đã chọn trong dropdown
-        $(document).ready(function() {
-            // Lấy giá trị từ URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
+        // Giữ lại giá trị đã chọn trong dropdown (dùng JavaScript thuần, không cần jQuery)
+        document.addEventListener('DOMContentLoaded', function() {
+            var urlParams = new URLSearchParams(window.location.search);
 
-            // Set giá trị cho dropdown trạng thái
-            const trangThai = urlParams.get('trangThai');
-            if (trangThai) {
-                $('#trangThai').val(trangThai);
+            var elTrangThai = document.getElementById('trangThai');
+            if (elTrangThai) {
+                var trangThai = urlParams.get('trangThai');
+                if (trangThai) elTrangThai.value = trangThai;
             }
 
-            // Set giá trị cho dropdown loại đơn hàng
-            const loaiDonHang = urlParams.get('loaiDonHang');
-            if (loaiDonHang) {
-                $('#loaiDonHang').val(loaiDonHang);
+            var elLoaiDonHang = document.getElementById('loaiDonHang');
+            if (elLoaiDonHang) {
+                var loaiDonHang = urlParams.get('loaiDonHang');
+                if (loaiDonHang) elLoaiDonHang.value = loaiDonHang;
             }
 
-            // Xử lý thay đổi page size
-            $('#pageSize').change(function() {
-                const newPageSize = $(this).val();
-                const currentUrl = new URL(window.location);
-                currentUrl.searchParams.set('pageSize', newPageSize);
-                currentUrl.searchParams.set('page', '1'); // Reset về trang đầu
-                window.location.href = currentUrl.toString();
-            });
+            var elPageSize = document.getElementById('pageSize');
+            if (elPageSize) {
+                elPageSize.addEventListener('change', function() {
+                    var currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('pageSize', this.value);
+                    currentUrl.searchParams.set('page', '1');
+                    window.location.href = currentUrl.toString();
+                });
+            }
 
-            // Reset về trang 1 khi submit form filter
-            $('#filterForm').submit(function() {
-                $(this).find('input[name="page"]').val('1');
-            });
+            var filterForm = document.getElementById('filterForm');
+            if (filterForm) {
+                filterForm.addEventListener('submit', function() {
+                    var pageInput = this.querySelector('input[name="page"]');
+                    if (pageInput) pageInput.value = '1';
+                });
+            }
         });
     </script>
