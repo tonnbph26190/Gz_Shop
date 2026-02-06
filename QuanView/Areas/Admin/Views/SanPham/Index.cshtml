@@ -1,4 +1,4 @@
-﻿@model QuanView.ViewModels.SanPhamFilterViewModel
+@model QuanView.ViewModels.SanPhamFilterViewModel
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
 }
@@ -195,13 +195,15 @@
                         <td>@(item.CoXepLy ? "Có" : "Không")</td>
                         <td>@(item.CoGian ? "Có" : "Không")</td>
                         <td>
-                            <span class="badge @(item.TrangThai ? "bg-success" : "bg-secondary")">
-                                @(item.TrangThai ? "Hoạt động" : "Ngưng")
-                            </span>
+                            <div class="form-check form-switch d-inline-block" title="@(item.TrangThai ? "Đang bán" : "Ngưng bán")">
+                                <input class="form-check-input product-status-toggle" type="checkbox" role="switch"
+                                       data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
+                                       @(item.TrangThai ? "checked" : "") />
+                                <label class="form-check-label small">@(item.TrangThai ? "Hoạt động" : "Ngưng")</label>
+                            </div>
                         </td>
                         <td>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary me-1">Sửa</a>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Delete" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-danger">Xóa</a>
+                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary">Sửa</a>
                         </td>
                     </tr>
 
@@ -434,9 +436,38 @@
 
 @section Scripts {
     <script>
-        // Tự động submit form khi thay đổi trang thái
+        // Tự động submit form khi thay đổi trạng thái bộ lọc
         document.getElementById('trangThai')?.addEventListener('change', function () {
             this.form.submit();
+        });
+
+        // Đổi trạng thái sản phẩm (Hoạt động / Ngưng) và lưu
+        document.querySelectorAll('.product-status-toggle').forEach(function (el) {
+            el.addEventListener('change', function () {
+                var id = this.getAttribute('data-id');
+                var row = this.closest('tr');
+                var label = row.querySelector('.form-check-label');
+                var checked = this.checked;
+                var newStatus = checked;
+
+                fetch('/Admin/SanPham/ToggleStatus?id=' + encodeURIComponent(id), { method: 'POST' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            label.textContent = data.trangThai ? 'Hoạt động' : 'Ngưng';
+                            if (typeof showNotification === 'function') showNotification('Đã lưu trạng thái.', 'success');
+                        } else {
+                            this.checked = !checked;
+                            label.textContent = this.checked ? 'Hoạt động' : 'Ngưng';
+                            if (typeof showNotification === 'function') showNotification('Lỗi: ' + (data.message || 'Không lưu được.'), 'error');
+                        }
+                    }.bind(this))
+                    .catch(function (err) {
+                        this.checked = !checked;
+                        label.textContent = this.checked ? 'Hoạt động' : 'Ngưng';
+                        if (typeof showNotification === 'function') showNotification('Lỗi: ' + err.message, 'error');
+                    }.bind(this));
+            });
         });
         // Hiển thị modal thêm ảnh
         function showAddImageModal(sanPhamChiTietId) {

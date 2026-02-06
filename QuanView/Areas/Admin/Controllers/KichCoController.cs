@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanView.ViewModels;
 using System.Net.Http.Json;
@@ -38,14 +38,13 @@ namespace QuanView.Areas.Admin.Controllers
 
             var result = JsonSerializer.Deserialize<PagedResult<KichCo>>(json, options);
 
-            // Gửi các biến ra view để làm phân trang và giữ lại giá trị lọc
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
-            ViewBag.TotalItems = result.Total;
+            ViewBag.TotalItems = result?.Total ?? 0;
             ViewBag.Keyword = keyword ?? "";
             ViewBag.Status = trangThai ?? "";
 
-            return View(result.Data);
+            return View(result?.Data ?? new List<KichCo>());
         }
 
         public async Task<IActionResult> Create()
@@ -56,9 +55,6 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(KichCo model)
         {
-            Console.WriteLine("📥 MVC nhận Create từ View:");
-            Console.WriteLine($"MaKichCo: {model.MaKichCo}, TenKichCo: {model.TenKichCo}, TrangThai: {model.TrangThai}");
-
             // Validate size values
             var allowedSizes = new[] { "S", "M", "L", "XL", "XXL" };
             if (!allowedSizes.Contains(model.TenKichCo))
@@ -72,12 +68,9 @@ namespace QuanView.Areas.Admin.Controllers
             var content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync("KichCo/Create", content);
 
-            Console.WriteLine($"📤 Gửi API xong, Status: {response.StatusCode}");
-
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"❌ Lỗi từ API: {error}");
                 return Json(new { success = false, message = "Không thêm được kích cỡ" });
             }
 
@@ -132,18 +125,14 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
         {
-            Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
             var response = await _httpClient.PutAsync($"KichCo/ToggleStatus/{req.Id}", null);
-            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
-
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 Nội dung trả về: {json}");
-
             if (!response.IsSuccessStatusCode)
                 return Json(new { success = false });
 
-            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            return Json(new { success = true, trangThai = data["trangThai"] });
+            var json = await response.Content.ReadAsStringAsync();
+            var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            var trangThai = data != null && data.TryGetValue("trangThai", out var je) ? je.GetBoolean() : (bool?)null;
+            return Json(new { success = true, trangThai });
         }
     }
 }

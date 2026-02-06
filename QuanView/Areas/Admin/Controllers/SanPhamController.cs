@@ -1,12 +1,17 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using QuanView.Areas.Admin.Models;
-using QuanView.Models;
-using QuanView.ViewModels;
-using System.Diagnostics;
-using System.Text;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using QuanView.Areas.Admin.Models;
+using System.Net.Http;
+using System.Text;
+using QuanView.Models;
+using System.Diagnostics;
+using QuanApi.Dtos;
+using System.Linq;
+using Microsoft.AspNetCore.Authorization;
+using QuanApi.Data;
+using QuanView.ViewModels;
+using System.Net.Http.Json;
 using AddAnhSanPhamDto = QuanApi.Dtos.AddAnhSanPhamDto;
 
 namespace QuanView.Areas.Admin.Controllers
@@ -16,6 +21,12 @@ namespace QuanView.Areas.Admin.Controllers
     public class SanPhamController : Controller
     {
         private readonly HttpClient _http;
+
+        /// <summary>JSON options dùng khi gửi DTO biến thể sang API (API dùng camelCase).</summary>
+        private static readonly JsonSerializerOptions ApiVariantJsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         public SanPhamController(IHttpClientFactory factory)
         {
@@ -186,7 +197,7 @@ namespace QuanView.Areas.Admin.Controllers
                     {
                         ct.IdSanPhamChiTiet = Guid.NewGuid();
                         ct.IdSanPham = SanPhamDaCoId.Value;
-                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct);
+                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
                         if (!res.IsSuccessStatusCode)
                         {
                             var msg = await res.Content.ReadAsStringAsync();
@@ -219,7 +230,7 @@ namespace QuanView.Areas.Admin.Controllers
                     {
                         ct.IdSanPhamChiTiet = Guid.NewGuid();
                         ct.IdSanPham = dto.IDSanPham;
-                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct);
+                        var res = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
                         if (!res.IsSuccessStatusCode)
                         {
                             var msg = await res.Content.ReadAsStringAsync();
@@ -236,82 +247,33 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Edit(Guid id)
         {
-            var response = await _http.GetAsync($"sanphams/{id}");
+            // Dùng endpoint full để lấy sản phẩm + tất cả biến thể trong một lần (map đúng cho Edit)
+            var response = await _http.GetAsync($"sanphams/{id}/full");
             if (!response.IsSuccessStatusCode) return NotFound();
-            var dto = await response.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>();
 
-            // 🔍 Debug: Kiểm tra thông tin sản phẩm chính
-            System.Diagnostics.Debug.WriteLine($"🏷️ SanPham ID: {dto.IDSanPham}, Ten: {dto.TenSanPham}");
+            var jsonOpt = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var dto = await response.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>(jsonOpt);
+            if (dto == null)
+                return NotFound();
 
-            var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={id}");
-            if (res.IsSuccessStatusCode)
+            dto.ChiTietSanPhams ??= new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+            foreach (var item in dto.ChiTietSanPhams)
             {
-                var ctJson = await res.Content.ReadAsStringAsync();
-
-                // 💥 Kiểm tra JSON trước khi parse
-                Console.WriteLine($"👉 JSON: {ctJson}");
-
-                var ctList = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                // 🔧 FIX: Đảm bảo IdSanPham được gán đúng cho tất cả chi tiết
-                foreach (var item in ctList)
-                {
-                    // Gán IdSanPham nếu chưa có hoặc bị null/empty
-                    if (item.IdSanPham == Guid.Empty || item.IdSanPham == null)
-                    {
-                        item.IdSanPham = id;
-                        System.Diagnostics.Debug.WriteLine($"🔧 Fixed IdSanPham for ChiTiet: {item.IdSanPhamChiTiet}");
-                    }
-
-                    // 💥 Kiểm tra sau khi parse và fix
-                    System.Diagnostics.Debug.WriteLine($"📦 ID: {item.IdSanPhamChiTiet}, SanPhamID: {item.IdSanPham}, {item.TenKichCo} - SL: {item.SoLuong}, Giá: {item.GiaBan}");
-                }
-
-                dto.ChiTietSanPhams = ctList;
-
-                // ✅ Cập nhật ảnh chính từ SanPhamChiTiet đầu tiên có ảnh
-                if (ctList != null && ctList.Any())
-                {
-                    var firstWithImage = ctList.FirstOrDefault(ct => !string.IsNullOrEmpty(ct.AnhDaiDien));
-                    if (firstWithImage != null)
-                    {
-                        dto.AnhChinh = firstWithImage.AnhDaiDien;
-                    }
-                }
-
-                // ✅ Load danh sách ảnh cho từng sản phẩm chi tiết
-                if (ctList != null)
-                {
-                    foreach (var ct in ctList)
-                    {
-                        var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
-                        if (imagesRes.IsSuccessStatusCode)
-                        {
-                            var imagesJson = await imagesRes.Content.ReadAsStringAsync();
-                            var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                            ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages);
-
-                            // ✅ Cập nhật ảnh đại diện từ danh sách ảnh
-                            var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
-                            if (mainImage != null)
-                            {
-                                ct.AnhDaiDien = mainImage.UrlAnh;
-                            }
-                        }
-                    }
-                }
-
-                // 🔍 Debug: Kiểm tra tổng quan
-                System.Diagnostics.Debug.WriteLine($"📊 Tổng số chi tiết: {ctList?.Count ?? 0}");
+                if (item.IdSanPham == Guid.Empty) item.IdSanPham = id;
             }
-            else
+
+            // Load thêm danh sách ảnh từng biến thể (nếu cần cho Edit)
+            foreach (var ct in dto.ChiTietSanPhams)
             {
-                // 🔍 Debug: Nếu không load được chi tiết
-                System.Diagnostics.Debug.WriteLine($"❌ Không load được chi tiết sản phẩm: {res.StatusCode}");
-                dto.ChiTietSanPhams = new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+                var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
+                if (imagesRes.IsSuccessStatusCode)
+                {
+                    var imagesJson = await imagesRes.Content.ReadAsStringAsync();
+                    var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, jsonOpt);
+                    ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages ?? new List<QuanApi.Dtos.AnhSanPhamDto>());
+                    var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
+                    if (mainImage != null) ct.AnhDaiDien = mainImage.UrlAnh;
+                }
             }
 
             await LoadDropdownData();
@@ -346,48 +308,111 @@ namespace QuanView.Areas.Admin.Controllers
                 return View(dto);
             }
 
-            // Cập nhật chi tiết sản phẩm
+            // Lấy danh sách biến thể hiện có để xác định: xóa bớt / tạo mới / cập nhật
+            var existingCtRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
+            var existingIds = new HashSet<Guid>();
+            if (existingCtRes.IsSuccessStatusCode)
+            {
+                var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (existingList != null)
+                    foreach (var x in existingList)
+                        if (x.IdSanPhamChiTiet != Guid.Empty)
+                            existingIds.Add(x.IdSanPhamChiTiet);
+            }
+
+            var submittedIds = dto.ChiTietSanPhams?
+                .Where(ct => ct != null && ct.IdSanPhamChiTiet != Guid.Empty)
+                .Select(ct => ct.IdSanPhamChiTiet)
+                .ToHashSet() ?? new HashSet<Guid>();
+
+            // Xóa các biến thể bị bỏ khỏi form. API: nếu biến thể có trong đơn/giỏ thì chuyển sang ngưng bán (soft-delete).
+            var softDeleteMessage = (string?)null;
+            foreach (var id in existingIds.Except(submittedIds))
+            {
+                var delRes = await _http.DeleteAsync($"sanphamchitiets/{id}");
+                if (!delRes.IsSuccessStatusCode)
+                {
+                    var msg = await delRes.Content.ReadAsStringAsync();
+                    ModelState.AddModelError(string.Empty, $"Không thể xóa biến thể: {msg}");
+                }
+                else
+                {
+                    var body = await delRes.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(body) && body.Contains("softDelete", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            var json = JsonSerializer.Deserialize<JsonElement>(body);
+                            if (json.TryGetProperty("message", out var msgProp))
+                                softDeleteMessage = msgProp.GetString();
+                        }
+                        catch { /* ignore */ }
+                    }
+                }
+            }
+            if (softDeleteMessage != null)
+                TempData["Info"] = softDeleteMessage;
+
+            // Cập nhật hoặc tạo mới từng biến thể trong form
             if (dto.ChiTietSanPhams != null)
             {
                 foreach (var ct in dto.ChiTietSanPhams)
                 {
-                    if (ct == null)
-                        continue;
+                    if (ct == null) continue;
+                    if (ct.IdSanPham == Guid.Empty) ct.IdSanPham = dto.IDSanPham;
 
-                    // 🔧 FIX: Gán IdSanPham nếu bị mất
-                    if (ct.IdSanPham == Guid.Empty)
+                    if (ct.IdSanPhamChiTiet == Guid.Empty)
                     {
-                        ct.IdSanPham = dto.IDSanPham;
-                        System.Diagnostics.Debug.WriteLine($" Fixed IdSanPham: {ct.IdSanPham}");
-                    }
-
-                    // 🔍 Debug: Kiểm tra dữ liệu trước khi gửi API
-                    System.Diagnostics.Debug.WriteLine($"🔄 Sending to API: ID={ct.IdSanPhamChiTiet}, SanPhamID={ct.IdSanPham}, SL={ct.SoLuong}, Giá={ct.GiaBan}");
-
-                    // 🔍 Debug: Serialize để xem JSON gửi đi
-                    var jsonContent = JsonSerializer.Serialize(ct, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        WriteIndented = true
-                    });
-                    System.Diagnostics.Debug.WriteLine($" JSON being sent: {jsonContent}");
-
-                    var res = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct);
-
-                    if (!res.IsSuccessStatusCode)
-                    {
-                        var msg = await res.Content.ReadAsStringAsync();
-                        System.Diagnostics.Debug.WriteLine($"❌ API Error: {res.StatusCode} - {msg}");
-                        ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
+                        // Chỉ tạo mới khi đã chọn ít nhất Kích cỡ + Màu (bỏ qua dòng "biến thể mới" để trống)
+                        if (ct.IdKichCo == Guid.Empty || ct.IdMauSac == Guid.Empty)
+                            continue;
+                        var postRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+                        if (!postRes.IsSuccessStatusCode)
+                        {
+                            var msg = await postRes.Content.ReadAsStringAsync();
+                            ModelState.AddModelError(string.Empty, $"Lỗi tạo biến thể mới: {msg}");
+                        }
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"✅ Successfully updated ID: {ct.IdSanPhamChiTiet}");
+                        var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct, ApiVariantJsonOptions);
+                        if (!putRes.IsSuccessStatusCode)
+                        {
+                            var msg = await putRes.Content.ReadAsStringAsync();
+                            ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
+                        }
                     }
                 }
             }
 
+            if (!ModelState.IsValid)
+            {
+                await LoadDropdownData();
+                return View(dto);
+            }
             return RedirectToAction("Index");
+        }
+
+        /// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus(Guid id)
+        {
+            var getRes = await _http.GetAsync($"sanphams/{id}");
+            if (!getRes.IsSuccessStatusCode)
+                return Json(new { success = false, message = "Không tìm thấy sản phẩm." });
+
+            var sp = await getRes.Content.ReadFromJsonAsync<QuanApi.Data.SanPham>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (sp == null)
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
+
+            sp.TrangThai = !sp.TrangThai;
+            var putRes = await _http.PutAsJsonAsync($"sanphams/{id}", sp, ApiVariantJsonOptions);
+            if (!putRes.IsSuccessStatusCode)
+            {
+                var msg = await putRes.Content.ReadAsStringAsync();
+                return Json(new { success = false, message = msg });
+            }
+            return Json(new { success = true, trangThai = sp.TrangThai });
         }
 
         public async Task<IActionResult> Delete(Guid id)

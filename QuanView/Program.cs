@@ -27,18 +27,16 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 });
 
 
-// 2️⃣ CẤU HÌNH HttpClient GỌI API
+// 2️⃣ CẤU HÌNH HttpClient GỌI API (chỉ đăng ký một lần)
 builder.Services.AddHttpClient("MyApi", client =>
 {
-    var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"];
-    if (string.IsNullOrEmpty(baseUrl))
-    {
-        throw new InvalidOperationException("Thiếu cấu hình 'ApiSettings:KhachHangApiBaseUrl' trong appsettings.json.");
-    }
+    var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"]
+        ?? builder.Configuration["ApiSettings:BaseUrl"]
+        ?? "https://localhost:7130/api/";
+    baseUrl = baseUrl.TrimEnd('/') + "/";
     client.BaseAddress = new Uri(baseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
-builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
 
 // Đọc cấu hình từ appsettings
 var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();

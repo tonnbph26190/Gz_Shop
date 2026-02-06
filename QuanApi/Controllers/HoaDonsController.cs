@@ -217,29 +217,31 @@ namespace QuanApi.Controllers
                                 IDPhuongThucThanhToan = h.PhuongThucThanhToan.IDPhuongThucThanhToan,
                                 TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
                             } : null,
-                            ChiTietHoaDons = h.ChiTietHoaDons.Select(ct => new
-                            {
-                                IDChiTietHoaDon = ct.IDChiTietHoaDon,
-                                MaChiTietHoaDon = ct.MaChiTietHoaDon,
-                                SoLuong = ct.SoLuong,
-                                DonGia = ct.DonGia,
-                                ThanhTien = ct.ThanhTien,
-                                SanPhamChiTiet = new
+                            ChiTietHoaDons = h.ChiTietHoaDons
+                                .Where(ct => ct.SanPhamChiTiet != null)
+                                .Select(ct => new
                                 {
-                                    IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
-                                    MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
-                                    GiaBan = ct.SanPhamChiTiet.GiaBan,
-                                    KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
-                                    MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
-                                    HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
-                                    SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+                                    IDChiTietHoaDon = ct.IDChiTietHoaDon,
+                                    MaChiTietHoaDon = ct.MaChiTietHoaDon,
+                                    SoLuong = ct.SoLuong,
+                                    DonGia = ct.DonGia,
+                                    ThanhTien = ct.ThanhTien,
+                                    SanPhamChiTiet = new
                                     {
-                                        IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
-                                        TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
-                                        MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
-                                    } : null
-                                }
-                            }).ToList()
+                                        IDSanPhamChiTiet = ct.SanPhamChiTiet!.IDSanPhamChiTiet,
+                                        MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+                                        GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
+                                        MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
+                                        HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
+                                        SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+                                        {
+                                            IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
+                                            TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
+                                            MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
+                                        } : null
+                                    }
+                                }).ToList()
                         })
                         .FirstOrDefaultAsync();
 
