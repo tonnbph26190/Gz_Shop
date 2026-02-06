@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Thống kê";
 }
 
@@ -405,128 +405,118 @@
 </style>
 
 @section Scripts {
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
     <script>
         $(document).ready(function () {
-            // Chỉ load script một lần và có delay
+            var api = '/api/ChartsApi';
+            function fmtVnd(n) { return (n || 0).toLocaleString('vi-VN') + ' đ'; }
+            function fmtNum(n) { return (n || 0).toLocaleString('vi-VN'); }
+
+            function setKpisFromSummary(data) {
+                if (!data) return;
+                $('#doanhThuHomNay').text(fmtVnd(data.todayRevenue));
+                $('#doanhThuThang').text(fmtVnd(data.monthRevenue));
+                $('#soLuongDaBan').text(fmtNum(data.monthProductQuantity) + ' sản phẩm');
+                $('#soDonVanChuyenThang').text((data.monthShippingCount || 0) + ' đơn');
+                $('#tongPhiVanChuyenThang').text(fmtVnd(data.monthShippingTotal));
+                $('#soDonVanChuyenHomNay').text((data.todayShippingCount || 0) + ' đơn');
+                $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
+                $('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
+                $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
+                $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+            }
+            function setInventoryKpis(data) {
+                if (!data) return;
+                $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
+                $('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
+                $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
+                $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+            }
+            function loadKpisFallback() {
+                $.get(api + '/today-revenue', function (v) { $('#doanhThuHomNay').text(fmtVnd(v)); });
+                $.get(api + '/month-revenue', function (v) { $('#doanhThuThang').text(fmtVnd(v)); });
+                $.get(api + '/month-product-quantity', function (v) { $('#soLuongDaBan').text(fmtNum(v) + ' sản phẩm'); });
+                $.get(api + '/month-shipping-stats', function (res) {
+                    if (res && typeof res === 'object') {
+                        $('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
+                        $('#tongPhiVanChuyenThang').text(fmtVnd(res.totalShipping));
+                    }
+                });
+                $.get(api + '/today-shipping-stats', function (res) {
+                    if (res && typeof res === 'object') $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
+                });
+                $.get(api + '/inventory-summary', function (res) {
+                    if (res && res.success && res.data) setInventoryKpis(res.data);
+                });
+            }
+
+            $.get(api + '/dashboard-summary')
+                .done(function (res) {
+                    if (res && res.success && res.data) setKpisFromSummary(res.data);
+                    else loadKpisFallback();
+                })
+                .fail(function () { loadKpisFallback(); });
+
             setTimeout(function () {
                 $.getScript('/admin/js/demo/chart-area-demo.js');
                 $.getScript('/admin/js/demo/chart-bar-demo.js');
                 $.getScript('/admin/js/demo/chart-pie-demo.js');
                 $.getScript('/admin/js/demo/donhangtrongthang.js');
             }, 100);
-
-            // Thống kê nhanh
-            $.get('/api/ChartsApi/today-revenue', function (data) {
-                $('#doanhThuHomNay').text(data.toLocaleString('vi-VN') + ' đ');
-            });
-
-            $.get('/api/ChartsApi/month-revenue', function (data) {
-                $('#doanhThuThang').text(data.toLocaleString('vi-VN') + ' đ');
-            });
-
-            $.get('/api/ChartsApi/month-product-quantity', function (data) {
-                $('#soLuongDaBan').text(data + ' sản phẩm');
-            });
-
-            // Thống kê phí vận chuyển hôm nay
-            $.get('/api/ChartsApi/today-shipping-stats', function (res) {
-                if (res && typeof res === 'object') {
-                    $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
-                    $('#tongPhiVanChuyenHomNay').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
-                }
-            });
-            // Thống kê phí vận chuyển tháng này
-            $.get('/api/ChartsApi/month-shipping-stats', function (res) {
-                if (res && typeof res === 'object') {
-                    $('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
-                    $('#tongPhiVanChuyenThang').text((res.totalShipping || 0).toLocaleString('vi-VN') + ' đ');
-                }
-            });
-
-            // Thống kê tổng quan kho hàng
-            $.get('/api/ChartsApi/inventory-summary', function (res) {
-                if (res && res.success && res.data) {
-                    const data = res.data;
-                    $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
-                    $('#tongSoLuongTonKho').text((data.totalQuantity || 0).toLocaleString('vi-VN'));
-                    $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
-                    $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
-                }
-            });
-
-            // Load biểu đồ thống kê sản phẩm theo danh mục
             loadInventoryChart();
         });
 
-        // Hàm load biểu đồ thống kê kho hàng
         function loadInventoryChart() {
             $.get('/api/ChartsApi/product-category-inventory', function (res) {
-                if (res && res.success && res.data) {
-                    const chartData = res.data;
-                    const ctx = document.getElementById('inventoryChart').getContext('2d');
-
-                    new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: chartData.labels,
-                            datasets: [{
-                                data: chartData.datasets[0].data,
-                                backgroundColor: chartData.datasets[0].backgroundColor,
-                                borderColor: chartData.datasets[0].borderColor,
-                                borderWidth: chartData.datasets[0].borderWidth,
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 20,
-                                        usePointStyle: true
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            const label = context.label || '';
-                                            const value = context.parsed;
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = ((value / total) * 100).toFixed(1);
-                                            return `${label}: ${value.toLocaleString('vi-VN')} sản phẩm (${percentage}%)`;
-                                        }
+                if (!res || !res.success || !res.data) return;
+                var chartData = res.data;
+                var ctx = document.getElementById('inventoryChart');
+                if (!ctx) return;
+                if (typeof Chart !== 'undefined' && Chart.getChart(ctx)) Chart.getChart(ctx).destroy();
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            data: chartData.datasets[0].data,
+                            backgroundColor: chartData.datasets[0].backgroundColor,
+                            borderColor: chartData.datasets[0].borderColor,
+                            borderWidth: chartData.datasets[0].borderWidth || 2,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        var v = context.parsed;
+                                        var t = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                        var p = t ? ((v / t) * 100).toFixed(1) : 0;
+                                        return (context.label || '') + ': ' + (v || 0).toLocaleString('vi-VN') + ' SP (' + p + '%)';
                                     }
                                 }
-                            },
-                            cutout: '50%'
-                        }
-                    });
-
-                    // Hiển thị chi tiết thống kê
-                    let detailsHtml = '';
-                    chartData.details.forEach(function(item, index) {
-                        const color = chartData.datasets[0].backgroundColor[index];
-                        detailsHtml += `
-                            <div class="d-flex align-items-center mb-2">
-                                <div style="width: 12px; height: 12px; background-color: ${color}; border-radius: 50%; margin-right: 8px;"></div>
-                                <div class="flex-grow-1">
-                                    <strong>${item.categoryName}</strong>: ${item.totalQuantity.toLocaleString('vi-VN')} sản phẩm
-                                    <small class="text-muted d-block">
-                                        ${item.productCount} loại sản phẩm • ${item.variantCount} biến thể
-                                    </small>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    $('#inventoryDetails').html(detailsHtml);
+                            }
+                        },
+                        cutout: '50%'
+                    }
+                });
+                var details = chartData.details || [];
+                var html = '';
+                for (var i = 0; i < details.length; i++) {
+                    var item = details[i];
+                    var color = (chartData.datasets[0].backgroundColor && chartData.datasets[0].backgroundColor[i]) || '#999';
+                    html += '<div class="d-flex align-items-center mb-2">' +
+                        '<div style="width:12px;height:12px;background:' + color + ';border-radius:50%;margin-right:8px;"></div>' +
+                        '<div><strong>' + (item.categoryName || '') + '</strong>: ' + (item.totalQuantity || 0).toLocaleString('vi-VN') + ' SP' +
+                        '<small class="text-muted d-block">' + (item.productCount || 0) + ' loại · ' + (item.variantCount || 0) + ' biến thể</small></div></div>';
                 }
-            }).fail(function() {
-                $('#inventoryDetails').html('<div class="text-danger">Không thể tải dữ liệu thống kê kho hàng</div>');
+                $('#inventoryDetails').html(html || '<span class="text-muted">Không có dữ liệu</span>');
+            }).fail(function () {
+                $('#inventoryDetails').html('<span class="text-danger">Không tải được dữ liệu kho hàng</span>');
             });
         }
     </script>
