@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanView.ViewModels;
@@ -43,11 +43,11 @@ namespace QuanView.Areas.Admin.Controllers
             // Gửi các biến ra view để làm phân trang và giữ lại giá trị lọc
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
-            ViewBag.TotalItems = result.Total;
+            ViewBag.TotalItems = result?.Total ?? 0;
             ViewBag.Keyword = keyword ?? "";
             ViewBag.Status = trangThai ?? "";
 
-            return View(result.Data);
+            return View(result?.Data ?? new List<KieuDang>());
         }
 
         public async Task<IActionResult> Create()
@@ -58,21 +58,15 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(KieuDang model)
         {
-            Console.WriteLine("📥 MVC nhận Create từ View:");
-            Console.WriteLine($"MaKieuDang: {model.MaKieuDang}, TenKieuDang: {model.TenKieuDang}, TrangThai: {model.TrangThai}");
-
             model.NgayTao = DateTime.Now;
             model.NguoiTao = User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
             var content = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync("KieuDang/Create", content);
 
-            Console.WriteLine($"📤 Gửi API xong, Status: {response.StatusCode}");
-
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"❌ Lỗi từ API: {error}");
                 return Json(new { success = false, message = "Không thêm được kiểu dáng" });
             }
 
@@ -120,18 +114,14 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleStatus([FromBody] ToggleStatusRequest req)
         {
-            Console.WriteLine($"📥 MVC nhận ToggleStatus với ID: {req.Id}");
             var response = await _httpClient.PutAsync($"KieuDang/ToggleStatus/{req.Id}", null);
-            Console.WriteLine($"📤 API trả về status: {response.StatusCode}");
-
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 Nội dung trả về: {json}");
-
             if (!response.IsSuccessStatusCode)
                 return Json(new { success = false });
 
-            var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            return Json(new { success = true, trangThai = data["trangThai"] });
+            var json = await response.Content.ReadAsStringAsync();
+            var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            var trangThai = data != null && data.TryGetValue("trangThai", out var je) ? je.GetBoolean() : (bool?)null;
+            return Json(new { success = true, trangThai });
         }
     }
 }

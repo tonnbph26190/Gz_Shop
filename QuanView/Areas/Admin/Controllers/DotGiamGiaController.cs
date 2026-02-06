@@ -180,11 +180,6 @@ namespace QuanView.Areas.Admin.Controllers
             return View(model);
         }
 
-
-
-
-
-
         // GET: Xoá
         [HttpGet]
         public async Task<IActionResult> Delete(Guid id)

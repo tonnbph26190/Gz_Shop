@@ -36,12 +36,9 @@
     <Folder Include="Areas\Admin\Views\SanPham\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />
-    <Folder Include="Areas\Controllers\" />
     <Folder Include="Views\Checkout\" />
     <Folder Include="Views\DonHang\" />
     <Folder Include="Views\GioHang\" />
-    <Folder Include="Views\Home\" />
-    <Folder Include="Views\Login\" />
     <Folder Include="Views\SanPhamNguoiDung\" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data; // Namespace chứa DbContext
+using BanQuanAu1.Web.Data; // Namespace chứa DbContext
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -54,7 +54,7 @@ namespace QuanApi.Controllers
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
                         TenSanPham = ct.SanPham.TenSanPham,
-                        TrangThai = ct.SanPham.TrangThai,
+                        TrangThai = ct.TrangThai,
                         originalPrice = ct.GiaBan,
                         price = (
                             (from dgg in _context.DotGiamGias
@@ -125,7 +125,7 @@ namespace QuanApi.Controllers
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
                         TenSanPham = ct.SanPham.TenSanPham,
-                        TrangThai = ct.SanPham.TrangThai,
+                        TrangThai = ct.TrangThai,
                         originalPrice = ct.GiaBan,
                         price = (
                             (from dgg in _context.DotGiamGias
@@ -192,8 +192,7 @@ namespace QuanApi.Controllers
                     .ToListAsync();
 
                 if (!list.Any())
-                    return NotFound("Không tìm thấy chi tiết sản phẩm cho ID sản phẩm này.");
-
+                    return Ok(new List<SanPhamChiTietDto>());
 
                 var result = list.Select(ct => new SanPhamChiTietDto
                 {
@@ -209,7 +208,7 @@ namespace QuanApi.Controllers
                     TenMauSac = ct.MauSac?.TenMauSac ?? "N/A",
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
                     TenSanPham = ct.SanPham?.TenSanPham ?? "Không xác định",
-                    TrangThai = ct.SanPham?.TrangThai ?? true,
+                    TrangThai = ct.TrangThai,
                     originalPrice = ct.GiaBan,
                     price = (
                         (from dgg in _context.DotGiamGias
@@ -301,7 +300,8 @@ namespace QuanApi.Controllers
                     IDHoaTiet = dto.IdHoaTiet == Guid.Empty ? null : dto.IdHoaTiet,
                     SoLuong = dto.SoLuong,
                     GiaBan = dto.GiaBan,
-                    MaSPChiTiet = dto.MaSPChiTiet ?? $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}"
+                    MaSPChiTiet = dto.MaSPChiTiet ?? $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}",
+                    TrangThai = true // Biến thể mới luôn ở trạng thái hoạt động (đang bán)
                 };
 
                 _context.SanPhamChiTiets.Add(entity);
@@ -356,8 +356,9 @@ namespace QuanApi.Controllers
                 entity.SoLuong = dto.SoLuong;
                 entity.GiaBan = dto.GiaBan;
                 entity.MaSPChiTiet = string.IsNullOrEmpty(dto.MaSPChiTiet) ? entity.MaSPChiTiet : dto.MaSPChiTiet;
-
-                // Nếu có thêm trường nào cần cập nhật, hãy thêm ở đây
+                entity.TrangThai = dto.TrangThai; // Cho phép cập nhật trạng thái (hoạt động / ngưng bán)
+                entity.LanCapNhatCuoi = DateTime.UtcNow;
+                entity.NguoiCapNhat = User.Identity?.Name ?? "System";
 
                 var result = await _context.SaveChangesAsync();
 
@@ -383,7 +384,7 @@ namespace QuanApi.Controllers
             }
         }
 
-        // DELETE: api/sanphamchitiets/{id}
+        // DELETE: api/sanphamchitiets/{id} — luôn xóa mềm (TrangThai = false), không xóa hẳn bản ghi.
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -393,14 +394,21 @@ namespace QuanApi.Controllers
                 if (ct == null)
                     return NotFound("Không tìm thấy sản phẩm chi tiết.");
 
-
-                _context.SanPhamChiTiets.Remove(ct);
+                ct.TrangThai = false;
+                ct.LanCapNhatCuoi = DateTime.UtcNow;
+                ct.NguoiCapNhat = User.Identity?.Name ?? "System";
                 await _context.SaveChangesAsync();
 
-                return NoContent();
+                return Ok(new
+                {
+                    message = "Đã xóa mềm biến thể (chuyển sang ngưng bán).",
+                    softDelete = true,
+                    id = id
+                });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "[DELETE] Exception khi xóa mềm sản phẩm chi tiết: {Message}", ex.Message);
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }

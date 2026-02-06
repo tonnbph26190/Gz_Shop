@@ -1,7 +1,12 @@
 using BanQuanAu1.Web.Data;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Services;
 using QuanView.Models;
+using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,18 +27,16 @@ builder.Services.AddDbContext<BanQuanAu1DbContext>(options =>
 });
 
 
-// 2️⃣ CẤU HÌNH HttpClient GỌI API
+// 2️⃣ CẤU HÌNH HttpClient GỌI API (chỉ đăng ký một lần)
 builder.Services.AddHttpClient("MyApi", client =>
 {
-    var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"];
-    if (string.IsNullOrEmpty(baseUrl))
-    {
-        throw new InvalidOperationException("Thiếu cấu hình 'ApiSettings:KhachHangApiBaseUrl' trong appsettings.json.");
-    }
+    var baseUrl = builder.Configuration["ApiSettings:KhachHangApiBaseUrl"]
+        ?? builder.Configuration["ApiSettings:BaseUrl"]
+        ?? "https://localhost:7130/api/";
+    baseUrl = baseUrl.TrimEnd('/') + "/";
     client.BaseAddress = new Uri(baseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
-builder.Services.AddHttpClient("MyApi", c => c.BaseAddress = new Uri("https://localhost:7130/api/"));
 
 // Đọc cấu hình từ appsettings
 var emailConfig = builder.Configuration.GetSection("EmailSettings").Get<EmailConfig>();
@@ -47,46 +50,46 @@ builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-//})
-//.AddCookie(options =>
-//{
-//    options.LoginPath = "/Login/Index";
-//    options.LogoutPath = "/Login/Logout";
-//    options.AccessDeniedPath = "/Login/AccessDenied";
-//})
-//.AddGoogle(options =>
-//{
-//    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
-//    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
-//    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    options.CallbackPath = "/signin-google";
-//    options.Scope.Add("profile");
-//    options.ClaimActions.MapJsonKey("picture", "picture", "url");
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie(options =>
+{
+    options.LoginPath = "/Login/Index";
+    options.LogoutPath = "/Login/Logout";
+    options.AccessDeniedPath = "/Login/AccessDenied";
+})
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
+    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.CallbackPath = "/signin-google";
+    options.Scope.Add("profile");
+    options.ClaimActions.MapJsonKey("picture", "picture", "url");
 
-//    options.Events = new OAuthEvents
-//    {
-//        OnRemoteFailure = context =>
-//        {
-//            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
-//            context.HandleResponse();
-//            return Task.CompletedTask;
-//        },
-//        OnCreatingTicket = ctx =>
-//        {
-//            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
-//            if (!string.IsNullOrEmpty(name))
-//            {
-//                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
-//            }
-//            return Task.CompletedTask;
-//        }
-//    };
-//});
+    options.Events = new OAuthEvents
+    {
+        OnRemoteFailure = context =>
+        {
+            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
+            context.HandleResponse();
+            return Task.CompletedTask;
+        },
+        OnCreatingTicket = ctx =>
+        {
+            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
+            if (!string.IsNullOrEmpty(name))
+            {
+                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
 
 // 3️⃣ CẤU HÌNH AUTHORIZATION
 //builder.Services.AddAuthorization(options =>

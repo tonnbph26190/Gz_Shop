@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace QuanView.Areas.Admin.Controllers
 {
@@ -9,7 +9,6 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpGet("ThongKe")]
         public IActionResult ThongKe()
         {
-            // Gọi chính xác view ở Areas/Admin/Views/BaoCaoThongKe/ThongKe.cshtml
             return View("~/Areas/Admin/Views/BaoCaoThongKe/ThongKe.cshtml");
         }
     }
