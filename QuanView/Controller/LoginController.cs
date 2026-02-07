@@ -241,6 +241,11 @@ namespace QuanView.Controllers
                 ModelState.AddModelError("Email", "Email đã được sử dụng.");
                 return View(model);
             }
+            if (await _context.KhachHang.AnyAsync(kh => kh.SoDienThoai == model.SoDienThoai))
+            {
+                ModelState.AddModelError("SoDienThoai", "Số điện thoại đã được sử dụng.");
+                return View(model);
+            }
 
             var khachHang = new KhachHang
             {
