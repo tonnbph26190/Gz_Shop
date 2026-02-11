@@ -1,0 +1,154 @@
+﻿@model List<QuanApi.Data.Banner>
+
+@{
+    ViewData["Title"] = "Home Page";
+    var featuredProducts = ViewBag.FeaturedProducts as List<QuanApi.Dtos.SanPhamKhachHangViewModel>
+                           ?? new List<QuanApi.Dtos.SanPhamKhachHangViewModel>();
+}
+
+<style>
+    .text-shadow {
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .section-title {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+        .section-title h2 {
+            font-size: 28px;
+            font-weight: 700;
+            display: inline-block;
+            position: relative;
+        }
+
+            .section-title h2::after {
+                content: "";
+                display: block;
+                height: 3px;
+                width: 60px;
+                background: #dc3545;
+                margin: 8px auto 0;
+                border-radius: 3px;
+            }
+
+    .product-card {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        transition: all .3s ease;
+    }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+
+        .product-card img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
+
+    .product-card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+    }
+
+        .product-card-body h6 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .product-card-body p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+</style>
+
+<!-- Hero Section -->
+<section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
+         style="background: url('/img/hero/hero-1.jpg') center/cover no-repeat; height: 70vh;">
+    <div>
+        <h1 class="display-4 fw-bold text-shadow">Bộ sưu tập Thu Đông 2025</h1>
+        <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
+    </div>
+</section>
+
+<!-- Banner Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            @foreach (var b in Model)
+            {
+                <div class="col-12 col-sm-6 col-md-4 d-flex">
+                    <div class="product-card h-100 w-100">
+                        <img src="@b.ImageUrl" alt="@b.Title" />
+                        <div class="product-card-body text-center">
+                            <h5>@b.Title</h5>
+                            <a href="@b.Link" class="btn btn-outline-danger btn-sm mt-auto">Xem ngay</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Product Section -->
+<section id="featured-products" class="py-5 bg-light">
+    <div class="container">
+        <div class="section-title">
+            <h2>Sản phẩm nổi bật</h2>
+        </div>
+        <div class="row g-4">
+            @foreach (var product in featuredProducts)
+            {
+                var firstBienThe = product.BienThes?.FirstOrDefault();
+                var giaGoc = firstBienThe?.GiaGoc ?? 0;
+                var giaSauGiam = firstBienThe?.GiaSauGiam ?? 0;
+                var coGiamGia = giaSauGiam < giaGoc;
+                var anhDaiDien = !string.IsNullOrEmpty(product.UrlAnh) ? product.UrlAnh : "/img/default-product.jpg";
+                var soLuongTon = product.BienThes?.Sum(b => b.SoLuong) ?? 0;
+
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
+                    <div class="product-card h-100 w-100">
+                        <img src="@anhDaiDien" alt="@product.TenSanPham" />
+                        <div class="product-card-body">
+                            <h6>@product.TenSanPham</h6>
+                            <p>@product.DanhMuc</p>
+                            <div>
+                                @if (coGiamGia)
+                                {
+                                    <span class="text-danger fw-bold">@giaSauGiam.ToString("N0") đ</span>
+                                    <small class="text-muted text-decoration-line-through ms-2">@giaGoc.ToString("N0") đ</small>
+                                }
+                                else
+                                {
+                                    <span class="text-danger fw-bold">@giaGoc.ToString("N0") đ</span>
+                                }
+                            </div>
+                            <small class="d-block text-success mt-1">Còn @soLuongTon sản phẩm</small>
+                            <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"
+                               class="btn btn-danger btn-sm w-100 mt-auto">
+                                Xem chi tiết
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
