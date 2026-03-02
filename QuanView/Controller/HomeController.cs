@@ -1,11 +1,8 @@
 ﻿using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
-using QuanView.Models;
-using System;
-using System.Diagnostics;
-using System.Net.Http;
-using System.Net.Http.Json;
 using QuanApi.Dtos;
+using QuanView.Models;
+using System.Diagnostics;
 
 namespace QuanView.Controllers
 {
