@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class DotGiamGiaController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -45,19 +45,10 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var ngayHienTai = DateTime.Today;
+            model.NgayBatDau = DateTime.SpecifyKind(model.NgayBatDau, DateTimeKind.Utc);
+            model.NgayKetThuc = DateTime.SpecifyKind(model.NgayKetThuc, DateTimeKind.Utc);
+            model.NgayTao = DateTime.UtcNow;
 
-            if (model.NgayBatDau.Date < ngayHienTai)
-            {
-                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
-                return View(model);
-            }
-
-            if (model.NgayKetThuc < model.NgayBatDau)
-            {
-                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
-                return View(model);
-            }
 
             if (string.IsNullOrWhiteSpace(selectedIds))
             {
@@ -95,18 +86,21 @@ namespace QuanView.Areas.Admin.Controllers
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var responseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
 
-                if (responseData.TryGetProperty("Message", out var messageElement))
+                // 👉 Nếu API trả true/false
+                if (bool.TryParse(responseContent, out bool isSuccess))
                 {
-                    TempData["SuccessMessage"] = messageElement.GetString();
+                    if (!isSuccess)
+                    {
+                        ModelState.AddModelError("", "Tạo đợt giảm giá thất bại (API không lưu được).");
+                        return View(model);
+                    }
                 }
-                else
-                {
-                    TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
-                }
+
+                TempData["SuccessMessage"] = "Tạo đợt giảm giá thành công!";
                 return RedirectToAction(nameof(Index));
             }
+
 
             var errorMessage = await response.Content.ReadAsStringAsync();
             ModelState.AddModelError("", $"Tạo đợt giảm giá thất bại: {errorMessage}");
@@ -186,19 +180,29 @@ namespace QuanView.Areas.Admin.Controllers
             return View(model);
         }
 
-
-
-
-
-
         // GET: Xoá
+        [HttpGet]
         public async Task<IActionResult> Delete(Guid id)
         {
+            var res = await _httpClient.GetAsync($"DotGiamGias/{id}");
+            if (!res.IsSuccessStatusCode)
+                return NotFound();
+
+            var dot = await res.Content.ReadFromJsonAsync<DotGiamGia>();
+            return View(dot);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
             var res = await _httpClient.DeleteAsync($"DotGiamGias/{id}");
+
             TempData[res.IsSuccessStatusCode ? "SuccessMessage" : "ErrorMessage"] =
                 res.IsSuccessStatusCode ? "Xóa đợt giảm giá thành công!" : "Xóa đợt giảm giá thất bại!";
+
             return RedirectToAction(nameof(Index));
         }
+
 
         // PUT: Cập nhật trạng thái
         [HttpGet]

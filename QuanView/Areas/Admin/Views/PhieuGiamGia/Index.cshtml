@@ -122,9 +122,19 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Danh sách phiếu giảm giá</h1>
+<<<<<<< HEAD
         <a asp-action="Create" class="btn btn-success">
             <i class="fas fa-plus"></i> Tạo phiếu mới
         </a>
+=======
+        <a asp-area="Admin"
+           asp-controller="PhieuGiamGia"
+           asp-action="Create"
+           class="btn btn-success">
+            <i class="fas fa-plus"></i> Tạo phiếu mới
+        </a>
+
+>>>>>>> big_update
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -241,7 +251,11 @@
                                         <a asp-action="Edit" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-action btn-edit" title="Sửa">
                                             <i class="fas fa-edit"></i>
                                         </a>
+<<<<<<< HEAD
                                         <a asp-action="Delete" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-action btn-delete" title="Xóa">
+=======
+                                        <a asp-area="Admin" asp-controller="PhieuGiamGia" asp-action="Delete" asp-route-id="@item.IDPhieuGiamGia" class="btn btn-action btn-delete" title="Xóa">
+>>>>>>> big_update
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>

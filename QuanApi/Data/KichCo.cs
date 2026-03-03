@@ -16,7 +16,7 @@ namespace QuanApi.Data
         [RegularExpression("^(S|M|L|XL|XXL)$", ErrorMessage = "Tên kích cỡ chỉ được phép là: S, M, L, XL, XXL")]
         public string TenKichCo { get; set; }
 
-        public DateTime NgayTao { get; set; } = DateTime.Now;
+        public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
         public string? NguoiTao { get; set; }

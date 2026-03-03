@@ -19,58 +19,58 @@ namespace QuanApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<PagedResultGeneric<NhanVienResponseDto>>> GetNhanViens([FromQuery] NhanVienFilterDto filter)
+        public async Task<IActionResult> Get([FromQuery] NhanVienFilterDto filter)
         {
-            _logger.LogInformation("Retrieving employees with filter: {@Filter}", filter);
-            var result = await _service.GetNhanViensAsync(filter);
+            var result = await _service.GetPagedEmployeesAsync(filter);
             return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<NhanVienResponseDto>> GetNhanVien(Guid id)
+        public async Task<IActionResult> GetById(Guid id)
         {
-            var result = await _service.GetNhanVienByIdAsync(id);
-            if (result == null) return NotFound($"Employee with ID {id} not found.");
-            return Ok(result);
+            var result = await _service.GetByIdAsync(id);
+            return result == null ? NotFound() : Ok(result);
         }
 
         [HttpPost]
-        public async Task<ActionResult<NhanVienResponseDto>> PostNhanVien([FromBody] NhanVienCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] NhanVienCreateDto dto)
         {
             try
             {
-                var result = await _service.CreateNhanVienAsync(dto);
-                return CreatedAtAction(nameof(GetNhanVien), new { id = result.IDNhanVien }, result);
+                var result = await _service.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = result.IDNhanVien }, result);
             }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutNhanVien(Guid id, [FromBody] NhanVienUpdateDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] NhanVienUpdateDto dto)
         {
-            var currentUserId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
-                await _service.UpdateNhanVienAsync(id, dto, currentUserId);
+                await _service.UpdateAsync(id, dto, currentUserId);
                 return NoContent();
             }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (KeyNotFoundException) { return NotFound(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteNhanVien(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteNhanVienAsync(id);
-            if (!deleted) return NotFound();
-            return NoContent();
+            try
+            {
+                await _service.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException) { return NotFound(); }
         }
 
         [HttpGet("employee-role-stats")]
-        public async Task<IActionResult> GetEmployeeRoleStats()
+        public async Task<IActionResult> GetStats()
         {
-            var stats = await _service.GetEmployeeRoleStatsAsync();
-            return Ok(stats);
+            return Ok(await _service.GetRoleStatsAsync());
         }
     }
 }

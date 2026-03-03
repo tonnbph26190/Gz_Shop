@@ -123,12 +123,12 @@
             table.innerHTML = '';
             data.forEach((sp, index) => {
                 const row = `<tr onclick="loadChiTietSanPham('${sp.idSanPham}')">
-                    <td><input type="radio" name="productSelect" /></td>
-                    <td>${index + 1}</td>
-                    <td>${sp.maSanPham}</td>
-                    <td>${sp.tenSanPham}</td>
-                    <td>${sp.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
-                </tr>`;
+                            <td><input type="radio" name="productSelect" /></td>
+                            <td>${index + 1}</td>
+                            <td>${sp.maSanPham}</td>
+                            <td>${sp.tenSanPham}</td>
+                            <td>${sp.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
+                        </tr>`;
                 table.innerHTML += row;
             });
         }
@@ -142,14 +142,14 @@
             data.forEach((ct, index) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><input type="checkbox" value="${ct.idSanPhamChiTiet}" onchange="toggleSelection(this)" /></td>
-                    <td>${index + 1}</td>
-                    <td>${ct.tenSanPham}</td>
-                    <td>${ct.kichCo}</td>
-                    <td>${ct.mauSac}</td>
-                    <td>${ct.hoaTiet || '-'}</td>
-                    <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
-                `;
+                            <td><input type="checkbox" value="${ct.idSanPhamChiTiet}" onchange="toggleSelection(this)" /></td>
+                            <td>${index + 1}</td>
+                            <td>${ct.tenSanPham}</td>
+                            <td>${ct.kichCo}</td>
+                            <td>${ct.mauSac}</td>
+                            <td>${ct.hoaTiet || '-'}</td>
+                            <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
+                        `;
                 table.appendChild(tr);
             });
 

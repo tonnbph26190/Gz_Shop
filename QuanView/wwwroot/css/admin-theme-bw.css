@@ -1,0 +1,377 @@
+/**
+ * Giao diện Admin - Chủ đạo đen trắng (Black & White)
+ * Override SB Admin 2 với palette tối giản, dễ nhìn.
+ */
+:root {
+  --bw-black: #0d0d0d;
+  --bw-charcoal: #1a1a1a;
+  --bw-dark: #2d2d2d;
+  --bw-gray-800: #3d3d3d;
+  --bw-gray-600: #6b6b6b;
+  --bw-gray-500: #8c8c8c;
+  --bw-gray-400: #a3a3a3;
+  --bw-gray-300: #c4c4c4;
+  --bw-gray-200: #e0e0e0;
+  --bw-gray-100: #f0f0f0;
+  --bw-gray-50: #f7f7f7;
+  --bw-white: #ffffff;
+  --bw-accent: #2d2d2d;
+  --bw-border: #e5e5e5;
+  --bw-shadow: rgba(0, 0, 0, 0.08);
+  --bw-shadow-lg: rgba(0, 0, 0, 0.12);
+}
+
+/* ---- Body & Wrapper ---- */
+body#page-top {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--bw-gray-50);
+  color: var(--bw-dark);
+}
+#content-wrapper {
+  background-color: var(--bw-gray-50);
+}
+
+/* ---- Sidebar: nền đen, chữ trắng ---- */
+#accordionSidebar.sidebar-dark.bg-gradient-primary,
+.sidebar.bg-gradient-primary.sidebar-dark {
+  background-color: var(--bw-black) !important;
+  background-image: none !important;
+}
+.sidebar-dark .sidebar-brand {
+  color: var(--bw-white) !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.sidebar-dark hr.sidebar-divider {
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
+}
+.sidebar-dark .sidebar-heading {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.sidebar-dark .nav-item .nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.sidebar-dark .nav-item .nav-link i {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.sidebar-dark .nav-item .nav-link:hover,
+.sidebar-dark .nav-item .nav-link:focus,
+.sidebar-dark .nav-item .nav-link:active {
+  color: var(--bw-white) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+.sidebar-dark .nav-item .nav-link:hover i,
+.sidebar-dark .nav-item .nav-link:focus i,
+.sidebar-dark .nav-item .nav-link:active i {
+  color: var(--bw-white) !important;
+}
+.sidebar-dark .nav-item.active .nav-link {
+  color: var(--bw-white) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-left: 3px solid var(--bw-white);
+}
+.sidebar-dark .nav-item.active .nav-link i {
+  color: var(--bw-white) !important;
+}
+.sidebar-dark .collapse-inner {
+  background-color: var(--bw-charcoal) !important;
+  border-radius: 6px;
+}
+.sidebar-dark .collapse-inner .collapse-item {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+.sidebar-dark .collapse-inner .collapse-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--bw-white) !important;
+}
+.sidebar-dark #sidebarToggle {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+.sidebar-dark #sidebarToggle:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+.sidebar-dark #sidebarToggle::after,
+.sidebar-dark.toggled #sidebarToggle::after {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* ---- Topbar: trắng / xám nhạt, viền mỏng ---- */
+.topbar.navbar-light.bg-white {
+  background-color: var(--bw-white) !important;
+  border-bottom: 1px solid var(--bw-border);
+  box-shadow: 0 1px 3px var(--bw-shadow);
+}
+.topbar .form-control.bg-light.border-0 {
+  background-color: var(--bw-gray-100) !important;
+  color: var(--bw-dark);
+  border: 1px solid transparent;
+}
+.topbar .form-control:focus {
+  border-color: var(--bw-gray-400);
+  box-shadow: 0 0 0 2px var(--bw-shadow);
+}
+.topbar .btn-primary {
+  background-color: var(--bw-dark) !important;
+  border-color: var(--bw-dark) !important;
+}
+.topbar .btn-primary:hover {
+  background-color: var(--bw-black) !important;
+  border-color: var(--bw-black) !important;
+}
+.topbar .navbar-nav .nav-link {
+  color: var(--bw-gray-800) !important;
+}
+.topbar .text-gray-600 {
+  color: var(--bw-gray-800) !important;
+}
+.topbar-divider {
+  border-left: 1px solid var(--bw-gray-200) !important;
+}
+.dropdown-menu {
+  border: 1px solid var(--bw-border);
+  box-shadow: 0 4px 16px var(--bw-shadow-lg);
+}
+.dropdown-header {
+  color: var(--bw-gray-600);
+  font-weight: 600;
+}
+.dropdown-item {
+  color: var(--bw-dark);
+}
+.dropdown-item:hover {
+  background-color: var(--bw-gray-100);
+}
+.text-gray-500 {
+  color: var(--bw-gray-600) !important;
+}
+
+/* ---- Cards ---- */
+.card {
+  border: 1px solid var(--bw-border);
+  box-shadow: 0 1px 4px var(--bw-shadow);
+  background-color: var(--bw-white);
+}
+.card-header {
+  background-color: var(--bw-white) !important;
+  border-bottom: 1px solid var(--bw-border);
+  color: var(--bw-dark);
+  font-weight: 600;
+}
+.card.border-left-primary { border-left-color: var(--bw-dark) !important; }
+.card.border-left-success { border-left-color: var(--bw-gray-600) !important; }
+.card.border-left-info { border-left-color: var(--bw-gray-500) !important; }
+.card.border-left-warning { border-left-color: var(--bw-gray-600) !important; }
+.text-gray-800 { color: var(--bw-dark) !important; }
+.text-gray-300 { color: var(--bw-gray-300) !important; }
+
+/* ---- Buttons ---- */
+.btn-primary {
+  background-color: var(--bw-dark) !important;
+  border-color: var(--bw-dark) !important;
+  color: var(--bw-white) !important;
+}
+.btn-primary:hover {
+  background-color: var(--bw-black) !important;
+  border-color: var(--bw-black) !important;
+  color: var(--bw-white) !important;
+}
+.btn-secondary {
+  background-color: var(--bw-gray-600) !important;
+  border-color: var(--bw-gray-600) !important;
+  color: var(--bw-white) !important;
+}
+.btn-secondary:hover {
+  background-color: var(--bw-gray-800) !important;
+  border-color: var(--bw-gray-800) !important;
+  color: var(--bw-white) !important;
+}
+.btn-success {
+  background-color: var(--bw-charcoal) !important;
+  border-color: var(--bw-charcoal) !important;
+}
+.btn-success:hover {
+  background-color: var(--bw-black) !important;
+  border-color: var(--bw-black) !important;
+}
+.btn-outline-primary {
+  color: var(--bw-dark);
+  border-color: var(--bw-dark);
+}
+.btn-outline-primary:hover {
+  background-color: var(--bw-dark);
+  color: var(--bw-white);
+  border-color: var(--bw-dark);
+}
+.btn-link {
+  color: var(--bw-dark);
+}
+.btn-link:hover {
+  color: var(--bw-black);
+}
+
+/* ---- Tables ---- */
+.table {
+  color: var(--bw-dark);
+}
+.table thead th {
+  border-bottom: 2px solid var(--bw-gray-300);
+  color: var(--bw-dark);
+  font-weight: 600;
+}
+.table td, .table th {
+  border-color: var(--bw-border);
+}
+.table-hover tbody tr:hover {
+  background-color: var(--bw-gray-50);
+}
+.table-bordered {
+  border-color: var(--bw-border);
+}
+.table-light thead th {
+  background-color: var(--bw-gray-100) !important;
+  color: var(--bw-dark);
+}
+
+/* ---- Forms ---- */
+.form-control {
+  border-color: var(--bw-border);
+  color: var(--bw-dark);
+}
+.form-control:focus {
+  border-color: var(--bw-gray-500);
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+}
+.form-control::placeholder {
+  color: var(--bw-gray-400);
+}
+.form-check-input:checked {
+  background-color: var(--bw-dark);
+  border-color: var(--bw-dark);
+}
+.input-group-text {
+  background-color: var(--bw-gray-100);
+  border-color: var(--bw-border);
+  color: var(--bw-gray-800);
+}
+.label, label {
+  color: var(--bw-dark);
+}
+
+/* ---- Badges ---- */
+.badge.bg-primary { background-color: var(--bw-dark) !important; }
+.badge.bg-secondary { background-color: var(--bw-gray-600) !important; }
+.badge.bg-success { background-color: var(--bw-gray-800) !important; }
+.badge.bg-danger { background-color: var(--bw-charcoal) !important; }
+.badge.bg-warning { background-color: var(--bw-gray-600) !important; color: var(--bw-white) !important; }
+.badge.bg-info { background-color: var(--bw-gray-600) !important; }
+
+/* ---- Alerts ---- */
+.alert-success {
+  background-color: var(--bw-gray-100);
+  border-color: var(--bw-gray-300);
+  color: var(--bw-dark);
+}
+.alert-danger {
+  background-color: #fafafa;
+  border-color: var(--bw-gray-400);
+  color: var(--bw-dark);
+}
+.alert-info {
+  background-color: var(--bw-gray-50);
+  border-color: var(--bw-gray-200);
+  color: var(--bw-dark);
+}
+.alert-warning {
+  background-color: var(--bw-gray-50);
+  border-color: var(--bw-gray-300);
+  color: var(--bw-dark);
+}
+
+/* ---- Pagination ---- */
+.page-link {
+  color: var(--bw-dark);
+  border-color: var(--bw-border);
+  background-color: var(--bw-white);
+}
+.page-link:hover {
+  background-color: var(--bw-gray-100);
+  border-color: var(--bw-gray-300);
+  color: var(--bw-black);
+}
+.page-item.active .page-link {
+  background-color: var(--bw-dark);
+  border-color: var(--bw-dark);
+  color: var(--bw-white);
+}
+.page-item.disabled .page-link {
+  background-color: var(--bw-gray-100);
+  color: var(--bw-gray-400);
+  border-color: var(--bw-border);
+}
+
+/* ---- Modal ---- */
+.modal-content {
+  border: 1px solid var(--bw-border);
+  box-shadow: 0 8px 32px var(--bw-shadow-lg);
+}
+.modal-header {
+  border-bottom: 1px solid var(--bw-border);
+  background-color: var(--bw-gray-50);
+}
+.modal-footer {
+  border-top: 1px solid var(--bw-border);
+  background-color: var(--bw-gray-50);
+}
+
+/* ---- Footer ---- */
+.sticky-footer.bg-white {
+  background-color: var(--bw-white) !important;
+  border-top: 1px solid var(--bw-border);
+  color: var(--bw-gray-600);
+}
+
+/* ---- Scroll to top ---- */
+.scroll-to-top {
+  background-color: var(--bw-dark) !important;
+  color: var(--bw-white) !important;
+}
+.scroll-to-top:hover {
+  background-color: var(--bw-black) !important;
+  color: var(--bw-white) !important;
+}
+
+/* ---- Icon circles (notifications) ---- */
+.icon-circle {
+  background-color: var(--bw-gray-300) !important;
+}
+.icon-circle.bg-primary { background-color: var(--bw-dark) !important; }
+.icon-circle.bg-warning { background-color: var(--bw-gray-600) !important; color: var(--bw-white) !important; }
+.icon-circle.bg-success { background-color: var(--bw-gray-800) !important; }
+
+/* ---- Utility ---- */
+.bg-white { background-color: var(--bw-white) !important; }
+.bg-light { background-color: var(--bw-gray-100) !important; }
+.text-primary { color: var(--bw-dark) !important; }
+.border-left-primary { border-left-color: var(--bw-dark) !important; }
+.shadow { box-shadow: 0 0.15rem 1.75rem 0 var(--bw-shadow) !important; }
+.text-gray-700 { color: var(--bw-gray-800) !important; }
+
+/* ---- Filter card (Quản lý đơn hàng, v.v.) ---- */
+.filter-card,
+.result-info {
+  background-color: var(--bw-gray-50) !important;
+  border: 1px solid var(--bw-border);
+  color: var(--bw-dark);
+}
+
+/* ---- Status badges (đơn hàng) ---- */
+.status-badge { font-weight: 500; }
+.status-pending { background: var(--bw-gray-200) !important; color: var(--bw-dark) !important; }
+.status-confirmed { background: var(--bw-gray-300) !important; color: var(--bw-dark) !important; }
+.status-shipping { background: var(--bw-gray-400) !important; color: var(--bw-white) !important; }
+.status-delivered { background: var(--bw-gray-600) !important; color: var(--bw-white) !important; }
+.status-success { background: var(--bw-gray-800) !important; color: var(--bw-white) !important; }
+.status-cancelled { background: var(--bw-gray-500) !important; color: var(--bw-white) !important; }

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -70,6 +70,8 @@ namespace QuanApi.Services
             var model = _mapper.Map<PhieuGiamGia>(dto);
             model.IDPhieuGiamGia = Guid.NewGuid();
             model.NgayTao = DateTime.UtcNow;
+            model.NgayBatDau = dto.NgayBatDau.ToUniversalTime();
+            model.NgayKetThuc = dto.NgayKetThuc.ToUniversalTime();
             model.LaCongKhai = true;   // mặc định công khai
             model.SoLuong = 1;        // mỗi khách hàng 1 phiếu
 
@@ -89,7 +91,7 @@ namespace QuanApi.Services
                 {
                     IDKhachHangPhieuGiam = Guid.NewGuid(),
                     MaKhachHangPhieuGiam =
-                        $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
+                        $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
 
                     IDKhachHang = customer.IDKhachHang,
                     IDPhieuGiamGia = model.IDPhieuGiamGia,
@@ -160,7 +162,7 @@ namespace QuanApi.Services
                     {
                         IDKhachHangPhieuGiam = Guid.NewGuid(),
                         MaKhachHangPhieuGiam =
-                            $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
+                            $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
 
                         IDKhachHang = customer.IDKhachHang,
                         IDPhieuGiamGia = id,
@@ -261,7 +263,7 @@ namespace QuanApi.Services
             {
                 IDKhachHangPhieuGiam = Guid.NewGuid(),
                 MaKhachHangPhieuGiam =
-                    $"KHPG_{DateTime.Now:yyyyMMddHHmmss}_{customerId.ToString().Substring(0, 8)}",
+                    $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customerId.ToString().Substring(0, 8)}",
 
                 IDKhachHang = customerId,
                 IDPhieuGiamGia = voucherId,

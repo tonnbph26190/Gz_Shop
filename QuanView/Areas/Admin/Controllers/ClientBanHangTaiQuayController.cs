@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
 using QuanApi.Services;
@@ -8,7 +8,7 @@ using QuanView.Models;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class ClientBanHangTaiQuayController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -116,12 +116,40 @@ namespace QuanView.Areas.Admin.Controllers
             return RedirectToAction("Index");
         }
 
-        // Tính phí vận chuyển
+        // Tính phí vận chuyển (hỗ trợ GHN: gửi ToDistrictId, ToWardCode, Weight để tính phí chính xác)
         [HttpPost]
         [Route("Admin/ClientBanHangTaiQuay/tinh-phi-van-chuyen")]
         public async Task<IActionResult> CalculateShippingFee([FromBody] object shippingData)
         {
             var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        // GHN: Danh sách tỉnh/thành (dùng cho dropdown địa chỉ + tính phí ship GHN)
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/ghn/provinces")]
+        public async Task<IActionResult> GetGHNProvinces()
+        {
+            var response = await _httpClient.GetAsync("shipping/ghn/provinces");
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/ghn/districts")]
+        public async Task<IActionResult> GetGHNDistricts([FromQuery] int provinceId)
+        {
+            var response = await _httpClient.GetAsync($"shipping/ghn/districts?provinceId={provinceId}");
+            var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/ghn/wards")]
+        public async Task<IActionResult> GetGHNWards([FromQuery] int districtId)
+        {
+            var response = await _httpClient.GetAsync($"shipping/ghn/wards?districtId={districtId}");
             var result = await response.Content.ReadAsStringAsync();
             return Content(result, "application/json");
         }
@@ -301,13 +329,18 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
-        // Chuyển giỏ hàng thành hóa đơn
+        // Chuyển giỏ hàng thành hóa đơn (trả đúng mã HTTP từ API để frontend nhận lỗi khi thanh toán thất bại)
         [HttpPost]
         [Route("Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don")]
         public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
         {
             var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don", dto);
             var result = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                Response.StatusCode = (int)response.StatusCode;
+                return Content(result, "application/json");
+            }
             return Content(result, "application/json");
         }
 

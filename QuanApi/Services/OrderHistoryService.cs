@@ -105,7 +105,7 @@ namespace QuanApi.Services
 
                 // Cập nhật trạng thái đơn hàng
                 order.TrangThai = targetStatus;
-                order.LanCapNhatCuoi = DateTime.Now;
+                order.LanCapNhatCuoi = DateTime.UtcNow;
                 order.NguoiCapNhat = updatedBy;
 
                 // Lưu lịch sử rollback
@@ -132,13 +132,13 @@ namespace QuanApi.Services
                 var history = new LichSuHoaDon
                 {
                     IDLichSuHoaDon = Guid.NewGuid(),
-                    MaLichSuHoaDon = $"LS{DateTime.Now:yyyyMMddHHmmssfff}",
+                    MaLichSuHoaDon = $"LS{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                     IDHoaDon = orderId,
                     TrangThai = newStatus,
                     GhiChu = string.IsNullOrEmpty(reason) 
                         ? $"Thay đổi từ '{oldStatus}' sang '{newStatus}'"
                         : $"Thay đổi từ '{oldStatus}' sang '{newStatus}'. Lý do: {reason}",
-                    NgayTao = DateTime.Now,
+                    NgayTao = DateTime.UtcNow,
                     NguoiTao = updatedBy,
                     TrangThaiLichSu = true
                 };

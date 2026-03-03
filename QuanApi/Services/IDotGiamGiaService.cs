@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
@@ -44,7 +44,7 @@ namespace QuanApi.Services
                 filter.PageSize
             );
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
 
             foreach (var item in result.Data)
             {
@@ -83,15 +83,23 @@ namespace QuanApi.Services
                 return false;
             }
 
-            _logger.LogInformation("Tạo / cập nhật đợt giảm giá: {TenDot}", dto.Dot.TenDot);
+            var nowUtc = DateTime.UtcNow;
 
-            var result = await _repository.CreateAsync(
+            // 🔥 FIX UTC – BẮT BUỘC
+            dto.Dot.NgayBatDau = DateTime.SpecifyKind(dto.Dot.NgayBatDau, DateTimeKind.Utc);
+            dto.Dot.NgayKetThuc = DateTime.SpecifyKind(dto.Dot.NgayKetThuc, DateTimeKind.Utc);
+
+            dto.Dot.NgayTao = nowUtc;
+            dto.Dot.TrangThai = false; // hoặc true tuỳ logic
+
+            _logger.LogInformation("Tạo đợt giảm giá: {TenDot}", dto.Dot.TenDot);
+
+            return await _repository.CreateAsync(
                 dto.Dot,
                 dto.ChiTietIds ?? new List<Guid>()
             );
-
-            return result;
         }
+
         public async Task<bool> UpdateAsync(Guid id, DotGiamGiaUpdateDto dto)
         {
             if (dto == null)
@@ -112,8 +120,8 @@ namespace QuanApi.Services
                 MaDot = dto.MaDot,
                 TenDot = dto.TenDot,
                 PhanTramGiam = dto.PhanTramGiam,
-                NgayBatDau = dto.NgayBatDau,
-                NgayKetThuc = dto.NgayKetThuc
+                NgayBatDau = DateTime.SpecifyKind(dto.NgayBatDau, DateTimeKind.Utc),
+                NgayKetThuc = DateTime.SpecifyKind(dto.NgayKetThuc, DateTimeKind.Utc)
             };
 
             return await _repository.UpdateAsync(dot, dto.SanPhamChiTietIds);

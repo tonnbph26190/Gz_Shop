@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
 using QuanApi.Services;
 
@@ -9,40 +9,66 @@ namespace QuanApi.Controllers
     public class ShippingController : ControllerBase
     {
         private readonly IShippingService _shippingService;
+        private readonly IGHNService _ghnService;
 
-        public ShippingController(IShippingService shippingService)
+        public ShippingController(IShippingService shippingService, IGHNService ghnService)
         {
             _shippingService = shippingService;
+            _ghnService = ghnService;
         }
 
         [HttpPost("calculate")]
-        public ActionResult<ShippingInfoDto> CalculateShipping([FromBody] CalculateShippingRequest request)
+        public async Task<ActionResult<ShippingInfoDto>> CalculateShipping([FromBody] CalculateShippingRequest request)
         {
             try
             {
-                // Log request để debug
-                Console.WriteLine($"Shipping calculation request: Province={request?.Province}, District={request?.District}, OrderValue={request?.OrderValue}");
-
                 if (request == null)
-                {
                     return BadRequest("Request không được null");
+                if (request.OrderValue < 0)
+                    return BadRequest("Giá trị đơn hàng không được âm");
+
+                // Ưu tiên gọi GHN nếu client gửi ToDistrictId + ToWardCode và đã cấu hình GHN
+                if (request.ToDistrictId.HasValue && request.ToDistrictId.Value > 0 && !string.IsNullOrWhiteSpace(request.ToWardCode))
+                {
+                    if (await _ghnService.IsConfiguredAsync())
+                    {
+                        var weight = request.Weight ?? 500;
+                        var ghnFee = await _ghnService.GetFeeAsync(request.ToDistrictId.Value, request.ToWardCode!.Trim(), weight);
+                        if (ghnFee != null)
+                        {
+                            var originalFee = ghnFee.Total;
+                            var finalFee = _shippingService.ApplyShippingDiscount(originalFee, request.OrderValue);
+                            var discount = originalFee - finalFee;
+                            var discountMessage = request.OrderValue >= 500000 ? "Miễn phí vận chuyển cho đơn từ 500.000đ"
+                                : request.OrderValue >= 300000 ? "Giảm 50% phí vận chuyển cho đơn từ 300.000đ"
+                                : request.OrderValue >= 200000 ? "Giảm 20% phí vận chuyển cho đơn từ 200.000đ" : "";
+                            return Ok(new ShippingInfoDto
+                            {
+                                Province = request.Province,
+                                District = request.District ?? "",
+                                OriginalFee = originalFee,
+                                DiscountAmount = discount,
+                                FinalFee = finalFee,
+                                DiscountMessage = discountMessage,
+                                EstimatedDeliveryDays = 3
+                            });
+                        }
+                    }
                 }
 
+                // Fallback: tính theo vùng (Province, District)
                 if (string.IsNullOrEmpty(request.Province))
                 {
-                    return BadRequest(new
+                    return Ok(new ShippingInfoDto
                     {
-                        error = "Tỉnh/thành phố không được để trống",
-                        originalFee = 50000,
-                        finalFee = 50000,
-                        discountAmount = 0,
-                        discountMessage = ""
+                        Province = "",
+                        District = "",
+                        OriginalFee = 50000,
+                        FinalFee = 50000,
+                        DiscountAmount = 0,
+                        DiscountMessage = "Chưa chọn địa chỉ giao hàng. Chọn Tỉnh/Quận (hoặc cấu hình GHN để chọn Phường và tính phí chính xác).",
+                        EstimatedDeliveryDays = 0
                     });
-                }
-
-                if (request.OrderValue < 0)
-                {
-                    return BadRequest("Giá trị đơn hàng không được âm");
                 }
 
                 var shippingInfo = _shippingService.GetShippingInfo(
@@ -50,16 +76,43 @@ namespace QuanApi.Controllers
                     request.District ?? "",
                     request.OrderValue
                 );
-
-                Console.WriteLine($"Shipping calculation result: OriginalFee={shippingInfo.OriginalFee}, FinalFee={shippingInfo.FinalFee}");
-
                 return Ok(shippingInfo);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Shipping calculation error: {ex}");
-                return StatusCode(500, $"Lỗi tính phí vận chuyển: {ex.Message}");
+                return StatusCode(500, new ShippingInfoDto { OriginalFee = 50000, FinalFee = 50000, DiscountAmount = 0, DiscountMessage = ex.Message });
             }
+        }
+
+        [HttpGet("ghn/provinces")]
+        public async Task<ActionResult<object>> GetGHNProvinces()
+        {
+            if (!await _ghnService.IsConfiguredAsync())
+                return Ok(new { configured = false, data = Array.Empty<object>() });
+            var list = await _ghnService.GetProvincesAsync();
+            return Ok(new { configured = true, data = list });
+        }
+
+        [HttpGet("ghn/districts")]
+        public async Task<ActionResult<object>> GetGHNDistricts([FromQuery] int provinceId)
+        {
+            if (!await _ghnService.IsConfiguredAsync())
+                return Ok(new { configured = false, data = Array.Empty<object>() });
+            if (provinceId <= 0)
+                return BadRequest("provinceId không hợp lệ");
+            var list = await _ghnService.GetDistrictsAsync(provinceId);
+            return Ok(new { configured = true, data = list });
+        }
+
+        [HttpGet("ghn/wards")]
+        public async Task<ActionResult<object>> GetGHNWards([FromQuery] int districtId)
+        {
+            if (!await _ghnService.IsConfiguredAsync())
+                return Ok(new { configured = true, data = Array.Empty<object>() });
+            if (districtId <= 0)
+                return BadRequest("districtId không hợp lệ");
+            var list = await _ghnService.GetWardsAsync(districtId);
+            return Ok(new { configured = true, data = list });
         }
 
 

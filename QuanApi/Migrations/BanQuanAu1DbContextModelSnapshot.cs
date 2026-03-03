@@ -1380,6 +1380,35 @@ namespace QuanApi.Migrations
                     b.HasKey("IDVaiTro");
 
                     b.ToTable("VaiTro");
+
+                    b.HasData(
+                        new
+                        {
+                            IDVaiTro = new Guid("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"),
+                            MaVaiTro = "ADMIN",
+                            NgayTao = new DateTime(2026, 1, 30, 18, 50, 46, 167, DateTimeKind.Utc).AddTicks(5897),
+                            NguoiTao = "System",
+                            TenVaiTro = "Quản trị viên",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDVaiTro = new Guid("b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e"),
+                            MaVaiTro = "NHANVIEN",
+                            NgayTao = new DateTime(2026, 1, 30, 18, 50, 46, 167, DateTimeKind.Utc).AddTicks(5900),
+                            NguoiTao = "System",
+                            TenVaiTro = "Nhân viên",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDVaiTro = new Guid("c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f"),
+                            MaVaiTro = "KHACHHANG",
+                            NgayTao = new DateTime(2026, 1, 30, 18, 50, 46, 167, DateTimeKind.Utc).AddTicks(5903),
+                            NguoiTao = "System",
+                            TenVaiTro = "Khách hàng",
+                            TrangThai = true
+                        });
                 });
 
             modelBuilder.Entity("QuanApi.Data.AnhSanPham", b =>

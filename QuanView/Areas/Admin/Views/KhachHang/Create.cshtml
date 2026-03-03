@@ -1,0 +1,300 @@
+﻿@model QuanApi.Dtos.CreateKhachHangDto
+
+@{
+    ViewData["Title"] = "Thêm mới Khách Hàng và Địa Chỉ";
+    Layout = "_Layout";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://esgoo.net/scripts/jquery.js"></script>
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f3f4f6;
+    }
+
+    .form-check-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-check-input {
+        margin-top: 0;
+    }
+</style>
+
+<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl w-full bg-white p-8 rounded-xl shadow-lg space-y-6">
+        <h1 class="text-3xl font-extrabold text-gray-900 text-center">Thêm mới Khách Hàng</h1>
+        <p class="text-center text-gray-600">Điền thông tin khách hàng và địa chỉ liên quan.</p>
+
+        <hr class="my-6 border-gray-200" />
+
+        <form asp-action="Create" id="createKhachHangForm" class="space-y-6">
+            <div asp-validation-summary="ModelOnly" class="text-red-600 font-medium text-sm mb-4"></div>
+
+            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Thông tin Khách Hàng</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label asp-for="MaKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <input asp-for="MaKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span asp-validation-for="MaKhachHang" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="TenKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <input asp-for="TenKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span asp-validation-for="TenKhachHang" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <input asp-for="Email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span asp-validation-for="Email" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="MatKhau" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <input asp-for="MatKhau" type="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span asp-validation-for="MatKhau" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label asp-for="SoDienThoai" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <input asp-for="SoDienThoai" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span asp-validation-for="SoDienThoai" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group form-check md:col-span-2">
+                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
+                            <input class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" asp-for="TrangThai" />
+                            <span class="ml-2">@Html.DisplayNameFor(model => model.TrangThai)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
+                    Địa Chỉ
+                    <button type="button" id="addAddressBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition ease-in-out duration-150">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Thêm địa chỉ
+                    </button>
+                </h3>
+                <div id="addressesContainer" class="space-y-4">
+                </div>
+            </div>
+
+            <div class="form-group mt-6 text-center">
+                <button type="submit" class="w-full sm:w-auto inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150">
+                    Tạo mới Khách Hàng
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-8 text-center">
+            <a asp-action="Index" class="text-indigo-600 hover:text-indigo-900 font-medium">Quay lại danh sách</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        let addressIndex = 0;
+
+        function updateAddressString(formElement) {
+            const diaChiChiTietInput = formElement.querySelector('[name$="DiaChiChiTiet"]');
+            const diaChiDayDuInput = formElement.querySelector('[name$="DiaChiDayDu"]');
+
+            const phuongXa = formElement.querySelector('[name$="PhuongXa"]').value || '';
+            const quanHuyen = formElement.querySelector('[name$="QuanHuyen"]').value || '';
+            const tinhThanh = formElement.querySelector('[name$="TinhThanh"]').value || '';
+            const soNhaTenDuong = formElement.querySelector('[name$="SoNhaTenDuong"]').value || '';
+
+            const parts = [soNhaTenDuong, phuongXa, quanHuyen, tinhThanh].filter(part => part !== '');
+            const fullAddress = parts.join(', ');
+
+            diaChiChiTietInput.value = fullAddress;
+            diaChiDayDuInput.value = fullAddress;
+        }
+
+        function addAddressForm() {
+            const container = document.getElementById('addressesContainer');
+            const newAddressForm = document.createElement('div');
+            newAddressForm.classList.add('address-item', 'bg-white', 'p-5', 'rounded-lg', 'shadow-md', 'space-y-4', 'border', 'border-gray-200');
+            newAddressForm.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-lg font-medium text-gray-800">Địa chỉ #${addressIndex + 1}</h4>
+                    <button type="button" class="btn btn-sm btn-danger remove-address-btn inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150">
+                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-1 1v1H5a1 1 0 000 2h1v9a2 2 0 002 2h4a2 2 0 002-2V6h1a1 1 0 100-2h-3V3a1 1 0 00-1-1H9zm0 2h2v1H9V4zm0 3a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        Xóa
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__MaDiaChi" class="block text-sm font-medium text-gray-700 mb-1">Mã địa chỉ</label>
+                        <input name="DiaChis[${addressIndex}].MaDiaChi" id="DiaChis_${addressIndex}__MaDiaChi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                        <span data-valmsg-for="DiaChis[${addressIndex}].MaDiaChi" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__TinhThanh" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
+                        <select name="DiaChis[${addressIndex}].TinhThanh" id="DiaChis_${addressIndex}__TinhThanh" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm tinh-select" required>
+                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${addressIndex}].TinhThanh" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__QuanHuyen" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
+                        <select name="DiaChis[${addressIndex}].QuanHuyen" id="DiaChis_${addressIndex}__QuanHuyen" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm quan-select" required>
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${addressIndex}].QuanHuyen" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__PhuongXa" class="block text-sm font-medium text-gray-700 mb-1">Phường/Xã</label>
+                        <select name="DiaChis[${addressIndex}].PhuongXa" id="DiaChis_${addressIndex}__PhuongXa" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm phuong-select" required>
+                            <option value="">-- Chọn Phường/Xã --</option>
+                        </select>
+                        <span data-valmsg-for="DiaChis[${addressIndex}].PhuongXa" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__SoNhaTenDuong" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, tên đường</label>
+                        <input name="DiaChis[${addressIndex}].SoNhaTenDuong" id="DiaChis_${addressIndex}__SoNhaTenDuong" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Số nhà, tên đường..." />
+                        <span data-valmsg-for="DiaChis[${addressIndex}].SoNhaTenDuong" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label for="DiaChis_${addressIndex}__DiaChiDayDu" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ đầy đủ</label>
+                        <input name="DiaChis[${addressIndex}].DiaChiDayDu" id="DiaChis_${addressIndex}__DiaChiDayDu" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-200 cursor-not-allowed" readonly />
+                    </div>
+
+                    <input type="hidden" name="DiaChis[${addressIndex}].DiaChiChiTiet" id="DiaChis_${addressIndex}__DiaChiChiTiet" />
+
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__TenNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">Tên người nhận</label>
+                        <input name="DiaChis[${addressIndex}].TenNguoiNhan" id="DiaChis_${addressIndex}__TenNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span data-valmsg-for="DiaChis[${addressIndex}].TenNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="DiaChis_${addressIndex}__SdtNguoiNhan" class="block text-sm font-medium text-gray-700 mb-1">SĐT người nhận</label>
+                        <input name="DiaChis[${addressIndex}].SdtNguoiNhan" id="DiaChis_${addressIndex}__SdtNguoiNhan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        <span data-valmsg-for="DiaChis[${addressIndex}].SdtNguoiNhan" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group form-check">
+                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
+                            <input type="checkbox" name="DiaChis[${addressIndex}].LaMacDinh" id="DiaChis_${addressIndex}__LaMacDinh" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" />
+                            <span class="ml-2">Là mặc định</span>
+                        </label>
+                        <input type="hidden" name="DiaChis[${addressIndex}].LaMacDinh" value="false" />
+                    </div>
+                    <div class="form-group form-check">
+                        <label class="form-check-label inline-flex items-center text-sm text-gray-700">
+                            <input type="checkbox" name="DiaChis[${addressIndex}].TrangThai" id="DiaChis_${addressIndex}__TrangThai" class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" value="true" checked />
+                            <span class="ml-2">Trạng thái</span>
+                        </label>
+                        <input type="hidden" name="DiaChis[${addressIndex}].TrangThai" value="false" />
+                    </div>
+                </div>
+            `;
+            container.appendChild(newAddressForm);
+
+            const tinhSelect = newAddressForm.querySelector('.tinh-select');
+            const quanSelect = newAddressForm.querySelector('.quan-select');
+            const phuongSelect = newAddressForm.querySelector('.phuong-select');
+            const soNhaTenDuongInput = newAddressForm.querySelector('[name$="SoNhaTenDuong"]');
+
+
+            const updateHandler = () => updateAddressString(newAddressForm);
+            tinhSelect.addEventListener('change', updateHandler);
+            quanSelect.addEventListener('change', updateHandler);
+            phuongSelect.addEventListener('change', updateHandler);
+            soNhaTenDuongInput.addEventListener('input', updateHandler);
+
+            newAddressForm.querySelector('.remove-address-btn').addEventListener('click', function() {
+                newAddressForm.remove();
+                updateAddressIndices();
+            });
+
+
+            $.getJSON('https://esgoo.net/api-tinhthanh/1/0.htm', function(data_tinh) {
+                if (data_tinh.error === 0) {
+                    $.each(data_tinh.data, function (key, val) {
+                        $(tinhSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
+                    });
+                }
+            });
+
+
+            $(tinhSelect).change(function() {
+                const idtinh = $(this).find('option:selected').data('id');
+                $(quanSelect).html('<option value="">-- Chọn Quận/Huyện --</option>');
+                $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
+
+                $.getJSON('https://esgoo.net/api-tinhthanh/2/' + idtinh + '.htm', function(data_quan) {
+                    if (data_quan.error === 0) {
+                        $.each(data_quan.data, function (key, val) {
+                            $(quanSelect).append('<option value="' + val.full_name + '" data-id="' + val.id + '">' + val.full_name + '</option>');
+                        });
+                    }
+                });
+            });
+
+
+            $(quanSelect).change(function() {
+                const idquan = $(this).find('option:selected').data('id');
+                $(phuongSelect).html('<option value="">-- Chọn Phường/Xã --</option>');
+
+                $.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
+                    if (data_phuong.error === 0) {
+                        $.each(data_phuong.data, function (key, val) {
+                            $(phuongSelect).append('<option value="' + val.full_name + '">' + val.full_name + '</option>');
+                        });
+                    }
+                });
+            });
+
+            const form = document.getElementById('createKhachHangForm');
+            $.validator.unobtrusive.parse(form);
+
+            addressIndex++;
+        }
+
+        function updateAddressIndices() {
+            const addressItems = document.querySelectorAll('#addressesContainer .address-item');
+            addressItems.forEach((item, index) => {
+                item.querySelectorAll('[name^="DiaChis["]').forEach(input => {
+                    const oldName = input.getAttribute('name');
+                    const newName = oldName.replace(/DiaChis\[\d+\]/, `DiaChis[${index}]`);
+                    input.setAttribute('name', newName);
+                });
+                item.querySelectorAll('[id^="DiaChis_"]').forEach(input => {
+                    const oldId = input.getAttribute('id');
+                    const newId = oldId.replace(/DiaChis_\d+__/, `DiaChis_${index}__`);
+                    input.setAttribute('id', newId);
+                });
+                item.querySelectorAll('[data-valmsg-for^="DiaChis["]').forEach(span => {
+                    const oldValMsgFor = span.getAttribute('data-valmsg-for');
+                    const newValMsgFor = oldValMsgFor.replace(/DiaChis\[\d+\]/, `DiaChis[${index}]`);
+                    span.setAttribute('data-valmsg-for', newValMsgFor);
+                });
+                item.querySelector('h4').textContent = `Địa chỉ #${index + 1}`;
+            });
+            addressIndex = addressItems.length;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('addAddressBtn').addEventListener('click', addAddressForm);
+            addAddressForm();
+        });
+    </script>
+}

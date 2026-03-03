@@ -1,9 +1,17 @@
-﻿using BanQuanAu1.Web.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using QuanApi.Dtos;
-using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using QuanApi.Dtos;
+using BanQuanAu1.Web.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace QuanView.Areas.Admin.Controllers
 {

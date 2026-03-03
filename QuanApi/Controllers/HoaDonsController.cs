@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -217,29 +217,31 @@ namespace QuanApi.Controllers
                                 IDPhuongThucThanhToan = h.PhuongThucThanhToan.IDPhuongThucThanhToan,
                                 TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
                             } : null,
-                            ChiTietHoaDons = h.ChiTietHoaDons.Select(ct => new
-                            {
-                                IDChiTietHoaDon = ct.IDChiTietHoaDon,
-                                MaChiTietHoaDon = ct.MaChiTietHoaDon,
-                                SoLuong = ct.SoLuong,
-                                DonGia = ct.DonGia,
-                                ThanhTien = ct.ThanhTien,
-                                SanPhamChiTiet = new
+                            ChiTietHoaDons = h.ChiTietHoaDons
+                                .Where(ct => ct.SanPhamChiTiet != null)
+                                .Select(ct => new
                                 {
-                                    IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
-                                    MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
-                                    GiaBan = ct.SanPhamChiTiet.GiaBan,
-                                    KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
-                                    MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
-                                    HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
-                                    SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+                                    IDChiTietHoaDon = ct.IDChiTietHoaDon,
+                                    MaChiTietHoaDon = ct.MaChiTietHoaDon,
+                                    SoLuong = ct.SoLuong,
+                                    DonGia = ct.DonGia,
+                                    ThanhTien = ct.ThanhTien,
+                                    SanPhamChiTiet = new
                                     {
-                                        IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
-                                        TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
-                                        MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
-                                    } : null
-                                }
-                            }).ToList()
+                                        IDSanPhamChiTiet = ct.SanPhamChiTiet!.IDSanPhamChiTiet,
+                                        MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+                                        GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
+                                        MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
+                                        HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
+                                        SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+                                        {
+                                            IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
+                                            TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
+                                            MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
+                                        } : null
+                                    }
+                                }).ToList()
                         })
                         .FirstOrDefaultAsync();
 
@@ -281,7 +283,7 @@ namespace QuanApi.Controllers
                 var hoaDon = new HoaDon
                 {
                     IDHoaDon = Guid.NewGuid(),
-                    MaHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}",
+                    MaHoaDon = $"HD_{DateTime.UtcNow:yyyyMMddHHmmss}",
                     IDKhachHang = dto.KhachHangId,
                     IDNhanVien = dto.NhanVienId,
                     IDPhieuGiamGia = dto.PhieuGiamGiaId,
@@ -306,7 +308,7 @@ namespace QuanApi.Controllers
                     var chiTietHoaDon = new ChiTietHoaDon
                     {
                         IDChiTietHoaDon = Guid.NewGuid(),
-                        MaChiTietHoaDon = $"CTHD_{DateTime.Now:yyyyMMddHHmmss}_{chiTiet.IDSanPhamChiTiet.ToString().Substring(0, 8)}",
+                        MaChiTietHoaDon = $"CTHD_{DateTime.UtcNow:yyyyMMddHHmmss}_{chiTiet.IDSanPhamChiTiet.ToString().Substring(0, 8)}",
                         IDHoaDon = hoaDon.IDHoaDon,
                         IDSanPhamChiTiet = chiTiet.IDSanPhamChiTiet,
                         SoLuong = chiTiet.SoLuong,

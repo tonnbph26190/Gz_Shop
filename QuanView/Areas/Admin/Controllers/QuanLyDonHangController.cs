@@ -1,14 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
+using System.Text.Json;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class QuanLyDonHangController : Controller
     {
         private readonly HttpClient _httpClient;
+
+        private static readonly JsonSerializerOptions ApiJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         public QuanLyDonHangController(IHttpClientFactory httpClientFactory)
         {
@@ -170,21 +177,23 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     // Đọc response content một lần duy nhất
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"API Response: {responseContent}");
 
                     try
                     {
-                        // Sử dụng JsonSerializer để deserialize từ string đã đọc
-                        var result = System.Text.Json.JsonSerializer.Deserialize<PaginatedResponse<HoaDonDto>>(
+                        // API trả về camelCase (data, pagination, totalCount...); deserialize không phân biệt hoa thường
+                        var result = JsonSerializer.Deserialize<PaginatedResponse<HoaDonDto>>(
                             responseContent,
-                            new System.Text.Json.JsonSerializerOptions
-                            {
-                                PropertyNameCaseInsensitive = true
-                            }
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                         );
 
-                        var hoaDonsData = result?.Data ?? new List<HoaDonDto>();
-                        var pagination = result?.Pagination ?? new PaginationInfo();
+                        if (result == null)
+                        {
+                            TempData["ErrorMessage"] = "API trả về dữ liệu không đúng định dạng.";
+                            return View(new List<HoaDon>());
+                        }
+
+                        var hoaDonsData = result.Data ?? new List<HoaDonDto>();
+                        var pagination = result.Pagination ?? new PaginationInfo();
 
                         var hoaDons = new List<HoaDon>();
 
@@ -194,10 +203,10 @@ namespace QuanView.Areas.Admin.Controllers
                             var hoaDon = new HoaDon
                             {
                                 IDHoaDon = hoaDonData.IDHoaDon,
-                                MaHoaDon = hoaDonData.MaHoaDon,
+                                MaHoaDon = hoaDonData.MaHoaDon ?? "",
                                 TongTien = hoaDonData.TongTien,
                                 TienGiam = hoaDonData.TienGiam ?? 0,
-                                TrangThai = hoaDonData.TrangThai,
+                                TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                                 NgayTao = hoaDonData.NgayTao,
                                 TenNguoiNhan = hoaDonData.TenNguoiNhan,
                                 SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,
@@ -240,7 +249,6 @@ namespace QuanView.Areas.Admin.Controllers
                     }
                     catch (System.Text.Json.JsonException jsonEx)
                     {
-                        Console.WriteLine($"JSON Deserialization Error: {jsonEx.Message}");
                         TempData["ErrorMessage"] = $"Lỗi khi xử lý dữ liệu từ API: {jsonEx.Message}";
                         return View(new List<HoaDon>());
                     }
@@ -248,14 +256,12 @@ namespace QuanView.Areas.Admin.Controllers
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
                     TempData["ErrorMessage"] = $"Lỗi API: {response.StatusCode} - {errorContent}";
                     return View(new List<HoaDon>());
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error: {ex.Message}");
                 TempData["ErrorMessage"] = $"Lỗi khi tải danh sách đơn hàng: {ex.Message}";
                 return View(new List<HoaDon>());
             }
@@ -269,7 +275,7 @@ namespace QuanView.Areas.Admin.Controllers
                 var response = await _httpClient.GetAsync($"HoaDons/{id}");
                 if (response.IsSuccessStatusCode)
                 {
-                    var hoaDonData = await response.Content.ReadFromJsonAsync<HoaDonDetailDto>();
+                    var hoaDonData = await response.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
                     if (hoaDonData != null)
                     {
                         var hoaDon = new HoaDon
@@ -430,7 +436,7 @@ namespace QuanView.Areas.Admin.Controllers
             var response = await _httpClient.GetAsync($"HoaDons/{id}");
             if (response.IsSuccessStatusCode)
             {
-                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>(ApiJsonOptions);
                 if (hoaDon != null)
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
@@ -453,7 +459,7 @@ namespace QuanView.Areas.Admin.Controllers
             var response = await _httpClient.GetAsync($"HoaDons/{id}");
             if (response.IsSuccessStatusCode)
             {
-                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>(ApiJsonOptions);
                 if (hoaDon != null)
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
@@ -476,7 +482,7 @@ namespace QuanView.Areas.Admin.Controllers
             var response = await _httpClient.GetAsync($"HoaDons/{id}");
             if (response.IsSuccessStatusCode)
             {
-                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>();
+                var hoaDon = await response.Content.ReadFromJsonAsync<HoaDon>(ApiJsonOptions);
                 if (hoaDon != null)
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
@@ -505,7 +511,7 @@ namespace QuanView.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                var hoaDon = await hoaDonResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>();
+                var hoaDon = await hoaDonResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
                 if (hoaDon == null)
                 {
                     TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
@@ -597,7 +603,7 @@ namespace QuanView.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                var hoaDonData = await response.Content.ReadFromJsonAsync<HoaDonDetailDto>();
+                var hoaDonData = await response.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
                 if (hoaDonData == null)
                 {
                     TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
@@ -607,11 +613,11 @@ namespace QuanView.Areas.Admin.Controllers
                 var hoaDon = new HoaDon
                 {
                     IDHoaDon = hoaDonData.IDHoaDon,
-                    MaHoaDon = hoaDonData.MaHoaDon,
+                    MaHoaDon = hoaDonData.MaHoaDon ?? "",
                     TongTien = hoaDonData.TongTien,
                     TienGiam = hoaDonData.TienGiam ?? 0,
                     PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
-                    TrangThai = hoaDonData.TrangThai,
+                    TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                     NgayTao = hoaDonData.NgayTao,
                     TenNguoiNhan = hoaDonData.TenNguoiNhan,
                     SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,

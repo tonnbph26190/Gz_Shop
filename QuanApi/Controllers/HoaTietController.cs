@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Services;
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
@@ -56,7 +56,9 @@ namespace QuanApi.Controllers
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
             var success = await _service.ToggleStatusAsync(id);
-            return Ok(new { success });
+            if (!success) return NotFound();
+            var item = await _service.GetByIdAsync(id);
+            return Ok(new { success = true, trangThai = item?.TrangThai });
         }
 
         [HttpGet("paged")]

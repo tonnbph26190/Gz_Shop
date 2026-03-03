@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -22,6 +22,8 @@ namespace QuanApi.Services
             DateTime? dateTo);
 
         Task<SanPham?> GetByIdAsync(Guid id);
+        /// <summary>Lấy sản phẩm đầy đủ (master + chi tiết + ảnh) cho Admin.</summary>
+        Task<SanPhamDto?> GetByIdFullAsync(Guid id);
         Task<IActionResult> CreateAsync(SanPham sanPham, string userName);
         Task<IActionResult> UpdateAsync(Guid id, SanPham sanPham);
         Task<bool> DeleteAsync(Guid id);
@@ -119,15 +121,29 @@ namespace QuanApi.Services
         public async Task<SanPham?> GetByIdAsync(Guid id)
             => await _context.SanPhams.FindAsync(id);
 
+        public async Task<SanPhamDto?> GetByIdFullAsync(Guid id)
+        {
+            return await _context.SanPhams
+                .Where(s => s.IDSanPham == id)
+                .IncludeAllSanPham()
+                .SelectSanPhamDto()
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<IActionResult> CreateAsync(SanPham sanPham, string userName)
         {
             var errors = _validationService.ValidateSanPham(sanPham);
             if (errors.Any())
                 return new BadRequestObjectResult(new { errors });
 
+            // Giữ ID do client gửi (View tạo Guid trước, sau đó thêm biến thể với cùng ID)
+            if (sanPham.IDSanPham == Guid.Empty)
+                sanPham.IDSanPham = Guid.NewGuid();
+
             var chiTiets = sanPham.SanPhamChiTiets?.ToList();
             sanPham.SanPhamChiTiets = null;
-            sanPham.IDSanPham = Guid.NewGuid();
+            sanPham.NgayTao = DateTime.UtcNow;
+            sanPham.NguoiTao = userName;
 
             _context.SanPhams.Add(sanPham);
             await _context.SaveChangesAsync();
@@ -136,15 +152,16 @@ namespace QuanApi.Services
             {
                 foreach (var ct in chiTiets)
                 {
-                    ct.IDSanPhamChiTiet = Guid.NewGuid();
+                    ct.IDSanPhamChiTiet = ct.IDSanPhamChiTiet == Guid.Empty ? Guid.NewGuid() : ct.IDSanPhamChiTiet;
                     ct.IDSanPham = sanPham.IDSanPham;
+                    ct.TrangThai = true; // Biến thể mới luôn ở trạng thái hoạt động (đang bán)
                 }
 
                 await _context.SanPhamChiTiets.AddRangeAsync(chiTiets);
                 await _context.SaveChangesAsync();
             }
 
-            return new CreatedAtActionResult(nameof(GetByIdAsync), "SanPhams",
+            return new CreatedAtActionResult("GetSanPham", "SanPhams",
                 new { id = sanPham.IDSanPham }, sanPham);
         }
 
@@ -153,7 +170,33 @@ namespace QuanApi.Services
             if (id != sanPham.IDSanPham)
                 return new BadRequestResult();
 
-            _context.Entry(sanPham).State = EntityState.Modified;
+            var existing = await _context.SanPhams.FindAsync(id);
+            if (existing == null)
+                return new NotFoundResult();
+
+            // Chỉ cập nhật thông tin master, không đụng đến chi tiết hay ảnh
+            existing.MaSanPham = sanPham.MaSanPham;
+            existing.TenSanPham = sanPham.TenSanPham;
+            existing.IDDanhMuc = sanPham.IDDanhMuc;
+            existing.IDThuongHieu = sanPham.IDThuongHieu;
+            existing.IDChatLieu = sanPham.IDChatLieu;
+            existing.IDLoaiOng = sanPham.IDLoaiOng;
+            existing.IDKieuDang = sanPham.IDKieuDang;
+            existing.IDLungQuan = sanPham.IDLungQuan;
+            existing.CoXepLy = sanPham.CoXepLy;
+            existing.CoGian = sanPham.CoGian;
+            existing.TrangThai = sanPham.TrangThai;
+            existing.LanCapNhatCuoi = DateTime.UtcNow;
+            existing.NguoiCapNhat = sanPham.NguoiCapNhat;
+
+            // Nếu SP cha ngưng bán thì tất cả biến thể cũng ngưng bán
+            if (!sanPham.TrangThai)
+            {
+                var variants = await _context.SanPhamChiTiets.Where(ct => ct.IDSanPham == id).ToListAsync();
+                foreach (var ct in variants)
+                    ct.TrangThai = false;
+            }
+
             await _context.SaveChangesAsync();
             return new NoContentResult();
         }
@@ -198,7 +241,7 @@ namespace QuanApi.Services
             var anhSanPham = new AnhSanPham
             {
                 IDAnhSanPham = Guid.NewGuid(),
-                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+                MaAnh = $"IMG_{DateTime.UtcNow:yyyyMMddHHmmssfff}",
                 IDSanPhamChiTiet = sanPhamChiTietId,
                 UrlAnh = dto.UrlAnh,
                 LaAnhChinh = dto.LaAnhChinh,
@@ -395,7 +438,7 @@ namespace QuanApi.Services
                         TrangThai = a.TrangThai
                     }).ToList(),
 
-                // Chi tiết sản phẩm
+                // Chi tiết sản phẩm (bao gồm TrangThai để Edit map đúng)
                 ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
                 {
                     IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
@@ -408,6 +451,7 @@ namespace QuanApi.Services
                     GiaBan = ct.GiaBan,
                     price = ct.GiaBan,
                     originalPrice = ct.GiaBan,
+                    TrangThai = ct.TrangThai,
 
                     TenKichCo = ct.KichCo.TenKichCo,
                     TenMauSac = ct.MauSac.TenMauSac,
