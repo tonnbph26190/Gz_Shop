@@ -56,8 +56,23 @@
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
 
-<p>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success mb-3">+ Thêm sản phẩm mới</a>
+<p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success">+ Thêm sản phẩm mới</a>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ExportCsv"
+       asp-route-keyword="@Model.Keyword"
+       asp-route-trangThai="@Model.TrangThai"
+       asp-route-priceFrom="@Model.PriceFrom"
+       asp-route-priceTo="@Model.PriceTo"
+       asp-route-qtyFrom="@Model.QtyFrom"
+       asp-route-qtyTo="@Model.QtyTo"
+       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+       class="btn btn-outline-secondary">
+        <i class="fas fa-download"></i> Export CSV
+    </a>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-outline-primary">
+        <i class="fas fa-upload"></i> Import CSV
+    </a>
 </p>
 
 <!-- Bộ lọc -->

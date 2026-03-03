@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Repository.IRepository;
 using QuanApi.Data;
 
@@ -19,8 +19,23 @@ namespace QuanApi.Controllers
         [HttpPost("add")]
         public IActionResult AddToGioHang(Guid iduser, Guid idsp, int soluong)
         {
-            _gioHangRepo.AddGioHang(iduser, idsp, soluong);
-            return Ok("Đã thêm vào giỏ hàng");
+            try
+            {
+                _gioHangRepo.AddGioHang(iduser, idsp, soluong);
+                return Ok("Đã thêm vào giỏ hàng");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         // GET: api/GioHangs/user/{userId}
@@ -43,8 +58,23 @@ namespace QuanApi.Controllers
         [HttpPut("item/{idghct}")]
         public IActionResult UpdateChiTiet(Guid idghct, [FromQuery] int soluong)
         {
-            _gioHangRepo.UpdateChiTietGioHang(idghct, soluong);
-            return Ok("Cập nhật giỏ hàng thành công");
+            try
+            {
+                _gioHangRepo.UpdateChiTietGioHang(idghct, soluong);
+                return Ok("Cập nhật giỏ hàng thành công");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
     }
 }

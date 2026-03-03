@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -84,6 +84,8 @@ namespace QuanApi.Services
             var nhanVien = _mapper.Map<NhanVien>(createDto);
             nhanVien.IDNhanVien = Guid.NewGuid();
             nhanVien.NgayTao = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(createDto.MatKhau))
+                nhanVien.MatKhau = BCrypt.Net.BCrypt.HashPassword(createDto.MatKhau);
 
             _context.NhanViens.Add(nhanVien);
             await _context.SaveChangesAsync();
@@ -102,6 +104,8 @@ namespace QuanApi.Services
                 throw new InvalidOperationException("Bạn không thể thay đổi trạng thái của chính mình.");
 
             _mapper.Map(updateDto, existing);
+            if (!string.IsNullOrEmpty(updateDto.MatKhau))
+                existing.MatKhau = BCrypt.Net.BCrypt.HashPassword(updateDto.MatKhau);
             existing.LanCapNhatCuoi = DateTime.UtcNow;
             existing.NguoiCapNhat = currentUserId;
 
