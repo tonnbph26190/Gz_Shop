@@ -1,3 +1,22 @@
+﻿<<<<<<< HEAD
+﻿@model QuanApi.Data.DotGiamGia
+
+@{
+    ViewData["Title"] = "Xóa đợt giảm giá";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-danger">
+    Bạn có chắc muốn xóa đợt giảm giá "<strong>@Model.TenDot</strong>" không?
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="IDDotGiamGia" />
+    <button type="submit" class="btn btn-danger">Xóa</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>
+=======
 ﻿@model QuanApi.Data.PhieuGiamGia
 
 @{
@@ -182,3 +201,4 @@
     </div>
 </div>
 
+>>>>>>> big_update
