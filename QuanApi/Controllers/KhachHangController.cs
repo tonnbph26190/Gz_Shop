@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -157,7 +157,7 @@ namespace QuanApi.Controllers.Api
                 _logger.LogWarning("Tạo khách hàng thất bại: Mật khẩu không được cung cấp.");
                 return BadRequest(new ValidationProblemDetails(ModelState));
             }
-            khachHang.MatKhau = createKhachHangDto.MatKhau;
+            khachHang.MatKhau = BCrypt.Net.BCrypt.HashPassword(createKhachHangDto.MatKhau);
 
             if (createKhachHangDto.DiaChis != null && createKhachHangDto.DiaChis.Any())
             {
@@ -327,7 +327,7 @@ namespace QuanApi.Controllers.Api
 
             if (!string.IsNullOrEmpty(updateKhachHangDto.MatKhau))
             {
-                originalKhachHang.MatKhau = updateKhachHangDto.MatKhau;
+                originalKhachHang.MatKhau = BCrypt.Net.BCrypt.HashPassword(updateKhachHangDto.MatKhau);
             }
 
             var existingDiaChis = originalKhachHang.DiaChis.ToList();

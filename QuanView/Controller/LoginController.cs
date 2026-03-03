@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -158,10 +158,23 @@ namespace QuanView.Controllers
                 return View("Index", model);
             }
 
-            // Check nhân viên
+            // Check nhân viên (hỗ trợ cả mật khẩu đã hash và plain text cũ)
             var nhanVien = await _context.NhanViens
                 .Include(nv => nv.VaiTro)
-                .FirstOrDefaultAsync(nv => nv.Email == model.Email && nv.MatKhau == model.Password && nv.TrangThai);
+                .FirstOrDefaultAsync(nv => nv.Email == model.Email && nv.TrangThai);
+            if (nhanVien != null && !string.IsNullOrEmpty(nhanVien.MatKhau))
+            {
+                bool matKhauDung = BCrypt.Net.BCrypt.Verify(model.Password, nhanVien.MatKhau);
+                if (!matKhauDung && nhanVien.MatKhau != model.Password)
+                    nhanVien = null;
+                else if (matKhauDung == false && nhanVien.MatKhau == model.Password)
+                {
+                    nhanVien.MatKhau = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else if (nhanVien != null)
+                nhanVien = null;
 
             Console.WriteLine($"🔍 Tìm thấy nhân viên: {(nhanVien != null ? "Có" : "Không")}");
             if (nhanVien != null)
@@ -186,7 +199,20 @@ namespace QuanView.Controllers
             }
 
             var khachHang = await _context.KhachHang
-                .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
+                .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.TrangThai);
+            if (khachHang != null && !string.IsNullOrEmpty(khachHang.MatKhau))
+            {
+                bool matKhauDung = BCrypt.Net.BCrypt.Verify(model.Password, khachHang.MatKhau);
+                if (!matKhauDung && khachHang.MatKhau != model.Password)
+                    khachHang = null;
+                else if (!matKhauDung && khachHang.MatKhau == model.Password)
+                {
+                    khachHang.MatKhau = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else if (khachHang != null)
+                khachHang = null;
 
             Console.WriteLine($"🔍 Tìm thấy khách hàng: {(khachHang != null ? "Có" : "Không")}");
 
@@ -253,7 +279,7 @@ namespace QuanView.Controllers
                 MaKhachHang = "KH" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 TenKhachHang = model.TenKhachHang,
                 Email = model.Email,
-                MatKhau = model.Password,
+                MatKhau = BCrypt.Net.BCrypt.HashPassword(model.Password),
                 SoDienThoai = model.SoDienThoai,
                 NgayTao = DateTime.UtcNow,
                 TrangThai = true

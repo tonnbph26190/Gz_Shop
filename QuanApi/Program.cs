@@ -44,11 +44,7 @@ builder.Services.AddScoped<IGioHangService, GioHangService>();
 builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
 builder.Services.AddScoped<ILungQuanService, LungQuanService>();
 
-// Đăng ký Shipping Service
-//builder.Services.AddScoped<IShippingService, ShippingService>();
-
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
-builder.Services.AddScoped<GioHangIRepository, GioHangRepository>();
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
