@@ -630,6 +630,7 @@ namespace QuanView.Areas.Admin.Controllers
             var result = new QuanView.Areas.Admin.Models.ImportCsvResultViewModel { CsvContent = rawCsv };
             var lines = rawCsv.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             var dataRows = new List<(int lineIndex, string[] row)>();
+            var existingVariantsByProduct = new Dictionary<Guid, List<(Guid IdChiTiet, Guid IdKichCo, Guid IdMauSac, int SoLuong)>>();
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i];
@@ -748,33 +749,106 @@ namespace QuanView.Areas.Admin.Controllers
 
                     if (idKichCo != Guid.Empty && idMauSac != Guid.Empty)
                     {
-                        var ct = new QuanView.Areas.Admin.Models.SanPhamChiTietDto
+                        if (!existingVariantsByProduct.TryGetValue(dto.IDSanPham, out var variantList))
                         {
-                            IdSanPhamChiTiet = Guid.NewGuid(),
-                            IdSanPham = dto.IDSanPham,
-                            IdKichCo = idKichCo,
-                            IdMauSac = idMauSac,
-                            IdHoaTiet = idHoaTiet,
-                            SoLuong = soLuong,
-                            GiaBan = giaBan > 0 ? giaBan : 100000,
-                            TrangThai = true
-                        };
-                        var ctRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
-                        if (ctRes.IsSuccessStatusCode)
-                            result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                            variantList = new List<(Guid, Guid, Guid, int)>();
+                            var getCt = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
+                            if (getCt.IsSuccessStatusCode)
                             {
-                                LineNumber = lineIndex,
-                                Message = $"Đã tạo biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL: {soLuong}, Giá: {giaBan:N0}"
-                            });
+                                var list = await getCt.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                if (list != null)
+                                    foreach (var v in list)
+                                        variantList.Add((v.IdSanPhamChiTiet, v.IdKichCo, v.IdMauSac, v.SoLuong));
+                            }
+                            existingVariantsByProduct[dto.IDSanPham] = variantList;
+                        }
+
+                        var existing = variantList.FirstOrDefault(x => x.IdKichCo == idKichCo && x.IdMauSac == idMauSac);
+                        if (existing.IdChiTiet != Guid.Empty)
+                        {
+                            var newSoLuong = existing.SoLuong + soLuong;
+                            var updateDto = new QuanView.Areas.Admin.Models.SanPhamChiTietDto
+                            {
+                                IdSanPhamChiTiet = existing.IdChiTiet,
+                                IdSanPham = dto.IDSanPham,
+                                IdKichCo = idKichCo,
+                                IdMauSac = idMauSac,
+                                IdHoaTiet = idHoaTiet,
+                                SoLuong = newSoLuong,
+                                GiaBan = giaBan > 0 ? giaBan : 100000,
+                                TrangThai = true
+                            };
+                            var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{existing.IdChiTiet}", updateDto, ApiVariantJsonOptions);
+                            if (putRes.IsSuccessStatusCode)
+                            {
+                                var idx = variantList.FindIndex(x => x.IdChiTiet == existing.IdChiTiet);
+                                if (idx >= 0) variantList[idx] = (existing.IdChiTiet, existing.IdKichCo, existing.IdMauSac, newSoLuong);
+                                result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Message = $"Đã cộng dồn biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL: {existing.SoLuong} + {soLuong} = {newSoLuong}"
+                                });
+                            }
+                            else
+                            {
+                                var errBody = await putRes.Content.ReadAsStringAsync();
+                                result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Reason = "Lỗi cập nhật số lượng: " + (errBody.Length > 150 ? errBody.Substring(0, 150) + "..." : errBody),
+                                    RowPreview = $"{maSp}, {tenKichCo}, {tenMauSac}"
+                                });
+                            }
+                        }
                         else
                         {
-                            var errBody = await ctRes.Content.ReadAsStringAsync();
-                            result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                            var ct = new QuanView.Areas.Admin.Models.SanPhamChiTietDto
                             {
-                                LineNumber = lineIndex,
-                                Reason = "Lỗi tạo biến thể: " + (errBody.Length > 150 ? errBody.Substring(0, 150) + "..." : errBody),
-                                RowPreview = $"{maSp}, {tenKichCo}, {tenMauSac}"
-                            });
+                                IdSanPhamChiTiet = Guid.NewGuid(),
+                                IdSanPham = dto.IDSanPham,
+                                IdKichCo = idKichCo,
+                                IdMauSac = idMauSac,
+                                IdHoaTiet = idHoaTiet,
+                                SoLuong = soLuong,
+                                GiaBan = giaBan > 0 ? giaBan : 100000,
+                                TrangThai = true
+                            };
+                            var ctRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+                            if (ctRes.IsSuccessStatusCode)
+                            {
+                                var body = await ctRes.Content.ReadAsStringAsync();
+                                Guid idCt = Guid.Empty;
+                                int slCt = soLuong;
+                                try
+                                {
+                                    using var doc = JsonDocument.Parse(body);
+                                    var root = doc.RootElement;
+                                    if (root.TryGetProperty("id", out var idProp)) Guid.TryParse(idProp.GetString(), out idCt);
+                                    else if (root.TryGetProperty("idSanPhamChiTiet", out var idProp2)) Guid.TryParse(idProp2.GetString(), out idCt);
+                                    if (root.TryGetProperty("totalQuantity", out var slProp)) slCt = slProp.GetInt32();
+                                }
+                                catch { /* ignore */ }
+                                if (idCt != Guid.Empty) variantList.Add((idCt, idKichCo, idMauSac, slCt));
+                                else variantList.Add((ct.IdSanPhamChiTiet, idKichCo, idMauSac, soLuong));
+                                var isMerge = ctRes.StatusCode == System.Net.HttpStatusCode.OK;
+                                result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Message = isMerge
+                                        ? $"Đã cộng dồn biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL tổng: {slCt}"
+                                        : $"Đã tạo biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL: {soLuong}, Giá: {giaBan:N0}"
+                                });
+                            }
+                            else
+                            {
+                                var errBody = await ctRes.Content.ReadAsStringAsync();
+                                result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Reason = "Lỗi tạo biến thể: " + (errBody.Length > 150 ? errBody.Substring(0, 150) + "..." : errBody),
+                                    RowPreview = $"{maSp}, {tenKichCo}, {tenMauSac}"
+                                });
+                            }
                         }
                     }
                     else if (idKichCo == Guid.Empty || idMauSac == Guid.Empty)

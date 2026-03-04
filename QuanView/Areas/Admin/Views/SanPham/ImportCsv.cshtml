@@ -23,7 +23,17 @@
             @Html.AntiForgeryToken()
             <div class="mb-3">
                 <label for="csvContent" class="form-label fw-bold">Nhập hoặc dán dữ liệu CSV</label>
-                <textarea class="form-control font-monospace" id="csvContent" name="csvContent" rows="12" placeholder="@defaultHeader">@(Model?.CsvContent)</textarea>
+                <textarea class="form-control font-monospace" id="csvContent" name="csvContent" rows="10" placeholder="@defaultHeader">@(Model?.CsvContent)</textarea>
+            </div>
+            <div class="mb-3" id="csvPreviewSection">
+                <label class="form-label fw-bold">Xem trước dạng bảng</label>
+                <div class="table-responsive border rounded">
+                    <table class="table table-sm table-bordered mb-0 import-preview-table" id="csvPreviewTable">
+                        <thead class="table-light" id="csvPreviewThead"></thead>
+                        <tbody id="csvPreviewTbody"></tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mt-1 mb-0">Bảng cập nhật theo nội dung ô nhập phía trên.</p>
             </div>
             <div class="mb-3">
                 <label for="fileCsv" class="form-label">Hoặc chọn file CSV</label>
@@ -56,19 +66,19 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
+                            <table class="table table-sm table-hover table-bordered mb-0 import-result-table">
+                                <thead class="table-light">
                                     <tr>
-                                        <th style="width: 90px;">Dòng</th>
-                                        <th>Nội dung</th>
+                                        <th class="border-dark" style="width: 90px;">Dòng</th>
+                                        <th class="border-dark">Nội dung</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var item in Model.SuccessList)
                                     {
                                         <tr>
-                                            <td class="text-muted">@item.LineNumber</td>
-                                            <td>@item.Message</td>
+                                            <td class="border-dark text-muted">@item.LineNumber</td>
+                                            <td class="border-dark">@item.Message</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -86,21 +96,21 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
+                            <table class="table table-sm table-hover table-bordered mb-0 import-result-table">
+                                <thead class="table-light">
                                     <tr>
-                                        <th style="width: 90px;">Dòng</th>
-                                        <th>Lý do</th>
-                                        <th class="text-muted" style="max-width: 200px;">Xem dòng</th>
+                                        <th class="border-dark" style="width: 80px;">Dòng</th>
+                                        <th class="border-dark">Lý do</th>
+                                        <th class="border-dark" style="min-width: 180px;">Preview dòng</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var item in Model.ErrorList)
                                     {
                                         <tr>
-                                            <td class="text-danger fw-bold">@item.LineNumber</td>
-                                            <td>@item.Reason</td>
-                                            <td class="small text-muted text-truncate" title="@item.RowPreview">@(item.RowPreview)</td>
+                                            <td class="border-dark text-danger fw-bold align-top">@item.LineNumber</td>
+                                            <td class="border-dark align-top">@item.Reason</td>
+                                            <td class="border-dark align-top small text-muted font-monospace bg-light">@(item.RowPreview)</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -122,14 +132,78 @@
     </div>
 </div>
 
+<style>
+    .import-result-table { border-collapse: collapse; }
+    .import-result-table th,
+    .import-result-table td { border: 1px solid #212529 !important; padding: 0.5rem 0.75rem; vertical-align: top; }
+    .import-result-table .bg-light { background-color: #f8f9fa !important; }
+    .import-preview-table { border-collapse: collapse; font-size: 0.8rem; }
+    .import-preview-table th,
+    .import-preview-table td { border: 1px solid #212529 !important; padding: 0.35rem 0.5rem; vertical-align: middle; }
+    .import-preview-table thead th { background-color: #e9ecef !important; font-weight: 600; white-space: nowrap; }
+</style>
 <script>
+    function parseCsvLine(line) {
+        var out = [], cur = '', inQ = false;
+        for (var i = 0; i < line.length; i++) {
+            var c = line[i];
+            if (c === '"') {
+                if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+                else inQ = !inQ;
+            } else if ((c === ',' && !inQ) || c === '\n' || c === '\r') {
+                out.push(cur);
+                cur = '';
+                if (c === '\n' || c === '\r') break;
+            } else cur += c;
+        }
+        out.push(cur);
+        return out;
+    }
+    function buildCsvPreview() {
+        var text = document.getElementById('csvContent').value.trim();
+        var thead = document.getElementById('csvPreviewThead');
+        var tbody = document.getElementById('csvPreviewTbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        if (!text) return;
+        var lines = text.split(/\r\n|\r|\n/).filter(function(l) { return l.trim().length > 0; });
+        if (lines.length === 0) return;
+        var headerCells = parseCsvLine(lines[0]);
+        var headerRow = '<tr>';
+        headerCells.forEach(function(cell) {
+            headerRow += '<th class="border-dark">' + (cell || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</th>';
+        });
+        headerRow += '</tr>';
+        thead.innerHTML = headerRow;
+        var colCount = headerCells.length;
+        for (var r = 1; r < lines.length; r++) {
+            var cells = parseCsvLine(lines[r]);
+            var tr = '<tr>';
+            for (var c = 0; c < colCount; c++) {
+                var val = (cells[c] !== undefined ? cells[c] : '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                tr += '<td class="border-dark">' + val + '</td>';
+            }
+            tr += '</tr>';
+            tbody.innerHTML += tr;
+        }
+    }
+    var csvPreviewTimeout;
+    document.getElementById('csvContent').addEventListener('input', function() {
+        clearTimeout(csvPreviewTimeout);
+        csvPreviewTimeout = setTimeout(buildCsvPreview, 300);
+    });
+    document.getElementById('csvContent').addEventListener('paste', function() {
+        setTimeout(buildCsvPreview, 100);
+    });
     document.getElementById('fileCsv').addEventListener('change', function () {
         var file = this.files[0];
         if (!file) return;
         var reader = new FileReader();
         reader.onload = function (e) {
             document.getElementById('csvContent').value = e.target.result;
+            buildCsvPreview();
         };
         reader.readAsText(file, 'UTF-8');
     });
+    if (document.getElementById('csvContent').value.trim()) buildCsvPreview();
 </script>
