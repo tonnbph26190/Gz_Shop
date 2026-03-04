@@ -138,38 +138,6 @@
                             <option value="">Tất cả màu</option>
                             @foreach (var c in ViewBag.Colors as List<string> ?? new List<string>())
                             {
-                                if c == "Trắng"
-                                {
-                                    <option class="text-white bg-dark" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Đen"
-                                {
-                                    <option class="text-dark bg-light" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Đỏ"
-                                {
-                                    <option class="text-danger" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Xanh dương"
-                                {
-                                    <option class="text-primary" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Xanh lá"
-                                {
-                                    <option class="text-success" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Vàng"
-                                {
-                                    <option class="text-warning" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Tím"
-                                {
-                                    <option class="text-secondary" value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
-                                else if c == "Hồng"
-                                {
-                                    <option value="@c" @(color == c ? "selected" : "")>@c</option>
-                                }
                                 <option value="@c" @(color == c ? "selected" : "")>@c</option>
                             }
                         </select>

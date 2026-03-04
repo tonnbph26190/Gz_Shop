@@ -6,48 +6,57 @@ using System.Diagnostics;
 
 namespace QuanView.Controllers
 {
-    //public class HomeController : Controller
-    //{
-    //    private readonly BanQuanAu1DbContext _context;
-    //    private readonly HttpClient _httpClient;
+    public class HomeController : Controller
+    {
+        private readonly BanQuanAu1DbContext _context;
+        private readonly HttpClient _httpClient;
 
-        //public HomeController(BanQuanAu1DbContext context, IHttpClientFactory httpClientFactory)
-        //{
-        //    _context = context;
-        //    _httpClient = httpClientFactory.CreateClient("MyApi");
-        //}
+        public HomeController(BanQuanAu1DbContext context, IHttpClientFactory httpClientFactory)
+        {
+            _context = context;
+            _httpClient = httpClientFactory.CreateClient("MyApi");
+        }
+        public IActionResult SetLanguage(string culture)
+        {
+            // Save to Cookie (Preferred so it remembers when they close the browser)
+            Response.Cookies.Append("UserLanguage", culture, new CookieOptions
+            {
+                Expires = DateTimeOffset.Now.AddYears(1)
+            });
 
-        //public async Task<IActionResult> Index()
-        //{
-        //    var banners = _context.Banners.ToList();
+            return Redirect(Request.Headers["Referer"].ToString());
+        }
+        public async Task<IActionResult> Index()
+        {
+            var banners = _context.Banners.ToList();
 
-        //    var featuredProducts = new List<SanPhamKhachHangViewModel>();
-        //    try
-        //    {
-        //        var response = await _httpClient.GetAsync("SanPhamNguoiDungs?pageNumber=1&pageSize=8");
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            featuredProducts = await response.Content.ReadFromJsonAsync<List<SanPhamKhachHangViewModel>>() ?? new List<SanPhamKhachHangViewModel>();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Lỗi khi lấy sản phẩm: {ex.Message}");
-        //    }
+            var featuredProducts = new List<SanPhamKhachHangViewModel>();
+            try
+            {
+                var response = await _httpClient.GetAsync("SanPhamNguoiDungs?pageNumber=1&pageSize=8");
+                if (response.IsSuccessStatusCode)
+                {
+                    featuredProducts = await response.Content.ReadFromJsonAsync<List<SanPhamKhachHangViewModel>>() ?? new List<SanPhamKhachHangViewModel>();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi lấy sản phẩm: {ex.Message}");
+            }
 
-        //    ViewBag.FeaturedProducts = featuredProducts;
-        //    return View(banners);
-        //}
+            ViewBag.FeaturedProducts = featuredProducts;
+            return View(banners);
+        }
 
-        //public IActionResult Privacy()
-        //{
-        //    return View();
-        //}
+        public IActionResult Privacy()
+        {
+            return View();
+        }
 
-        //[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        //public IActionResult Error()
-        //{
-        //    return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        //}
-    //}
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
 }

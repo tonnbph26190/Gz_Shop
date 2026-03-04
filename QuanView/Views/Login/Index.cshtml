@@ -1,12 +1,13 @@
 ﻿@{
     Layout = null;
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập</title>
+    <title>@((lang == "vi") ? "Đăng nhập" : "Login")</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
@@ -68,7 +69,7 @@
 </head>
 <body>
     <div class="login-container">
-        <h2 class="text-center mb-4">Đăng nhập</h2>
+        <h2 class="text-center mb-4">@((lang == "vi") ? "Đăng nhập" : "Login")</h2>
 
         @if (ViewBag.Error != null)
         {
@@ -87,25 +88,29 @@
         <form method="post" action="@Url.Action("FormLogin", "Login")">
             @Html.AntiForgeryToken()
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
+                <label for="email" class="form-label">@(lang == "vi" ? "Email" : "Email")</label>
                 <input type="email" class="form-control" id="email" name="Email" placeholder="Nhập email của bạn" required>
             </div>
             <div class="mb-3">
-                <label for="password" class="form-label">Mật khẩu</label>
+                <label for="password" class="form-label">@(lang == "vi" ? "Mật khẩu" : "Password")</label>
                 <input type="password" class="form-control" id="password" name="Password" placeholder="Nhập mật khẩu" required>
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe">
-                <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+                <label class="form-check-label" for="rememberMe">@(lang == "vi" ? "Ghi nhớ đăng nhập" : "Remember me")</label>
             </div>
-            <button type="submit" class="btn btn-primary w-100 mb-3">Đăng nhập</button>
+            <button type="submit" class="btn btn-primary w-100 mb-3">@(lang == "vi" ? "Đăng nhập" : "Login")</button>
         </form>
-        <div class="text-center mb-3">Hoặc</div>
+        @if (lang == "vi") { <div class="text-center mb-3">Hoặc</div> }
+        else { <div class="text-center mb-3">Or</div> }
         <a href="@Url.Action("Login", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
-            <i class="fab fa-google"></i> Đăng nhập bằng Google
+            <i class="fab fa-google"></i>
+            @if (lang == "vi") { <span>Đăng nhập bằng Google</span> }
+            else { <span>Login with Google</span> }
         </a>
         <p class="text-center mt-3">
-            Chưa có tài khoản? <a href="@Url.Action("Register", "Login")">Đăng ký</a>
+            @if (lang == "vi") { <text>Chưa có tài khoản? <a href="@Url.Action("Register", "Login")">Đăng ký</a></text> }
+            else { <text>Don't have an account? <a href="@Url.Action("Register", "Login")">Register</a></text> }
         </p>
     </div>
 

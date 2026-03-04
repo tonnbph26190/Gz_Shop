@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Home Page";
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     var featuredProducts = ViewBag.FeaturedProducts as List<QuanApi.Dtos.SanPhamKhachHangViewModel>
                            ?? new List<QuanApi.Dtos.SanPhamKhachHangViewModel>();
 }
@@ -82,8 +83,8 @@
 <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
          style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/img/banner/Banner2.jpg') center/cover no-repeat; height: 70vh;">
     <div>
-        <h1 class="display-4 fw-bold text-shadow"><b style="font-size: 150%;">BỘ QUẦN ĐÔNG-XUÂN 2026</b></h1>
-        <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
+        <h1 class="display-4 fw-bold text-shadow"><b style="font-size: 150%;">@((lang == "vi") ? "BỘ QUẦN ĐÔNG-XUÂN 2026" : "Spring-Winter Collection 2026")</b></h1>
+        <a href="#featured-products" class="btn btn-danger btn-lg mt-3">@((lang == "vi") ? "Mua ngay" : "Buy Now")</a>
     </div>
 </section>
 
@@ -98,7 +99,7 @@
                         <img src="@b.ImageUrl" alt="@b.Title" />
                         <div class="product-card-body text-center">
                             <h5>@b.Title</h5>
-                            <a href="@b.Link" class="btn btn-outline-danger btn-sm mt-auto">Xem ngay</a>
+                            <a href="@b.Link" class="btn btn-outline-danger btn-sm mt-auto">@((lang == "vi") ? "Xem ngay" : "View Now")</a>
                         </div>
                     </div>
                 </div>
@@ -111,7 +112,7 @@
 <section id="featured-products" class="py-5 bg-light">
     <div class="container">
         <div class="section-title">
-            <h2>Sản phẩm nổi bật</h2>
+            <h2>@((lang == "vi") ? "Sản phẩm nổi bật" : "Featured Products")</h2>
         </div>
         <div class="row g-4">
             @foreach (var product in featuredProducts)
@@ -140,10 +141,12 @@
                                     <span class="text-danger fw-bold">@giaGoc.ToString("N0") đ</span>
                                 }
                             </div>
-                            <small class="d-block text-success mt-1">Còn @soLuongTon sản phẩm</small>
+                            <small class="d-block text-success mt-1">
+                                @(lang == "vi" ? $"Còn {soLuongTon} sản phẩm" : $"{soLuongTon} items left")
+                            </small>
                             <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"
                                class="btn btn-danger btn-sm w-100 mt-auto">
-                                Xem chi tiết
+                                @(lang == "vi" ? "Xem chi tiết" : "View Details")
                             </a>
                         </div>
                     </div>
