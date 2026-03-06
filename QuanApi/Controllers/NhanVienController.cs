@@ -289,7 +289,7 @@ namespace QuanApi.Controllers
 
                 if (nhanVienUpdateDto.IDVaiTro == Guid.Empty || !await _context.VaiTro.AnyAsync(v => v.IDVaiTro == nhanVienUpdateDto.IDVaiTro))
                 {
-                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.ToLower() == "admin");
+                    var adminRole = await _context.VaiTro.FirstOrDefaultAsync(v => v.IDVaiTro == nhanVienUpdateDto.IDVaiTro);
                     if (adminRole == null)
                     {
                         return BadRequest("Không tìm thấy vai trò Admin trong hệ thống. Vui lòng tạo trước.");
