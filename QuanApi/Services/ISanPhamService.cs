@@ -78,7 +78,10 @@ namespace QuanApi.Services
             var query = _context.SanPhams.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
-                query = query.Where(x => x.MaSanPham.Contains(keyword) || x.TenSanPham.Contains(keyword));
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(x => x.MaSanPham.ToLower().Contains(keywordLower) || x.TenSanPham.ToLower().Contains(keywordLower));
+            }
 
             if (trangThai == "active")
                 query = query.Where(x => x.TrangThai);
