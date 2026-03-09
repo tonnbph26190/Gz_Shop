@@ -50,11 +50,12 @@ namespace QuanApi.Controllers.Api
 
             if (!string.IsNullOrEmpty(search))
             {
+                var searchLower = search.ToLower();
                 query = query.Where(kh =>
-                    kh.MaKhachHang.Contains(search) ||
-                    kh.TenKhachHang.Contains(search) ||
-                    (kh.Email != null && kh.Email.Contains(search)) ||
-                    kh.SoDienThoai.Contains(search));
+                    kh.MaKhachHang.ToLower().Contains(searchLower) ||
+                    kh.TenKhachHang.ToLower().Contains(searchLower) ||
+                    (kh.Email != null && kh.Email.ToLower().Contains(searchLower)) ||
+                    kh.SoDienThoai.Contains(searchLower));
             }
 
             switch (sortBy?.ToLower())
