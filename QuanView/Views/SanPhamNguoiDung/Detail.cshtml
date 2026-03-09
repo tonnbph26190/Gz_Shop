@@ -282,7 +282,7 @@
         $(document).on('click', '.product-detail-btn-option[data-size]', function () {
             const size = $(this).data('size');
             const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
-
+/
             // Không cho phép chọn size hết hàng
             if (stockForSize <= 0) {
                 alert('Size này đã hết hàng!');
