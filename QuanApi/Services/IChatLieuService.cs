@@ -27,7 +27,10 @@ namespace QuanApi.Services
         {
             var query = _context.ChatLieus.AsQueryable();
             if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenChatLieu.Contains(keyword) || x.MaChatLieu.Contains(keyword));
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(x => x.TenChatLieu.ToLower().Contains(keywordLower) || x.MaChatLieu.ToLower().Contains(keywordLower));
+            }
 
             return await query.ToListAsync();
         }
@@ -85,7 +88,10 @@ namespace QuanApi.Services
             var query = _context.ChatLieus.AsQueryable();
 
             if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenChatLieu.Contains(keyword) || x.MaChatLieu.Contains(keyword));
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(x => x.TenChatLieu.ToLower().Contains(keywordLower) || x.MaChatLieu.ToLower().Contains(keywordLower));
+            }
 
             if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
             else if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);

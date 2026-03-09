@@ -38,6 +38,8 @@ namespace QuanView.Areas.Admin.Controllers
                                     searchTerm, idVaiTro, trangThai, pageNumber, pageSize);
             try
             {
+
+
                 var filter = new NhanVienFilterDto
                 {
                     SearchTerm = searchTerm,
