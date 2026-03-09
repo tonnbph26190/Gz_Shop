@@ -174,6 +174,7 @@ namespace QuanApi.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<NhanVienResponseDto>> PostNhanVien([FromBody] NhanVienCreateDto nhanVienCreateDto)
         {
+            nhanVienCreateDto.NgaySinh = nhanVienCreateDto.NgaySinh.Value.ToUniversalTime();
             _logger.LogInformation("Attempting to create new employee: {@Dto}", nhanVienCreateDto);
 
             if (!ModelState.IsValid)
@@ -213,7 +214,7 @@ namespace QuanApi.Controllers
 
                 var nhanVien = _mapper.Map<NhanVien>(nhanVienCreateDto);
                 nhanVien.IDNhanVien = Guid.NewGuid();
-                nhanVien.NgayTao = DateTime.Now;
+                nhanVien.NgayTao = DateTime.UtcNow;
                 nhanVien.NguoiTao = nhanVienCreateDto.IDNguoiTao.ToString();
                 nhanVien.TrangThai = nhanVienCreateDto.TrangThai;
 
@@ -246,6 +247,7 @@ namespace QuanApi.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> PutNhanVien(Guid id, [FromBody] NhanVienUpdateDto nhanVienUpdateDto)
         {
+            nhanVienUpdateDto.NgaySinh = nhanVienUpdateDto.NgaySinh.Value.ToUniversalTime();
             _logger.LogInformation("Attempting to update employee with ID: {Id}. DTO: {@Dto}", id, nhanVienUpdateDto);
 
             if (!ModelState.IsValid)
@@ -302,7 +304,7 @@ namespace QuanApi.Controllers
                 {
                     nhanVienToUpdate.MatKhau = nhanVienUpdateDto.MatKhau;
                 }
-                nhanVienToUpdate.LanCapNhatCuoi = DateTime.Now;
+                nhanVienToUpdate.LanCapNhatCuoi = DateTime.UtcNow;
                 nhanVienToUpdate.NguoiCapNhat = currentUserIdClaim;
 
                 _context.Entry(nhanVienToUpdate).State = EntityState.Modified;

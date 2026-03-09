@@ -123,9 +123,10 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/NhanViens/Create
-        public IActionResult Create()
+        // GET: Admin/NhanViens/Create
+        public async Task<IActionResult> Create()
         {
-
+            await LoadVaiTroDropdown();
             return View(new NhanVienCreateDto());
         }
 
@@ -139,6 +140,7 @@ namespace QuanView.Areas.Admin.Controllers
                 var modelErrors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 _logger.LogWarning("Create: ModelState không hợp lệ. Lỗi: {Errors}", modelErrors);
                 return View(createDto);
+                await LoadVaiTroDropdown();
             }
 
             try
@@ -149,6 +151,7 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     TempData["SuccessMessage"] = "Tạo nhân viên thành công!";
                     return RedirectToAction(nameof(Index));
+                    await LoadVaiTroDropdown();
                 }
                 else
                 {
@@ -187,8 +190,9 @@ namespace QuanView.Areas.Admin.Controllers
                 _logger.LogError(ex, "Exception khi tạo nhân viên.");
                 ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi tạo nhân viên.");
             }
-
+            await LoadVaiTroDropdown();
             return View(createDto);
+         
         }
         // GET: Admin/NhanViens/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
