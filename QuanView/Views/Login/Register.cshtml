@@ -1,29 +1,51 @@
 ﻿@model QuanView.Models.RegisterViewModel
 @{
     Layout = null;
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký</title>
+    <title>@((lang == "vi") ? "Đăng ký" : "Register")</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         body {
-            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            background-color: #f8f9fa;
+            position: relative; 
+            overflow: hidden; 
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 100%; 
+            height: 100%;
+            
+            background-image: url('/img/banner/register_bg.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: blur(8px) brightness(70%);
+            
+            transform: scale(1.1); 
+            z-index: -1; 
         }
 
         .register-container {
             max-width: 400px;
             width: 100%;
             padding: 2rem;
-            background: white;
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
@@ -51,7 +73,7 @@
 </head>
 <body>
     <div class="register-container">
-        <h2 class="text-center mb-4">Đăng ký</h2>
+        <h2 class="text-center mb-4">@((lang == "vi") ? "Đăng ký" : "Register")</h2>
 
         @* @if (!ViewData.ModelState.IsValid)
         {
@@ -64,35 +86,35 @@
             @Html.AntiForgeryToken()
 
             <div class="mb-3">
-                <label for="TenKhachHang" class="form-label">Tên khách hàng</label>
+                <label for="TenKhachHang" class="form-label">@((lang == "vi") ? "Tên khách hàng" : "Customer Name")</label>
                 <input type="text" class="form-control" id="TenKhachHang" name="TenKhachHang"
                        value="@Model?.TenKhachHang" placeholder="Nhập tên khách hàng" required>
                 @Html.ValidationMessageFor(m => m.TenKhachHang, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
-                <label for="Email" class="form-label">Email</label>
+                <label for="Email" class="form-label">@((lang == "vi") ? "Email" : "Email")</label>
                 <input type="email" class="form-control" id="Email" name="Email"
                        value="@Model?.Email" placeholder="Nhập email của bạn" required>
                 @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
-                <label for="SoDienThoai" class="form-label">Số điện thoại</label>
+                <label for="SoDienThoai" class="form-label">@((lang == "vi") ? "Số điện thoại" : "Phone Number")</label>
                 <input type="tel" class="form-control" id="SoDienThoai" name="SoDienThoai"
                        value="@Model?.SoDienThoai" placeholder="Nhập số điện thoại" required>
                 @Html.ValidationMessageFor(m => m.SoDienThoai, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
-                <label for="Password" class="form-label">Mật khẩu</label>
+                <label for="Password" class="form-label">@((lang == "vi") ? "Mật khẩu" : "Password")</label>
                 <input type="password" class="form-control" id="Password" name="Password"
                        placeholder="Nhập mật khẩu (ít nhất 6 ký tự)" required>
                 @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
-                <label for="ConfirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                <label for="ConfirmPassword" class="form-label">@((lang == "vi") ? "Xác nhận mật khẩu" : "Confirm Password")</label>
                 <input type="password" class="form-control" id="ConfirmPassword" name="ConfirmPassword"
                        placeholder="Xác nhận mật khẩu" required>
                 @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-validation-error" })
@@ -100,19 +122,20 @@
 
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="agreeTerms" required>
-                <label class="form-check-label" for="agreeTerms">Đồng ý với các điều khoản dịch vụ</label>
+                <label class="form-check-label" for="agreeTerms">@((lang == "vi") ? "Đồng ý với các điều khoản dịch vụ" : "Agree to the terms of service")</label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 mb-3">Đăng ký</button>
+            <button type="submit" class="btn btn-primary w-100 mb-3">@((lang == "vi") ? "Đăng ký" : "Register")</button>
         </form>
 
-        <div class="text-center mb-3">Hoặc</div>
+        <div class="text-center mb-3">@if (lang == "vi") { <text>Hoặc</text> } else { <text>Or</text> }</div>
         <a href="@Url.Action("Login", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
-            <i class="fab fa-google"></i> Đăng ký bằng Google
+            <i class="fab fa-google"></i> @if (lang == "vi") { <span>Đăng ký bằng Google</span> } else { <span>Register with Google</span> }
         </a>
 
         <p class="text-center mt-3">
-            Đã có tài khoản? <a href="@Url.Action("Index", "Login")">Đăng nhập</a>
+            @if (lang == "vi") { <text>Đã có tài khoản? <a href="@Url.Action("Index", "Login")">Đăng nhập</a></text> }
+            else { <text>Already have an account? <a href="@Url.Action("Index", "Login")">Login</a></text> }
         </p>
     </div>
 

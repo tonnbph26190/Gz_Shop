@@ -6,6 +6,10 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-product-images.css" />
     <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: black;
+        }
         .filter-card {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -51,6 +55,37 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,123,255,0.3);
         }
+        /* Prevent border flickering on collapse */
+        .collapse-row td {
+            border-top: none !important;
+        }
+
+        /* Custom class to scale the switch */
+        .switch-lg {
+            transform: scale(1.5); /* Adjust this number to make it bigger or smaller */
+            margin: 0;             /* Removes default margins that might offset the centering */
+            cursor: pointer;
+        }
+
+        /* Optional: Adjust the wrapper to ensure the scaled input doesn't overlap text */
+        .form-switch-container {
+            padding: 10px; 
+        }
+        /* Rotate icon when the parent row is NOT collapsed */
+        .main-row[aria-expanded="true"] .toggle-icon {
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon {
+            transition: transform 0.35s ease;
+            display: inline-block;
+            color: #6c757d;
+        }
+
+        button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
+            transform: rotate(90deg);
+        }
     </style>
 }
 
@@ -69,14 +104,14 @@
         <form method="get" asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="row g-3 filter-form">
             <!-- Từ khóa tìm kiếm -->
             <div class="col-md-3">
-                <label for="keyword" class="form-label">Tìm kiếm</label>
+                <label for="keyword" class="form-label">Tìm kiếm: </label>
                 <input type="text" class="form-control" id="keyword" name="keyword" value="@Model.Keyword" placeholder="Tên sản phẩm, mã sản phẩm...">
             </div>
             
             <!-- Trạng thái -->
             <div class="col-md-2">
-                <label for="trangThai" class="form-label">Trạng thái</label>
-                <select class="form-select" id="trangThai" name="trangThai">
+                <label for="trangThai" class="form-label">Trạng thái</label><br>
+                <select class="form-control" id="trangThai" name="trangThai">
                     @foreach (var option in Model.TrangThaiOptions)
                     {
                         <option value="@option.Value" selected="@(option.Value == Model.TrangThai)">@option.Text</option>
@@ -117,12 +152,13 @@
                 <input type="date" class="form-control" id="dateTo" name="dateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")">
             </div>
             
-            
             <!-- Nút tìm kiếm -->
-            <div class="col-md-12">
+            <div class="col-md-2 pt-4 mt-2">
                 <button type="submit" class="btn btn-primary me-2 btn-filter">
                     <i class="fas fa-search"></i> Tìm kiếm
                 </button>
+                &nbsp;
+                &nbsp;
                 <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">
                     <i class="fas fa-refresh"></i> Làm mới
                 </a>
@@ -159,9 +195,10 @@
     }
     else
     {
-        <table class="table table-bordered table-hover">
+        <table class="table table-bordered table-hover bg-light bg-gradient">
             <thead class="thead-dark">
                 <tr>
+                    <th></th>
                     <th>Ảnh</th>
                     <th>Mã SP</th>
                     <th>Tên SP</th>
@@ -174,13 +211,25 @@
                     <th>Xếp ly</th>
                     <th>Co giãn</th>
                     <th>Trạng thái</th>
-                    <th style="width: 150px;">Thao tác</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="table-group-divider">
                 @foreach (var item in Model.SanPhams)
                 {
-                    <tr>
+                    var targetId = "collapsable-product-row-" + item.IDSanPham;
+
+                    <tr class="main-row" style="cursor: pointer;">
+                        <td style="width: 1%; text-align: center; vertical-align: middle; padding: 0.75rem;">
+                            <button type="button"
+                                    class="btn btn-sm btn-link text-decoration-none p-0 m-0 border-0 bg-transparent shadow-none"
+                                    data-toggle="collapse"
+                                    data-target="#@targetId"
+                                    aria-expanded="false"
+                                    aria-controls="@targetId">
+                                <i class="fas fa-chevron-right toggle-icon fs-5"></i>
+                            </button>
+                        </td>
                         <td>
                             <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
                         </td>
@@ -194,12 +243,14 @@
                         <td>@item.TenLungQuan</td>
                         <td>@(item.CoXepLy ? "Có" : "Không")</td>
                         <td>@(item.CoGian ? "Có" : "Không")</td>
-                        <td>
-                            <div class="form-check form-switch d-inline-block" title="@(item.TrangThai ? "Đang bán" : "Ngưng bán")">
-                                <input class="form-check-input product-status-toggle" type="checkbox" role="switch"
-                                       data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
-                                       @(item.TrangThai ? "checked" : "") />
-                                <label class="form-check-label small">@(item.TrangThai ? "Hoạt động" : "Ngưng")</label>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input product-status-toggle switch-lg" 
+                                        type="checkbox" 
+                                        @(item.TrangThai ? "checked" : "") 
+                                        disabled />
+                                </div>
                             </div>
                         </td>
                         <td>
@@ -209,78 +260,47 @@
 
                     @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
                     {
-                                   <tr>
-                            <td colspan="13" class="p-0">
-                                <div class="table-responsive px-3 py-2">
-                                    <table class="table table-sm table-bordered mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Kích cỡ</th>
-                                                <th>Màu sắc</th>
-                                                <th>Họa tiết</th>
-                                                <th>Số lượng</th>
-                                                <th>Giá bán</th>
-                                                <th>Ảnh sản phẩm</th>
-                                                <th>Thao tác ảnh</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var ct in item.ChiTietSanPhams)
-                                            {
+                        <tr>
+                            <td colspan="14" class="p-0 border-0">
+                                <div id="@targetId" class="collapse">
+                                    <div class="table-responsive px-5 py-3 bg-white shadow-sm">
+                                        <h6 class="fw-bold mb-3 text-primary">Danh sách biến thể sản phẩm:</h6>
+                                        <table class="table table-sm table-hover table-bordered mb-0">
+                                            <thead class="table-secondary">
                                                 <tr>
-                                                    <td>@ct.TenKichCo</td>
-                                                    <td>@ct.TenMauSac</td>
-                                                    <td>@ct.TenHoaTiet</td>
-                                                    <td>@ct.SoLuong</td>
-                                                    <td>
-                                                        @if (ct.originalPrice > ct.price)
-                                                        {
-                                                            <span style="color:#888;text-decoration:line-through;font-size:0.95em;margin-right:6px">
-                                                                @ct.originalPrice.ToString("N0") đ
-                                                            </span>
-                                                            <span style="color:#d32f2f;font-weight:bold;font-size:1.1em">
-                                                                @ct.price.ToString("N0") đ
-                                                            </span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span style="font-weight:bold">
-                                                                @ct.price.ToString("N0") đ
-                                                            </span>
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
-                                                            <div class="images-preview">
-                                                                @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
-                                                                {
-                                                                    <img src="@ct.AnhDaiDien" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span class="text-muted small">Chưa có ảnh</span>
-                                                                }
-                                                            </div>
-                                                            <div class="images-list" style="display:none;">
-                                                                <!-- Danh sách ảnh sẽ được load bằng JavaScript -->
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        @*   <button type="button" class="btn btn-sm btn-outline-info"
-                                        onclick="loadImages('@ct.IdSanPhamChiTiet')">
-                                        <i class="fas fa-images"></i> Xem ảnh
-                                        </button> *@
-                                                        <button type="button" class="btn btn-sm btn-outline-success"
-                                                                onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
-                                                            <i class="fas fa-plus"></i> Thêm ảnh
-                                                        </button>
-                                                    </td>
+                                                    <th>Kích cỡ</th>
+                                                    <th>Màu sắc</th>
+                                                    <th>Họa tiết</th>
+                                                    <th>Số lượng</th>
+                                                    <th>Giá bán</th>
+                                                    <th>Ảnh</th>
+                                                    <th>Thao tác</th>
                                                 </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                               
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ct in item.ChiTietSanPhams)
+                                                {
+                                                    <tr>
+                                                        <td>@ct.TenKichCo</td>
+                                                        <td>@ct.TenMauSac</td>
+                                                        <td>@ct.TenHoaTiet</td>
+                                                        <td>@ct.SoLuong</td>
+                                                        <td>
+                                                            @ct.price.ToString("N0") đ
+                                                        </td>
+                                                        <td>
+                                                            <img src="@ct.AnhDaiDien" style="width:40px" />
+                                                        </td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -399,7 +419,6 @@
                 </ul>
             </nav>
         }
-               
     }
 
 <!-- Modal thêm ảnh -->
@@ -436,6 +455,21 @@
 
 @section Scripts {
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.main-row').forEach(row => {
+                row.addEventListener('click', function (e) {
+                    if (e.target.closest('a') || 
+                        e.target.closest('button:not([data-toggle="collapse"])') || 
+                        e.target.closest('.form-check-input')) {
+                        return;
+                    }
+                    const toggleBtn = row.querySelector('button[data-toggle="collapse"]');
+                    if (toggleBtn) {
+                        toggleBtn.click();
+                    }
+                });
+            });
+        });
         // Tự động submit form khi thay đổi trạng thái bộ lọc
         document.getElementById('trangThai')?.addEventListener('change', function () {
             this.form.submit();
