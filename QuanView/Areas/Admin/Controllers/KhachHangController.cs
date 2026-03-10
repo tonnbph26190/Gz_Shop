@@ -39,12 +39,13 @@ namespace QuanView.Areas.Admin.Controllers
                 {
 
                     var khachHangs = await response.Content.ReadFromJsonAsync<List<KhachHangDto>>();
+                    var totalCount = int.Parse(response.Headers.GetValues("X-Total-Count").FirstOrDefault() ?? "0");
 
                     ViewBag.CurrentSearch = search;
                     ViewBag.CurrentPage = pageNumber;
                     ViewBag.PageSize = pageSize;
-                    ViewBag.TotalCount = khachHangs?.Count ?? 0;
-                    ViewBag.TotalPages = (int)Math.Ceiling((double)(khachHangs?.Count ?? 0) / pageSize);
+                    ViewBag.TotalCount = totalCount;
+                    ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
                     ViewBag.SortBy = sortBy;
                     ViewBag.SortAscending = sortAscending;
 

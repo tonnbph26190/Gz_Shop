@@ -53,6 +53,16 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
+                <div class="page-size-selector">
+                    <label for="pageSize">Hiển thị:</label>
+                    <select id="pageSize" class="form-control form-control-sm d-inline-block w-auto ml-2"
+                            onchange="changePageSize(this.value)">
+                        <option value="5" selected="@(ViewBag.PageSize == 5)">5</option>
+                        <option value="10" selected="@(ViewBag.PageSize == 10)">10</option>
+                        <option value="20" selected="@(ViewBag.PageSize == 20)">20</option>
+                        <option value="50" selected="@(ViewBag.PageSize == 50)">50</option>
+                    </select>
+                </div>
                 <table id="khachHangTable" class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -108,6 +118,58 @@
                         }
                     </tbody>
                 </table>
+                <div class="pagination-controls d-flex justify-content-center align-items-center gap-3 ">
+                       <nav aria-label="Phân trang">
+                            <ul class="pagination mb-0">
+
+                                <!-- Trang đầu -->
+                                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Index", new { pageNumber = 1, pageSize = ViewBag.PageSize })">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+
+                                <!-- Trang trước -->
+                                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Index", new { pageNumber = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+
+                                @{
+                                    var startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                    var endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
+
+                                    for (int i = startPage; i <= endPage; i++)
+                                    {
+                                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link"
+                                               href="@Url.Action("Index", new { pageNumber = i, pageSize = ViewBag.PageSize })">@i</a>
+                                        </li>
+                                    }
+                                }
+
+                                <!-- Trang sau -->
+                                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Index", new { pageNumber = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+
+                                <!-- Trang cuối -->
+                                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                    <a class="page-link"
+                                       href="@Url.Action("Index", new { pageNumber = ViewBag.TotalPages, pageSize = ViewBag.PageSize })">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -126,11 +188,21 @@
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json'
                 },
-                pageLength: 10,
-                lengthMenu: [5, 10, 25, 50],
-                order: [[0, 'asc']],
+                paging: false,
+                searching: false,
+                ordering: false,
+                info: false,
                 responsive: true
             });
         });
     </script>
+    <script>
+        function changePageSize(size) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("pageSize", size);
+            url.searchParams.set("pageNumber", 1);
+            window.location.href = url.toString();
+        }
+    </script>
+
 }
