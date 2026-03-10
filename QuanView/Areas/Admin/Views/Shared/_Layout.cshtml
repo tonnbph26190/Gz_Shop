@@ -314,7 +314,7 @@
                         <div class="topbar-divider d-none d-sm-block"></div>
                         @{
                             var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Unknown";
-                            var avatar = User.FindFirst("picture")?.Value ?? "~/admin/img/undraw_profile.svg";
+                            var avatar = User.FindFirst("picture")?.Value ?? "/admin/img/undraw_profile.svg";
                         }
 
                         <!-- Nav Item - User Information -->
