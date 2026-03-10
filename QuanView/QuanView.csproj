@@ -29,11 +29,20 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Data\" />
+    <Folder Include="Areas\Admin\Views\Banner\" />
+    <Folder Include="Areas\Admin\Views\BaoCaoThongKe\" />
+    <Folder Include="Areas\Admin\Views\ChatLieu\" />
+    <Folder Include="Areas\Admin\Views\ClientBanHangTaiQuay\" />
+    <Folder Include="Areas\Admin\Views\DotGiamGia\" />
+    <Folder Include="Areas\Admin\Views\HoaTiet\" />
+    <Folder Include="Areas\Admin\Views\KhachHang\" />
+    <Folder Include="Areas\Admin\Views\KichCo\" />
+    <Folder Include="Areas\Admin\Views\KieuDang\" />
     <Folder Include="Areas\Admin\Views\LoaiOng\" />
     <Folder Include="Areas\Admin\Views\LungQuan\" />
     <Folder Include="Areas\Admin\Views\MauSac\" />
     <Folder Include="Areas\Admin\Views\NhanViens\" />
-    <Folder Include="Areas\Admin\Views\SanPham\" />
+    <Folder Include="Areas\Admin\Views\PhieuGiamGia\" />
     <Folder Include="Areas\Admin\Views\ProductManage\" />
     <Folder Include="Areas\Admin\Views\QuanLyDonHang\" />
   </ItemGroup>
