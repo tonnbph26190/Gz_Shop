@@ -38,7 +38,12 @@ namespace QuanView.Areas.Admin.Controllers
                                     searchTerm, idVaiTro, trangThai, pageNumber, pageSize);
             try
             {
-
+                var vaiTroResponse = await _httpClient.GetAsync("VaiTro");
+                if (vaiTroResponse.IsSuccessStatusCode)
+                {
+                    var vaiTros = await vaiTroResponse.Content.ReadFromJsonAsync<List<VaiTroDto>>();
+                    ViewBag.vaiTroList = new SelectList(vaiTros, "IDVaiTro", "TenVaiTro");
+                }
 
                 var filter = new NhanVienFilterDto
                 {
