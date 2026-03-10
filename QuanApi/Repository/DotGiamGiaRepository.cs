@@ -22,10 +22,16 @@ namespace QuanApi.Repository
             var query = _context.DotGiamGias.AsQueryable();
 
             if (!string.IsNullOrEmpty(maDot))
-                query = query.Where(x => x.MaDot.Contains(maDot));
+            {
+                var maDotLower = maDot.ToLower();
+                query = query.Where(x => x.MaDot.ToLower().Contains(maDotLower));
+            }
 
             if (!string.IsNullOrEmpty(tenDot))
-                query = query.Where(x => x.TenDot.Contains(tenDot));
+            {
+                var tenDotLower = tenDot.ToLower();
+                query = query.Where(x => x.TenDot.ToLower().Contains(tenDotLower));
+            }
 
             if (phanTramGiam.HasValue)
                 query = query.Where(x => x.PhanTramGiam == phanTramGiam.Value);

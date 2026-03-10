@@ -41,9 +41,10 @@ namespace QuanApi.Services
             // 1. Filtering logic
             if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
             {
-                query = query.Where(nv => nv.MaNhanVien.Contains(filter.SearchTerm) ||
-                                         nv.TenNhanVien.Contains(filter.SearchTerm) ||
-                                         nv.Email.Contains(filter.SearchTerm));
+                var searchTermLower = filter.SearchTerm.ToLower();
+                query = query.Where(nv => nv.MaNhanVien.ToLower().Contains(searchTermLower) ||
+                                         nv.TenNhanVien.ToLower().Contains(searchTermLower) ||
+                                         nv.Email.ToLower().Contains(searchTermLower));
             }
 
             if (filter.IDVaiTro.HasValue && filter.IDVaiTro != Guid.Empty)

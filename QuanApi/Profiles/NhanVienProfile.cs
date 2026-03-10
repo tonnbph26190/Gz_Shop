@@ -15,13 +15,7 @@ namespace QuanApi.MappingProfiles
                 .ForMember(dest => dest.NguoiTao, opt => opt.Ignore())
                 .ForMember(dest => dest.LanCapNhatCuoi, opt => opt.Ignore())
                 .ForMember(dest => dest.NguoiCapNhat, opt => opt.Ignore())
-                .ForMember(dest => dest.TrangThai, opt => opt.Ignore())
-                .ForMember(dest => dest.NgaySinh, opt => opt.MapFrom(src =>
-                    src.NgaySinh.HasValue && src.NgaySinh.Value.Kind == DateTimeKind.Unspecified
-                        ? DateTime.SpecifyKind(src.NgaySinh.Value, DateTimeKind.Utc)
-                        : src.NgaySinh.HasValue && src.NgaySinh.Value.Kind == DateTimeKind.Local
-                            ? src.NgaySinh.Value.ToUniversalTime()
-                            : src.NgaySinh));
+                .ForMember(dest => dest.TrangThai, opt => opt.Ignore());
 
 
             CreateMap<NhanVienUpdateDto, NhanVien>()

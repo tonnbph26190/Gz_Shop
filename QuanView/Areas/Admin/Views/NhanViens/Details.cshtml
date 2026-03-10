@@ -98,7 +98,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Ngày sinh</div>
-                        <div class="detail-value">@(Model.NgaySinh.HasValue? Model.NgaySinh.Value.ToString("dd/MM/yyyy") : "N/A")</div>
+                        <div class="detail-value">@(Model.NgaySinh.HasValue ? Model.NgaySinh.Value.ToString("dd/MM/yyyy") : "N/A")</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Giới tính</div>
@@ -137,13 +137,13 @@
                     <div class="detail-item">
                         <div class="detail-label">Lần cập nhật cuối</div>
                         <div class="detail-value">
-                            @(Model.LanCapNhatCuoi.HasValue? Model.LanCapNhatCuoi.Value.ToString("dd/MM/yyyy HH:mm:ss") : "N/A")
+                            @(Model.LanCapNhatCuoi.HasValue ? Model.LanCapNhatCuoi.Value.ToString("dd/MM/yyyy HH:mm:ss") : "N/A")
                         </div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ID Người cập nhật</div>
                         <div class="detail-value">
-                            @(Model.IDNguoiCapNhat.HasValue? Model.IDNguoiCapNhat.Value.ToString() : "N/A")
+                            @(Model.IDNguoiCapNhat.HasValue ? Model.IDNguoiCapNhat.Value.ToString() : "N/A")
                         </div>
                     </div>
                 </div>

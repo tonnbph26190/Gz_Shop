@@ -333,7 +333,7 @@
                                     <td>@Html.DisplayFor(modelItem => item.TenNhanVien)</td>
                                     <td>@Html.DisplayFor(modelItem => item.Email)</td>
                                     <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
-                                    <td>@(item.NgaySinh.HasValue? item.NgaySinh.Value.ToString("dd/MM/yyyy") : "N/A")</td>
+                                    <td>@(item.NgaySinh.HasValue ? item.NgaySinh.Value.ToString("dd/MM/yyyy") : "N/A")</td>
                                     <td>@(item.GioiTinh.HasValue ? (item.GioiTinh.Value ? "Nam" : "Nữ") : "N/A")</td>
                                     <td>@Html.DisplayFor(modelItem => item.QueQuan)</td>
                                     <td>@Html.DisplayFor(modelItem => item.CCCD)</td>
@@ -409,7 +409,7 @@
         $('#idVaiTro').val(selectedVaiTroId || '');
 
 
-        var selectedTrangThai = '@(currentTrangThai.HasValue? currentTrangThai.Value.ToString().ToLower() : "")';
+        var selectedTrangThai = '@(currentTrangThai.HasValue ? currentTrangThai.Value.ToString().ToLower() : "")';
         $('#trangThai').val(selectedTrangThai);
     });
 </script>
