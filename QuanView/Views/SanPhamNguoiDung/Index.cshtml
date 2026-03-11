@@ -1,5 +1,6 @@
 ﻿@model List<QuanApi.Dtos.SanPhamKhachHangViewModel>
 @{
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     ViewData["Title"] = "Sản phẩm";
     var page = ViewBag.Page ?? 1;
     var pageSize = ViewBag.PageSize ?? 9;
@@ -104,27 +105,43 @@
         <!-- Sidebar -->
         <div class="col-lg-3 mb-4">
             <div class="sidebar-section">
-                <h5 class="mb-3">Bộ lọc</h5>
+                <h5 class="mb-3">@((lang == "vi") ? "Bộ lọc" : "Filter")</h5>
                 <form method="get" asp-action="Index" id="filterForm">
-                    <input type="text" class="form-control mb-3" name="search" placeholder="Tìm kiếm sản phẩm..." value="@Context.Request.Query["search"]" />
+                    @if (lang == "vi") {
+                        <input type="text" class="form-control mb-3" name="search" placeholder="Tìm kiếm sản phẩm..." value="@Context.Request.Query["search"]" />
+                    } else {
+                        <input type="text" class="form-control mb-3" name="search" placeholder="Search products..." value="@Context.Request.Query["search"]" />
+                    }
                     <div class="mb-3">
-                        <label class="form-label">Giá từ</label>
-                        <input type="number" class="form-control" name="priceFrom" min="0" placeholder="Từ..." value="@priceFrom">
+                        <label class="form-label">@((lang == "vi") ? "Giá từ" : "Price from")</label>
+                        @if (lang == "vi") {
+                            <input type="number" class="form-control" name="priceFrom" placeholder="Từ..." value="@priceFrom">
+                        } else {
+                            <input type="number" class="form-control" name="priceFrom" placeholder="From..." value="@priceFrom">
+                        }
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Đến</label>
-                        <input type="number" class="form-control" name="priceTo" min="0" placeholder="Đến..." value="@priceTo">
+                        <label class="form-label">@((lang == "vi") ? "Đến" : "To")</label>
+                        @if (lang == "vi") {
+                            <input type="number" class="form-control" name="priceTo" placeholder="Đến..." value="@priceTo">
+                        } else {
+                            <input type="number" class="form-control" name="priceTo" placeholder="To..." value="@priceTo">
+                        }
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Danh mục</label>
-                        <input type="text" class="form-control" name="category" placeholder="Nhập tên danh mục..." value="@category">
+                        <label class="form-label">@((lang == "vi") ? "Danh mục" : "Category")</label>
+                        @if (lang == "vi") {
+                            <input type="text" class="form-control" name="category" placeholder="Nhập tên danh mục..." value="@category">
+                        } else {
+                            <input type="text" class="form-control" name="category" placeholder="Enter category name..." value="@category">
+                        }
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Kích cỡ</label>
+                        <label class="form-label">@((lang == "vi") ? "Kích cỡ" : "Size")</label>
                         <select class="form-select" name="size">
-                            <option value="">Tất cả size</option>
+                            <option value="">@((lang == "vi") ? "Tất cả size" : "All Sizes")</option>
                             @foreach (var s in ViewBag.Sizes as List<string> ?? new List<string>())
                             {
                                 <option value="@s" @(size == s ? "selected" : "")>@s</option>
@@ -133,9 +150,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Màu sắc</label>
+                        <label class="form-label">@((lang == "vi") ? "Màu sắc" : "Color")</label>
                         <select class="form-select" name="color">
-                            <option value="">Tất cả màu</option>
+                            <option value="">@((lang == "vi") ? "Tất cả màu" : "All Colors")</option>
                             @foreach (var c in ViewBag.Colors as List<string> ?? new List<string>())
                             {
                                 <option value="@c" @(color == c ? "selected" : "")>@c</option>
@@ -143,14 +160,14 @@
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-outline-primary w-100">Lọc</button>
+                    <button type="submit" class="btn btn-outline-primary w-100">@((lang == "vi") ? "Lọc" : "Filter")</button>
                 </form>
             </div>
         </div>
         <!-- Product Grid -->
         <div class="col-lg-9">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <span>Hiển thị <b>@Model.Count</b> sản phẩm</span>
+                <span>@((lang == "vi") ? $"Hiển thị <b>{Model.Count}</b> sản phẩm" : $"Showing <b>{Model.Count}</b> products")</span>
                 <form method="get" class="mb-0" id="sortForm">
                     <input type="hidden" name="search" value="@Context.Request.Query["search"]" />
                     <input type="hidden" name="priceFrom" value="@priceFrom" />
@@ -159,8 +176,8 @@
                     <input type="hidden" name="size" value="@size" />
                     <input type="hidden" name="color" value="@color" />
                     <select class="form-select w-auto" name="sortOrder" onchange="document.getElementById('sortForm').submit()">
-                        <option value="asc" @(Context.Request.Query["sortOrder"] == "asc" ? "selected" : "")>Sắp xếp theo giá tăng dần</option>
-                        <option value="desc" @(Context.Request.Query["sortOrder"] == "desc" ? "selected" : "")>Sắp xếp theo giá giảm dần</option>
+                        <option value="asc" @(Context.Request.Query["sortOrder"] == "asc" ? "selected" : "")>@((lang == "vi") ? "Sắp xếp theo giá tăng dần" : "Sort by price ascending")</option>
+                        <option value="desc" @(Context.Request.Query["sortOrder"] == "desc" ? "selected" : "")>@((lang == "vi") ? "Sắp xếp theo giá giảm dần" : "Sort by price descending")</option>
                     </select>
                 </form>
             </div>
@@ -173,7 +190,7 @@
                         <div class="product-card h-100 d-flex flex-column">
                             @if (bienTheSale != null)
                             {
-                                <span class="product-sale">SALE</span>
+                                <span class="product-sale">@((lang == "vi") ? "SALE" : "SALE")</span>
                             }
                             <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" />
                             <div class="p-3 flex-grow-1 d-flex flex-column">
@@ -196,7 +213,7 @@
                                     @{
                                         var totalStock = sp.BienThes?.Sum(b => b.SoLuong) ?? 0;
                                         var stockClass = totalStock > 10 ? "text-success" : totalStock > 0 ? "text-warning" : "text-danger";
-                                        var stockText = totalStock > 0 ? $"Còn {totalStock} sản phẩm" : "Hết hàng";
+                                        var stockText = totalStock > 0 ? ((lang == "vi") ? $"Còn {totalStock} sản phẩm" : $"In stock: {totalStock} items") : ((lang == "vi") ? "Hết hàng" : "Out of stock");
                                     }
                                     <small class="@stockClass fw-bold">
                                         <i class="bi bi-box-seam"></i> @stockText
@@ -209,19 +226,19 @@
                                     {
                                         <a class="btn btn-outline-danger btn-sm mt-2 w-100"
                                            href="/SanPhamNguoiDung/Detail/@sp.BienThes.First().IDSanPhamChiTiet">
-                                            Xem chi tiết
+                                            @((lang == "vi") ? "Xem chi tiết" : "View Details")
                                         </a>
                                     }
                                     else
                                     {
                                         <button class="btn btn-secondary btn-sm mt-2 w-100" disabled>
-                                            <i class="bi bi-x-circle"></i> Hết hàng
+                                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Hết hàng" : "Out of stock")
                                         </button>
                                     }
                                 }
                                 else
                                 {
-                                    <span class="text-danger fw-bold mt-3">Không có biến thể</span>
+                                    <span class="text-danger fw-bold mt-3">@((lang == "vi") ? "Không có biến thể" : "No variants available")</span>
                                 }
                             </div>
                         </div>
