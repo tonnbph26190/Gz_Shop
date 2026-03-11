@@ -213,6 +213,8 @@
                 } else {
                     $('#giaGoc').text('');
                 }
+                
+                // This is the important part: update the max attribute
                 $('#soLuong').attr('max', bienThe.SoLuong);
 
                 // Cập nhật trạng thái nút thêm vào giỏ hàng
@@ -305,6 +307,28 @@
         });
         $(document).ready(function () {
             renderOptions();
+            // 1. Handle manual typing
+            $('#soLuong').on('input', function () {
+                let val = parseInt($(this).val());
+                let max = parseInt($(this).attr('max')) || 1;
+                let min = parseInt($(this).attr('min')) || 1;
+
+                if (isNaN(val)) return; 
+
+                if (val > max) {
+                    $(this).val(max);
+                    alert(lang === "vi" ? `Số lượng tối đa là ${max}` : `Maximum quantity is ${max}`);
+                } else if (val < min) {
+                    $(this).val(min);
+                }
+            });
+
+            // 2. Prevent invalid characters
+            $('#soLuong').on('keydown', function (e) {
+                if (['e', 'E', '+', '-'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
 
             // Chọn mặc định biến thể còn hàng đầu tiên để tránh hiển thị "Hết hàng" khi sản phẩm còn biến thể khác
             const firstAvailable = bienThes.find(b => b.SoLuong > 0);
