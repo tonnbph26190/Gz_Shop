@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Policy = "AdminPolicy")]
+    //[Authorize(Policy = "AdminPolicy")]
     public class ProductManageController : Controller
     {
         private readonly HttpClient _httpClient;
