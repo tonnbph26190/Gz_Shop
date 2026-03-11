@@ -1,6 +1,7 @@
 ﻿@model QuanApi.Dtos.SanPhamKhachHangViewModel
 @{
-    ViewData["Title"] = "Chi tiết sản phẩm";
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
+    ViewData["Title"] = ((lang == "vi") ? "Chi tiết sản phẩm" : "Product Details");
     var userId = ViewBag.UserId ?? ""; // Lấy từ ViewBag, nếu chưa có thì để rỗng
 }
 <style>
@@ -140,7 +141,7 @@
             border: 1.5px solid #d32f2f;
         }
 </style>
-<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn"><i class="fa fa-arrow-left"></i> Quay lại</a>
+<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
 <div class="container product-detail-container">
     <div class="row">
         <div class="col-md-6 d-flex flex-column align-items-center">
@@ -154,15 +155,15 @@
                 <span class="product-detail-oldprice" id="giaGoc"></span>
             </div>
             <div class="mb-3 product-detail-btn-group">
-                <label>Màu sắc:</label>
+                <label>@((lang == "vi") ? "Màu sắc:" : "Color:")</label>
                 <span id="colorOptions"></span>
             </div>
             <div class="mb-3 product-detail-btn-group">
-                <label>Size:</label>
+                <label>@((lang == "vi") ? "Size:" : "Size:")</label>
                 <span id="sizeOptions"></span>
             </div>
             <div class="product-detail-qty">
-                <label>Số lượng:</label>
+                <label>@((lang == "vi") ? "Số lượng:" : "Quantity:")</label>
                 <button type="button" class="product-detail-qty-btn" id="btnMinus">-</button>
                 <input type="number" id="soLuong" class="form-control" style="width:60px;display:inline-block;" min="1" value="1">
                 <button type="button" class="product-detail-qty-btn" id="btnPlus">+</button>
@@ -170,10 +171,10 @@
 
             <!-- Hiển thị thông tin tồn kho -->
             <div class="mb-3" id="stockInfo">
-                <span class="text-muted">Chọn size và màu để xem thông tin tồn kho</span>
+                <span class="text-muted">@((lang == "vi") ? "Chọn size và màu để xem thông tin tồn kho" : "Select size and color to view stock information")</span>
             </div>
 
-            <button class="product-detail-addcart" onclick="themGioHang()">Chọn size và màu</button>
+            <button class="product-detail-addcart" onclick="themGioHang()">@((lang == "vi") ? "Thêm vào giỏ hàng" : "Add to Cart")</button>
         </div>
     </div>
 </div>
@@ -217,9 +218,17 @@
                 // Cập nhật trạng thái nút thêm vào giỏ hàng
                 const addCartBtn = $('.product-detail-addcart');
                 if (bienThe.SoLuong <= 0) {
-                    addCartBtn.text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
+                    if (lang === "vi") {
+                        addCartBtn.text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
+                    } else {
+                        addCartBtn.text('Out of Stock').prop('disabled', true).css('background', '#6c757d');
+                    }
                 } else {
-                    addCartBtn.text('Thêm vào giỏ hàng').prop('disabled', false).css('background', '#d32f2f');
+                    if (lang === "en") {
+                        addCartBtn.text('Thêm vào giỏ hàng').prop('disabled', false).css('background', '#d32f2f');
+                    } else {
+                        addCartBtn.text('Add to Cart').prop('disabled', false).css('background', '#d32f2f');
+                    }
                 }
 
                 // Hiển thị thông tin số lượng
@@ -235,12 +244,22 @@
 
         function updateStockInfo(stock) {
             let stockHtml = '';
-            if (stock <= 0) {
-                stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Hết hàng</span>';
-            } else if (stock <= 5) {
-                stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Chỉ còn ${stock} sản phẩm</span>`;
+            if (lang == "vi") {
+                 if (stock <= 0) {
+                    stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Hết hàng</span>';
+                } else if (stock <= 5) {
+                    stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Chỉ còn ${stock} sản phẩm</span>`;
+                } else {
+                    stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Còn ${stock} sản phẩm</span>`;
+                }
             } else {
-                stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Còn ${stock} sản phẩm</span>`;
+                if (stock <= 0) {
+                    stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Out of Stock</span>';
+                } else if (stock <= 5) {
+                    stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Only ${stock} items left</span>`;
+                } else {
+                    stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> ${stock} items available</span>`;
+                }
             }
             $('#stockInfo').html(stockHtml);
         }
