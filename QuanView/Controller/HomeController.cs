@@ -16,16 +16,7 @@ namespace QuanView.Controllers
             _context = context;
             _httpClient = httpClientFactory.CreateClient("MyApi");
         }
-        public IActionResult SetLanguage(string culture)
-        {
-            // Save to Cookie (Preferred so it remembers when they close the browser)
-            Response.Cookies.Append("UserLanguage", culture, new CookieOptions
-            {
-                Expires = DateTimeOffset.Now.AddYears(1)
-            });
 
-            return Redirect(Request.Headers["Referer"].ToString());
-        }
         public async Task<IActionResult> Index()
         {
             var banners = _context.Banners.ToList();

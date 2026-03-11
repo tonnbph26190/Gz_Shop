@@ -1,15 +1,10 @@
 ﻿@model dynamic
 @{
-    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
-    ViewData["Title"] = ((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS");
-    var label = (lang == "vi") ? "Tìm kiếm đơn hàng" : "Search Order";
-    var placeholder = (lang == "vi") ? "Nhập mã đơn hàng (tùy chọn)" : "Enter order ID (optional)";
-    var titleMsg = (lang == "vi") ? "Mã đơn hàng chỉ chứa chữ hoa, số và dấu gạch dưới" : "Order ID only contains uppercase letters, numbers and underscores";
+    ViewData["Title"] = "ĐƠN MUA CỦA TÔI";
     var search = ViewBag.Search as string ?? "";
     var fromDate = ViewBag.FromDate as string ?? "";
     var toDate = ViewBag.ToDate as string ?? "";
     var isAuthenticated = ViewBag.IsAuthenticated as bool? ?? false;
-}
 }
 
 <style>
@@ -173,7 +168,7 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4">@((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS")</h2>
+    <h2 class="mb-4">ĐƠN MUA CỦA TÔI</h2>
 
     <!-- Bộ lọc nâng cao -->
     <div class="filter-section">
@@ -189,26 +184,24 @@
                 <div class="row">
                     <!-- Tìm kiếm theo mã đơn hàng -->
                     <div class="col-md-3">
-                        <label class="form-label">@label</label>
-                        <input type="text" 
-                            class="form-control" 
-                            name="search"
-                            placeholder="@placeholder"
-                            value="@search"
-                            pattern="[A-Z0-9_]+"
-                            title="@titleMsg"> 
+                        <label class="form-label">Mã đơn hàng:</label>
+                        <input type="text" class="form-control" name="search"
+                               placeholder="Nhập mã đơn hàng (tùy chọn)"
+                               value="@search"
+                               pattern="[A-Z0-9_]+"
+                               title="Mã đơn hàng chỉ chứa chữ hoa, số và dấu gạch dưới">
                     </div>
 
                     <!-- Lọc theo ngày từ -->
                     <div class="col-md-3">
-                        <label class="form-label">@((lang == "vi") ? "Từ ngày:" : "From Date:")</label>
+                        <label class="form-label">Từ ngày:</label>
                         <input type="date" class="form-control" name="fromDate"
                                value="@fromDate">
                     </div>
 
                     <!-- Lọc theo ngày đến -->
                     <div class="col-md-3">
-                        <label class="form-label">@((lang == "vi") ? "Đến ngày:" : "To Date:")</label>
+                        <label class="form-label">Đến ngày:</label>
                         <input type="date" class="form-control" name="toDate"
                                value="@toDate">
                     </div>
@@ -216,10 +209,10 @@
                 <div class="row mt-3">
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> @((lang == "vi") ? "Tìm đơn hàng" : "Search Orders")
+                            <i class="bi bi-search"></i> Tìm đơn hàng
                         </button>
                         <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Xóa bộ lọc Tìm đơn hàng" : "Clear Search Filters")
+                            <i class="bi bi-x-circle"></i> Xóa bộ lọc
                         </a>
                     </div>
                 </div>
@@ -230,30 +223,30 @@
             <!-- Form tìm kiếm cho khách vãng lai -->
             <div class="alert alert-info mb-3">
                 <i class="bi bi-info-circle"></i>
-                <strong>@((lang == "vi") ? "Khách vãng lai:" : "Guest User:")</strong> @((lang == "vi") ? "Vui lòng nhập mã đơn hàng để tìm đơn hàng của bạn" : "Please enter order ID to find your order")
+                <strong>Khách vãng lai:</strong> Vui lòng nhập mã đơn hàng để tìm đơn hàng của bạn
             </div>
 
             <form method="get" action="@Url.Action("Index")" id="filterForm">
                 <div class="row">
                     <!-- Tìm kiếm theo mã đơn hàng -->
                     <div class="col-md-6">
-                        <label class="form-label">@((lang == "vi") ? "Mã đơn hàng:" : "Order ID:")</label>
+                        <label class="form-label">Mã đơn hàng:</label>
                         <input type="text" class="form-control" name="search"
-                               placeholder="@((lang == "vi") ? "Nhập mã đơn hàng để tìm kiếm" : "Enter order ID to search")"
+                               placeholder="Nhập mã đơn hàng để tìm kiếm"
                                value="@search"
                                pattern="[A-Z0-9_]+"
-                               title="@((lang == "vi") ? "Mã đơn hàng chỉ chứa chữ hoa, số và dấu gạch dưới" : "Order ID only contains uppercase letters, numbers and underscores")"
+                               title="Mã đơn hàng chỉ chứa chữ hoa, số và dấu gạch dưới"
                                required>
-                        <div class="form-text">@((lang == "vi") ? "Nhập mã đơn hàng bạn đã nhận khi đặt hàng" : "Enter the order ID you received when placing the order")</div>
+                        <div class="form-text">Nhập mã đơn hàng bạn đã nhận khi đặt hàng</div>
                     </div>
                 </div>
                 <div class="row mt-3">
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> @((lang == "vi") ? "Tìm đơn hàng" : "Search Orders")
+                            <i class="bi bi-search"></i> Tìm đơn hàng
                         </button>
                         <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Xóa bộ lọc" : "Clear Filters")
+                            <i class="bi bi-x-circle"></i> Xóa bộ lọc
                         </a>
                     </div>
                 </div>
@@ -267,13 +260,13 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>@((lang == "vi") ? "Mã hóa đơn" : "Invoice ID")</th>
-                    <th>@((lang == "vi") ? "Tổng giá trị" : "Total Value")</th>
-                    <th>@((lang == "vi") ? "Tiền giảm" : "Discount Amount")</th>
-                    <th>@((lang == "vi") ? "Trạng thái" : "Status")</th>
-                    <th>@((lang == "vi") ? "Loại đơn" : "Order Type")</th>
-                    <th>@((lang == "vi") ? "Ngày đặt" : "Order Date")</th>
-                    <th>@((lang == "vi") ? "Hành động" : "Actions")</th>
+                    <th>Mã hóa đơn</th>
+                    <th>Tổng giá trị</th>
+                    <th>Tiền giảm</th>
+                    <th>Trạng thái</th>
+                    <th>Loại đơn</th>
+                    <th>Ngày đặt</th>
+                    <th>Hành động</th>
                 </tr>
             </thead>
             <tbody id="orderTableBody">
@@ -303,28 +296,28 @@
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">@((lang == "vi") ? "Tại quầy" : "In-store")</span>
+                                    <span class="badge bg-secondary">Tại quầy</span>
                                 }
                             </td>
                             <td>@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <!-- Nút xem chi tiết - luôn hiển thị -->
-                                    <a href="@Url.Action("ChiTiet", new { id = hoaDon.IDHoaDon })" class="action-btn btn-view" title="@((lang == "vi") ? "Xem chi tiết đơn hàng" : "View order details")">
-                                        <i class="bi bi-eye"></i> @((lang == "vi") ? "Chi tiết" : "Details")
+                                    <a href="@Url.Action("ChiTiet", new { id = hoaDon.IDHoaDon })" class="action-btn btn-view" title="Xem chi tiết đơn hàng">
+                                        <i class="bi bi-eye"></i> Chi tiết
                                     </a>
 
                                     @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
                                     {
-                                        <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')" title="@((lang == "vi") ? "Hủy đơn hàng" : "Cancel order")">
-                                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Hủy đơn" : "Cancel Order")
+                                        <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')" title="Hủy đơn">
+                                            <i class="bi bi-x-circle"></i> Hủy đơn
                                         </button>
                                     }
 
                                     @if (hoaDon.TrangThai == "Đang giao hàng")
                                     {
-                                        <button class="action-btn btn-view" onclick="viewShippingInfo('@hoaDon.IDHoaDon')" title="@((lang == "vi") ? "Xem thông tin vận chuyển" : "View shipping information")">
-                                            <i class="bi bi-truck"></i> @((lang == "vi") ? "Vận chuyển" : "Shipping")
+                                        <button class="action-btn btn-view" onclick="viewShippingInfo('@hoaDon.IDHoaDon')" title="Xem thông tin vận chuyển">
+                                            <i class="bi bi-truck"></i> Vận chuyển
                                         </button>
                                     }
                                 </div>
@@ -341,17 +334,17 @@
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 @if (isAuthenticated)
                                 {
-                                    <p class="mt-2">@((lang == "vi") ? "Bạn chưa có đơn hàng nào" : "You don't have any orders yet")</p>
-                                    <p class="text-sm">@((lang == "vi") ? "Hãy mua sắm để có đơn hàng đầu tiên!" : "Please shop to get your first order!")</p>
+                                    <p class="mt-2">Bạn chưa có đơn hàng nào</p>
+                                    <p class="text-sm">Hãy mua sắm để có đơn hàng đầu tiên!</p>
                                 }
                                 else if (!string.IsNullOrEmpty(search))
                                 {
-                                    <p class="mt-2">@((lang == "vi") ? "Không tìm thấy đơn hàng nào với mã" : "No orders found with the code") <strong>@search</strong></p>
-                                    <p class="text-sm">@((lang == "vi") ? "Vui lòng kiểm tra lại mã đơn hàng hoặc liên hệ hỗ trợ" : "Please check the order code or contact support")</p>
+                                    <p class="mt-2">Không tìm thấy đơn hàng nào với mã <strong>@search</strong></p>
+                                    <p class="text-sm">Vui lòng kiểm tra lại mã đơn hàng hoặc liên hệ hỗ trợ</p>
                                 }
                                 else
                                 {
-                                    <p class="mt-2">@((lang == "vi") ? "Vui lòng nhập mã đơn hàng để tìm kiếm" : "Please enter an order code to search")</p>
+                                    <p class="mt-2">Vui lòng nhập mã đơn hàng để tìm kiếm</p>
                                 }
                             </div>
                         </td>
@@ -366,9 +359,9 @@
     {
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="pagination-info">
-                @((lang == "vi") ? "Hiển thị" : "Showing") @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1) -
+                Hiển thị @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1) -
                 @Math.Min(pagination.CurrentPage * pagination.PageSize, pagination.TotalCount)
-                @((lang == "vi") ? "trong tổng số" : "out of") @pagination.TotalCount  @((lang == "vi") ? "đơn hàng" : "orders")
+                trong tổng số @pagination.TotalCount đơn hàng
             </div>
 
             <nav aria-label="Phân trang">
