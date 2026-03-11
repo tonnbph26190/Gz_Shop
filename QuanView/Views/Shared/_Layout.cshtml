@@ -2,87 +2,72 @@
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
-    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
-    
+
     string IsActive(string ctrl, string act = "Index") =>
         (currentController == ctrl && currentAction == act) ? "active text-danger fw-bold" : "text-dark";
 }
-
 <!DOCTYPE html>
-<html lang="@lang">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - GZ Shop</title>
+    <title>@ViewData["Title"] - QuanView</title>
 
+    <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & FontAwesome -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/font-awesome.min.css" />
+
+    <!-- Custom -->
     <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
 </head>
 <body class="d-flex flex-column min-vh-100" style="font-family:'Nunito Sans', sans-serif">
 
+    <!-- Header -->
     <header class="border-bottom shadow-sm bg-white">
         <nav class="navbar navbar-expand-lg navbar-light bg-white">
             <div class="container">
+                <!-- Logo -->
                 <a asp-controller="Home" asp-action="Index" class="navbar-brand fw-bold fs-4 text-dark">
-                    GZ Shop<span class="text-danger">.</span>
+                    DAZIO<span class="text-danger">.</span>
                 </a>
 
+                <!-- Nút toggle trên mobile -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
+                <!-- Menu -->
                 <div class="collapse navbar-collapse" id="mainNavbar">
                     <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a asp-controller="Home" asp-action="Index" class="nav-link @(IsActive("Home"))">
-                                @(lang == "vi" ? "Trang chủ" : "Home")
-                            </a>
+                            <a asp-controller="Home" asp-action="Index" class="nav-link @(IsActive("Home"))">Trang chủ</a>
                         </li>
                         <li class="nav-item">
-                            <a asp-controller="SanPhamNguoiDung" asp-action="Index" class="nav-link @(IsActive("SanPhamNguoiDung"))">
-                                @(lang == "vi" ? "Sản phẩm" : "Products")
-                            </a>
+                            <a asp-controller="SanPhamNguoiDung" asp-action="Index" class="nav-link @(IsActive("SanPhamNguoiDung"))">Sản phẩm</a>
                         </li>
                         <li class="nav-item">
-                            <a asp-controller="GioHang" asp-action="Index" class="nav-link @(IsActive("GioHang"))">
-                                @(lang == "vi" ? "Giỏ hàng" : "Cart")
-                            </a>
+                            <a asp-controller="GioHang" asp-action="Index" class="nav-link @(IsActive("GioHang"))">Giỏ hàng</a>
                         </li>
                         <li class="nav-item">
-                            <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">
-                                @(lang == "vi" ? "Đơn hàng" : "My Orders")
-                            </a>
+                            <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">Đơn mua của tôi</a>
                         </li>
                     </ul>
 
+                    <!-- User & Cart -->
                     <div class="d-flex align-items-center gap-3">
                         @if (User.Identity.IsAuthenticated)
                         {
-                            <span class="text-muted small">
-                                @(lang == "vi" ? "Xin chào" : "Hello"), <b>@User.Identity.Name</b>
-                            </span>
-                            <a asp-controller="Login" asp-action="Logout" class="btn btn-sm btn-outline-secondary">
-                                @(lang == "vi" ? "Đăng xuất" : "Logout")
-                            </a>
+                            <span class="text-muted small">Xin chào, <b>@User.Identity.Name</b></span>
+                            <a asp-controller="Login" asp-action="Logout" class="btn btn-sm btn-outline-secondary">Đăng xuất</a>
                         }
                         else
                         {
-                            <a asp-controller="Login" asp-action="Index" class="btn btn-sm btn-outline-dark">
-                                @(lang == "vi" ? "Đăng nhập" : "Login")
-                            </a>
-                            <a asp-controller="Login" asp-action="Register" class="btn btn-sm btn-dark text-white">
-                                @(lang == "vi" ? "Đăng ký" : "Register")
-                            </a>
+                            <a asp-controller="Login" asp-action="Index" class="btn btn-sm btn-outline-dark">Đăng nhập</a>
+                            <a asp-controller="Login" asp-action="Register" class="btn btn-sm btn-dark text-white">Đăng ký</a>
                         }
-
-                        <div class="btn-group">
-                            <a href="@Url.Action("SetLanguage", "Home", new { culture = "vi" })" 
-                               class="btn btn-sm @(lang == "vi" ? "btn-secondary" : "btn-outline-secondary")">VN</a>
-                            <a href="@Url.Action("SetLanguage", "Home", new { culture = "en" })" 
-                               class="btn btn-sm @(lang == "en" ? "btn-secondary" : "btn-outline-secondary")">EN</a>
-                        </div>
 
                         <a asp-controller="GioHang" asp-action="Index" class="position-relative text-dark ms-2">
                             <i class="fa fa-shopping-cart fs-5"></i>
@@ -94,42 +79,41 @@
         </nav>
     </header>
 
-    <main id="dynamic-body" class="flex-fill" style="transition: background 0.5s ease;">
+    <!-- Main -->
+    <main class="flex-fill">
         @RenderBody()
     </main>
 
+    <!-- Footer -->
     <footer class="bg-dark text-light mt-auto pt-5 pb-3">
         <div class="container">
             <div class="row g-4">
+                <!-- About -->
                 <div class="col-md-4">
-                    <span class="fw-bold text-light h5">GZ Shop</span><span class="text-danger">.</span>
-                    <p class="small text-secondary">
-                        @if (lang == "vi") {
-                            @:Thời trang quần âu hiện đại – lịch lãm – đẳng cấp. Khách hàng là trọng tâm trong hành trình của chúng tôi.
-                        } else {
-                            @:Modern trousers – Elegant – Classy. Customers are the heart of our journey.
-                        }
-                    </p>
+                    <span class="fw-bold text-light h5">DAZIO</span><span class="text-danger">.</span>
+                    <p class="small text-secondary">Thời trang quần âu hiện đại – lịch lãm – đẳng cấp. Khách hàng là trọng tâm trong hành trình của chúng tôi.</p>
                 </div>
+                <!-- Links -->
                 <div class="col-md-4">
-                    <h6 class="fw-bold">@(lang == "vi" ? "Liên kết" : "Quick Links")</h6>
+                    <h6 class="fw-bold">Liên kết</h6>
                     <ul class="list-unstyled small">
-                        <li><a asp-controller="SanPhamNguoiDung" asp-action="Index" class="text-decoration-none text-light">@(lang == "vi" ? "Sản phẩm" : "Products")</a></li>
-                        <li><a asp-controller="GioHang" asp-action="Index" class="text-decoration-none text-light">@(lang == "vi" ? "Giỏ hàng" : "Cart")</a></li>
-                        <li><a asp-controller="DonHang" asp-action="Index" class="text-decoration-none text-light">@(lang == "vi" ? "Đơn mua" : "Orders")</a></li>
+                        <li><a asp-controller="SanPhamNguoiDung" asp-action="Index" class="text-decoration-none text-light">Sản phẩm</a></li>
+                        <li><a asp-controller="GioHang" asp-action="Index" class="text-decoration-none text-light">Giỏ hàng</a></li>
+                        <li><a asp-controller="DonHang" asp-action="Index" class="text-decoration-none text-light">Đơn mua của tôi</a></li>
                     </ul>
                 </div>
+                <!-- Newsletter -->
                 <div class="col-md-4">
-                    <h6 class="fw-bold text-light">@(lang == "vi" ? "Hỗ trợ qua Email" : "Email Support")</h6>
+                    <h6 class="fw-bold text-light">Nhận tin mới</h6>
                     <form class="d-flex mt-2">
-                        <input type="email" class="form-control form-control-sm me-2" placeholder="@(lang == "vi" ? "Email của bạn" : "Your email")">
-                        <button class="btn btn-sm btn-danger" type="submit">@(lang == "vi" ? "Gửi" : "Send")</button>
+                        <input type="email" class="form-control form-control-sm me-2" placeholder="Email của bạn">
+                        <button class="btn btn-sm btn-danger" type="submit">Gửi</button>
                     </form>
                 </div>
             </div>
             <hr class="border-secondary my-4" />
             <div class="text-center small text-secondary">
-                &copy; @DateTime.Now.Year GZ Shop. @(lang == "vi" ? "Tất cả quyền được bảo lưu." : "All rights reserved.")
+                &copy; @DateTime.Now.Year DAZIO. All rights reserved.
             </div>
         </div>
     </footer>
@@ -138,34 +122,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <script>
-        function updateDynamicBackground() {
-            const mainContent = document.getElementById('dynamic-body');
-            // Looks for the first image in the rendered body
-            const firstImage = mainContent.querySelector('img');
-
-            if (firstImage) {
-                const img = new Image();
-                img.crossOrigin = "Anonymous"; 
-                img.src = firstImage.src;
-
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = 1;
-                    canvas.height = 1;
-
-                    ctx.drawImage(img, 0, 0, 1, 1);
-                    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-
-                    mainContent.style.background = `linear-gradient(180deg, rgba(${r},${g},${b}, 0.15) 0%, rgba(255,255,255,1) 100%)`;
-                };
-            }
-        }
-
-        window.addEventListener('load', updateDynamicBackground);
-    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
