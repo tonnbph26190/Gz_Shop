@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using QuanApi.Data;
 using QuanView.ViewModels;
 using System.Net.Http.Json;
+using System.Globalization;
 using AddAnhSanPhamDto = QuanApi.Dtos.AddAnhSanPhamDto;
 
 namespace QuanView.Areas.Admin.Controllers
@@ -247,33 +248,46 @@ namespace QuanView.Areas.Admin.Controllers
 
         public async Task<IActionResult> Edit(Guid id)
         {
-            // Dùng endpoint full để lấy sản phẩm + tất cả biến thể trong một lần (map đúng cho Edit)
+            var jsonOpt = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            
+            // Lấy thông tin sản phẩm chính
             var response = await _http.GetAsync($"sanphams/{id}");
             if (!response.IsSuccessStatusCode) return NotFound();
 
-            var jsonOpt = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var dto = await response.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>(jsonOpt);
-            if (dto == null)
-                return NotFound();
+            if (dto == null) return NotFound();
 
-            dto.ChiTietSanPhams ??= new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
-            foreach (var item in dto.ChiTietSanPhams)
+            // Load tất cả biến thể từ endpoint chuyên dụng
+            var variantsRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={id}");
+            if (variantsRes.IsSuccessStatusCode)
             {
-                if (item.IdSanPham == Guid.Empty) item.IdSanPham = id;
-            }
-
-            // Load thêm danh sách ảnh từng biến thể (nếu cần cho Edit)
-            foreach (var ct in dto.ChiTietSanPhams)
-            {
-                var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
-                if (imagesRes.IsSuccessStatusCode)
+                var variantsJson = await variantsRes.Content.ReadAsStringAsync();
+                dto.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(
+                    variantsJson, jsonOpt) ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+                
+                // Đảm bảo IdSanPham được set đúng
+                foreach (var item in dto.ChiTietSanPhams)
                 {
-                    var imagesJson = await imagesRes.Content.ReadAsStringAsync();
-                    var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, jsonOpt);
-                    ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages ?? new List<QuanApi.Dtos.AnhSanPhamDto>());
-                    var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
-                    if (mainImage != null) ct.AnhDaiDien = mainImage.UrlAnh;
+                    if (item.IdSanPham == Guid.Empty) item.IdSanPham = id;
                 }
+
+                // Load danh sách ảnh cho từng biến thể
+                foreach (var ct in dto.ChiTietSanPhams)
+                {
+                    var imagesRes = await _http.GetAsync($"sanphams/chitiet/{ct.IdSanPhamChiTiet}/images");
+                    if (imagesRes.IsSuccessStatusCode)
+                    {
+                        var imagesJson = await imagesRes.Content.ReadAsStringAsync();
+                        var apiImages = JsonSerializer.Deserialize<List<QuanApi.Dtos.AnhSanPhamDto>>(imagesJson, jsonOpt);
+                        ct.DanhSachAnh = MapApiImagesToAdminImages(apiImages ?? new List<QuanApi.Dtos.AnhSanPhamDto>());
+                        var mainImage = apiImages?.FirstOrDefault(img => img.LaAnhChinh);
+                        if (mainImage != null) ct.AnhDaiDien = mainImage.UrlAnh;
+                    }
+                }
+            }
+            else
+            {
+                dto.ChiTietSanPhams = new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
             }
 
             await LoadDropdownData();
@@ -463,6 +477,508 @@ namespace QuanView.Areas.Admin.Controllers
             await _http.DeleteAsync($"sanphams/{id}");
             return RedirectToAction("Index");
         }
+
+        /// <summary>Export danh sách sản phẩm (theo bộ lọc hiện tại) ra file CSV.</summary>
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(
+            string? keyword = null,
+            string? trangThai = null,
+            decimal? priceFrom = null,
+            decimal? priceTo = null,
+            int? qtyFrom = null,
+            int? qtyTo = null,
+            DateTime? dateFrom = null,
+            DateTime? dateTo = null)
+        {
+            int pageSize = 10000;
+            var queryParams = new List<string>
+            {
+                "page=1",
+                $"pageSize={pageSize}"
+            };
+            if (!string.IsNullOrWhiteSpace(keyword)) queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
+            if (!string.IsNullOrWhiteSpace(trangThai)) queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+            if (priceFrom.HasValue) queryParams.Add($"priceFrom={priceFrom.Value}");
+            if (priceTo.HasValue) queryParams.Add($"priceTo={priceTo.Value}");
+            if (qtyFrom.HasValue) queryParams.Add($"qtyFrom={qtyFrom.Value}");
+            if (qtyTo.HasValue) queryParams.Add($"qtyTo={qtyTo.Value}");
+            if (dateFrom.HasValue) queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
+            if (dateTo.HasValue) queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
+
+            var response = await _http.GetAsync($"sanphams/paged?{string.Join("&", queryParams)}");
+            if (!response.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không thể tải dữ liệu để xuất CSV.";
+                return RedirectToAction("Index");
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            var pagedResult = JsonSerializer.Deserialize<dynamic>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var dataArray = pagedResult.GetProperty("data").EnumerateArray();
+            var products = new List<QuanView.Areas.Admin.Models.SanPhamDto>();
+            foreach (var item in dataArray)
+            {
+                var product = JsonSerializer.Deserialize<QuanView.Areas.Admin.Models.SanPhamDto>(item.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (product != null) products.Add(product);
+            }
+
+            foreach (var sp in products)
+            {
+                var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={sp.IDSanPham}");
+                if (res.IsSuccessStatusCode)
+                {
+                    var ctJson = await res.Content.ReadAsStringAsync();
+                    sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                sp.ChiTietSanPhams ??= new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+            }
+
+            var csv = BuildProductCsv(products);
+            var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            var bytes = bom.Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+            var fileName = $"san-pham-export-{DateTime.Now:yyyyMMdd-HHmmss}.csv";
+            return File(bytes, "text/csv", fileName);
+        }
+
+        private static string EscapeCsvField(string? value)
+        {
+            if (value == null) return "";
+            if (value.Contains('"') || value.Contains(',') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
+        }
+
+        private static string BuildProductCsv(List<QuanView.Areas.Admin.Models.SanPhamDto> products)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,TenChatLieu,TenLoaiOng,TenKieuDang,TenLungQuan,CoXepLy,CoGian,TrangThaiSP,TenKichCo,TenMauSac,TenHoaTiet,SoLuong,GiaBan,TrangThaiCT");
+            foreach (var sp in products)
+            {
+                var tenDanhMuc = sp.TenDanhMuc ?? "";
+                var tenThuongHieu = sp.TenThuongHieu ?? "";
+                var tenChatLieu = sp.TenChatLieu ?? "";
+                var tenLoaiOng = sp.TenLoaiOng ?? "";
+                var tenKieuDang = sp.TenKieuDang ?? "";
+                var tenLungQuan = sp.TenLungQuan ?? "";
+                var coXepLy = sp.CoXepLy ? "1" : "0";
+                var coGian = sp.CoGian ? "1" : "0";
+                var trangThaiSp = sp.TrangThai ? "1" : "0";
+
+                if (sp.ChiTietSanPhams == null || !sp.ChiTietSanPhams.Any())
+                {
+                    sb.AppendLine(string.Join(",", new[]
+                    {
+                        EscapeCsvField(sp.MaSanPham),
+                        EscapeCsvField(sp.TenSanPham),
+                        EscapeCsvField(tenDanhMuc),
+                        EscapeCsvField(tenThuongHieu),
+                        EscapeCsvField(tenChatLieu),
+                        EscapeCsvField(tenLoaiOng),
+                        EscapeCsvField(tenKieuDang),
+                        EscapeCsvField(tenLungQuan),
+                        coXepLy, coGian, trangThaiSp,
+                        "", "", "",
+                        "0", "0", "1"
+                    }));
+                }
+                else
+                {
+                    foreach (var ct in sp.ChiTietSanPhams)
+                    {
+                        var tenKichCo = ct.TenKichCo ?? "";
+                        var tenMauSac = ct.TenMauSac ?? "";
+                        var tenHoaTiet = ct.TenHoaTiet ?? "N/A";
+                        var trangThaiCt = ct.TrangThai ? "1" : "0";
+                        sb.AppendLine(string.Join(",", new[]
+                        {
+                            EscapeCsvField(sp.MaSanPham),
+                            EscapeCsvField(sp.TenSanPham),
+                            EscapeCsvField(tenDanhMuc),
+                            EscapeCsvField(tenThuongHieu),
+                            EscapeCsvField(tenChatLieu),
+                            EscapeCsvField(tenLoaiOng),
+                            EscapeCsvField(tenKieuDang),
+                            EscapeCsvField(tenLungQuan),
+                            coXepLy, coGian, trangThaiSp,
+                            EscapeCsvField(tenKichCo),
+                            EscapeCsvField(tenMauSac),
+                            EscapeCsvField(tenHoaTiet),
+                            ct.SoLuong.ToString(CultureInfo.InvariantCulture),
+                            ct.GiaBan.ToString(CultureInfo.InvariantCulture),
+                            trangThaiCt
+                        }));
+                    }
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Form nhập/dán dữ liệu CSV để import sản phẩm.</summary>
+        [HttpGet]
+        public IActionResult ImportCsv()
+        {
+            return View(new QuanView.Areas.Admin.Models.ImportCsvResultViewModel());
+        }
+
+        /// <summary>Xử lý dữ liệu CSV (từ textarea hoặc file): báo từng dòng thành công/lỗi kèm lý do.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ImportCsv(string? csvContent, IFormFile? fileCsv)
+        {
+            string? rawCsv = null;
+            if (!string.IsNullOrWhiteSpace(csvContent))
+                rawCsv = csvContent.Trim();
+            else if (fileCsv != null && fileCsv.Length > 0)
+            {
+                using var reader = new StreamReader(fileCsv.OpenReadStream(), Encoding.UTF8);
+                rawCsv = await reader.ReadToEndAsync();
+            }
+
+            if (string.IsNullOrWhiteSpace(rawCsv))
+            {
+                TempData["Error"] = "Vui lòng nhập/dán dữ liệu CSV vào khung bên dưới hoặc chọn file CSV.";
+                return View(new QuanView.Areas.Admin.Models.ImportCsvResultViewModel());
+            }
+
+            var result = new QuanView.Areas.Admin.Models.ImportCsvResultViewModel { CsvContent = rawCsv };
+            var lines = rawCsv.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var dataRows = new List<(int lineIndex, string[] row)>();
+            var existingVariantsByProduct = new Dictionary<Guid, List<(Guid IdChiTiet, Guid IdKichCo, Guid IdMauSac, int SoLuong)>>();
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var row = ParseCsvLine(line);
+                if (row.Count < 14)
+                {
+                    if (i == 0 && line.TrimStart().StartsWith("MaSanPham", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (row.All(c => string.IsNullOrWhiteSpace(c)))
+                        continue;
+                    result.SkippedCount++;
+                    result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                    {
+                        LineNumber = i + 1,
+                        Reason = "Dòng không đủ cột (cần ít nhất 14 cột).",
+                        RowPreview = line.Length > 80 ? line.Substring(0, 80) + "..." : line
+                    });
+                    continue;
+                }
+                dataRows.Add((i + 1, row.ToArray()));
+            }
+
+            var lookups = await LoadLookupMapsAsync();
+            var productByMa = new Dictionary<string, QuanView.Areas.Admin.Models.SanPhamDto>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (lineIndex, row) in dataRows)
+            {
+                var maSp = row.Length > 0 ? row[0].Trim() : "";
+                var tenSp = row.Length > 1 ? row[1].Trim() : "";
+                if (string.IsNullOrEmpty(maSp) && string.IsNullOrEmpty(tenSp))
+                {
+                    result.SkippedCount++;
+                    continue;
+                }
+                if (string.IsNullOrEmpty(maSp)) maSp = $"SP_{DateTime.UtcNow.Ticks}_{lineIndex}";
+
+                var tenDanhMuc = row.Length > 2 ? row[2].Trim() : "";
+                var tenThuongHieu = row.Length > 3 ? row[3].Trim() : "";
+                var tenChatLieu = row.Length > 4 ? row[4].Trim() : "";
+                var tenLoaiOng = row.Length > 5 ? row[5].Trim() : "";
+                var tenKieuDang = row.Length > 6 ? row[6].Trim() : "";
+                var tenLungQuan = row.Length > 7 ? row[7].Trim() : "";
+                var coXepLy = row.Length > 8 && (row[8] == "1" || string.Equals(row[8], "true", StringComparison.OrdinalIgnoreCase));
+                var coGian = row.Length > 9 && (row[9] == "1" || string.Equals(row[9], "true", StringComparison.OrdinalIgnoreCase));
+                var tenKichCo = row.Length > 11 ? row[11].Trim() : "";
+                var tenMauSac = row.Length > 12 ? row[12].Trim() : "";
+                var tenHoaTiet = row.Length > 13 ? row[13].Trim() : "";
+                if (string.IsNullOrEmpty(tenHoaTiet)) tenHoaTiet = "N/A";
+                int soLuong = 0;
+                if (row.Length > 14) int.TryParse(row[14], NumberStyles.Integer, CultureInfo.InvariantCulture, out soLuong);
+                decimal giaBan = 0;
+                if (row.Length > 15) decimal.TryParse(row[15], NumberStyles.Number, CultureInfo.InvariantCulture, out giaBan);
+
+                var missing = new List<string>();
+                if (!lookups.DanhMuc.TryGetValue(tenDanhMuc, out var idDanhMuc)) { idDanhMuc = Guid.Empty; missing.Add($"Danh mục '{tenDanhMuc}'"); }
+                if (!lookups.ThuongHieu.TryGetValue(tenThuongHieu, out var idThuongHieu)) { idThuongHieu = Guid.Empty; missing.Add($"Thương hiệu '{tenThuongHieu}'"); }
+                if (!lookups.ChatLieu.TryGetValue(tenChatLieu, out var idChatLieu)) { idChatLieu = Guid.Empty; missing.Add($"Chất liệu '{tenChatLieu}'"); }
+                if (!lookups.LoaiOng.TryGetValue(tenLoaiOng, out var idLoaiOng)) { idLoaiOng = Guid.Empty; missing.Add($"Loại ống '{tenLoaiOng}'"); }
+                if (!lookups.KieuDang.TryGetValue(tenKieuDang, out var idKieuDang)) { idKieuDang = Guid.Empty; missing.Add($"Kiểu dáng '{tenKieuDang}'"); }
+                if (!lookups.LungQuan.TryGetValue(tenLungQuan, out var idLungQuan)) { idLungQuan = Guid.Empty; missing.Add($"Lưng quần '{tenLungQuan}'"); }
+                if (!lookups.KichCo.TryGetValue(tenKichCo, out var idKichCo)) { idKichCo = Guid.Empty; if (!string.IsNullOrEmpty(tenKichCo)) missing.Add($"Kích cỡ '{tenKichCo}'"); }
+                if (!lookups.MauSac.TryGetValue(tenMauSac, out var idMauSac)) { idMauSac = Guid.Empty; if (!string.IsNullOrEmpty(tenMauSac)) missing.Add($"Màu sắc '{tenMauSac}'"); }
+                if (!lookups.HoaTiet.TryGetValue(tenHoaTiet, out var idHoaTiet)) idHoaTiet = Guid.Empty;
+
+                if (idDanhMuc == Guid.Empty || idThuongHieu == Guid.Empty || idChatLieu == Guid.Empty ||
+                    idLoaiOng == Guid.Empty || idKieuDang == Guid.Empty || idLungQuan == Guid.Empty)
+                {
+                    result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                    {
+                        LineNumber = lineIndex,
+                        Reason = "Không tìm thấy: " + string.Join(", ", missing),
+                        RowPreview = string.Join(", ", row.Take(5))
+                    });
+                    continue;
+                }
+
+                try
+                {
+                    if (!productByMa.TryGetValue(maSp, out var dto))
+                    {
+                        // tìm sản phẩm theo mã
+                        var getProduct = await _http.GetAsync($"sanphams/bycode?masanpham={maSp}");
+
+                        if (getProduct.IsSuccessStatusCode)
+                        {
+                            // đã tồn tại -> dùng lại
+                            dto = await getProduct.Content.ReadFromJsonAsync<QuanView.Areas.Admin.Models.SanPhamDto>(
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                            productByMa[maSp] = dto;
+
+                            result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                            {
+                                LineNumber = lineIndex,
+                                Message = $"Đã tìm thấy sản phẩm: {maSp}"
+                            });
+                        }
+                        else
+                        {
+                            // chưa tồn tại -> tạo mới
+                            dto = new QuanView.Areas.Admin.Models.SanPhamDto
+                            {
+                                IDSanPham = Guid.NewGuid(),
+                                MaSanPham = maSp,
+                                TenSanPham = tenSp,
+                                IDDanhMuc = idDanhMuc,
+                                IDThuongHieu = idThuongHieu,
+                                IDChatLieu = idChatLieu,
+                                IDLoaiOng = idLoaiOng,
+                                IDKieuDang = idKieuDang,
+                                IDLungQuan = idLungQuan,
+                                CoXepLy = coXepLy,
+                                CoGian = coGian,
+                                TrangThai = true,
+                                ChiTietSanPhams = new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>()
+                            };
+
+                            var postRes = await _http.PostAsJsonAsync("sanphams", dto);
+
+                            if (!postRes.IsSuccessStatusCode)
+                            {
+                                var errBody = await postRes.Content.ReadAsStringAsync();
+
+                                result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Reason = "Lỗi tạo sản phẩm: " + errBody,
+                                    RowPreview = maSp + ", " + tenSp
+                                });
+
+                                continue;
+                            }
+
+                            productByMa[maSp] = dto;
+
+                            result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                            {
+                                LineNumber = lineIndex,
+                                Message = $"Đã tạo sản phẩm mới: {maSp}"
+                            });
+                        }
+                    }
+
+                    if (idKichCo != Guid.Empty && idMauSac != Guid.Empty)
+                    {
+                        if (!existingVariantsByProduct.TryGetValue(dto.IDSanPham, out var variantList))
+                        {
+                            variantList = new List<(Guid, Guid, Guid, int)>();
+                            var getCt = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
+                            if (getCt.IsSuccessStatusCode)
+                            {
+                                var list = await getCt.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                if (list != null)
+                                    foreach (var v in list)
+                                        variantList.Add((v.IdSanPhamChiTiet, v.IdKichCo, v.IdMauSac, v.SoLuong));
+                            }
+                            existingVariantsByProduct[dto.IDSanPham] = variantList;
+                        }
+
+                        var existing = variantList.FirstOrDefault(x => x.IdKichCo == idKichCo && x.IdMauSac == idMauSac);
+                        if (existing.IdChiTiet != Guid.Empty)
+                        {
+                            var newSoLuong = existing.SoLuong + soLuong;
+                            var updateDto = new QuanView.Areas.Admin.Models.SanPhamChiTietDto
+                            {
+                                IdSanPhamChiTiet = existing.IdChiTiet,
+                                IdSanPham = dto.IDSanPham,
+                                IdKichCo = idKichCo,
+                                IdMauSac = idMauSac,
+                                IdHoaTiet = idHoaTiet,
+                                SoLuong = newSoLuong,
+                                GiaBan = giaBan > 0 ? giaBan : 100000,
+                                TrangThai = true
+                            };
+                            var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{existing.IdChiTiet}", updateDto, ApiVariantJsonOptions);
+                            if (putRes.IsSuccessStatusCode)
+                            {
+                                var idx = variantList.FindIndex(x => x.IdChiTiet == existing.IdChiTiet);
+                                if (idx >= 0) variantList[idx] = (existing.IdChiTiet, existing.IdKichCo, existing.IdMauSac, newSoLuong);
+                                result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Message = $"Đã cộng dồn biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL: {existing.SoLuong} + {soLuong} = {newSoLuong}"
+                                });
+                            }
+                            else
+                            {
+                                var errBody = await putRes.Content.ReadAsStringAsync();
+                                result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Reason = "Lỗi cập nhật số lượng: " + (errBody.Length > 150 ? errBody.Substring(0, 150) + "..." : errBody),
+                                    RowPreview = $"{maSp}, {tenKichCo}, {tenMauSac}"
+                                });
+                            }
+                        }
+                        else
+                        {
+                            var ct = new QuanView.Areas.Admin.Models.SanPhamChiTietDto
+                            {
+                                IdSanPhamChiTiet = Guid.NewGuid(),
+                                IdSanPham = dto.IDSanPham,
+                                IdKichCo = idKichCo,
+                                IdMauSac = idMauSac,
+                                IdHoaTiet = idHoaTiet,
+                                SoLuong = soLuong,
+                                GiaBan = giaBan > 0 ? giaBan : 100000,
+                                TrangThai = true
+                            };
+                            var ctRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+                            if (ctRes.IsSuccessStatusCode)
+                            {
+                                var body = await ctRes.Content.ReadAsStringAsync();
+                                Guid idCt = Guid.Empty;
+                                int slCt = soLuong;
+                                try
+                                {
+                                    using var doc = JsonDocument.Parse(body);
+                                    var root = doc.RootElement;
+                                    if (root.TryGetProperty("id", out var idProp)) Guid.TryParse(idProp.GetString(), out idCt);
+                                    else if (root.TryGetProperty("idSanPhamChiTiet", out var idProp2)) Guid.TryParse(idProp2.GetString(), out idCt);
+                                    if (root.TryGetProperty("totalQuantity", out var slProp)) slCt = slProp.GetInt32();
+                                }
+                                catch { /* ignore */ }
+                                if (idCt != Guid.Empty) variantList.Add((idCt, idKichCo, idMauSac, slCt));
+                                else variantList.Add((ct.IdSanPhamChiTiet, idKichCo, idMauSac, soLuong));
+                                var isMerge = ctRes.StatusCode == System.Net.HttpStatusCode.OK;
+                                result.SuccessList.Add(new QuanView.Areas.Admin.Models.ImportSuccessItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Message = isMerge
+                                        ? $"Đã cộng dồn biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL tổng: {slCt}"
+                                        : $"Đã tạo biến thể: {maSp} - {tenKichCo} / {tenMauSac}, SL: {soLuong}, Giá: {giaBan:N0}"
+                                });
+                            }
+                            else
+                            {
+                                var errBody = await ctRes.Content.ReadAsStringAsync();
+                                result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                                {
+                                    LineNumber = lineIndex,
+                                    Reason = "Lỗi tạo biến thể: " + (errBody.Length > 150 ? errBody.Substring(0, 150) + "..." : errBody),
+                                    RowPreview = $"{maSp}, {tenKichCo}, {tenMauSac}"
+                                });
+                            }
+                        }
+                    }
+                    else if (idKichCo == Guid.Empty || idMauSac == Guid.Empty)
+                    {
+                        result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                        {
+                            LineNumber = lineIndex,
+                            Reason = "Thiếu kích cỡ hoặc màu sắc (hoặc không tìm thấy trong hệ thống).",
+                            RowPreview = $"{tenKichCo}, {tenMauSac}"
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.ErrorList.Add(new QuanView.Areas.Admin.Models.ImportErrorItem
+                    {
+                        LineNumber = lineIndex,
+                        Reason = "Lỗi: " + ex.Message,
+                        RowPreview = row.Length > 0 ? row[0] : ""
+                    });
+                }
+            }
+
+            return View(result);
+        }
+
+        private static List<string> ParseCsvLine(string line)
+        {
+            var list = new List<string>();
+            var current = new StringBuilder();
+            var inQuotes = false;
+            for (int i = 0; i < line.Length; i++)
+            {
+                var c = line[i];
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                    }
+                    else
+                        inQuotes = !inQuotes;
+                }
+                else if ((c == ',' && !inQuotes) || c == '\n' || c == '\r')
+                {
+                    list.Add(current.ToString());
+                    current.Clear();
+                    if (c == '\n' || c == '\r') break;
+                }
+                else
+                    current.Append(c);
+            }
+            list.Add(current.ToString());
+            return list;
+        }
+
+        private async Task<(Dictionary<string, Guid> DanhMuc, Dictionary<string, Guid> ThuongHieu, Dictionary<string, Guid> ChatLieu,
+            Dictionary<string, Guid> LoaiOng, Dictionary<string, Guid> KieuDang, Dictionary<string, Guid> LungQuan,
+            Dictionary<string, Guid> KichCo, Dictionary<string, Guid> MauSac, Dictionary<string, Guid> HoaTiet)> LoadLookupMapsAsync()
+        {
+            var toDict = async (string url, string idKey, string nameKey) =>
+            {
+                var response = await _http.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var d = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+                foreach (var e in doc.RootElement.EnumerateArray())
+                {
+                    var idStr = e.TryGetProperty(idKey, out var p) ? p.ToString() : e.TryGetProperty("id", out var p2) ? p2.ToString() : null;
+                    var name = e.TryGetProperty(nameKey, out var n) ? n.GetString() : e.TryGetProperty("ten", out var n2) ? n2.GetString() : null;
+                    if (!string.IsNullOrEmpty(idStr) && Guid.TryParse(idStr, out var id) && !string.IsNullOrEmpty(name))
+                        d[name.Trim()] = id;
+                }
+                return d;
+            };
+
+            var danhMuc = await toDict("danhmucs", "idDanhMuc", "tenDanhMuc");
+            var thuongHieu = await toDict("thuonghieu", "idThuongHieu", "tenThuongHieu");
+            var chatLieu = await toDict("chatlieu", "idChatLieu", "tenChatLieu");
+            var loaiOng = await toDict("loaiong", "idLoaiOng", "tenLoaiOng");
+            var kieuDang = await toDict("kieudang", "idKieuDang", "tenKieuDang");
+            var lungQuan = await toDict("lungquan", "idLungQuan", "tenLungQuan");
+            var kichCo = await toDict("kichco", "idKichCo", "tenKichCo");
+            var mauSac = await toDict("mausac", "idMauSac", "tenMauSac");
+            var hoaTiet = await toDict("hoatiet", "idHoaTiet", "tenHoaTiet");
+            return (danhMuc, thuongHieu, chatLieu, loaiOng, kieuDang, lungQuan, kichCo, mauSac, hoaTiet);
+        }
+
         //load biến thể cần chỉnh sửa hàng loạt 
         [HttpPost]
         [ActionName("TaiBienThe")]

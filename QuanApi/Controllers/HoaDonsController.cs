@@ -281,6 +281,18 @@ namespace QuanApi.Controllers
                     return BadRequest("Tổng tiền phải lớn hơn 0");
                 }
 
+                // Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
+                foreach (var chiTiet in dto.ChiTietHoaDons)
+                {
+                    var spct = await _context.SanPhamChiTiets.FindAsync(chiTiet.IDSanPhamChiTiet);
+                    if (spct == null)
+                        return BadRequest($"Không tìm thấy sản phẩm chi tiết {chiTiet.IDSanPhamChiTiet}");
+                    if (chiTiet.SoLuong <= 0)
+                        return BadRequest("Số lượng sản phẩm phải lớn hơn 0");
+                    if (spct.SoLuong < chiTiet.SoLuong)
+                        return BadRequest($"Sản phẩm {spct.MaSPChiTiet} không đủ số lượng. Tồn kho: {spct.SoLuong}");
+                }
+
                 // Tạo hóa đơn mới
                 var hoaDon = new HoaDon
                 {

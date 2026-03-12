@@ -55,44 +55,113 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,123,255,0.3);
         }
-        /* Prevent border flickering on collapse */
-        .collapse-row td {
-            border-top: none !important;
+
+        /* Styling cho sản phẩm chính */
+        .product-main-row {
+            background-color: #ffffff;
+            border-bottom: 3px solid #007bff;
         }
 
-        /* Custom class to scale the switch */
-        .switch-lg {
-            transform: scale(1.5); /* Adjust this number to make it bigger or smaller */
-            margin: 0;             /* Removes default margins that might offset the centering */
-            cursor: pointer;
+        .product-main-row:hover {
+            background-color: #f8f9fa;
         }
 
-        /* Optional: Adjust the wrapper to ensure the scaled input doesn't overlap text */
-        .form-switch-container {
-            padding: 10px; 
-        }
-        /* Rotate icon when the parent row is NOT collapsed */
-        .main-row[aria-expanded="true"] .toggle-icon {
-            transform: rotate(90deg);
-            transition: transform 0.3s ease;
+        /* Styling cho phần biến thể */
+        .variant-section {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            margin: 0;
         }
 
-        .toggle-icon {
-            transition: transform 0.35s ease;
+        .variant-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 8px 12px !important;
+        }
+
+        .variant-row {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .variant-row:last-child {
+            border-bottom: none;
+        }
+
+        .variant-row:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Khoảng cách giữa các sản phẩm */
+        .product-group {
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Badge cho số lượng biến thể */
+        .variant-count-badge {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
             display: inline-block;
-            color: #6c757d;
         }
 
-        button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
-            transform: rotate(90deg);
+        /* Đảm bảo tên sản phẩm không bị tràn */
+        .product-main-row td {
+            vertical-align: middle;
+        }
+
+        /* Cải thiện hiển thị ảnh */
+        .product-image-cell img {
+            border-radius: 6px;
+            border: 2px solid #dee2e6;
+            transition: transform 0.2s;
+        }
+
+        .product-image-cell img:hover {
+            transform: scale(1.1);
+            border-color: #007bff;
+        }
+
+        /* Table trong variant section */
+        .variant-section .table {
+            margin-bottom: 0;
+        }
+
+        .variant-section td {
+            padding: 12px 8px;
+            vertical-align: middle;
         }
     </style>
 }
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
 
-<p>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success mb-3">+ Thêm sản phẩm mới</a>
+<p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success">+ Thêm sản phẩm mới</a>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ExportCsv"
+       asp-route-keyword="@Model.Keyword"
+       asp-route-trangThai="@Model.TrangThai"
+       asp-route-priceFrom="@Model.PriceFrom"
+       asp-route-priceTo="@Model.PriceTo"
+       asp-route-qtyFrom="@Model.QtyFrom"
+       asp-route-qtyTo="@Model.QtyTo"
+       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+       class="btn btn-outline-secondary">
+        <i class="fas fa-download"></i> Export CSV
+    </a>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-outline-primary">
+        <i class="fas fa-upload"></i> Import CSV
+    </a>
 </p>
 
 <!-- Bộ lọc -->
@@ -195,119 +264,167 @@
     }
     else
     {
-        <table class="table table-bordered table-hover bg-light bg-gradient">
-            <thead class="thead-dark">
-                <tr>
-                    <th></th>
-                    <th>Ảnh</th>
-                    <th>Mã SP</th>
-                    <th>Tên SP</th>
-                    <th>Chất liệu</th>
-                    <th>Danh mục</th>
-                    <th>Thương hiệu</th>
-                    <th>Loại ống</th>
-                    <th>Kiểu dáng</th>
-                    <th>Lưng quần</th>
-                    <th>Xếp ly</th>
-                    <th>Co giãn</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody class="table-group-divider">
-                @foreach (var item in Model.SanPhams)
-                {
-                    var targetId = "collapsable-product-row-" + item.IDSanPham;
-
-                    <tr class="main-row" style="cursor: pointer;">
-                        <td style="width: 1%; text-align: center; vertical-align: middle; padding: 0.75rem;">
-                            <button type="button"
-                                    class="btn btn-sm btn-link text-decoration-none p-0 m-0 border-0 bg-transparent shadow-none"
-                                    data-toggle="collapse"
-                                    data-target="#@targetId"
-                                    aria-expanded="false"
-                                    aria-controls="@targetId">
-                                <i class="fas fa-chevron-right toggle-icon fs-5"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
-                        </td>
-                        <td>@item.MaSanPham</td>
-                        <td>@item.TenSanPham</td>
-                        <td>@item.TenChatLieu</td>
-                        <td>@item.TenDanhMuc</td>
-                        <td>@item.TenThuongHieu</td>
-                        <td>@item.TenLoaiOng</td>
-                        <td>@item.TenKieuDang</td>
-                        <td>@item.TenLungQuan</td>
-                        <td>@(item.CoXepLy ? "Có" : "Không")</td>
-                        <td>@(item.CoGian ? "Có" : "Không")</td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input product-status-toggle switch-lg" 
-                                        type="checkbox" 
-                                        @(item.TrangThai ? "checked" : "") 
-                                        disabled />
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary">Sửa</a>
-                        </td>
-                    </tr>
-
-                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
-                    {
+        @foreach (var item in Model.SanPhams)
+        {
+            <div class="product-group">
+                <!-- Sản phẩm chính -->
+                <table class="table table-bordered mb-0">
+                    <thead class="table-dark">
                         <tr>
-                            <td colspan="14" class="p-0 border-0">
-                                <div id="@targetId" class="collapse">
-                                    <div class="table-responsive px-5 py-3 bg-white shadow-sm">
-                                        <h6 class="fw-bold mb-3 text-primary">Danh sách biến thể sản phẩm:</h6>
-                                        <table class="table table-sm table-hover table-bordered mb-0">
-                                            <thead class="table-secondary">
-                                                <tr>
-                                                    <th>Kích cỡ</th>
-                                                    <th>Màu sắc</th>
-                                                    <th>Họa tiết</th>
-                                                    <th>Số lượng</th>
-                                                    <th>Giá bán</th>
-                                                    <th>Ảnh</th>
-                                                    <th>Thao tác</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var ct in item.ChiTietSanPhams)
-                                                {
-                                                    <tr>
-                                                        <td>@ct.TenKichCo</td>
-                                                        <td>@ct.TenMauSac</td>
-                                                        <td>@ct.TenHoaTiet</td>
-                                                        <td>@ct.SoLuong</td>
-                                                        <td>
-                                                            @ct.price.ToString("N0") đ
-                                                        </td>
-                                                        <td>
-                                                            <img src="@ct.AnhDaiDien" style="width:40px" />
-                                                        </td>
-                                                        <td>
-                                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
-                                                                <i class="fas fa-plus"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
+                            <th style="width: 70px;">Ảnh</th>
+                            <th style="width: 110px;">Mã SP</th>
+                            <th style="min-width: 200px;">Tên SP</th>
+                            <th style="width: 90px;">Chất liệu</th>
+                            <th style="width: 90px;">Danh mục</th>
+                            <th style="width: 100px;">Thương hiệu</th>
+                            <th style="width: 85px;">Loại ống</th>
+                            <th style="width: 90px;">Kiểu dáng</th>
+                            <th style="width: 90px;">Lưng quần</th>
+                            <th style="width: 70px;">Xếp ly</th>
+                            <th style="width: 70px;">Co giãn</th>
+                            <th style="width: 110px;">Trạng thái</th>
+                            <th style="width: 90px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="product-main-row">
+                            <td class="product-image-cell">
+                                <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
+                            </td>
+                            <td><strong>@item.MaSanPham</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <strong class="me-2">@item.TenSanPham</strong>
+                                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                                    {
+                                        <span class="variant-count-badge flex-shrink-0">
+                                            <i class="fas fa-layer-group"></i> @item.ChiTietSanPhams.Count
+                                        </span>
+                                    }
                                 </div>
                             </td>
+                            <td>@item.TenChatLieu</td>
+                            <td>@item.TenDanhMuc</td>
+                            <td>@item.TenThuongHieu</td>
+                            <td>@item.TenLoaiOng</td>
+                            <td>@item.TenKieuDang</td>
+                            <td>@item.TenLungQuan</td>
+                            <td class="text-center">
+                                @if (item.CoXepLy)
+                                {
+                                    <span class="badge bg-success">Có</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Không</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (item.CoGian)
+                                {
+                                    <span class="badge bg-success">Có</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Không</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="form-check form-switch" title="@(item.TrangThai ? "Đang bán" : "Ngưng bán")">
+                                    <input class="form-check-input product-status-toggle" type="checkbox" role="switch"
+                                           data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
+                                           @(item.TrangThai ? "checked" : "") />
+                                    <label class="form-check-label small">@(item.TrangThai ? "Hoạt động" : "Ngưng")</label>
+                                </div>
+                            </td>
+                            <td>
+                                <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> Sửa
+                                </a>
+                            </td>
                         </tr>
-                    }
+                    </tbody>
+                </table>
+
+                <!-- Biến thể của sản phẩm -->
+                @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                {
+                    <div class="variant-section">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr class="variant-header">
+                                    <th style="width: 100px;"><i class="fas fa-ruler"></i> Kích cỡ</th>
+                                    <th style="width: 120px;"><i class="fas fa-palette"></i> Màu sắc</th>
+                                    <th style="width: 120px;"><i class="fas fa-paint-brush"></i> Họa tiết</th>
+                                    <th style="width: 100px;"><i class="fas fa-boxes"></i> Số lượng</th>
+                                    <th style="width: 150px;"><i class="fas fa-tag"></i> Giá bán</th>
+                                    <th style="width: 100px;"><i class="fas fa-image"></i> Ảnh SP</th>
+                                    <th style="width: 150px;"><i class="fas fa-cog"></i> Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ct in item.ChiTietSanPhams)
+                                {
+                                    <tr class="variant-row">
+                                        <td><span class="badge bg-info">@ct.TenKichCo</span></td>
+                                        <td><span class="badge bg-primary">@ct.TenMauSac</span></td>
+                                        <td>@(ct.TenHoaTiet ?? "-")</td>
+                                        <td class="text-center">
+                                            <strong class="text-primary">@ct.SoLuong</strong>
+                                        </td>
+                                        <td>
+                                            @if (ct.originalPrice > ct.price)
+                                            {
+                                                <div>
+                                                    <span style="color:#888;text-decoration:line-through;font-size:0.9em;">
+                                                        @ct.originalPrice.ToString("N0") đ
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span style="color:#d32f2f;font-weight:bold;font-size:1.05em">
+                                                        @ct.price.ToString("N0") đ
+                                                    </span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span style="font-weight:bold;color:#28a745">
+                                                    @ct.price.ToString("N0") đ
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
+                                                <div class="images-preview">
+                                                    @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
+                                                    {
+                                                        <img src="@ct.AnhDaiDien" class="img-thumbnail" 
+                                                             style="max-width:50px;max-height:50px;border-radius:4px;" alt="Ảnh chính" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small"><i class="fas fa-image"></i> Chưa có ảnh</span>
+                                                    }
+                                                </div>
+                                                <div class="images-list" style="display:none;"></div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-success"
+                                                    onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
+                                                <i class="fas fa-plus-circle"></i> Thêm ảnh
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
-            </tbody>
-        </table>
+            </div>
+        }
+    }
         
         <!-- Phân trang -->
         @if (Model.TotalPages > 1)
