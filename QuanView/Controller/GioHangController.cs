@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -63,7 +63,7 @@ namespace QuanView.Controllers
                 var gioHang = new QuanApi.Data.GioHang { ChiTietGioHangs = cart };
                 return View(gioHang);
             }
-            var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
+            var response = await _httpClient.GetAsync($"GioHangs/user/{iduser}");
             if (!response.IsSuccessStatusCode)
             {
                 ViewData["ErrorMessage"] = "Không thể tải giỏ hàng.";
@@ -111,7 +111,7 @@ namespace QuanView.Controllers
                     await _httpClient.PostAsync($"GioHangs/add?iduser={iduser}&idsp={item.IDSanPhamChiTiet}&soluong={item.SoLuong}", null);
                 }
                 HttpContext.Session.Remove("Cart");
-                var reload = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={iduser}");
+                var reload = await _httpClient.GetAsync($"GioHangs/user/{iduser}");
                 if (reload.IsSuccessStatusCode)
                     gioHangDb = await reload.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>() ?? gioHangDb;
             }
@@ -197,13 +197,13 @@ namespace QuanView.Controllers
                 Guid idsp;
                 if (iduser.HasValue && iduser != Guid.Empty)
                 {
-                    // Lấy ID sản phẩm từ database
-                    var ghctResponse = await _httpClient.GetAsync($"GioHangs/get-chi-tiet?idghct={idghct}");
-                    if (!ghctResponse.IsSuccessStatusCode)
+                    var cartResponse = await _httpClient.GetAsync($"GioHangs/user/{iduser}");
+                    if (!cartResponse.IsSuccessStatusCode)
                     {
                         return RedirectToAction(nameof(Index), new { iduser = iduser });
                     }
-                    var ghct = await ghctResponse.Content.ReadFromJsonAsync<QuanApi.Data.ChiTietGioHang>();
+                    var gioHang = await cartResponse.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+                    var ghct = gioHang?.ChiTietGioHangs?.FirstOrDefault(c => c.IDChiTietGioHang == idghct);
                     idsp = ghct?.IDSanPhamChiTiet ?? Guid.Empty;
                 }
                 else
@@ -233,7 +233,7 @@ namespace QuanView.Controllers
                 if (iduser.HasValue && iduser != Guid.Empty)
                 {
                     // Người dùng đã đăng nhập - cập nhật database
-                    var response = await _httpClient.PutAsync($"GioHangs/update?idghct={idghct}&soluong={soluong}", null);
+                    var response = await _httpClient.PutAsync($"GioHangs/item/{idghct}?soluong={soluong}", null);
                     if (response.IsSuccessStatusCode)
                     {
                         return RedirectToAction(nameof(Index), new { iduser = iduser });
@@ -268,7 +268,7 @@ namespace QuanView.Controllers
                 if (iduser.HasValue && iduser != Guid.Empty)
                 {
                     // Người dùng đã đăng nhập - xóa từ database
-                    var response = await _httpClient.DeleteAsync($"GioHangs/xoa?idgiohang={idgiohang}");
+                    var response = await _httpClient.DeleteAsync($"GioHangs/item/{idgiohang}");
                     if (response.IsSuccessStatusCode)
                     {
                         return RedirectToAction(nameof(Index), new { iduser = iduser });
@@ -309,7 +309,7 @@ namespace QuanView.Controllers
                 }
 
                 // Người dùng đã đăng nhập - trả về giỏ hàng từ database
-                var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={customerId}");
+                var response = await _httpClient.GetAsync($"GioHangs/user/{customerId}");
                 if (response.IsSuccessStatusCode)
                 {
                     var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
