@@ -55,21 +55,22 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,123,255,0.3);
         }
-        /* Prevent border flickering on collapse */
-        .collapse-row td {
-            border-top: none !important;
+
+        /* Styling cho sản phẩm chính */
+        .product-main-row {
+            background-color: #ffffff;
+            border-bottom: 3px solid #007bff;
         }
 
-        /* Custom class to scale the switch */
-        .switch-lg {
-            transform: scale(1.5); /* Adjust this number to make it bigger or smaller */
-            margin: 0;             /* Removes default margins that might offset the centering */
-            cursor: pointer;
+        .product-main-row:hover {
+            background-color: #f8f9fa;
         }
 
-        /* Optional: Adjust the wrapper to ensure the scaled input doesn't overlap text */
-        .form-switch-container {
-            padding: 10px; 
+        /* Styling cho phần biến thể */
+        .variant-section {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            margin: 0;
         }
 
         .variant-header {
@@ -80,10 +81,37 @@
             padding: 8px 12px !important;
         }
 
-        .toggle-icon {
-            transition: transform 0.35s ease;
+        .variant-row {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .variant-row:last-child {
+            border-bottom: none;
+        }
+
+        .variant-row:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Khoảng cách giữa các sản phẩm */
+        .product-group {
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Badge cho số lượng biến thể */
+        .variant-count-badge {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
             display: inline-block;
-            color: #6c757d;
         }
 
         button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
