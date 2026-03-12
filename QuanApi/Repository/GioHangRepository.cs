@@ -90,7 +90,7 @@ namespace QuanApi.Repository
 
         public void AddGioHang(Guid iduser, Guid idsp, int soluong)
         {
-            var nguoidung = _db.GioHangs.FirstOrDefault(gt => gt.IDKhachHang == iduser);
+            var nguoidung = _db.GioHangs.Include(g => g.ChiTietGioHangs).FirstOrDefault(gt => gt.IDKhachHang == iduser);
             if (nguoidung == null)
             {
                 nguoidung = new GioHang
@@ -112,6 +112,13 @@ namespace QuanApi.Repository
                 throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
             }
 
+            var existingLine = nguoidung.ChiTietGioHangs?.FirstOrDefault(ghct => ghct.IDSanPhamChiTiet == idsp);
+            var soLuongHienCo = (existingLine != null ? existingLine.SoLuong : 0) + soluong;
+            if (soLuongHienCo > sp.SoLuong)
+            {
+                throw new InvalidOperationException($"Số lượng vượt quá tồn kho. Tồn kho: {sp.SoLuong}");
+            }
+
             // Tính giá sau khi áp dụng giảm giá
             var giaSauGiam = sp.GiaBan;
             if (sp.DotGiamGia != null &&
@@ -122,16 +129,18 @@ namespace QuanApi.Repository
                 giaSauGiam = sp.GiaBan * (1 - sp.DotGiamGia.PhanTramGiam / 100m);
             }
 
-            var giohang = nguoidung.ChiTietGioHangs.FirstOrDefault(ghct => ghct.IDSanPhamChiTiet == idsp);
-            if (giohang != null)
+            if (existingLine != null)
             {
-                giohang.SoLuong += soluong;
-                giohang.GiaBan = giaSauGiam;
+                existingLine.SoLuong += soluong;
+                existingLine.GiaBan = giaSauGiam;
             }
             else
             {
+                nguoidung.ChiTietGioHangs ??= new List<ChiTietGioHang>();
                 nguoidung.ChiTietGioHangs.Add(new Data.ChiTietGioHang
                 {
+                    MaChiTietGioHang = $"CTGH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                    IDGioHang = nguoidung.IDGioHang,
                     IDSanPhamChiTiet = idsp,
                     SoLuong = soluong,
                     GiaBan = giaSauGiam,
@@ -184,6 +193,8 @@ namespace QuanApi.Repository
 
             if (soluong <= 0)
                 throw new ArgumentException("Số lượng không hợp lệ");
+            if (ghct.SanPhamChiTiet != null && soluong > ghct.SanPhamChiTiet.SoLuong)
+                throw new InvalidOperationException($"Số lượng vượt quá tồn kho. Tồn kho: {ghct.SanPhamChiTiet.SoLuong}");
 
             ghct.SoLuong = soluong;
             ghct.GiaBan = TinhGiaSauGiam(ghct.SanPhamChiTiet);

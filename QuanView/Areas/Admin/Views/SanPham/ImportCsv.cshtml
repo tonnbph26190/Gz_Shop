@@ -1,0 +1,209 @@
+@model QuanView.Areas.Admin.Models.ImportCsvResultViewModel
+@{
+    ViewData["Title"] = "Import sản phẩm từ CSV";
+    var error = TempData["Error"] as string;
+    var defaultHeader = "MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,TenChatLieu,TenLoaiOng,TenKieuDang,TenLungQuan,CoXepLy,CoGian,TrangThaiSP,TenKichCo,TenMauSac,TenHoaTiet,SoLuong,GiaBan,TrangThaiCT";
+}
+
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-file-csv"></i> Import sản phẩm từ CSV</h5>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <p class="text-muted small">
+            Dán dữ liệu CSV vào khung bên dưới (dòng đầu có thể là tiêu đề) hoặc chọn file. Cột: MaSanPham, TenSanPham, TenDanhMuc, TenThuongHieu, TenChatLieu, TenLoaiOng, TenKieuDang, TenLungQuan, CoXepLy (0/1), CoGian (0/1), TrangThaiSP (0/1), TenKichCo, TenMauSac, TenHoaTiet, SoLuong, GiaBan, TrangThaiCT (0/1).
+        </p>
+
+        <form asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" method="post" enctype="multipart/form-data" id="frmImport">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label for="csvContent" class="form-label fw-bold">Nhập hoặc dán dữ liệu CSV</label>
+                <textarea class="form-control font-monospace" id="csvContent" name="csvContent" rows="10" placeholder="@defaultHeader">@(Model?.CsvContent)</textarea>
+            </div>
+            <div class="mb-3" id="csvPreviewSection">
+                <label class="form-label fw-bold">Xem trước dạng bảng</label>
+                <div class="table-responsive border rounded">
+                    <table class="table table-sm table-bordered mb-0 import-preview-table" id="csvPreviewTable">
+                        <thead class="table-light" id="csvPreviewThead"></thead>
+                        <tbody id="csvPreviewTbody"></tbody>
+                    </table>
+                </div>
+                <p class="small text-muted mt-1 mb-0">Bảng cập nhật theo nội dung ô nhập phía trên.</p>
+            </div>
+            <div class="mb-3">
+                <label for="fileCsv" class="form-label">Hoặc chọn file CSV</label>
+                <input type="file" class="form-control" id="fileCsv" name="fileCsv" accept=".csv" />
+                <span class="small text-muted">Nếu chọn file, nội dung file sẽ được dùng thay cho ô nhập phía trên.</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Import
+                </button>
+                <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+            </div>
+        </form>
+
+        @if (Model != null && Model.HasResult)
+        {
+            <hr class="my-4" />
+            <h5 class="mb-3">Kết quả import</h5>
+
+            @if (Model.SkippedCount > 0)
+            {
+                <p class="text-muted small">Đã bỏ qua @Model.SkippedCount dòng (trống hoặc không đủ cột).</p>
+            }
+
+            @if (Model.SuccessList.Count > 0)
+            {
+                <div class="card border-success mb-3">
+                    <div class="card-header bg-success text-white py-2">
+                        <i class="fas fa-check-circle"></i> Thành công (@Model.SuccessList.Count)
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-bordered mb-0 import-result-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-dark" style="width: 90px;">Dòng</th>
+                                        <th class="border-dark">Nội dung</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.SuccessList)
+                                    {
+                                        <tr>
+                                            <td class="border-dark text-muted">@item.LineNumber</td>
+                                            <td class="border-dark">@item.Message</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.ErrorList.Count > 0)
+            {
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white py-2">
+                        <i class="fas fa-exclamation-circle"></i> Lỗi (@Model.ErrorList.Count)
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-bordered mb-0 import-result-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-dark" style="width: 80px;">Dòng</th>
+                                        <th class="border-dark">Lý do</th>
+                                        <th class="border-dark" style="min-width: 180px;">Preview dòng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.ErrorList)
+                                    {
+                                        <tr>
+                                            <td class="border-dark text-danger fw-bold align-top">@item.LineNumber</td>
+                                            <td class="border-dark align-top">@item.Reason</td>
+                                            <td class="border-dark align-top small text-muted font-monospace bg-light">@(item.RowPreview)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <hr class="my-4" />
+        <h6>Lưu ý</h6>
+        <ul class="small text-muted">
+            <li>Tên danh mục, thương hiệu, chất liệu, loại ống, kiểu dáng, lưng quần phải trùng với dữ liệu trong hệ thống.</li>
+            <li>Tên kích cỡ và màu sắc phải trùng với dữ liệu trong hệ thống.</li>
+            <li>Nếu mã sản phẩm trùng nhau, các dòng sẽ được gộp thành một sản phẩm với nhiều biến thể (size/màu).</li>
+            <li>CoXepLy, CoGian, TrangThai: dùng <code>1</code> hoặc <code>true</code> cho bật, <code>0</code> hoặc <code>false</code> cho tắt.</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .import-result-table { border-collapse: collapse; }
+    .import-result-table th,
+    .import-result-table td { border: 1px solid #212529 !important; padding: 0.5rem 0.75rem; vertical-align: top; }
+    .import-result-table .bg-light { background-color: #f8f9fa !important; }
+    .import-preview-table { border-collapse: collapse; font-size: 0.8rem; }
+    .import-preview-table th,
+    .import-preview-table td { border: 1px solid #212529 !important; padding: 0.35rem 0.5rem; vertical-align: middle; }
+    .import-preview-table thead th { background-color: #e9ecef !important; font-weight: 600; white-space: nowrap; }
+</style>
+<script>
+    function parseCsvLine(line) {
+        var out = [], cur = '', inQ = false;
+        for (var i = 0; i < line.length; i++) {
+            var c = line[i];
+            if (c === '"') {
+                if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+                else inQ = !inQ;
+            } else if ((c === ',' && !inQ) || c === '\n' || c === '\r') {
+                out.push(cur);
+                cur = '';
+                if (c === '\n' || c === '\r') break;
+            } else cur += c;
+        }
+        out.push(cur);
+        return out;
+    }
+    function buildCsvPreview() {
+        var text = document.getElementById('csvContent').value.trim();
+        var thead = document.getElementById('csvPreviewThead');
+        var tbody = document.getElementById('csvPreviewTbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        if (!text) return;
+        var lines = text.split(/\r\n|\r|\n/).filter(function(l) { return l.trim().length > 0; });
+        if (lines.length === 0) return;
+        var headerCells = parseCsvLine(lines[0]);
+        var headerRow = '<tr>';
+        headerCells.forEach(function(cell) {
+            headerRow += '<th class="border-dark">' + (cell || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</th>';
+        });
+        headerRow += '</tr>';
+        thead.innerHTML = headerRow;
+        var colCount = headerCells.length;
+        for (var r = 1; r < lines.length; r++) {
+            var cells = parseCsvLine(lines[r]);
+            var tr = '<tr>';
+            for (var c = 0; c < colCount; c++) {
+                var val = (cells[c] !== undefined ? cells[c] : '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                tr += '<td class="border-dark">' + val + '</td>';
+            }
+            tr += '</tr>';
+            tbody.innerHTML += tr;
+        }
+    }
+    var csvPreviewTimeout;
+    document.getElementById('csvContent').addEventListener('input', function() {
+        clearTimeout(csvPreviewTimeout);
+        csvPreviewTimeout = setTimeout(buildCsvPreview, 300);
+    });
+    document.getElementById('csvContent').addEventListener('paste', function() {
+        setTimeout(buildCsvPreview, 100);
+    });
+    document.getElementById('fileCsv').addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('csvContent').value = e.target.result;
+            buildCsvPreview();
+        };
+        reader.readAsText(file, 'UTF-8');
+    });
+    if (document.getElementById('csvContent').value.trim()) buildCsvPreview();
+</script>

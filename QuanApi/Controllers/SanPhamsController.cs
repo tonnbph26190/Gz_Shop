@@ -439,7 +439,19 @@ namespace QuanApi.Controllers
 
 
 
+        [HttpGet("bycode")]
+        public async Task<ActionResult<SanPham>> GetSanPhamByCode(string maSanPham)
+        {
+            var sanPham = await _context.SanPhams
+                .FirstOrDefaultAsync(x => x.MaSanPham == maSanPham);
 
+            if (sanPham == null)
+            {
+                return NotFound();
+            }
+
+            return sanPham;
+        }
 
         // DELETE: api/SanPhams/5
         [HttpDelete("{id}")]
