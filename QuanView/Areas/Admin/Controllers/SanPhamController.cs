@@ -302,6 +302,17 @@ namespace QuanView.Areas.Admin.Controllers
             // 🔍 Debug: Kiểm tra dữ liệu nhận được
             System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
             System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
+            // ❌ Xóa dòng biến thể trống (dòng thêm mới chưa chọn gì)
+            if (dto.ChiTietSanPhams != null)
+            {
+                dto.ChiTietSanPhams = dto.ChiTietSanPhams
+                    .Where(ct => ct != null &&
+                                 ct.IdKichCo != Guid.Empty &&
+                                 ct.IdMauSac != Guid.Empty &&
+                                 ct.SoLuong > 0 &&
+                                 ct.GiaBan > 0)
+                    .ToList();
+            }
 
             if (dto.ChiTietSanPhams != null)
             {
