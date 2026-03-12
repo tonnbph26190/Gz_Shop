@@ -6,6 +6,10 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-product-images.css" />
     <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: black;
+        }
         .filter-card {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -154,14 +158,14 @@
         <form method="get" asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="row g-3 filter-form">
             <!-- Từ khóa tìm kiếm -->
             <div class="col-md-3">
-                <label for="keyword" class="form-label">Tìm kiếm</label>
+                <label for="keyword" class="form-label">Tìm kiếm: </label>
                 <input type="text" class="form-control" id="keyword" name="keyword" value="@Model.Keyword" placeholder="Tên sản phẩm, mã sản phẩm...">
             </div>
             
             <!-- Trạng thái -->
             <div class="col-md-2">
-                <label for="trangThai" class="form-label">Trạng thái</label>
-                <select class="form-select" id="trangThai" name="trangThai">
+                <label for="trangThai" class="form-label">Trạng thái</label><br>
+                <select class="form-control" id="trangThai" name="trangThai">
                     @foreach (var option in Model.TrangThaiOptions)
                     {
                         <option value="@option.Value" selected="@(option.Value == Model.TrangThai)">@option.Text</option>
@@ -202,12 +206,13 @@
                 <input type="date" class="form-control" id="dateTo" name="dateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")">
             </div>
             
-            
             <!-- Nút tìm kiếm -->
-            <div class="col-md-12">
+            <div class="col-md-2 pt-4 mt-2">
                 <button type="submit" class="btn btn-primary me-2 btn-filter">
                     <i class="fas fa-search"></i> Tìm kiếm
                 </button>
+                &nbsp;
+                &nbsp;
                 <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">
                     <i class="fas fa-refresh"></i> Làm mới
                 </a>
@@ -516,7 +521,6 @@
                 </ul>
             </nav>
         }
-               
     }
 
 <!-- Modal thêm ảnh -->
@@ -553,6 +557,21 @@
 
 @section Scripts {
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.main-row').forEach(row => {
+                row.addEventListener('click', function (e) {
+                    if (e.target.closest('a') || 
+                        e.target.closest('button:not([data-toggle="collapse"])') || 
+                        e.target.closest('.form-check-input')) {
+                        return;
+                    }
+                    const toggleBtn = row.querySelector('button[data-toggle="collapse"]');
+                    if (toggleBtn) {
+                        toggleBtn.click();
+                    }
+                });
+            });
+        });
         // Tự động submit form khi thay đổi trạng thái bộ lọc
         document.getElementById('trangThai')?.addEventListener('change', function () {
             this.form.submit();

@@ -38,7 +38,7 @@
             <!-- Thông tin sản phẩm mới -->
             <div id="thongTinSanPhamMoi">
                 <div class="form-group">
-                    <label asp-for="MaSanPham"></label>
+                    <label asp-for="MaSanPham">Mã Sản Phẩm</label>
                     <div class="input-group">
                         <input asp-for="MaSanPham" class="form-control" readonly />
                         <div class="input-group-append">
@@ -52,7 +52,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="TenSanPham"></label>
+                    <label asp-for="TenSanPham">Tên Sản Phẩm</label>
                     <input asp-for="TenSanPham" class="form-control" />
                     <span asp-validation-for="TenSanPham" class="text-danger"></span>
                 </div>
@@ -105,19 +105,21 @@
                     <span asp-validation-for="IDLungQuan" class="text-danger"></span>
                 </div>
 
-                <div class="form-group form-check">
-                    <input asp-for="CoXepLy" class="form-check-input" />
-                    <label asp-for="CoXepLy" class="form-check-label"></label>
-                </div>
+                <div class="card p-4 shadow-sm border-0 bg-light" style="max-width: 350px;">
+                    <div class="form-check form-switch custom-switch-md mb-3">
+                        <input asp-for="CoXepLy" class="form-check-input" type="checkbox" role="switch">
+                        <label asp-for="CoXepLy" class="form-check-label ms-2 fw-semibold">Có xếp lý</label>
+                    </div>
 
-                <div class="form-group form-check">
-                    <input asp-for="CoGian" class="form-check-input" />
-                    <label asp-for="CoGian" class="form-check-label"></label>
-                </div>
+                    <div class="form-check form-switch custom-switch-md mb-3">
+                        <input asp-for="CoGian" class="form-check-input" type="checkbox" role="switch">
+                        <label asp-for="CoGian" class="form-check-label ms-2 fw-semibold">Co giãn</label>
+                    </div>
 
-                <div class="form-group form-check">
-                    <input asp-for="TrangThai" class="form-check-input" />
-                    <label asp-for="TrangThai" class="form-check-label"></label>
+                    <div class="form-check form-switch custom-switch-md">
+                        <input asp-for="TrangThai" class="form-check-input" type="checkbox" role="switch">
+                        <label asp-for="TrangThai" class="form-check-label ms-2 fw-semibold">Trạng thái</label>
+                    </div>
                 </div>
             </div>
 

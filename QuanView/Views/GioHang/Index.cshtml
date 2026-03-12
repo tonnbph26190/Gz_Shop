@@ -1,14 +1,15 @@
 ﻿@model QuanApi.Data.GioHang
-@if (Model == null || Model.ChiTietGioHangs == null || !Model.ChiTietGioHangs.Any())
-{
-    <div class="container py-4"><h3>Giỏ hàng của bạn đang trống.</h3></div>
-    return;
-}
 @{
     ViewData["Title"] = "Giỏ hàng";
     var gioHang = Model;
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     var chiTietList = gioHang?.ChiTietGioHangs?.ToList() ?? new List<QuanApi.Data.ChiTietGioHang>();
     decimal tongTien = chiTietList.Sum(x => x.GiaBan * x.SoLuong);
+}
+@if (Model == null || Model.ChiTietGioHangs == null || !Model.ChiTietGioHangs.Any())
+{
+    <div class="container py-4"><h3>@((lang == "vi") ? "Giỏ hàng của bạn đang trống." : "Your shopping cart is empty.")</h3></div>
+    return;
 }
 <style>
     .cart-table th, .cart-table td {

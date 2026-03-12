@@ -40,34 +40,35 @@
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4">Thông tin Khách Hàng</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
-                        <label asp-for="MaKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <label asp-for="MaKhachHang" class="block text-sm font-medium text-gray-700 mb-1">Mã Khách Hàng</label>
                         <input asp-for="MaKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="MaKhachHang" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group">
-                        <label asp-for="TenKhachHang" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <label asp-for="TenKhachHang" class="block text-sm font-medium text-gray-700 mb-1">Tên Khách Hàng</label>
                         <input asp-for="TenKhachHang" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="TenKhachHang" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group">
-                        <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <label asp-for="Email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input asp-for="Email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="Email" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group">
-                        <label asp-for="MatKhau" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <label asp-for="MatKhau" class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
                         <input asp-for="MatKhau" type="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="MatKhau" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group md:col-span-2">
-                        <label asp-for="SoDienThoai" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                        <label asp-for="SoDienThoai" class="block text-sm font-medium text-gray-700 mb-1">Số Điện Thoại</label>
                         <input asp-for="SoDienThoai" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="SoDienThoai" class="text-red-600 text-xs mt-1 block"></span>
                     </div>
                     <div class="form-group form-check md:col-span-2">
                         <label class="form-check-label inline-flex items-center text-sm text-gray-700">
                             <input class="form-check-input h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" asp-for="TrangThai" />
-                            <span class="ml-2">@Html.DisplayNameFor(model => model.TrangThai)</span>
+                            @* <span class="ml-2">@Html.DisplayNameFor(model => model.TrangThai)</span> *@
+                            <span class="ml-2">Trạng Thái</span>
                         </label>
                     </div>
                 </div>
