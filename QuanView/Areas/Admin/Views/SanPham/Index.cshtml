@@ -71,10 +71,13 @@
         .form-switch-container {
             padding: 10px; 
         }
-        /* Rotate icon when the parent row is NOT collapsed */
-        .main-row[aria-expanded="true"] .toggle-icon {
-            transform: rotate(90deg);
-            transition: transform 0.3s ease;
+
+        .variant-header {
+            background: linear-gradient(135deg, #d6ffe0 0%, #adffe7 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 8px 12px !important;
         }
 
         .toggle-icon {
@@ -86,13 +89,115 @@
         button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
             transform: rotate(90deg);
         }
+
+        /* Cải thiện hiển thị ảnh */
+        .product-image-cell img {
+            border-radius: 6px;
+            border: 2px solid #dee2e6;
+            transition: transform 0.2s;
+        }
+
+        .product-image-cell img:hover {
+            transform: scale(1.1);
+            border-color: #007bff;
+        }
+
+        /* Table trong variant section */
+        .variant-section .table {
+            margin-bottom: 0;
+        }
+
+        .variant-section td {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+        #btnCreateProduct {
+            color: white;
+            background-color: green;
+        }
+        #btnCreateProduct:hover {
+            transition: transform 0.5s;
+            color: black;
+            background-color: lightgreen;
+        }
+        .toggle-btn {
+            color: #6c757d;
+            transition: transform 0.35s ease;
+        }
+
+        .product-main-row[aria-expanded="true"] .toggle-btn {
+            transform: rotate(90deg);
+        }
+
+        .product-main-row:hover {
+            background-color: rgba(0,0,0,0.03);
+        }
+
+        /* Helps smooth appearance in some cases */
+        .variant-section.collapse:not(.show) {
+            display: none !important;
+        }
+        .variant-section.collapse.show {
+            display: block !important;
+        }
+        /* Custom Yellow Button Styles for both Edit and Add Image */
+        .btn-yellow-custom {
+            background-color: #ccac00 !important; /* Darker yellow/gold */ 
+            color: white !important;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-yellow-custom:hover {
+            background-color: #ffdb00 !important; /* Bright yellow */
+            color: #000 !important;   /* Text turns black on hover */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Icon rotation fix (removed the dash in 90deg) */
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .main-row[aria-expanded="true"] .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        /* Optional: Subtle background for the expanded area */
+        .collapse-container {
+            background-color: #fcfcfc;
+            border-left: 4px solid #ccac00;
+        }
     </style>
 }
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
-
-<p>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success mb-3">+ Thêm sản phẩm mới</a>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn" id="btnCreateProduct">
+        + Thêm sản phẩm mới
+    </a>
+    &nbsp; &nbsp;
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ExportCsv"
+       asp-route-keyword="@Model.Keyword"
+       asp-route-trangThai="@Model.TrangThai"
+       asp-route-priceFrom="@Model.PriceFrom"
+       asp-route-priceTo="@Model.PriceTo"
+       asp-route-qtyFrom="@Model.QtyFrom"
+       asp-route-qtyTo="@Model.QtyTo"
+       asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
+       asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
+       class="btn btn-secondary">
+        <i class="fas fa-download"></i> Export CSV
+    </a>
+    &nbsp; &nbsp;
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-info">
+        <i class="fas fa-upload"></i> Import CSV
+    </a>
 </p>
 
 <!-- Bộ lọc -->
@@ -109,7 +214,7 @@
             </div>
             
             <!-- Trạng thái -->
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label for="trangThai" class="form-label">Trạng thái</label><br>
                 <select class="form-control" id="trangThai" name="trangThai">
                     @foreach (var option in Model.TrangThaiOptions)
@@ -153,7 +258,7 @@
             </div>
             
             <!-- Nút tìm kiếm -->
-            <div class="col-md-2 pt-4 mt-2">
+            <div class="col-md-3 pt-4 mt-2">
                 <button type="submit" class="btn btn-primary me-2 btn-filter">
                     <i class="fas fa-search"></i> Tìm kiếm
                 </button>
@@ -195,119 +300,181 @@
     }
     else
     {
-        <table class="table table-bordered table-hover bg-light bg-gradient">
-            <thead class="thead-dark">
-                <tr>
-                    <th></th>
-                    <th>Ảnh</th>
-                    <th>Mã SP</th>
-                    <th>Tên SP</th>
-                    <th>Chất liệu</th>
-                    <th>Danh mục</th>
-                    <th>Thương hiệu</th>
-                    <th>Loại ống</th>
-                    <th>Kiểu dáng</th>
-                    <th>Lưng quần</th>
-                    <th>Xếp ly</th>
-                    <th>Co giãn</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody class="table-group-divider">
-                @foreach (var item in Model.SanPhams)
-                {
-                    var targetId = "collapsable-product-row-" + item.IDSanPham;
+        @foreach (var item in Model.SanPhams)
+        {
+            var targetId = "collapse-variant-" + item.IDSanPham;
 
-                    <tr class="main-row" style="cursor: pointer;">
-                        <td style="width: 1%; text-align: center; vertical-align: middle; padding: 0.75rem;">
-                            <button type="button"
-                                    class="btn btn-sm btn-link text-decoration-none p-0 m-0 border-0 bg-transparent shadow-none"
-                                    data-toggle="collapse"
-                                    data-target="#@targetId"
-                                    aria-expanded="false"
-                                    aria-controls="@targetId">
-                                <i class="fas fa-chevron-right toggle-icon fs-5"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
-                        </td>
-                        <td>@item.MaSanPham</td>
-                        <td>@item.TenSanPham</td>
-                        <td>@item.TenChatLieu</td>
-                        <td>@item.TenDanhMuc</td>
-                        <td>@item.TenThuongHieu</td>
-                        <td>@item.TenLoaiOng</td>
-                        <td>@item.TenKieuDang</td>
-                        <td>@item.TenLungQuan</td>
-                        <td>@(item.CoXepLy ? "Có" : "Không")</td>
-                        <td>@(item.CoGian ? "Có" : "Không")</td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center align-items-center">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input product-status-toggle switch-lg" 
-                                        type="checkbox" 
-                                        @(item.TrangThai ? "checked" : "") 
-                                        disabled />
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" class="btn btn-sm btn-primary">Sửa</a>
-                        </td>
-                    </tr>
-
-                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
-                    {
+            <div class="product-group">
+                <!-- Sản phẩm chính -->
+                <table class="table table-bordered mb-0 text-center">
+                    <thead class="table-secondary">
                         <tr>
-                            <td colspan="14" class="p-0 border-0">
-                                <div id="@targetId" class="collapse">
-                                    <div class="table-responsive px-5 py-3 bg-white shadow-sm">
-                                        <h6 class="fw-bold mb-3 text-primary">Danh sách biến thể sản phẩm:</h6>
-                                        <table class="table table-sm table-hover table-bordered mb-0">
-                                            <thead class="table-secondary">
-                                                <tr>
-                                                    <th>Kích cỡ</th>
-                                                    <th>Màu sắc</th>
-                                                    <th>Họa tiết</th>
-                                                    <th>Số lượng</th>
-                                                    <th>Giá bán</th>
-                                                    <th>Ảnh</th>
-                                                    <th>Thao tác</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var ct in item.ChiTietSanPhams)
-                                                {
-                                                    <tr>
-                                                        <td>@ct.TenKichCo</td>
-                                                        <td>@ct.TenMauSac</td>
-                                                        <td>@ct.TenHoaTiet</td>
-                                                        <td>@ct.SoLuong</td>
-                                                        <td>
-                                                            @ct.price.ToString("N0") đ
-                                                        </td>
-                                                        <td>
-                                                            <img src="@ct.AnhDaiDien" style="width:40px" />
-                                                        </td>
-                                                        <td>
-                                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
-                                                                <i class="fas fa-plus"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
+                            <th><i class="fa-solid fa-gear"></i></th>
+                            <th>Ảnh</th>
+                            <th>Mã SP</th>
+                            <th>Tên SP</th>
+                            <th>Chất liệu</th>
+                            <th>Danh mục</th>
+                            <th>Thương hiệu</th>
+                            <th>Loại ống</th>
+                            <th>Kiểu dáng</th>
+                            <th>Lưng quần</th>
+                            <th>Xếp ly</th>
+                            <th>Co giãn</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="product-main-row" style="cursor: pointer;" aria-expanded="false">
+                            <td class="text-center align-middle">
+                                <button type="button"
+                                        class="btn btn-link p-0 shadow-none toggle-btn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#@targetId"
+                                        aria-expanded="false"
+                                        aria-controls="@targetId">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </td>
+                            <td class="product-image-cell">
+                                <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
+                            </td>
+                            <td><strong>@item.MaSanPham</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <strong class="me-2">@item.TenSanPham</strong>
+                                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                                    {
+                                        <span class="variant-count-badge flex-shrink-0 text-dark">
+                                            <i class="fas fa-layer-group"></i> @item.ChiTietSanPhams.Count
+                                        </span>
+                                    }
                                 </div>
                             </td>
+                            <td>@item.TenChatLieu</td>
+                            <td>@item.TenDanhMuc</td>
+                            <td>@item.TenThuongHieu</td>
+                            <td>@item.TenLoaiOng</td>
+                            <td>@item.TenKieuDang</td>
+                            <td>@item.TenLungQuan</td>
+                            <td class="text-center">
+                                @if (item.CoXepLy)
+                                {
+                                    <span class="badge bg-success text-light p-2">Có</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary text-light p-2">Không</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (item.CoGian)
+                                {
+                                    <span class="badge bg-success text-light p-2">Có</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary text-light p-2">Không</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="form-check form-switch" title="@(item.TrangThai ? "Đang bán" : "Ngưng bán")">
+                                    <input class="form-check-input product-status-toggle" type="checkbox" role="switch"
+                                        data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
+                                        @(item.TrangThai ? "checked" : "") />
+                                    <label class="form-check-label small">@(item.TrangThai ? "Hoạt động" : "Ngưng")</label>
+                                </div>
+                            </td>
+                            <td>
+                                <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" 
+                                class="btn btn-sm btn-yellow-custom" 
+                                onclick="event.stopPropagation();">
+                                    <i class="fas fa-edit"></i> Sửa
+                                </a>
+                            </td>
                         </tr>
-                    }
+                    </tbody>
+                </table>
+
+                <!-- Biến thể - collapsible -->
+                @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                {
+                    <div id="@targetId" class="collapse variant-section">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr class="variant-header text-center">
+                                    <th><i class="fas fa-ruler"></i> Kích cỡ</th>
+                                    <th><i class="fas fa-palette"></i> Màu sắc</th>
+                                    <th><i class="fas fa-paint-brush"></i> Họa tiết</th>
+                                    <th><i class="fas fa-boxes"></i> Số lượng</th>
+                                    <th><i class="fas fa-tag"></i> Giá bán</th>
+                                    <th><i class="fas fa-image"></i> Ảnh SP</th>
+                                    <th><i class="fas fa-cog"></i> Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ct in item.ChiTietSanPhams)
+                                {
+                                    <tr class="variant-row text-center">
+                                        <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
+                                        <td class="text-light"><span class="badge bg-primary p-2">@ct.TenMauSac</span></td>
+                                        <td>@(ct.TenHoaTiet ?? "-")</td>
+                                        <td class="text-center">
+                                            <strong class="text-primary">@ct.SoLuong</strong>
+                                        </td>
+                                        <td>
+                                            @if (ct.originalPrice > ct.price)
+                                            {
+                                                <div>
+                                                    <span style="color:#888;text-decoration:line-through;font-size:0.9em;">
+                                                        @ct.originalPrice.ToString("N0") đ
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span style="color:#d32f2f;font-weight:bold;font-size:1.05em">
+                                                        @ct.price.ToString("N0") đ
+                                                    </span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span style="font-weight:bold;color:#28a745">
+                                                    @ct.price.ToString("N0") đ
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
+                                                <div class="images-preview">
+                                                    @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
+                                                    {
+                                                        <img src="@ct.AnhDaiDien" class="img-thumbnail" 
+                                                            style="max-width:50px;max-height:50px;border-radius:4px;" alt="Ảnh chính" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small"><i class="fas fa-image"></i> Chưa có ảnh</span>
+                                                    }
+                                                </div>
+                                                <div class="images-list" style="display:none;"></div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-yellow-custom"
+                                                    onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
+                                                <i class="fas fa-plus-circle"></i> Thêm ảnh
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
-            </tbody>
-        </table>
+            </div>
+        }
         
         <!-- Phân trang -->
         @if (Model.TotalPages > 1)
@@ -454,7 +621,41 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Whole row clickable → triggers the button
+            document.querySelectorAll('.product-main-row').forEach(row => {
+                row.addEventListener('click', function(e) {
+                    // Don't interfere with real buttons/links/switches
+                    if (e.target.closest('a') || 
+                        e.target.closest('button') || 
+                        e.target.closest('.form-check-input') ||
+                        e.target.closest('.variant-count-badge')) {
+                        return;
+                    }
+
+                    const toggleBtn = row.querySelector('[data-bs-toggle="collapse"]');
+                    if (toggleBtn) {
+                        toggleBtn.click();  // This uses Bootstrap 5's JS
+                    }
+                });
+            });
+
+            // Keep aria-expanded in sync (for screen readers & your CSS)
+            document.querySelectorAll('.collapse').forEach(collapse => {
+                const triggerRow = document.querySelector(`[aria-controls="${collapse.id}"]`)?.closest('tr');
+                if (!triggerRow) return;
+
+                collapse.addEventListener('show.bs.collapse', () => {
+                    triggerRow.setAttribute('aria-expanded', 'true');
+                });
+
+                collapse.addEventListener('hide.bs.collapse', () => {
+                    triggerRow.setAttribute('aria-expanded', 'false');
+                });
+            });
+        });
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.main-row').forEach(row => {
                 row.addEventListener('click', function (e) {
