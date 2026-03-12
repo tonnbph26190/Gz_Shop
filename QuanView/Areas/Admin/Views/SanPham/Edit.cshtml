@@ -22,7 +22,7 @@
             <input type="hidden" asp-for="IDSanPham" />
 
             <div class="form-group">
-                <label asp-for="MaSanPham"></label>
+                <label asp-for="MaSanPham">Mã sản phẩm</label>
                 <div class="input-group">
                     <input asp-for="MaSanPham" class="form-control" readonly />
                     <div class="input-group-append">
@@ -36,7 +36,7 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="TenSanPham"></label>
+                <label asp-for="TenSanPham">Tên sản phẩm</label>
                 <input asp-for="TenSanPham" class="form-control" />
                 <span asp-validation-for="TenSanPham" class="text-danger"></span>
             </div>
@@ -74,17 +74,17 @@
 
             <div class="form-group form-check">
                 <input asp-for="CoXepLy" class="form-check-input" />
-                <label asp-for="CoXepLy" class="form-check-label"></label>
+                <label asp-for="CoXepLy" class="form-check-label">Có xếp lý</label>
             </div>
 
             <div class="form-group form-check">
                 <input asp-for="CoGian" class="form-check-input" />
-                <label asp-for="CoGian" class="form-check-label"></label>
+                <label asp-for="CoGian" class="form-check-label">Co giãn</label>
             </div>
 
             <div class="form-group form-check">
                 <input asp-for="TrangThai" class="form-check-input" />
-                <label asp-for="TrangThai" class="form-check-label"></label>
+                <label asp-for="TrangThai" class="form-check-label">Trạng thái</label>
             </div>
 
             <!-- Biến thể sản phẩm: luôn hiển thị, có số lượng và cho phép xóa/sửa/thêm -->
@@ -94,7 +94,7 @@
                 var newVariantIndex = variantCount;
             }
             <div class="mt-4">
-                <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary">@variantCount</span></h4>
+                <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary text-light">@variantCount</span></h4>
                 <p class="text-muted small mb-2">Sửa số lượng, giá bán, bật/tắt trạng thái. Bấm <strong>Xóa</strong> để xóa mềm (ngưng bán). Dòng trống: thêm biến thể mới — có thể thêm nhiều dòng rồi bấm <strong>Cập nhật</strong> một lần.</p>
                 <div class="mb-2">
                     <button type="button" class="btn btn-outline-success btn-sm" id="btnAddNewVariantRow">
@@ -104,13 +104,13 @@
                 <table class="table table-bordered" id="variantTable">
                     <thead>
                         <tr>
+                            <th>STT</th>
                             <th>Kích cỡ</th>
                             <th>Màu sắc</th>
                             <th>Họa tiết</th>
                             <th>Số lượng</th>
                             <th>Giá bán</th>
                             <th>Trạng thái</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,6 +121,7 @@
                                     <input type="hidden" name="ChiTietSanPhams.Index" value="@i" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPhamChiTiet" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPham" />
+                                    <span class="row-number text-center align-middle">@(i + 1)</span>
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdKichCo" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdMauSac" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdHoaTiet" />
@@ -150,6 +151,7 @@
                                 <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPham" value="@Model.IDSanPham" />
+                                <span class="row-number text-center align-middle"></span> 
                             </td>
                             <td>
                                 <select name="ChiTietSanPhams[@newVariantIndex].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
@@ -185,8 +187,18 @@
 </div>
 @section Scripts {
     <script>
+    function updateSTT() {
+            const rows = document.querySelectorAll('#variantTable tbody tr.variant-row');
+            rows.forEach((row, index) => {
+                const sttSpan = row.querySelector('.row-number');
+                if (sttSpan) {
+                    sttSpan.textContent = index + 1;
+                }
+            });
+        }
         // Apply validation to existing inputs when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            updateSTT();
             const quantityInputs = document.querySelectorAll('.quantity-input');
             const priceInputs = document.querySelectorAll('.price-input');
 
@@ -277,12 +289,18 @@
             if (e.target.classList.contains('btn-remove-variant')) {
                 var row = e.target.closest('tr.variant-row');
                 if (row && !row.classList.contains('new-variant-row')) {
-                    if (confirm('Xóa biến thể này khỏi sản phẩm?')) row.remove();
+                    if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
+                        row.remove();
+                        updateSTT();
+                    }
                 }
             }
             if (e.target.classList.contains('btn-remove-new-row')) {
                 var row = e.target.closest('tr.new-variant-clone');
-                if (row) row.remove();
+                if (row) {
+                    row.remove();
+                    updateSTT();
+                }
             }
         });
 
@@ -296,6 +314,7 @@
             document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
                 var clone = templateRow.cloneNode(true);
                 clone.id = '';
+                clone.classList.remove('new-variant-row');
                 clone.classList.add('new-variant-clone');
                 var oldPrefix = 'ChiTietSanPhams[' + templateIndex + ']';
                 var newPrefix = 'ChiTietSanPhams[' + nextNewIndex + ']';
@@ -306,12 +325,13 @@
                     el.value = nextNewIndex;
                 });
                 clone.querySelectorAll('select').forEach(function(s) { s.selectedIndex = 0; });
-                clone.querySelectorAll('input.quantity-input').forEach(function(i) { i.value = '0'; });
-                clone.querySelectorAll('input.price-input').forEach(function(i) { i.value = '0'; });
+                clone.querySelectorAll('input.quantity-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'quantity');});
+                clone.querySelectorAll('input.price-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'price'); });
                 var lastTd = clone.querySelector('td:last-child');
                 lastTd.innerHTML = '<button type="button" class="btn btn-outline-secondary btn-sm btn-remove-new-row">Xóa dòng</button>';
                 templateRow.parentNode.insertBefore(clone, templateRow);
                 nextNewIndex++;
+                updateSTT();
             });
         })();
 
