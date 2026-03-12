@@ -146,11 +146,9 @@
                             </tr>
                         }
                         <tr class="variant-row new-variant-row" id="newVariantTemplateRow" data-index="@newVariantIndex">
-                            <td>
                                 <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPham" value="@Model.IDSanPham" />
-                            </td>
                             <td>
                                 <select name="ChiTietSanPhams[@newVariantIndex].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
                                     <option value="">-- Chọn --</option>
