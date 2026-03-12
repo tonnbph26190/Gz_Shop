@@ -248,7 +248,7 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(Guid id)
         {
             // Dùng endpoint full để lấy sản phẩm + tất cả biến thể trong một lần (map đúng cho Edit)
-            var response = await _http.GetAsync($"sanphams/{id}/full");
+            var response = await _http.GetAsync($"sanphams/{id}");
             if (!response.IsSuccessStatusCode) return NotFound();
 
             var jsonOpt = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
