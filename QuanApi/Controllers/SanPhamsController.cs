@@ -46,9 +46,7 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.HoaTiet)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
-                .Include(s => s.SanPhamChiTiets)
-                    .ThenInclude(ct => ct.SanPham) // Thêm include này để tránh lỗi
-
+                .OrderBy(s => s.TenSanPham)
                 .Select(s => new SanPhamDto
                 {
                     IDSanPham = s.IDSanPham,
@@ -69,7 +67,6 @@ namespace QuanApi.Controllers
                     TenLoaiOng = s.LoaiOng.TenLoaiOng,
                     TenKieuDang = s.KieuDang.TenKieuDang,
                     TenLungQuan = s.LungQuan.TenLungQuan,
-                    // Lấy ảnh chính hoặc ảnh đầu tiên từ SanPhamChiTiet đầu tiên
                     AnhChinh = s.SanPhamChiTiets
                         .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
@@ -78,7 +75,6 @@ namespace QuanApi.Controllers
                         .ThenBy(a => a.NgayTao)
                         .Select(a => a.UrlAnh)
                         .FirstOrDefault(),
-                    // Lấy tất cả ảnh sản phẩm từ tất cả SanPhamChiTiet
                     DanhSachAnh = s.SanPhamChiTiets
                         .Where(ct => ct.AnhSanPhams != null && ct.AnhSanPhams.Any())
                         .SelectMany(ct => ct.AnhSanPhams)
@@ -93,22 +89,25 @@ namespace QuanApi.Controllers
                             LaAnhChinh = a.LaAnhChinh,
                             NgayTao = a.NgayTao
                         }).ToList(),
-                    ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
-                    {
-                        IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
-                        IdSanPham = ct.IDSanPham,
-                        IdKichCo = ct.IDKichCo,
-                        IdMauSac = ct.IDMauSac,
-                        IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
-                        SoLuong = ct.SoLuong,
-                        GiaBan = ct.GiaBan,
-                        TenKichCo = ct.KichCo.TenKichCo,
-                        TenMauSac = ct.MauSac.TenMauSac,
-                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
-                        AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ?
-                            ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ??
-                            ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
-                    }).ToList()
+                    ChiTietSanPhams = s.SanPhamChiTiets
+                        .OrderBy(ct => ct.MauSac)
+                        .ThenBy(ct => ct.KichCo)
+                        .Select(ct => new SanPhamChiTietDto
+                        {
+                            IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                            IdSanPham = ct.IDSanPham,
+                            IdKichCo = ct.IDKichCo,
+                            IdMauSac = ct.IDMauSac,
+                            IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+                            SoLuong = ct.SoLuong,
+                            GiaBan = ct.GiaBan,
+                            TenKichCo = ct.KichCo.TenKichCo,
+                            TenMauSac = ct.MauSac.TenMauSac,
+                            TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
+                            AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ?
+                                ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ??
+                                ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
+                        }).ToList()
                 })
                 .ToListAsync();
 
@@ -246,24 +245,27 @@ namespace QuanApi.Controllers
                             LaAnhChinh = a.LaAnhChinh,
                             NgayTao = a.NgayTao
                         }).ToList(),
-                    ChiTietSanPhams = s.SanPhamChiTiets.Select(ct => new SanPhamChiTietDto
-                    {
-                        IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
-                        IdSanPham = ct.IDSanPham,
-                        IdKichCo = ct.IDKichCo,
-                        IdMauSac = ct.IDMauSac,
-                        IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
-                        SoLuong = ct.SoLuong,
-                        GiaBan = ct.GiaBan,
-                        price = ct.GiaBan,
-                        originalPrice = ct.GiaBan,
-                        TenKichCo = ct.KichCo.TenKichCo,
-                        TenMauSac = ct.MauSac.TenMauSac,
-                        TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
-                        AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ?
-                            ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ??
-                            ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
-                    }).ToList()
+                    ChiTietSanPhams = s.SanPhamChiTiets
+                        .OrderBy(ct => ct.MauSac.TenMauSac)
+                        .ThenBy(ct => ct.KichCo.TenKichCo)
+                        .Select(ct => new SanPhamChiTietDto
+                        {
+                            IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+                            IdSanPham = ct.IDSanPham,
+                            IdKichCo = ct.IDKichCo,
+                            IdMauSac = ct.IDMauSac,
+                            IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+                            SoLuong = ct.SoLuong,
+                            GiaBan = ct.GiaBan,
+                            price = ct.GiaBan,
+                            originalPrice = ct.GiaBan,
+                            TenKichCo = ct.KichCo.TenKichCo,
+                            TenMauSac = ct.MauSac.TenMauSac,
+                            TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : null,
+                            AnhDaiDien = ct.AnhSanPhams != null && ct.AnhSanPhams.Any() ?
+                                ct.AnhSanPhams.Where(a => a.LaAnhChinh && a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ??
+                                ct.AnhSanPhams.Where(a => a.TrangThai).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : ""
+                        }).ToList()
                 })
                 .ToListAsync();
 
