@@ -66,29 +66,15 @@
             background-color: #f8f9fa;
         }
 
-<<<<<<< HEAD
         /* Styling cho phần biến thể */
         .variant-section {
             background-color: #f8f9fa;
             border-left: 4px solid #28a745;
             margin: 0;
-=======
-        /* Optional: Adjust the wrapper to ensure the scaled input doesn't overlap text */
-        .form-switch-container {
-            padding: 10px; 
         }
 
         .variant-header {
             background: linear-gradient(135deg, #d6ffe0 0%, #adffe7 100%);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            padding: 8px 12px !important;
->>>>>>> visual
-        }
-
-        .variant-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
             font-weight: 600;
             font-size: 0.9rem;
@@ -128,31 +114,8 @@
             display: inline-block;
         }
 
-        /* Đảm bảo tên sản phẩm không bị tràn */
-        .product-main-row td {
-            vertical-align: middle;
-        }
-
-        /* Cải thiện hiển thị ảnh */
-        .product-image-cell img {
-            border-radius: 6px;
-            border: 2px solid #dee2e6;
-            transition: transform 0.2s;
-        }
-
-        .product-image-cell img:hover {
-            transform: scale(1.1);
-            border-color: #007bff;
-        }
-
-        /* Table trong variant section */
-        .variant-section .table {
-            margin-bottom: 0;
-        }
-
-        .variant-section td {
-            padding: 12px 8px;
-            vertical-align: middle;
+        button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
+            transform: rotate(90deg);
         }
 
         /* Cải thiện hiển thị ảnh */
@@ -241,9 +204,12 @@
 }
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn btn-success">+ Thêm sản phẩm mới</a>
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn" id="btnCreateProduct">
+        + Thêm sản phẩm mới
+    </a>
+    &nbsp; &nbsp;
     <a asp-area="Admin" asp-controller="SanPham" asp-action="ExportCsv"
        asp-route-keyword="@Model.Keyword"
        asp-route-trangThai="@Model.TrangThai"
@@ -253,10 +219,11 @@
        asp-route-qtyTo="@Model.QtyTo"
        asp-route-dateFrom="@Model.DateFrom?.ToString("yyyy-MM-dd")"
        asp-route-dateTo="@Model.DateTo?.ToString("yyyy-MM-dd")"
-       class="btn btn-outline-secondary">
+       class="btn btn-secondary">
         <i class="fas fa-download"></i> Export CSV
     </a>
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-outline-primary">
+    &nbsp; &nbsp;
+    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-info">
         <i class="fas fa-upload"></i> Import CSV
     </a>
 </p>
@@ -363,28 +330,41 @@
     {
         @foreach (var item in Model.SanPhams)
         {
+            var targetId = "collapse-variant-" + item.IDSanPham;
+
             <div class="product-group">
                 <!-- Sản phẩm chính -->
-                <table class="table table-bordered mb-0">
-                    <thead class="table-dark">
+                <table class="table table-bordered mb-0 text-center">
+                    <thead class="table-secondary">
                         <tr>
-                            <th style="width: 70px;">Ảnh</th>
-                            <th style="width: 110px;">Mã SP</th>
-                            <th style="min-width: 200px;">Tên SP</th>
-                            <th style="width: 90px;">Chất liệu</th>
-                            <th style="width: 90px;">Danh mục</th>
-                            <th style="width: 100px;">Thương hiệu</th>
-                            <th style="width: 85px;">Loại ống</th>
-                            <th style="width: 90px;">Kiểu dáng</th>
-                            <th style="width: 90px;">Lưng quần</th>
-                            <th style="width: 70px;">Xếp ly</th>
-                            <th style="width: 70px;">Co giãn</th>
-                            <th style="width: 110px;">Trạng thái</th>
-                            <th style="width: 90px;">Thao tác</th>
+                            <th><i class="fa-solid fa-gear"></i></th>
+                            <th>Ảnh</th>
+                            <th>Mã SP</th>
+                            <th>Tên SP</th>
+                            <th>Chất liệu</th>
+                            <th>Danh mục</th>
+                            <th>Thương hiệu</th>
+                            <th>Loại ống</th>
+                            <th>Kiểu dáng</th>
+                            <th>Lưng quần</th>
+                            <th>Xếp ly</th>
+                            <th>Co giãn</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="product-main-row">
+                        <tr class="product-main-row" style="cursor: pointer;" aria-expanded="false">
+                            <td class="text-center align-middle">
+                                <button type="button"
+                                        class="btn btn-link p-0 shadow-none toggle-btn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#@targetId"
+                                        aria-expanded="false"
+                                        aria-controls="@targetId">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </td>
                             <td class="product-image-cell">
                                 <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
                             </td>
@@ -394,7 +374,7 @@
                                     <strong class="me-2">@item.TenSanPham</strong>
                                     @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
                                     {
-                                        <span class="variant-count-badge flex-shrink-0">
+                                        <span class="variant-count-badge flex-shrink-0 text-dark">
                                             <i class="fas fa-layer-group"></i> @item.ChiTietSanPhams.Count
                                         </span>
                                     }
@@ -409,62 +389,64 @@
                             <td class="text-center">
                                 @if (item.CoXepLy)
                                 {
-                                    <span class="badge bg-success">Có</span>
+                                    <span class="badge bg-success text-light p-2">Có</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">Không</span>
+                                    <span class="badge bg-secondary text-light p-2">Không</span>
                                 }
                             </td>
                             <td class="text-center">
                                 @if (item.CoGian)
                                 {
-                                    <span class="badge bg-success">Có</span>
+                                    <span class="badge bg-success text-light p-2">Có</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">Không</span>
+                                    <span class="badge bg-secondary text-light p-2">Không</span>
                                 }
                             </td>
                             <td>
                                 <div class="form-check form-switch" title="@(item.TrangThai ? "Đang bán" : "Ngưng bán")">
                                     <input class="form-check-input product-status-toggle" type="checkbox" role="switch"
-                                           data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
-                                           @(item.TrangThai ? "checked" : "") />
+                                        data-id="@item.IDSanPham" data-current="@item.TrangThai.ToString().ToLowerInvariant()"
+                                        @(item.TrangThai ? "checked" : "") />
                                     <label class="form-check-label small">@(item.TrangThai ? "Hoạt động" : "Ngưng")</label>
                                 </div>
                             </td>
                             <td>
                                 <a asp-area="Admin" asp-controller="SanPham" asp-action="Edit" asp-route-id="@item.IDSanPham" 
-                                   class="btn btn-sm btn-primary">
+                                class="btn btn-sm btn-yellow-custom" 
+                                onclick="event.stopPropagation();">
                                     <i class="fas fa-edit"></i> Sửa
                                 </a>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <!-- Biến thể của sản phẩm -->
+
+                <!-- Biến thể - collapsible -->
                 @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
                 {
-                    <div class="variant-section">
+                    <div id="@targetId" class="collapse variant-section">
                         <table class="table table-sm table-bordered mb-0">
                             <thead>
-                                <tr class="variant-header">
-                                    <th style="width: 100px;"><i class="fas fa-ruler"></i> Kích cỡ</th>
-                                    <th style="width: 120px;"><i class="fas fa-palette"></i> Màu sắc</th>
-                                    <th style="width: 120px;"><i class="fas fa-paint-brush"></i> Họa tiết</th>
-                                    <th style="width: 100px;"><i class="fas fa-boxes"></i> Số lượng</th>
-                                    <th style="width: 150px;"><i class="fas fa-tag"></i> Giá bán</th>
-                                    <th style="width: 100px;"><i class="fas fa-image"></i> Ảnh SP</th>
-                                    <th style="width: 150px;"><i class="fas fa-cog"></i> Thao tác</th>
+                                <tr class="variant-header text-center">
+                                    <th><i class="fas fa-ruler"></i> Kích cỡ</th>
+                                    <th><i class="fas fa-palette"></i> Màu sắc</th>
+                                    <th><i class="fas fa-paint-brush"></i> Họa tiết</th>
+                                    <th><i class="fas fa-boxes"></i> Số lượng</th>
+                                    <th><i class="fas fa-tag"></i> Giá bán</th>
+                                    <th><i class="fas fa-image"></i> Ảnh SP</th>
+                                    <th><i class="fas fa-cog"></i> Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var ct in item.ChiTietSanPhams)
                                 {
-                                    <tr class="variant-row">
-                                        <td><span class="badge bg-info">@ct.TenKichCo</span></td>
-                                        <td><span class="badge bg-primary">@ct.TenMauSac</span></td>
+                                    <tr class="variant-row text-center">
+                                        <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
+                                        <td class="text-light"><span class="badge bg-primary p-2">@ct.TenMauSac</span></td>
                                         <td>@(ct.TenHoaTiet ?? "-")</td>
                                         <td class="text-center">
                                             <strong class="text-primary">@ct.SoLuong</strong>
@@ -496,8 +478,7 @@
                                                     @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
                                                     {
                                                         <img src="@ct.AnhDaiDien" class="img-thumbnail" 
-                                                             style="max-width:50px;max-height:50px;border-radius:4px;" alt="Ảnh chính" />
-
+                                                            style="max-width:50px;max-height:50px;border-radius:4px;" alt="Ảnh chính" />
                                                     }
                                                     else
                                                     {
@@ -508,7 +489,8 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-success"
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-yellow-custom"
                                                     onclick="showAddImageModal('@ct.IdSanPhamChiTiet')">
                                                 <i class="fas fa-plus-circle"></i> Thêm ảnh
                                             </button>
@@ -521,7 +503,6 @@
                 }
             </div>
         }
-    }
         
         <!-- Phân trang -->
         @if (Model.TotalPages > 1)

@@ -118,6 +118,7 @@
                 </div>
                 <table class="table table-bordered table-hover" id="variantTable">
                     <thead class="table-light">
+                        <tr>
                             <th style="width: 150px;"><i class="fas fa-ruler"></i> Kích cỡ</th>
                             <th style="width: 150px;"><i class="fas fa-palette"></i> Màu sắc</th>
                             <th style="width: 150px;"><i class="fas fa-paint-brush"></i> Họa tiết</th>
@@ -135,10 +136,11 @@
                                 <td>
                                     <input type="hidden" name="ChiTietSanPhams.Index" value="@i" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPhamChiTiet" />
-                                    <select asp-for="ChiTietSanPhams[i].IdKichCo" class="form-control form-control-sm variant-kichco-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.KichCos)">
-                                        <option value="">-- Chọn --</option>
-                                    </select>
-                                    <small class="text-muted d-block">Hiện tại: @variant.TenKichCo</small>
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPham" />
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdKichCo" />
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdMauSac" />
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdHoaTiet" />
+                                    @Model.ChiTietSanPhams[i].TenKichCo
                                 </td>
                                 <td>
                                     <select asp-for="ChiTietSanPhams[i].IdMauSac" class="form-control form-control-sm variant-mausac-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.MauSacs)">
@@ -175,11 +177,7 @@
                                 <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPham" value="@Model.IDSanPham" />
-<<<<<<< HEAD
-=======
-                                <span class="row-number text-center align-middle"></span> 
                             </td>
->>>>>>> visual
                             <td>
                                 <select name="ChiTietSanPhams[@newVariantIndex].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
                                     <option value="">-- Chọn --</option>
@@ -230,15 +228,14 @@
         }
         // Apply validation to existing inputs when page loads
         document.addEventListener('DOMContentLoaded', function() {
-<<<<<<< HEAD
             // Chỉ apply validation cho các input KHÔNG nằm trong dòng template
             const allQuantityInputs = document.querySelectorAll('.quantity-input');
             const allPriceInputs = document.querySelectorAll('.price-input');
-=======
+=========
             updateSTT();
             const quantityInputs = document.querySelectorAll('.quantity-input');
             const priceInputs = document.querySelectorAll('.price-input');
->>>>>>> visual
+>>>>>>>>> Temporary merge branch 2
 
             allQuantityInputs.forEach(input => {
                 const row = input.closest('tr');
@@ -253,6 +250,9 @@
                     addValidationToInput(input, 'price');
                 }
             });
+            updateSTT();
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const priceInputs = document.querySelectorAll('.price-input');
 
             // Debug: Log all select values to check if they are set correctly
             console.log('=== DEBUG: Checking select values ===');
@@ -418,7 +418,7 @@
                     el.value = nextNewIndex;
                 });
                 clone.querySelectorAll('select').forEach(function(s) { s.selectedIndex = 0; });
-<<<<<<< HEAD
+<<<<<<<<< Temporary merge branch 1
                 clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
                     i.value = '0';
                     // Apply validation to new inputs
@@ -435,10 +435,10 @@
                     el.remove();
                 });
                 
-=======
+=========
                 clone.querySelectorAll('input.quantity-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'quantity');});
                 clone.querySelectorAll('input.price-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'price'); });
->>>>>>> visual
+>>>>>>>>> Temporary merge branch 2
                 var lastTd = clone.querySelector('td:last-child');
                 lastTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i> Xóa</button>';
                 
