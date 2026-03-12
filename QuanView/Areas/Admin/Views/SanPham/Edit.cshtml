@@ -22,7 +22,7 @@
             <input type="hidden" asp-for="IDSanPham" />
 
             <div class="form-group">
-                <label asp-for="MaSanPham"></label>
+                <label asp-for="MaSanPham">Mã sản phẩm</label>
                 <div class="input-group">
                     <input asp-for="MaSanPham" class="form-control" readonly />
                     <div class="input-group-append">
@@ -36,7 +36,7 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="TenSanPham"></label>
+                <label asp-for="TenSanPham">Tên sản phẩm</label>
                 <input asp-for="TenSanPham" class="form-control" />
                 <span asp-validation-for="TenSanPham" class="text-danger"></span>
             </div>
@@ -94,7 +94,7 @@
                 var newVariantIndex = variantCount;
             }
             <div class="mt-4">
-                <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary">@variantCount</span></h4>
+                <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary text-light">@variantCount</span></h4>
                 <p class="text-muted small mb-2">Sửa số lượng, giá bán, bật/tắt trạng thái. Bấm <strong>Xóa</strong> để xóa mềm (ngưng bán). Dòng trống: thêm biến thể mới — có thể thêm nhiều dòng rồi bấm <strong>Cập nhật</strong> một lần.</p>
                 <div class="mb-2">
                     <button type="button" class="btn btn-outline-success btn-sm" id="btnAddNewVariantRow">
