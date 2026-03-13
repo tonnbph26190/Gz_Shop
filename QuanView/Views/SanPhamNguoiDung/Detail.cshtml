@@ -5,6 +5,7 @@
     var userId = ViewBag.UserId ?? ""; // Lấy từ ViewBag, nếu chưa có thì để rỗng
 }
 <style>
+    
     .product-detail-container {
         background: #fff;
         border-radius: 12px;
@@ -13,6 +14,13 @@
         margin-top: 24px;
     }
 
+    .product-detail-btn-option.disabled {
+        background: #f1f1f1;
+        color: #999;
+        border: 1px solid #ddd;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
     .product-detail-img-main {
         width: 100%;
         max-width: 400px;
@@ -141,7 +149,7 @@
             border: 1.5px solid #d32f2f;
         }
 </style>
-<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
+<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn m-2"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
 <div class="container product-detail-container">
     <div class="row">
         <div class="col-md-6 d-flex flex-column align-items-center">
@@ -180,6 +188,8 @@
 </div>
 @section Scripts {
     <script>
+     
+            let lang = "@lang";
         let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
         let selectedSize = '';
         let selectedColor = '';
@@ -205,7 +215,10 @@
             $('#sizeOptions').html(sizeHtml);
         }
         function updatePriceAndQty() {
-            const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+            const bienThe = bienThes.find(b =>
+                String(b.Size).trim().toLowerCase() === String(selectedSize).trim().toLowerCase() &&
+                String(b.Mau).trim().toLowerCase() === String(selectedColor).trim().toLowerCase()
+            );
             if (bienThe) {
                 $('#giaBan').text(bienThe.GiaSauGiam.toLocaleString() + ' VND');
                 if (bienThe.GiaSauGiam < bienThe.GiaGoc) {
@@ -226,10 +239,16 @@
                         addCartBtn.text('Out of Stock').prop('disabled', true).css('background', '#6c757d');
                     }
                 } else {
-                    if (lang === "en") {
-                        addCartBtn.text('Thêm vào giỏ hàng').prop('disabled', false).css('background', '#d32f2f');
+                    if (lang === "vi") {
+                        addCartBtn
+                            .text('Thêm vào giỏ hàng')
+                            .prop('disabled', false)
+                            .css('background', '#d32f2f');
                     } else {
-                        addCartBtn.text('Add to Cart').prop('disabled', false).css('background', '#d32f2f');
+                        addCartBtn
+                            .text('Add to Cart')
+                            .prop('disabled', false)
+                            .css('background', '#d32f2f');
                     }
                 }
 
@@ -239,7 +258,14 @@
                 $('#giaBan').text('');
                 $('#giaGoc').text('');
                 $('#soLuong').attr('max', 1);
-                $('.product-detail-addcart').text('Chọn size và màu').prop('disabled', true).css('background', '#6c757d');
+                const addCartBtn = $('.product-detail-addcart');
+
+                if (!selectedSize || !selectedColor) {
+                    addCartBtn
+                        .text(lang === "vi" ? 'Chọn size và màu' : 'Select size and color')
+                        .prop('disabled', true)
+                        .css('background', '#6c757d');
+                }
                 updateStockInfo(0);
             }
         }
@@ -266,34 +292,55 @@
             $('#stockInfo').html(stockHtml);
         }
         $(document).on('click', '.product-detail-btn-option[data-mau]', function () {
-            const mau = $(this).data('mau');
-            const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
 
-            // Không cho phép chọn màu hết hàng
-            if (stockForColor <= 0) {
-                alert('Màu này đã hết hàng!');
-                return;
-            }
+            const mau = $(this).data('mau');
+
+            // nếu click lại màu đã chọn thì bỏ qua
+            if (selectedColor === mau) return;
 
             $('.product-detail-btn-option[data-mau]').removeClass('selected');
             $(this).addClass('selected');
+
             selectedColor = mau;
+
+            const validSizes = bienThes
+                .filter(b => b.Mau === mau)
+                .map(b => b.Size);
+
+            $('.product-detail-btn-option[data-size]').each(function () {
+
+                const size = $(this).data('size');
+
+                if (validSizes.includes(size)) {
+                    $(this).removeClass('disabled');
+                } else {
+                    $(this).addClass('disabled');
+                }
+
+            });
+
+            // nếu size đang chọn không hợp lệ thì mới reset
+            if (!validSizes.includes(selectedSize)) {
+                selectedSize = '';
+                $('.product-detail-btn-option[data-size]').removeClass('selected');
+            }
+
             updatePriceAndQty();
         });
-
         $(document).on('click', '.product-detail-btn-option[data-size]', function () {
-            const size = $(this).data('size');
-            const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
 
-            // Không cho phép chọn size hết hàng
-            if (stockForSize <= 0) {
-                alert('Size này đã hết hàng!');
-                return;
-            }
+            if ($(this).hasClass('disabled')) return;
+
+            const size = $(this).data('size');
+
+            // nếu click lại size đã chọn thì bỏ qua
+            if (selectedSize === size) return;
 
             $('.product-detail-btn-option[data-size]').removeClass('selected');
             $(this).addClass('selected');
+
             selectedSize = size;
+
             updatePriceAndQty();
         });
         $('#btnMinus').on('click', function () {
@@ -356,7 +403,10 @@
                 return;
             }
 
-            const bienThe = bienThes.find(b => b.Size === selectedSize && b.Mau === selectedColor);
+            const bienThe = bienThes.find(b =>
+                String(b.Size).trim().toLowerCase() === String(selectedSize).trim().toLowerCase() &&
+                String(b.Mau).trim().toLowerCase() === String(selectedColor).trim().toLowerCase()
+            );
             if (!bienThe) {
                 alert('Vui lòng chọn đúng biến thể!');
                 return;
