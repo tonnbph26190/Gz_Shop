@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csx,razor,cshtml}]
+indent_style = tab
+indent_size = tab
+tab_width = 4
+charset = utf-8
+end_of_line = crlf
+
+[*.{json,xml,html,htm,css,js,ts}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{sln,csproj}]
+indent_style = space
+indent_size = 2
+
+# C# specific conventions (Roslyn analyzers)
+[*.cs]
+dotnet_sort_system_directives_first = true
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# Ensure Razor files also use tabs
+[*.cshtml]
+indent_style = tab
+indent_size = tab
