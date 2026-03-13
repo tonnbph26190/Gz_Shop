@@ -76,16 +76,73 @@
             color: #666;
             margin-bottom: 10px;
         }
+    /* Side Arrows: Slide from left/right */
+    #heroCarousel .carousel-control-prev {
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.3s ease;
+    }
+
+    #heroCarousel .carousel-control-next {
+        opacity: 0;
+        transform: translateX(10px);
+        transition: all 0.3s ease;
+    }
+
+    /* Bottom Indicators: Slide from bottom */
+    #heroCarousel .carousel-indicators {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+    }
+
+    /* Reset everything on hover */
+    #heroCarousel:hover .carousel-control-prev,
+    #heroCarousel:hover .carousel-control-next,
+    #heroCarousel:hover .carousel-indicators {
+        opacity: 1;
+        transform: translate(0);
+    }
 </style>
 
-<!-- Hero Section -->
-<section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-         style="background: url('/img/hero/hero-1.jpg') center/cover no-repeat; height: 70vh;">
-    <div>
-        <h1 class="display-4 fw-bold text-shadow">Bộ sưu tập Thu Đông 2025</h1>
-        <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
+<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
     </div>
-</section>
+
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
+                style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/img/banner/Banner2.jpg') center/cover no-repeat; height: 70vh;">
+                <div style="margin-top: -12.5rem;">
+                    <h1 class="display-4 fw-bold text-shadow">BỘ QUẦN ĐÔNG-XUÂN 2026</h1>
+                    <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
+                </div>
+            </section>
+        </div>
+
+        <div class="carousel-item">
+            <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
+                style="background: url('/img/banner/Banner3.jpg') center/cover no-repeat; height: 70vh;">
+            </section>
+        </div>
+
+        <div class="carousel-item">
+            <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
+                style="background: url('/img/banner/Banner4.jpg') center/cover no-repeat; height: 70vh;">
+            </section>
+        </div>
+    </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
 
 <!-- Banner Section -->
 <section class="py-5">

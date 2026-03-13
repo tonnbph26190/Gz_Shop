@@ -29,8 +29,8 @@ namespace QuanApi.Data
         [Range(0, 32767, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0.")]
         public short SoLuong { get; set; }
 
-        [Required]
-        public bool LaCongKhai { get; set; }
+		[Required]
+		public bool LaCongKhai { get; set; } = true;
 
         [Required]
         public DateTime NgayBatDau { get; set; }
@@ -41,9 +41,9 @@ namespace QuanApi.Data
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)]
-        public string? NguoiTao { get; set; }
+        public string? NguoiTao { get; set; } 
 
-        public DateTime? LanCapNhatCuoi { get; set; }
+		public DateTime? LanCapNhatCuoi { get; set; }
 
         [MaxLength(100)]
         public string? NguoiCapNhat { get; set; }

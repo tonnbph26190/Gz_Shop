@@ -82,16 +82,18 @@ namespace QuanApi.Controllers
 
                 if (!string.IsNullOrEmpty(khachHang))
                 {
+                    var khachHangLower = khachHang.ToLower();
                     query = query.Where(h =>
-                        (h.KhachHang != null && h.KhachHang.TenKhachHang.Contains(khachHang)) ||
-                        (h.TenNguoiNhan != null && h.TenNguoiNhan.Contains(khachHang)) ||
-                        (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHang))
+                        (h.KhachHang != null && h.KhachHang.TenKhachHang.ToLower().Contains(khachHangLower)) ||
+                        (h.TenNguoiNhan != null && h.TenNguoiNhan.ToLower().Contains(khachHangLower)) ||
+                        (h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHangLower))
                     );
                 }
 
                 if (!string.IsNullOrEmpty(maDonHang))
                 {
-                    query = query.Where(h => h.MaHoaDon.Contains(maDonHang));
+                    var maDonHangLower = maDonHang.ToLower();
+                    query = query.Where(h => h.MaHoaDon.ToLower().Contains(maDonHangLower));
                 }
 
                 // Tính tổng số bản ghi sau khi lọc
@@ -277,6 +279,18 @@ namespace QuanApi.Controllers
                 if (dto.TongTien <= 0)
                 {
                     return BadRequest("Tổng tiền phải lớn hơn 0");
+                }
+
+                // Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
+                foreach (var chiTiet in dto.ChiTietHoaDons)
+                {
+                    var spct = await _context.SanPhamChiTiets.FindAsync(chiTiet.IDSanPhamChiTiet);
+                    if (spct == null)
+                        return BadRequest($"Không tìm thấy sản phẩm chi tiết {chiTiet.IDSanPhamChiTiet}");
+                    if (chiTiet.SoLuong <= 0)
+                        return BadRequest("Số lượng sản phẩm phải lớn hơn 0");
+                    if (spct.SoLuong < chiTiet.SoLuong)
+                        return BadRequest($"Sản phẩm {spct.MaSPChiTiet} không đủ số lượng. Tồn kho: {spct.SoLuong}");
                 }
 
                 // Tạo hóa đơn mới

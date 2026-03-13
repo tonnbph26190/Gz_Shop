@@ -27,7 +27,10 @@ namespace QuanApi.Services
         {
             var query = _context.ThuongHieus.AsQueryable();
             if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenThuongHieu.Contains(keyword) || x.MaThuongHieu.Contains(keyword));
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(x => x.TenThuongHieu.ToLower().Contains(keywordLower) || x.MaThuongHieu.ToLower().Contains(keywordLower));
+            }
 
             return await query.ToListAsync();
         }
@@ -87,7 +90,10 @@ namespace QuanApi.Services
             var query = _context.ThuongHieus.AsQueryable();
 
             if (!string.IsNullOrEmpty(keyword))
-                query = query.Where(x => x.TenThuongHieu.Contains(keyword) || x.MaThuongHieu.Contains(keyword));
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(x => x.TenThuongHieu.ToLower().Contains(keywordLower) || x.MaThuongHieu.ToLower().Contains(keywordLower));
+            }
 
             if (!string.IsNullOrEmpty(trangThai))
             {

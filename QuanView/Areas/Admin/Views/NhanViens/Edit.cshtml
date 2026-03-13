@@ -315,23 +315,15 @@
                     </div>
 
                     <div class="col-md-6">
-
                         <div class="form-group">
-
                             <label asp-for="IDVaiTro" class="control-label">Vai trò</label>
 
-                            <select id="IDVaiTro" name="IDVaiTro" class="form-select">
-
+                            <select asp-for="IDVaiTro" class="form-select" asp-items="ViewBag.IDVaiTro">
                                 <option value="">-- Chọn vai trò --</option>
-
-                                <option value="@nhanVienBanHangGuidString">Admin</option>
-
                             </select>
 
                             <span asp-validation-for="IDVaiTro" class="text-danger"></span>
-
                         </div>
-
                     </div>
 
                     <div class="col-md-6">

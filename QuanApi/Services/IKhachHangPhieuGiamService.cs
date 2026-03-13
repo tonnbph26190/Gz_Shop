@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using System;
@@ -10,7 +10,7 @@ namespace QuanApi.Services
         Task<List<KhachHangPhieuGiam>> GetAllAsync();
         Task<KhachHangPhieuGiam?> GetByIdAsync(Guid id);
         Task<Guid?> GetKhachHangByVoucherAsync(Guid idPhieu);
-        Task<List<object>> GetPublicDiscountVouchersAsync();
+        Task<List<object>> GetPublicDiscountVouchersAsync(decimal tongTien);
         Task<List<object>> GetCustomerDiscountVouchersAsync(Guid customerId);
         Task<KhachHangPhieuGiam> CreateAsync(KhachHangPhieuGiam model);
         Task<bool> UpdateAsync(Guid id, KhachHangPhieuGiam model);
@@ -61,34 +61,43 @@ namespace QuanApi.Services
         return item?.IDKhachHang;
     }
 
-         public async Task<List<object>> GetPublicDiscountVouchersAsync()
-    {
-        _logger.LogInformation("Lấy danh sách phiếu giảm giá công khai");
+		public async Task<List<object>> GetPublicDiscountVouchersAsync(decimal tongTien)
+		{
+			_logger.LogInformation("Lấy danh sách phiếu giảm giá công khai");
 
-        var now = DateTime.UtcNow;
+			var now = DateTime.UtcNow;
 
-        return await _context.PhieuGiamGias
-            .Where(p => p.LaCongKhai == true &&
-                        p.TrangThai &&
-                        p.NgayBatDau <= now &&
-                        p.NgayKetThuc >= now)
-            .Select(p => new
-            {
-                id = p.IDPhieuGiamGia,
-                maCode = p.MaCode,
-                tenPhieu = p.TenPhieu,
-                giaTriGiam = p.GiaTriGiam,
-                giaTriGiamToiDa = p.GiaTriGiamToiDa,
-                donToiThieu = p.DonToiThieu,
-                ngayBatDau = p.NgayBatDau,
-                ngayKetThuc = p.NgayKetThuc,
-                soLuong = p.SoLuong,
-                loaiPhieu = p.LaCongKhai ? "Công khai" : "Riêng tư",
-                trangThai = p.TrangThai
-            })
-            .ToListAsync<object>();
-    }
-        public async Task<List<object>> GetCustomerDiscountVouchersAsync(Guid customerId)
+			return await _context.PhieuGiamGias
+				.AsNoTracking()
+				.Where(p => p.LaCongKhai &&
+							p.TrangThai &&
+							p.SoLuong > 0 &&
+							p.NgayBatDau <= now &&
+							p.NgayKetThuc >= now &&
+							p.DonToiThieu <= tongTien) // đủ điều kiện đơn tối thiểu
+													   // ưu tiên mã có đơn tối thiểu gần với tổng tiền nhất
+				.OrderBy(p => tongTien - p.DonToiThieu)
+
+				// sau đó ưu tiên mã giảm nhiều hơn
+				.ThenByDescending(p => p.GiaTriGiam)
+
+				.Select(p => new
+				{
+					id = p.IDPhieuGiamGia,
+					maCode = p.MaCode,
+					tenPhieu = p.TenPhieu,
+					giaTriGiam = p.GiaTriGiam,
+					giaTriGiamToiDa = p.GiaTriGiamToiDa,
+					donToiThieu = p.DonToiThieu,
+					ngayBatDau = p.NgayBatDau,
+					ngayKetThuc = p.NgayKetThuc,
+					soLuong = p.SoLuong,
+					loaiPhieu = p.LaCongKhai ? "Công khai" : "Riêng tư",
+					trangThai = p.TrangThai
+				})
+				.ToListAsync<object>();
+		}
+		public async Task<List<object>> GetCustomerDiscountVouchersAsync(Guid customerId)
         {
             _logger.LogInformation("Lấy phiếu giảm giá của khách hàng: {CustomerId}", customerId);
 

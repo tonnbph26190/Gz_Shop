@@ -29,9 +29,12 @@ namespace QuanApi.Services
             var query = _context.LoaiOngs.AsQueryable();
 
             if (!string.IsNullOrEmpty(keyword))
+            {
+                var keywordLower = keyword.ToLower();
                 query = query.Where(x =>
-                    x.TenLoaiOng.Contains(keyword) ||
-                    x.MaLoaiOng.Contains(keyword));
+                    x.TenLoaiOng.ToLower().Contains(keywordLower) ||
+                    x.MaLoaiOng.ToLower().Contains(keywordLower));
+            }
 
             return await query.ToListAsync();
         }
@@ -92,9 +95,12 @@ namespace QuanApi.Services
             var query = _context.LoaiOngs.AsQueryable();
 
             if (!string.IsNullOrEmpty(keyword))
+            {
+                var keywordLower = keyword.ToLower();
                 query = query.Where(x =>
-                    x.TenLoaiOng.Contains(keyword) ||
-                    x.MaLoaiOng.Contains(keyword));
+                    x.TenLoaiOng.ToLower().Contains(keywordLower) ||
+                    x.MaLoaiOng.ToLower().Contains(keywordLower));
+            }
 
             if (!string.IsNullOrEmpty(trangThai))
             {

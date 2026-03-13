@@ -50,11 +50,12 @@ namespace QuanApi.Controllers.Api
 
             if (!string.IsNullOrEmpty(search))
             {
+                var searchLower = search.ToLower();
                 query = query.Where(kh =>
-                    kh.MaKhachHang.Contains(search) ||
-                    kh.TenKhachHang.Contains(search) ||
-                    (kh.Email != null && kh.Email.Contains(search)) ||
-                    kh.SoDienThoai.Contains(search));
+                    kh.MaKhachHang.ToLower().Contains(searchLower) ||
+                    kh.TenKhachHang.ToLower().Contains(searchLower) ||
+                    (kh.Email != null && kh.Email.ToLower().Contains(searchLower)) ||
+                    kh.SoDienThoai.Contains(searchLower));
             }
 
             switch (sortBy?.ToLower())
@@ -206,7 +207,7 @@ namespace QuanApi.Controllers.Api
 
                 if (!string.IsNullOrEmpty(khachHang.Email))
                 {
-                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần âu Dazio!";
+                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần áo GZ!";
                     var emailBody = new StringBuilder();
                     emailBody.AppendLine($"<p>Xin chào <strong>{khachHang.TenKhachHang}</strong>,</p>");
                     emailBody.AppendLine("<p>Bạn đã đăng ký tài khoản thành công tại Hệ thống Quản lý Bán Quần Áo của chúng tôi.</p>");
@@ -245,7 +246,7 @@ namespace QuanApi.Controllers.Api
 
                     emailBody.AppendLine("<p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>");
                     emailBody.AppendLine("<p>Trân trọng,</p>");
-                    emailBody.AppendLine("<p><strong>Cửa hàng bán quần âu Dazio</strong></p>");
+                    emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
 
                     try
                     {
