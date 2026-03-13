@@ -85,7 +85,8 @@
 
             <div class="form-group form-check">
                 <input asp-for="TrangThai" class="form-check-input" />
-                <label asp-for="TrangThai" class="form-check-label">Trạng thái</label>
+                <label asp-for="TrangThai" class="form-check-label">
+                    Hoạt động</label>
             </div>
 
             <!-- Biến thể sản phẩm: luôn hiển thị, có số lượng và cho phép xóa/sửa/thêm -->
@@ -95,19 +96,7 @@
                 var newVariantIndex = variantCount;
             }
             
-            @* Debug: Hiển thị số lượng biến thể và thông tin *@
-            @if (variantList.Any())
-            {
-                <div class="alert alert-info">
-                    <strong>Debug Info:</strong> Đã load @variantCount biến thể
-                    @foreach (var v in variantList.Take(2))
-                    {
-                        <div class="small">
-                            - Biến thể: KC=@v.IdKichCo (@v.TenKichCo), MS=@v.IdMauSac (@v.TenMauSac), HT=@v.IdHoaTiet (@v.TenHoaTiet)
-                        </div>
-                    }
-                </div>
-            }
+        
             <div class="mt-4">
                 <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary text-light">@variantCount</span></h4>
                 <p class="text-muted small mb-2">Sửa số lượng, giá bán, bật/tắt trạng thái. Bấm <strong>Xóa</strong> để xóa mềm (ngưng bán). Dòng trống: thêm biến thể mới — có thể thêm nhiều dòng rồi bấm <strong>Cập nhật</strong> một lần.</p>
