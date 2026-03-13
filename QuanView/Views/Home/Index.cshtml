@@ -76,25 +76,32 @@
             color: #666;
             margin-bottom: 10px;
         }
-    /* Left button slides from the left */
+    /* Side Arrows: Slide from left/right */
     #heroCarousel .carousel-control-prev {
         opacity: 0;
         transform: translateX(-10px);
         transition: all 0.3s ease;
     }
 
-    /* Right button slides from the right */
     #heroCarousel .carousel-control-next {
         opacity: 0;
         transform: translateX(10px);
         transition: all 0.3s ease;
     }
 
-    /* Reset on hover */
+    /* Bottom Indicators: Slide from bottom */
+    #heroCarousel .carousel-indicators {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+    }
+
+    /* Reset everything on hover */
     #heroCarousel:hover .carousel-control-prev,
-    #heroCarousel:hover .carousel-control-next {
+    #heroCarousel:hover .carousel-control-next,
+    #heroCarousel:hover .carousel-indicators {
         opacity: 1;
-        transform: translateX(0);
+        transform: translate(0);
     }
 </style>
 
@@ -118,17 +125,13 @@
 
         <div class="carousel-item">
             <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/img/banner/Banner3.jpg') center/cover no-repeat; height: 70vh;">
+                style="background: url('/img/banner/Banner3.jpg') center/cover no-repeat; height: 70vh;">
             </section>
         </div>
 
         <div class="carousel-item">
             <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/img/banner/Banner1.jpg') center/cover no-repeat; height: 70vh;">
-                <div style="margin-top: -12.5rem;">
-                    <h1 class="display-4 fw-bold text-shadow">BỘ SƯU TẬP MỚI</h1>
-                    <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Khám phá</a>
-                </div>
+                style="background: url('/img/banner/Banner4.jpg') center/cover no-repeat; height: 70vh;">
             </section>
         </div>
     </div>
