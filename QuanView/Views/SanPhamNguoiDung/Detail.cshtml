@@ -267,33 +267,43 @@
         }
         $(document).on('click', '.product-detail-btn-option[data-mau]', function () {
             const mau = $(this).data('mau');
-            const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
-
-            // Không cho phép chọn màu hết hàng
-            if (stockForColor <= 0) {
-                alert('Màu này đã hết hàng!');
-                return;
-            }
 
             $('.product-detail-btn-option[data-mau]').removeClass('selected');
             $(this).addClass('selected');
+
             selectedColor = mau;
+
+            // tìm size hợp lệ với màu này
+            const available = bienThes.find(b => b.Mau === mau && b.SoLuong > 0);
+
+            if (available) {
+                selectedSize = available.Size;
+
+                $('.product-detail-btn-option[data-size]').removeClass('selected');
+                $(`.product-detail-btn-option[data-size="${selectedSize}"]`).addClass('selected');
+            }
+
             updatePriceAndQty();
         });
 
         $(document).on('click', '.product-detail-btn-option[data-size]', function () {
             const size = $(this).data('size');
-            const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
-
-            // Không cho phép chọn size hết hàng
-            if (stockForSize <= 0) {
-                alert('Size này đã hết hàng!');
-                return;
-            }
 
             $('.product-detail-btn-option[data-size]').removeClass('selected');
             $(this).addClass('selected');
+
             selectedSize = size;
+
+            // tìm màu hợp lệ với size này
+            const available = bienThes.find(b => b.Size === size && b.SoLuong > 0);
+
+            if (available) {
+                selectedColor = available.Mau;
+
+                $('.product-detail-btn-option[data-mau]').removeClass('selected');
+                $(`.product-detail-btn-option[data-mau="${selectedColor}"]`).addClass('selected');
+            }
+
             updatePriceAndQty();
         });
         $('#btnMinus').on('click', function () {

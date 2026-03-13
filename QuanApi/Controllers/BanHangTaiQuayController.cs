@@ -913,10 +913,10 @@ namespace QuanApi.Controllers
                 _context.ChiTietGioHangs.Add(cthd);
             }
 
-            // Trừ tồn kho ngay lập tức
-            spct.SoLuong -= dto.SoLuong;
-            spct.LanCapNhatCuoi = DateTime.UtcNow;
-            spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
+            //// Trừ tồn kho ngay lập tức
+            //spct.SoLuong -= dto.SoLuong;
+            //spct.LanCapNhatCuoi = DateTime.UtcNow;
+            //spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Thêm vào giỏ hàng thành công", soLuongConLai = spct.SoLuong });
@@ -947,24 +947,16 @@ namespace QuanApi.Controllers
 
             if (soLuongMoi <= 0)
             {
-                // Xóa sản phẩm khỏi giỏ hàng và trả lại tồn kho
                 _context.ChiTietGioHangs.Remove(cthd);
-                spct.SoLuong += soLuongCu; // Trả lại số lượng đã trừ
             }
             else
             {
-                // Kiểm tra tồn kho mới (đã cộng lại số lượng cũ)
-                int tongTru = spct.SoLuong + soLuongCu; // Tồn kho hiện tại + số lượng đã trừ
-                if (tongTru < soLuongMoi)
-                    return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {tongTru}" });
+                if (soLuongMoi > spct.SoLuong)
+                    return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}" });
 
-                // Cập nhật số lượng
                 cthd.SoLuong = soLuongMoi;
                 cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
-
-                // Cập nhật tồn kho
-                spct.SoLuong = tongTru - soLuongMoi;
             }
 
             spct.LanCapNhatCuoi = DateTime.UtcNow;
@@ -990,16 +982,7 @@ namespace QuanApi.Controllers
             if (cthd == null)
                 return BadRequest(new { message = "Sản phẩm không tồn tại trong giỏ hàng." });
 
-            var spct = await _context.SanPhamChiTiets.FindAsync(dto.IDSanPhamChiTiet);
-            if (spct != null)
-            {
-                // Trả lại tồn kho
-                spct.SoLuong += cthd.SoLuong;
-                spct.LanCapNhatCuoi = DateTime.UtcNow;
-                spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
-            }
-
-            // Xóa chi tiết giỏ hàng
+            // Xóa sản phẩm khỏi giỏ
             _context.ChiTietGioHangs.Remove(cthd);
             await _context.SaveChangesAsync();
 
@@ -1089,16 +1072,9 @@ namespace QuanApi.Controllers
                 return BadRequest(new { message = "Giỏ hàng không tồn tại hoặc đã bị vô hiệu hóa." });
 
             // Trả lại tồn kho cho tất cả sản phẩm
-            foreach (var cthd in gioHang.ChiTietGioHangs)
-            {
-                var spct = await _context.SanPhamChiTiets.FindAsync(cthd.IDSanPhamChiTiet);
-                if (spct != null)
-                {
-                    spct.SoLuong += cthd.SoLuong;
-                    spct.LanCapNhatCuoi = DateTime.UtcNow;
-                    spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
-                }
-            }
+            _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
+            _context.GioHangs.Remove(gioHang);
+            await _context.SaveChangesAsync();
 
             // Xóa tất cả chi tiết giỏ hàng
             _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
@@ -1110,81 +1086,85 @@ namespace QuanApi.Controllers
             return Ok(new { message = "Xóa giỏ hàng thành công" });
         }
 
-        // Chuyển giỏ hàng thành hóa đơn
-        [HttpPost("chuyen-gio-hang-thanh-hoa-don")]
-        public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
-        {
-            var gioHang = await _context.GioHangs
-                .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
-                    .ThenInclude(ct => ct.SanPhamChiTiet)
-                .FirstOrDefaultAsync(g => g.IDGioHang == dto.IDGioHang && g.TrangThai);
+            // Chuyển giỏ hàng thành hóa đơn
+            [HttpPost("chuyen-gio-hang-thanh-hoa-don")]
+            public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
+            {
+                var gioHang = await _context.GioHangs
+                    .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
+                        .ThenInclude(ct => ct.SanPhamChiTiet)
+                    .FirstOrDefaultAsync(g => g.IDGioHang == dto.IDGioHang && g.TrangThai);
 
-            if (gioHang == null)
-                return BadRequest(new { message = "Giỏ hàng không tồn tại hoặc đã bị vô hiệu hóa." });
+                if (gioHang == null)
+                    return BadRequest(new { message = "Giỏ hàng không tồn tại hoặc đã bị vô hiệu hóa." });
 
-            if (!gioHang.ChiTietGioHangs.Any())
-                return BadRequest(new { message = "Giỏ hàng không có sản phẩm nào." });
+                if (!gioHang.ChiTietGioHangs.Any())
+                    return BadRequest(new { message = "Giỏ hàng không có sản phẩm nào." });
 
-            // Map code sang ID phương thức thanh toán
-            Guid paymentMethodId = Guid.Empty;
-            if (!string.IsNullOrEmpty(dto.PaymentMethod))
-            {
-                var method = await _context.PhuongThucThanhToans
-                    .FirstOrDefaultAsync(x => x.MaPhuongThuc == dto.PaymentMethod && x.TrangThai);
-                if (method == null)
-                    return BadRequest(new { message = "Phương thức thanh toán không hợp lệ." });
-                paymentMethodId = method.IDPhuongThucThanhToan;
-            }
-            else
-            {
-                return BadRequest(new { message = "Chưa chọn phương thức thanh toán." });
-            }
+                // Map code sang ID phương thức thanh toán
+                Guid paymentMethodId = Guid.Empty;
+                if (!string.IsNullOrEmpty(dto.PaymentMethod))
+                {
+                    var method = await _context.PhuongThucThanhToans
+                        .FirstOrDefaultAsync(x => x.MaPhuongThuc == dto.PaymentMethod && x.TrangThai);
+                    if (method == null)
+                        return BadRequest(new { message = "Phương thức thanh toán không hợp lệ." });
+                    paymentMethodId = method.IDPhuongThucThanhToan;
+                }
+                else
+                {
+                    return BadRequest(new { message = "Chưa chọn phương thức thanh toán." });
+                }
 
-            string trangThaiHoaDon;
-            var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "cash", "Tiền mặt", "tiền mặt"
-            };
-            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
-            {
-                trangThaiHoaDon = "Đã xác nhận";
-            }
-            else
-            {
-                trangThaiHoaDon = "DaThanhToan";
-            }
+                string trangThaiHoaDon;
+                var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "cash", "Tiền mặt", "tiền mặt"
+                };
+                if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
+                {
+                    trangThaiHoaDon = "Đã xác nhận";
+                }
+                else
+                {
+                    trangThaiHoaDon = "DaThanhToan";
+                }
 
-            // Khách vãng lai (giỏ hàng không có IDKhachHang) chọn giao hàng: tạo KhachHang + địa chỉ trong DB
-            Guid? customerIdForInvoice = gioHang.IDKhachHang;
-            if (!gioHang.IDKhachHang.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
-            {
-                var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
-                customerIdForInvoice = guest.IDKhachHang;
-            }
+                // Khách vãng lai (giỏ hàng không có IDKhachHang) chọn giao hàng: tạo KhachHang + địa chỉ trong DB
+                Guid? customerIdForInvoice = gioHang.IDKhachHang;
+                if (!gioHang.IDKhachHang.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+                {
+                    var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
+                    customerIdForInvoice = guest.IDKhachHang;
+                }
 
-            // Tạo hóa đơn
-            var hoaDon = new HoaDon
-            {
-                IDHoaDon = Guid.NewGuid(),
-                MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-                IDKhachHang = customerIdForInvoice,
-                TenNguoiNhan = dto.CustomerName,
-                SoDienThoaiNguoiNhan = dto.CustomerPhone,
-                DiaChiGiaoHang = dto.Address,
-                TongTien = 0,
-                TrangThai = trangThaiHoaDon,
-                NgayTao = DateTime.UtcNow,
-                TrangThaiHoaDon = true,
-                IDPhuongThucThanhToan = paymentMethodId
-            };
-            _context.HoaDons.Add(hoaDon);
+                // Tạo hóa đơn
+                var hoaDon = new HoaDon
+                {
+                    IDHoaDon = Guid.NewGuid(),
+                    MaHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                    IDKhachHang = customerIdForInvoice,
+                    TenNguoiNhan = dto.CustomerName,
+                    SoDienThoaiNguoiNhan = dto.CustomerPhone,
+                    DiaChiGiaoHang = dto.Address,
+                    TongTien = 0,
+                    TrangThai = trangThaiHoaDon,
+                    NgayTao = DateTime.UtcNow,
+                    TrangThaiHoaDon = true,
+                    IDPhuongThucThanhToan = paymentMethodId
+                };
+                _context.HoaDons.Add(hoaDon);
 
             // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn (dùng giá hiện tại, chỉ với SP đang bán)
             foreach (var cthd in gioHang.ChiTietGioHangs)
             {
-                if (!cthd.SanPhamChiTiet.TrangThai)
-                    return BadRequest(new { message = $"Sản phẩm {cthd.SanPhamChiTiet.MaSPChiTiet} đã ngưng bán, không thể tạo hóa đơn. Vui lòng xóa khỏi giỏ hoặc chọn sản phẩm khác." });
-                var giaSauGiam = await TinhGiaSauGiam(cthd.IDSanPhamChiTiet, cthd.SanPhamChiTiet.GiaBan);
+                var spct = cthd.SanPhamChiTiet;
+
+                if (spct.SoLuong < cthd.SoLuong)
+                    return BadRequest(new { message = $"Sản phẩm {spct.MaSPChiTiet} không đủ tồn kho" });
+
+                var giaSauGiam = await TinhGiaSauGiam(cthd.IDSanPhamChiTiet, spct.GiaBan);
+
                 var cthdHoaDon = new ChiTietHoaDon
                 {
                     IDChiTietHoaDon = Guid.NewGuid(),
@@ -1197,115 +1177,120 @@ namespace QuanApi.Controllers
                     NgayTao = DateTime.UtcNow,
                     TrangThai = true
                 };
+
                 _context.ChiTietHoaDons.Add(cthdHoaDon);
+
                 hoaDon.TongTien += cthdHoaDon.ThanhTien;
+
+                // ⭐ TRỪ TỒN KHO
+                spct.SoLuong -= cthd.SoLuong;
             }
 
             // Áp dụng mã giảm giá nếu có
             if (!string.IsNullOrEmpty(dto.DiscountCode))
-            {
-                var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
-                if (discount != null)
                 {
-                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
-                    if (gioHang.IDKhachHang.HasValue)
+                    var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
+                    if (discount != null)
                     {
-                        var customerVoucher = await _context.KhachHangPhieuGiams
-                            .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == gioHang.IDKhachHang.Value &&
-                                                     x.TrangThai &&
-                                                     x.SoLuongDaSuDung < x.SoLuong);
-
-                        if (customerVoucher != null)
+                        // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
+                        if (gioHang.IDKhachHang.HasValue)
                         {
-                            // Tăng số lượng đã sử dụng
-                            customerVoucher.SoLuongDaSuDung++;
-                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
-                            customerVoucher.NguoiCapNhat = "System";
+                            var customerVoucher = await _context.KhachHangPhieuGiams
+                                .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
+                                                         x.IDKhachHang == gioHang.IDKhachHang.Value &&
+                                                         x.TrangThai &&
+                                                         x.SoLuongDaSuDung < x.SoLuong);
 
-                            // Nếu đã sử dụng hết, vô hiệu hóa
-                            if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                            if (customerVoucher != null)
                             {
-                                customerVoucher.TrangThai = false;
+                                // Tăng số lượng đã sử dụng
+                                customerVoucher.SoLuongDaSuDung++;
+                                customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                                customerVoucher.NguoiCapNhat = "System";
+
+                                // Nếu đã sử dụng hết, vô hiệu hóa
+                                if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                                {
+                                    customerVoucher.TrangThai = false;
+                                }
+                            }
+                            else
+                            {
+                                return BadRequest(new { message = "Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết." });
                             }
                         }
-                        else
-                        {
-                            return BadRequest(new { message = "Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết." });
-                        }
+
+                        // Tính số tiền giảm theo phần trăm
+                        var tienGiam = hoaDon.TongTien * (discount.GiaTriGiam / 100m);
+                        // Nếu có giá trị giảm tối đa, lấy min
+                        if (discount.GiaTriGiamToiDa.HasValue)
+                            tienGiam = Math.Min(tienGiam, discount.GiaTriGiamToiDa.Value);
+
+                        hoaDon.TienGiam = tienGiam;
+                        hoaDon.IDPhieuGiamGia = discount.IDPhieuGiamGia;
+                        hoaDon.TongTien -= tienGiam;
                     }
-
-                    // Tính số tiền giảm theo phần trăm
-                    var tienGiam = hoaDon.TongTien * (discount.GiaTriGiam / 100m);
-                    // Nếu có giá trị giảm tối đa, lấy min
-                    if (discount.GiaTriGiamToiDa.HasValue)
-                        tienGiam = Math.Min(tienGiam, discount.GiaTriGiamToiDa.Value);
-
-                    hoaDon.TienGiam = tienGiam;
-                    hoaDon.IDPhieuGiamGia = discount.IDPhieuGiamGia;
-                    hoaDon.TongTien -= tienGiam;
+                    else
+                    {
+                        return BadRequest(new { message = "Mã giảm giá không hợp lệ." });
+                    }
                 }
-                else
+
+                // Thêm phí vận chuyển nếu có
+                if (dto.Shipping && dto.ShippingFee.HasValue && dto.ShippingFee.Value > 0)
                 {
-                    return BadRequest(new { message = "Mã giảm giá không hợp lệ." });
+                    hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
+                    hoaDon.TongTien += dto.ShippingFee.Value;
                 }
+
+                // Xóa giỏ hàng và chi tiết giỏ hàng
+                _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
+                _context.GioHangs.Remove(gioHang);
+
+                await _context.SaveChangesAsync();
+                return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
             }
 
-            // Thêm phí vận chuyển nếu có
-            if (dto.Shipping && dto.ShippingFee.HasValue && dto.ShippingFee.Value > 0)
+            /// <summary>
+            /// Tạo khách hàng vãng lai khi chọn giao hàng: lưu tên, SĐT, email, địa chỉ vào DB.
+            /// </summary>
+            private async Task<KhachHang> TaoKhachHangVangLaiAsync(string ten, string soDienThoai, string? email, string? diaChiGiaoHang)
             {
-                hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
-                hoaDon.TongTien += dto.ShippingFee.Value;
-            }
-
-            // Xóa giỏ hàng và chi tiết giỏ hàng
-            _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
-            _context.GioHangs.Remove(gioHang);
-
-            await _context.SaveChangesAsync();
-            return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
-        }
-
-        /// <summary>
-        /// Tạo khách hàng vãng lai khi chọn giao hàng: lưu tên, SĐT, email, địa chỉ vào DB.
-        /// </summary>
-        private async Task<KhachHang> TaoKhachHangVangLaiAsync(string ten, string soDienThoai, string? email, string? diaChiGiaoHang)
-        {
-            var maKhachHang = "GUEST-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-            var khachHang = new KhachHang
-            {
-                IDKhachHang = Guid.NewGuid(),
-                MaKhachHang = maKhachHang,
-                TenKhachHang = ten?.Trim() ?? "Khách vãng lai",
-                SoDienThoai = soDienThoai?.Trim() ?? "",
-                Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
-                MatKhau = null,
-                NgayTao = DateTime.UtcNow,
-                NguoiTao = "POS",
-                TrangThai = true
-            };
-            _context.KhachHang.Add(khachHang);
-
-            if (!string.IsNullOrWhiteSpace(diaChiGiaoHang))
-            {
-                var diaChi = new DiaChi
+                var maKhachHang = "GUEST-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+                var khachHang = new KhachHang
                 {
-                    IDDiaChi = Guid.NewGuid(),
-                    MaDiaChi = "DC-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
-                    IDKhachHang = khachHang.IDKhachHang,
-                    DiaChiChiTiet = diaChiGiaoHang.Trim(),
-                    LaMacDinh = true,
-                    TenNguoiNhan = khachHang.TenKhachHang,
-                    SdtNguoiNhan = khachHang.SoDienThoai,
+                    IDKhachHang = Guid.NewGuid(),
+                    MaKhachHang = maKhachHang,
+                    TenKhachHang = ten?.Trim() ?? "Khách vãng lai",
+                    SoDienThoai = soDienThoai?.Trim() ?? "",
+                    Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
+                    MatKhau = null,
                     NgayTao = DateTime.UtcNow,
                     NguoiTao = "POS",
                     TrangThai = true
                 };
-                _context.DiaChis.Add(diaChi);
-            }
+                _context.KhachHang.Add(khachHang);
 
-            await _context.SaveChangesAsync();
-            return khachHang;
-        }
+                if (!string.IsNullOrWhiteSpace(diaChiGiaoHang))
+                {
+                    var diaChi = new DiaChi
+                    {
+                        IDDiaChi = Guid.NewGuid(),
+                        MaDiaChi = "DC-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
+                        IDKhachHang = khachHang.IDKhachHang,
+                        DiaChiChiTiet = diaChiGiaoHang.Trim(),
+                        LaMacDinh = true,
+                        TenNguoiNhan = khachHang.TenKhachHang,
+                        SdtNguoiNhan = khachHang.SoDienThoai,
+                        NgayTao = DateTime.UtcNow,
+                        NguoiTao = "POS",
+                        TrangThai = true
+                    };
+                    _context.DiaChis.Add(diaChi);
+                }
+
+                await _context.SaveChangesAsync();
+                return khachHang;
+            }
     }
 }

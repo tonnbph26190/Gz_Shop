@@ -127,39 +127,57 @@
             <h4 class="mt-4">Chọn biến thể sản phẩm</h4>
             <div class="form-group">
                 <label>Kích cỡ:</label>
-                <select id="kichCoSelect" multiple class="form-control">
+                <div id="kichCoSelect">
                     @if (ViewBag.KichCos != null)
                     {
                         foreach (var item in ViewBag.KichCos as List<SelectListItem>)
                         {
-                            <option value="@item.Value">@item.Text</option>
+                            <div class="form-check">
+                                <input class="form-check-input kichCoCheckbox" type="checkbox"
+                                       value="@item.Value" id="kc_@item.Value">
+                                <label class="form-check-label" for="kc_@item.Value">
+                                    @item.Text
+                                </label>
+                            </div>
                         }
                     }
-                </select>
+                </div>
             </div>
             <div class="form-group">
                 <label>Màu sắc:</label>
-                <select id="mauSacSelect" multiple class="form-control">
+                <div id="mauSacSelect">
                     @if (ViewBag.MauSacs != null)
                     {
                         foreach (var item in ViewBag.MauSacs as List<SelectListItem>)
                         {
-                            <option value="@item.Value">@item.Text</option>
+                            <div class="form-check">
+                                <input class="form-check-input mauSacCheckbox" type="checkbox"
+                                       value="@item.Value" id="ms_@item.Value">
+                                <label class="form-check-label" for="ms_@item.Value">
+                                    @item.Text
+                                </label>
+                            </div>
                         }
                     }
-                </select>
+                </div>
             </div>
             <div class="form-group">
                 <label>Họa tiết:</label>
-                <select id="hoaTietSelect" multiple class="form-control">
+                <div id="hoaTietSelect">
                     @if (ViewBag.HoaTiets != null)
                     {
                         foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
                         {
-                            <option value="@item.Value">@item.Text</option>
+                            <div class="form-check">
+                                <input class="form-check-input hoaTietCheckbox" type="checkbox"
+                                       value="@item.Value" id="ht_@item.Value">
+                                <label class="form-check-label" for="ht_@item.Value">
+                                    @item.Text
+                                </label>
+                            </div>
                         }
                     }
-                </select>
+                </div>
             </div>
             <button type="button" class="btn btn-info mb-3" onclick="generateVariants()">Tạo biến thể</button>
             <!-- 🧮 Bảng biến thể -->
@@ -212,9 +230,27 @@
         }
 
         function generateVariants() {
-            const kichCos = [...document.getElementById("kichCoSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
-            const mauSacs = [...document.getElementById("mauSacSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
-            const hoaTiets = [...document.getElementById("hoaTietSelect").selectedOptions].map(o => ({ id: o.value, text: o.text }));
+            const kichCos = [...document.querySelectorAll(".kichCoCheckbox:checked")]
+                .map(x => ({
+                    id: x.value,
+                    text: x.nextElementSibling.innerText
+                }));
+
+            const mauSacs = [...document.querySelectorAll(".mauSacCheckbox:checked")]
+                .map(x => ({
+                    id: x.value,
+                    text: x.nextElementSibling.innerText
+                }));
+
+            const hoaTiets = [...document.querySelectorAll(".hoaTietCheckbox:checked")]
+                .map(x => ({
+                    id: x.value,
+                    text: x.nextElementSibling.innerText
+                }));
+            if (kichCos.length === 0 || mauSacs.length === 0) {
+                alert("Vui lòng chọn ít nhất 1 kích cỡ và 1 màu sắc!");
+                return;
+            }
 
             const tbody = document.querySelector("#variantTable tbody");
 

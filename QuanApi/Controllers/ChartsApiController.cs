@@ -25,45 +25,77 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var today = DateTime.UtcNow.Date;
             var now = DateTime.UtcNow;
-            var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
-            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+            var startOfToday = now.Date;                    // 00:00:00 UTC
+            var startOfTomorrow = startOfToday.AddDays(1);  // exclusive
 
+            var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
+
+            // today revenue (use range, avoid .Date)
             var todayRevenue = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao.Date == today)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= startOfToday
+                            && h.NgayTao < startOfTomorrow)
+                .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
+            // month revenue (use half-open range)
             var monthRevenue = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
-                            h.NgayTao >= firstDayOfMonth && h.NgayTao <= lastDayOfMonth)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+            .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                        && h.TrangThaiHoaDon
+                        && h.NgayTao >= firstDayOfMonth
+                        && h.NgayTao < firstDayOfNextMonth)
+            .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
             var monthProductQuantity = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
-                .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai) && ct.HoaDon.TrangThaiHoaDon && ct.TrangThai &&
-                             ct.HoaDon.NgayTao >= firstDayOfMonth && ct.HoaDon.NgayTao <= lastDayOfMonth)
-                .SumAsync(ct => ct.SoLuong);
+                .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai)
+                             && ct.HoaDon.TrangThaiHoaDon
+                             && ct.TrangThai
+                             && ct.HoaDon.NgayTao >= firstDayOfMonth
+                             && ct.HoaDon.NgayTao < firstDayOfNextMonth)
+                .SumAsync(ct => (int?)ct.SoLuong ?? 0);
 
-            var todayShipping = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao.Date == today &&
-                            h.PhiVanChuyen.HasValue && h.PhiVanChuyen > 0)
-                .Select(h => new { h.PhiVanChuyen })
-                .ToListAsync();
-            var todayShippingCount = todayShipping.Count;
-            var todayShippingTotal = todayShipping.Sum(h => h.PhiVanChuyen ?? 0);
+            // shipping: let DB compute count & sum directly
+            var todayShippingCount = await _context.HoaDons
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= startOfToday
+                            && h.NgayTao < startOfTomorrow
+                            && h.PhiVanChuyen.HasValue
+                            && h.PhiVanChuyen > 0)
+                .CountAsync();
 
-            var monthShipping = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
-                            h.NgayTao >= firstDayOfMonth && h.NgayTao <= lastDayOfMonth &&
-                            h.PhiVanChuyen.HasValue && h.PhiVanChuyen > 0)
-                .Select(h => new { h.PhiVanChuyen })
-                .ToListAsync();
-            var monthShippingCount = monthShipping.Count;
-            var monthShippingTotal = monthShipping.Sum(h => h.PhiVanChuyen ?? 0);
+            var todayShippingTotal = await _context.HoaDons
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= startOfToday
+                            && h.NgayTao < startOfTomorrow
+                            && h.PhiVanChuyen.HasValue
+                            && h.PhiVanChuyen > 0)
+                .SumAsync(h => (decimal?)(h.PhiVanChuyen ?? 0) ?? 0m);
+
+            var monthShippingCount = await _context.HoaDons
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= firstDayOfMonth
+                            && h.NgayTao < firstDayOfNextMonth
+                            && h.PhiVanChuyen.HasValue
+                            && h.PhiVanChuyen > 0)
+                .CountAsync();
+
+            var monthShippingTotal = await _context.HoaDons
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= firstDayOfMonth
+                            && h.NgayTao < firstDayOfNextMonth
+                            && h.PhiVanChuyen.HasValue
+                            && h.PhiVanChuyen > 0)
+                .SumAsync(h => (decimal?)(h.PhiVanChuyen ?? 0) ?? 0m);
 
             var totalProducts = await _context.SanPhams.CountAsync();
-            var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => spct.SoLuong);
+            var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => (int?)spct.SoLuong ?? 0);
             var outOfStockProducts = await _context.SanPhamChiTiets
                 .GroupBy(spct => spct.IDSanPham)
                 .Where(g => g.Sum(spct => spct.SoLuong) == 0)
@@ -326,12 +358,14 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var from = DateTime.UtcNow.AddMonths(-3);
+            var now = DateTime.UtcNow;
+            var from = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-2);
             var totalRevenue = await _context.ChiTietHoaDons
-                .Include(ct => ct.HoaDon)
-                .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai) && ct.HoaDon.TrangThaiHoaDon && ct.TrangThai &&
-                             ct.HoaDon.NgayTao >= from)
-                .SumAsync(ct => ct.ThanhTien);
+            .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai)
+                         && ct.HoaDon.TrangThaiHoaDon
+                         && ct.TrangThai
+                         && ct.HoaDon.NgayTao >= from)
+            .SumAsync(ct => ct.ThanhTien);
 
             if (totalRevenue == 0)
             {
@@ -388,13 +422,22 @@ public class ChartsApiController : ControllerBase
     public async Task<IActionResult> GetTrangThaiDonHangTrongThang()
     {
         var now = DateTime.UtcNow;
-        var first = new DateTime(now.Year, now.Month, 1);
-        var last = first.AddMonths(1).AddDays(-1);
+
+        var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
+
         var data = await _context.HoaDons
-            .Where(h => h.NgayTao >= first && h.NgayTao <= last && h.TrangThaiHoaDon)
+            .Where(h => h.TrangThaiHoaDon
+                        && h.NgayTao >= firstDayOfMonth
+                        && h.NgayTao < firstDayOfNextMonth)
             .GroupBy(h => h.TrangThai)
-            .Select(g => new { TrangThai = g.Key, SoLuong = g.Count() })
+            .Select(g => new
+            {
+                TrangThai = g.Key,
+                SoLuong = g.Count()
+            })
             .ToListAsync();
+
         return Ok(data);
     }
 
