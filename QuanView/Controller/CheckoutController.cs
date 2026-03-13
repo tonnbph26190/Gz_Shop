@@ -719,27 +719,29 @@ namespace QuanView.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetCustomerVouchers()
-        {
-            try
-            {
-                // Lấy phiếu giảm giá công khai từ KhachHangPhieuGiamsController
-                var response = await _httpClient.GetAsync("KhachHangPhieuGiam/phieu-giam-gia-cong-khai");
-                if (response.IsSuccessStatusCode)
-                {
-                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(vouchers);
-                }
-                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá công khai");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+		[HttpGet]
+		public async Task<IActionResult> GetCustomerVouchers(decimal tongTien)
+		{
+			try
+			{
+				var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cong-khai?tongTien={tongTien}");
 
-        [HttpGet]
+				if (response.IsSuccessStatusCode)
+				{
+					var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
+					return Json(vouchers);
+				}
+
+				return Json(new List<object>());
+			}
+			catch
+			{
+				return Json(new List<object>());
+			}
+		}
+
+
+		[HttpGet]
         public async Task<IActionResult> GetCustomerPersonalVouchers()
         {
             try
