@@ -39,20 +39,21 @@ namespace QuanApi.Controllers
         }
 
     
-        [HttpGet("phieu-giam-gia-cong-khai")]
-        public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers()
-        {
-            try
-            {
-                var vouchers = await _service.GetPublicDiscountVouchersAsync();
-                return Ok(vouchers);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi khi lấy danh sách phiếu giảm giá công khai: {ex.Message}");
-            }
-        }
-        [HttpGet("phieu-giam-gia-cua-khach-hang/{customerId:guid}")]
+     
+		[HttpGet("phieu-giam-gia-cong-khai")]
+		public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers([FromQuery] decimal tongTien)
+		{
+			try
+			{
+				var vouchers = await _service.GetPublicDiscountVouchersAsync(tongTien);
+				return Ok(vouchers);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Lỗi khi lấy danh sách phiếu giảm giá công khai: {ex.Message}");
+			}
+		}
+		[HttpGet("phieu-giam-gia-cua-khach-hang/{customerId:guid}")]
         public async Task<ActionResult<IEnumerable<object>>> GetCustomerDiscountVouchers(Guid customerId)
         {
             try
