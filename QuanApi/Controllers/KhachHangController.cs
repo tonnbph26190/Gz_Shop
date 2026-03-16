@@ -246,7 +246,7 @@ namespace QuanApi.Controllers.Api
 
                     emailBody.AppendLine("<p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>");
                     emailBody.AppendLine("<p>Trân trọng,</p>");
-                    emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>")
+					emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
                     try
                     {
                         await _emailService.SendEmailAsync(khachHang.Email, subject, emailBody.ToString());
