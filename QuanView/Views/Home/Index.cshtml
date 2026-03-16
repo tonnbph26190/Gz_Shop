@@ -103,6 +103,70 @@
         opacity: 1;
         transform: translate(0);
     }
+
+    /* Initial state: hidden, slightly lower, and transparent */
+    .reveal-on-scroll {
+        opacity: 0;
+        transform: translateY(50px);
+        transition: all 0.8s ease-out;
+        visibility: hidden;
+    }
+
+    /* Active state: slides up and fades in */
+    .reveal-on-scroll.active {
+        opacity: 1;
+        transform: translateY(0);
+        visibility: visible;
+    }
+    /* This makes the inner cards fade in slightly after the section appears */
+    .reveal-on-scroll.active .product-card {
+        animation: fadeInUp 0.6s ease forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Add a tiny delay to each card based on its position (optional) */
+    .reveal-on-scroll .col-md-4:nth-child(1) .product-card { animation-delay: 0.1s; }
+    .reveal-on-scroll .col-md-4:nth-child(2) .product-card { animation-delay: 0.2s; }
+    .reveal-on-scroll .col-md-4:nth-child(3) .product-card { animation-delay: 0.3s; }
+    /* New styles for Banner Section 2 */
+    .banner-bg {
+        background-size: cover;
+        background-position: center;
+        min-height: 600px; /* Adjust height as needed */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 40px;
+        color: white; /* Make text white to stand out */
+    }
+
+    .banner-overlay {
+        background: rgba(0, 0, 0, 0.6); /* Darkens the image so text is readable */
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+    }
+
+    .banner-content {
+        position: relative;
+        z-index: 2;
+        max-width: 1000px;
+    }
 </style>
 
 <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
@@ -144,7 +208,7 @@
     </button>
 </div>
 
-<!-- Banner Section -->
+<!-- Banner Section 1 -->
 <section class="py-5">
     <div class="container">
         <div class="row g-4">
@@ -165,7 +229,7 @@
 </section>
 
 <!-- Product Section -->
-<section id="featured-products" class="py-5 bg-light">
+<section id="featured-products" class="py-5 bg-light reveal-on-scroll">
     <div class="container">
         <div class="section-title">
             <h2>Sản phẩm nổi bật</h2>
@@ -209,3 +273,48 @@
         </div>
     </div>
 </section>
+
+<!-- Banner Section 2 -->
+<section class="reveal-on-scroll">
+    <div class="banner position-relative overflow-hidden banner-bg" 
+         style="background-image: url('../img/banner/Homepage_Video-First_Frame.jpg');">
+        
+        <div class="banner-overlay"></div>
+
+        <div class="banner-content text-shadow">
+            <h1 class="fw-bold mb-3 text-light fs-1">Khám Phá Nghệ Thuật Đồ Jeans Hiệu Năng</h1>
+            <p class="text-light fs-6">
+                Không chỉ dừng lại ở chất liệu denim, đồ jeans còn là một biểu tượng văn hóa — đại diện cho phong cách ăn mặc cổ điển, tự do và không bao giờ lỗi mốt. 
+                Hãy cùng khám phá quy trình của chúng tôi để thấy cách chúng tôi kết hợp giữa kỹ nghệ thủ công lâu đời, cải tiến kỹ thuật và thiết kế thượng lưu để tái định nghĩa phong cách vượt thời gian này cho thế kỷ 21.
+            </p>
+        </div>
+    </div>
+</section>
+
+<br class="mb-5">
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const observerOptions = {
+            root: null, // use the viewport
+            threshold: 0.05 // trigger when 10% of the element is visible
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // When scrolling down into view
+                    entry.target.classList.add('active');
+                } else {
+                    // When scrolling away (Up or Down)
+                    // Removing 'active' creates the "hide itself" effect
+                    entry.target.classList.remove('active');
+                }
+            });
+        }, observerOptions);
+
+        // Targeted element
+        const targets = document.querySelectorAll('.reveal-on-scroll');
+        targets.forEach(target => observer.observe(target));
+    });
+</script>
