@@ -38,7 +38,6 @@ namespace QuanApi.Controllers
             return Ok(khachHangId);
         }
 
-    
      
 		[HttpGet("phieu-giam-gia-cong-khai")]
 		public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers([FromQuery] decimal tongTien)
