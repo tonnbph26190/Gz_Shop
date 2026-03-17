@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Dtos.SanPhamKhachHangViewModel>
+@model List<QuanApi.Dtos.SanPhamKhachHangViewModel>
 @{
     ViewData["Title"] = "Sản phẩm";
     var page = ViewBag.Page ?? 1;
@@ -224,27 +224,17 @@
                 @for (int i = 0; i < Model.Count; i++)
                 {
                     var sp = Model[i];
-                    var bienTheSale = sp.BienThes.FirstOrDefault(b => b.GiaSauGiam < b.GiaGoc);
+
+                    var giaGoc = sp.BienThes.Max(b => b.GiaGoc);
                     <div class="col-12 col-sm-6 col-md-4">
                         <div class="product-card h-100 d-flex flex-column">
-                            @if (bienTheSale != null)
-                            {
-                                <span class="product-sale">SALE</span>
-                            }
+                          
                             <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" />
                             <div class="p-3 flex-grow-1 d-flex flex-column">
                                 <div class="product-title">@sp.TenSanPham</div>
                                 <div class="text-muted mb-1" style="font-size:0.95rem;">@sp.DanhMuc</div>
                                 <div>
-                                    @if (bienTheSale != null)
-                                    {
-                                        <span class="product-price">@bienTheSale.GiaSauGiam.ToString("N0") ₫</span>
-                                        <span class="product-oldprice">@bienTheSale.GiaGoc.ToString("N0") ₫</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="product-price">@sp.BienThes.First().GiaGoc.ToString("N0") ₫</span>
-                                    }
+                                    <span class="product-price">@giaGoc.ToString("N0") ₫</span>
                                 </div>
 
                                 <!-- Hiển thị số lượng tồn kho -->
@@ -290,7 +280,14 @@
                     @for (int i = 1; i <= Math.Ceiling((double)total / pageSize); i++)
                     {
                         <li class="page-item @(i == (int)page ? "active" : "")">
-                            <a class="page-link" href="?page=@i">@i</a>
+                            <a class="page-link" href="?page=@i
+&search=@Context.Request.Query["search"]
+&priceFrom=@priceFrom
+&priceTo=@priceTo
+&category=@category
+&size=@size
+&color=@color
+&sortOrder=@Context.Request.Query["sortOrder"]">@i</a>
                         </li>
                     }
                 </ul>
