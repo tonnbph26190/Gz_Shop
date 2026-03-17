@@ -1,11 +1,33 @@
-﻿@model QuanApi.Dtos.SanPhamKhachHangViewModel
+@model QuanApi.Dtos.SanPhamKhachHangViewModel
 @{
     var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     ViewData["Title"] = ((lang == "vi") ? "Chi tiết sản phẩm" : "Product Details");
     var userId = ViewBag.UserId ?? ""; // Lấy từ ViewBag, nếu chưa có thì để rỗng
 }
 <style>
-    
+	.thumbnail-list {
+		max-height: 400px;
+		overflow-y: auto;
+	}
+
+	.thumb-item {
+		width: 70px;
+		height: 70px;
+		object-fit: cover;
+		cursor: pointer;
+		margin-bottom: 8px;
+		border: 2px solid transparent;
+		transition: all 0.2s;
+	}
+
+		.thumb-item:hover {
+			border: 2px solid #d32f2f;
+		}
+
+		.thumb-item.active {
+			border: 2px solid #d32f2f;
+			transform: scale(1.05);
+		}
     .product-detail-container {
         background: #fff;
         border-radius: 12px;
@@ -149,13 +171,38 @@
             border: 1.5px solid #d32f2f;
         }
 </style>
-<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn m-2"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
+	<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn m-2"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
 <div class="container product-detail-container">
     <div class="row">
-        <div class="col-md-6 d-flex flex-column align-items-center">
-            <img src="@Model.UrlAnh" class="product-detail-img-main mb-3" alt="@Model.TenSanPham">
+        <div class="col-md-12 d-flex flex-column align-items-center">
+			<div class="col-md-6 d-flex">
+				@if (Model.DanhSachAnh != null && Model.DanhSachAnh.Any())
+				{
+					<!-- THUMBNAIL BÊN TRÁI -->
+					<div class="d-flex flex-column me-3 thumbnail-list">
+						@for (int i = 0; i < Model.DanhSachAnh.Count; i++)
+						{
+							var thumb = Model.DanhSachAnh[i];
+							<img src="@thumb"
+								 class="img-thumbnail thumb-item @(i == 0 ? "active" : "")"
+								 data-index="@i" />
+						}
+					</div>
+
+					<!-- ẢNH CHÍNH -->
+					<div class="flex-grow-1">
+						<img id="mainImage"
+							 src="@Model.DanhSachAnh.First()"
+							 class="product-detail-img-main" />
+					</div>
+				}
+				else
+				{
+					<img src="@Model.UrlAnh" class="product-detail-img-main" />
+				}
+			</div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="product-detail-title">@Model.TenSanPham</div>
             <div class="mb-2 text-muted">@Model.DanhMuc</div>
             <div class="mb-2">
@@ -170,6 +217,10 @@
                 <label>@((lang == "vi") ? "Size:" : "Size:")</label>
                 <span id="sizeOptions"></span>
             </div>
+			<div class="mb-3 product-detail-btn-group">
+				<label>@((lang == "vi") ? "Họa tiết:" : "Pattern:")</label>
+				<span id="patternOptions"></span>
+			</div>
             <div class="product-detail-qty">
                 <label>@((lang == "vi") ? "Số lượng:" : "Quantity:")</label>
                 <button type="button" class="product-detail-qty-btn" id="btnMinus">-</button>
@@ -187,283 +238,348 @@
     </div>
 </div>
 @section Scripts {
-    <script>
-     
-            let lang = "@lang";
-        let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
-        let selectedSize = '';
-        let selectedColor = '';
-        function renderOptions() {
-            const colors = [...new Set(bienThes.map(b => b.Mau))];
-            let colorHtml = '';
-            colors.forEach(mau => {
-                const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
-                const stockClass = stockForColor > 10 ? "text-success" : stockForColor > 0 ? "text-warning" : "text-danger";
-                const stockText = stockForColor > 0 ? `(${stockForColor})` : "(Hết)";
-                colorHtml += `<button type="button" class="product-detail-btn-option" data-mau="${mau}">${mau} <small class="${stockClass}">${stockText}</small></button>`;
-            });
-            $('#colorOptions').html(colorHtml);
+	<script>
+		let lang = "@lang";
+		let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
+		let images = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachAnh));
+		let selectedSize = '';
+		let selectedColor = '';
+		let selectedPattern = '';
 
-            const sizes = [...new Set(bienThes.map(b => b.Size))];
-            let sizeHtml = '';
-            sizes.forEach(size => {
-                const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
-                const stockClass = stockForSize > 10 ? "text-success" : stockForSize > 0 ? "text-warning" : "text-danger";
-                const stockText = stockForSize > 0 ? `(${stockForSize})` : "(Hết)";
-                sizeHtml += `<button type="button" class="product-detail-btn-option" data-size="${size}">${size} <small class="${stockClass}">${stockText}</small></button>`;
-            });
-            $('#sizeOptions').html(sizeHtml);
-        }
-        function updatePriceAndQty() {
-            const bienThe = bienThes.find(b =>
-                String(b.Size).trim().toLowerCase() === String(selectedSize).trim().toLowerCase() &&
-                String(b.Mau).trim().toLowerCase() === String(selectedColor).trim().toLowerCase()
-            );
-            if (bienThe) {
-                $('#giaBan').text(bienThe.GiaSauGiam.toLocaleString() + ' VND');
-                if (bienThe.GiaSauGiam < bienThe.GiaGoc) {
-                    $('#giaGoc').text(bienThe.GiaGoc.toLocaleString() + ' VND');
-                } else {
-                    $('#giaGoc').text('');
-                }
-                
-                // This is the important part: update the max attribute
-                $('#soLuong').attr('max', bienThe.SoLuong);
+		function renderOptions() {
+			// COLORS (bỏ số lượng hiển thị; disable nếu tổng stock <= 0)
+			const colors = [...new Set(bienThes.map(b => b.Mau))];
+			let colorHtml = '';
+			colors.forEach(mau => {
+				const stockForColor = bienThes.filter(b => b.Mau === mau).reduce((sum, b) => sum + b.SoLuong, 0);
+				const disabled = stockForColor <= 0 ? 'disabled' : '';
+				const disabledAttr = stockForColor <= 0 ? 'disabled="disabled" aria-disabled="true"' : '';
+				colorHtml += `<button type="button" class="product-detail-btn-option ${disabled}" data-mau="${mau}" ${disabledAttr}>${mau}</button>`;
+			});
+			$('#colorOptions').html(colorHtml);
 
-                // Cập nhật trạng thái nút thêm vào giỏ hàng
-                const addCartBtn = $('.product-detail-addcart');
-                if (bienThe.SoLuong <= 0) {
-                    if (lang === "vi") {
-                        addCartBtn.text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
-                    } else {
-                        addCartBtn.text('Out of Stock').prop('disabled', true).css('background', '#6c757d');
-                    }
-                } else {
-                    if (lang === "vi") {
-                        addCartBtn
-                            .text('Thêm vào giỏ hàng')
-                            .prop('disabled', false)
-                            .css('background', '#d32f2f');
-                    } else {
-                        addCartBtn
-                            .text('Add to Cart')
-                            .prop('disabled', false)
-                            .css('background', '#d32f2f');
-                    }
-                }
+			// SIZES (bỏ số lượng hiển thị; disable nếu tổng stock <= 0)
+			const sizes = [...new Set(bienThes.map(b => b.Size))];
+			let sizeHtml = '';
+			sizes.forEach(size => {
+				const stockForSize = bienThes.filter(b => b.Size === size).reduce((sum, b) => sum + b.SoLuong, 0);
+				const disabled = stockForSize <= 0 ? 'disabled' : '';
+				const disabledAttr = stockForSize <= 0 ? 'disabled="disabled" aria-disabled="true"' : '';
+				sizeHtml += `<button type="button" class="product-detail-btn-option ${disabled}" data-size="${size}" ${disabledAttr}>${size}</button>`;
+			});
+			$('#sizeOptions').html(sizeHtml);
 
-                // Hiển thị thông tin số lượng
-                updateStockInfo(bienThe.SoLuong);
-            } else {
-                $('#giaBan').text('');
-                $('#giaGoc').text('');
-                $('#soLuong').attr('max', 1);
-                const addCartBtn = $('.product-detail-addcart');
+			// PATTERNS (bỏ số lượng hiển thị; disable nếu tổng stock <= 0)
+			const patterns = [...new Set(bienThes.map(b => b.HoaTiet))];
+			let patternHtml = '';
+			patterns.forEach(p => {
+				// compute stock respecting current color/size selection only for deciding disabled state
+				let filtered = bienThes.filter(b => b.HoaTiet === p);
 
-                if (!selectedSize || !selectedColor) {
-                    addCartBtn
-                        .text(lang === "vi" ? 'Chọn size và màu' : 'Select size and color')
-                        .prop('disabled', true)
-                        .css('background', '#6c757d');
-                }
-                updateStockInfo(0);
-            }
-        }
+				// if color selected -> filter by color
+				if (selectedColor) filtered = filtered.filter(b => b.Mau === selectedColor);
+				// if size selected -> filter by size
+				if (selectedSize) filtered = filtered.filter(b => b.Size === selectedSize);
 
-        function updateStockInfo(stock) {
-            let stockHtml = '';
-            if (lang == "vi") {
-                 if (stock <= 0) {
-                    stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Hết hàng</span>';
-                } else if (stock <= 5) {
-                    stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Chỉ còn ${stock} sản phẩm</span>`;
-                } else {
-                    stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Còn ${stock} sản phẩm</span>`;
-                }
-            } else {
-                if (stock <= 0) {
-                    stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Out of Stock</span>';
-                } else if (stock <= 5) {
-                    stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Only ${stock} items left</span>`;
-                } else {
-                    stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> ${stock} items available</span>`;
-                }
-            }
-            $('#stockInfo').html(stockHtml);
-        }
-        $(document).on('click', '.product-detail-btn-option[data-mau]', function () {
+				const stock = filtered.length === 1 ? filtered[0].SoLuong : filtered.reduce((sum, b) => sum + b.SoLuong, 0);
+				const disabled = stock <= 0 ? 'disabled' : '';
+				const disabledAttr = stock <= 0 ? 'disabled="disabled" aria-disabled="true"' : '';
+				patternHtml += `<button type="button" class="product-detail-btn-option ${disabled}" data-pattern="${p}" ${disabledAttr}>${p}</button>`;
+			});
+			$('#patternOptions').html(patternHtml);
+		}
 
-            const mau = $(this).data('mau');
+		function updatePriceAndQty() {
+			const bienThe = bienThes.find(b =>
+				String(b.Size).trim().toLowerCase() === String(selectedSize || '').trim().toLowerCase() &&
+				String(b.Mau).trim().toLowerCase() === String(selectedColor || '').trim().toLowerCase() &&
+				String(b.HoaTiet).trim().toLowerCase() === String(selectedPattern || '').trim().toLowerCase()
+			);
 
-            // nếu click lại màu đã chọn thì bỏ qua
-            if (selectedColor === mau) return;
+			if (bienThe) {
+				$('#giaBan').text(Number(bienThe.GiaSauGiam).toLocaleString() + ' VND');
+				if (Number(bienThe.GiaSauGiam) < Number(bienThe.GiaGoc)) {
+					$('#giaGoc').text(Number(bienThe.GiaGoc).toLocaleString() + ' VND');
+				} else {
+					$('#giaGoc').text('');
+				}
 
-            $('.product-detail-btn-option[data-mau]').removeClass('selected');
-            $(this).addClass('selected');
+				$('#soLuong').attr('max', bienThe.SoLuong);
 
-            selectedColor = mau;
+				const addCartBtn = $('.product-detail-addcart');
+				if (bienThe.SoLuong <= 0) {
+					addCartBtn.text(lang === "vi" ? 'Hết hàng' : 'Out of Stock').prop('disabled', true).css('background', '#6c757d');
+				} else {
+					addCartBtn.text(lang === "vi" ? 'Thêm vào giỏ hàng' : 'Add to Cart').prop('disabled', false).css('background', '#d32f2f');
+				}
 
-            const validSizes = bienThes
-                .filter(b => b.Mau === mau)
-                .map(b => b.Size);
+				updateStockInfo(bienThe.SoLuong);
+			} else {
+				$('#giaBan').text('');
+				$('#giaGoc').text('');
+				$('#soLuong').attr('max', 1);
+				const addCartBtn = $('.product-detail-addcart');
 
-            $('.product-detail-btn-option[data-size]').each(function () {
+				if (!selectedSize || !selectedColor || !selectedPattern) {
+					addCartBtn.text(lang === "vi" ? 'Chọn size và màu' : 'Select size and color').prop('disabled', true).css('background', '#6c757d');
+				}
+				updateStockInfo(0);
+			}
+		}
 
-                const size = $(this).data('size');
+		function updateStockInfo(stock) {
+			let stockHtml = '';
+			if (lang == "vi") {
+				if (stock <= 0) {
+					stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Hết hàng</span>';
+				} else if (stock <= 5) {
+					stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Chỉ còn ${stock} sản phẩm</span>`;
+				} else {
+					stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> Còn ${stock} sản phẩm</span>`;
+				}
+			} else {
+				if (stock <= 0) {
+					stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Out of Stock</span>';
+				} else if (stock <= 5) {
+					stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle"></i> Only ${stock} items left</span>`;
+				} else {
+					stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle"></i> ${stock} items available</span>`;
+				}
+			}
+			$('#stockInfo').html(stockHtml);
+		}
 
-                if (validSizes.includes(size)) {
-                    $(this).removeClass('disabled');
-                } else {
-                    $(this).addClass('disabled');
-                }
+		// --- Event handlers ---
+				$(document).on('click', '.product-detail-btn-option[data-mau]', function () {
+			if ($(this).hasClass('disabled')) return; // ignore disabled color
 
-            });
+			const mau = String($(this).data('mau')).trim();
+			if (selectedColor === mau) return;
 
-            // nếu size đang chọn không hợp lệ thì mới reset
-            if (!validSizes.includes(selectedSize)) {
-                selectedSize = '';
-                $('.product-detail-btn-option[data-size]').removeClass('selected');
-            }
+			$('.product-detail-btn-option[data-mau]').removeClass('selected');
+			$(this).addClass('selected');
 
-            updatePriceAndQty();
-        });
-        $(document).on('click', '.product-detail-btn-option[data-size]', function () {
+			selectedColor = mau;
 
-            if ($(this).hasClass('disabled')) return;
+			// filter valid options for the selected color
+			const valid = bienThes.filter(b => String(b.Mau).trim() === mau);
+			const validSizes = valid.map(b => String(b.Size).trim().toLowerCase());
+			const validPatterns = valid.map(b => String(b.HoaTiet).trim().toLowerCase());
 
-            const size = $(this).data('size');
+			// update size buttons enabled/disabled state (ENABLE if included, otherwise DISABLE)
+			$('.product-detail-btn-option[data-size]').each(function () {
+				const sizeVal = String($(this).data('size')).trim().toLowerCase();
+				const shouldEnable = validSizes.includes(sizeVal);
+				$(this).toggleClass('disabled', !shouldEnable);
+				$(this).prop('disabled', !shouldEnable);
+				if (shouldEnable) $(this).removeAttr('aria-disabled'); else $(this).attr('aria-disabled', 'true');
+			});
 
-            // nếu click lại size đã chọn thì bỏ qua
-            if (selectedSize === size) return;
+			// update pattern buttons enabled/disabled state
+			$('.product-detail-btn-option[data-pattern]').each(function () {
+				const p = String($(this).data('pattern')).trim().toLowerCase();
+				const shouldEnable = validPatterns.includes(p);
+				$(this).toggleClass('disabled', !shouldEnable);
+				$(this).prop('disabled', !shouldEnable);
+				if (shouldEnable) $(this).removeAttr('aria-disabled'); else $(this).attr('aria-disabled', 'true');
+			});
 
-            $('.product-detail-btn-option[data-size]').removeClass('selected');
-            $(this).addClass('selected');
+			// nếu size đang chọn không hợp lệ thì reset chọn size
+			if (!validSizes.includes(String(selectedSize).trim().toLowerCase())) {
+				selectedSize = '';
+				$('.product-detail-btn-option[data-size]').removeClass('selected');
+			}
 
-            selectedSize = size;
+			// nếu pattern đang chọn không hợp lệ thì reset
+			if (!validPatterns.includes(String(selectedPattern).trim().toLowerCase())) {
+				selectedPattern = '';
+				$('.product-detail-btn-option[data-pattern]').removeClass('selected');
+			}
 
-            updatePriceAndQty();
-        });
-        $('#btnMinus').on('click', function () {
-            let val = parseInt($('#soLuong').val()) || 1;
-            if (val > 1) $('#soLuong').val(val - 1);
-        });
-        $('#btnPlus').on('click', function () {
-            let val = parseInt($('#soLuong').val()) || 1;
-            let max = parseInt($('#soLuong').attr('max')) || 1;
-            if (val < max) $('#soLuong').val(val + 1);
-        });
-        $(document).ready(function () {
-            renderOptions();
-            // 1. Handle manual typing
-            $('#soLuong').on('input', function () {
-                let val = parseInt($(this).val());
-                let max = parseInt($(this).attr('max')) || 1;
-                let min = parseInt($(this).attr('min')) || 1;
+			updatePriceAndQty();
+		});
 
-                if (isNaN(val)) return; 
+		$(document).on('click', '.product-detail-btn-option[data-size]', function () {
+			if ($(this).hasClass('disabled')) return;
 
-                if (val > max) {
-                    $(this).val(max);
-                    alert(lang === "vi" ? `Số lượng tối đa là ${max}` : `Maximum quantity is ${max}`);
-                } else if (val < min) {
-                    $(this).val(min);
-                }
-            });
+			const size = String($(this).data('size')).trim();
+			if (selectedSize === size) return;
 
-            // 2. Prevent invalid characters
-            $('#soLuong').on('keydown', function (e) {
-                if (['e', 'E', '+', '-'].includes(e.key)) {
-                    e.preventDefault();
-                }
-            });
+			$('.product-detail-btn-option[data-size]').removeClass('selected');
+			$(this).addClass('selected');
 
-            // Chọn mặc định biến thể còn hàng đầu tiên để tránh hiển thị "Hết hàng" khi sản phẩm còn biến thể khác
-            const firstAvailable = bienThes.find(b => b.SoLuong > 0);
-            if (firstAvailable) {
-                selectedColor = firstAvailable.Mau;
-                selectedSize = firstAvailable.Size;
+			selectedSize = size;
 
-                // Đánh dấu nút được chọn tương ứng
-                $('.product-detail-btn-option[data-mau]').removeClass('selected');
-                $(`.product-detail-btn-option[data-mau="${selectedColor}"]`).addClass('selected');
+			// After selecting size, update pattern buttons availability based on chosen size & color
+			const valid = bienThes.filter(b =>
+				String(b.Size).trim().toLowerCase() === String(size).trim().toLowerCase() &&
+				(selectedColor ? String(b.Mau).trim().toLowerCase() === String(selectedColor).trim().toLowerCase() : true)
+			);
+			const validPatterns = valid.map(b => String(b.HoaTiet).trim().toLowerCase());
 
-                $('.product-detail-btn-option[data-size]').removeClass('selected');
-                $(`.product-detail-btn-option[data-size="${selectedSize}"]`).addClass('selected');
+			$('.product-detail-btn-option[data-pattern]').each(function () {
+				const p = String($(this).data('pattern')).trim().toLowerCase();
+				const shouldEnable = validPatterns.includes(p);
+				$(this).toggleClass('disabled', !shouldEnable);
+				$(this).prop('disabled', !shouldEnable);
+				if (shouldEnable) $(this).removeAttr('aria-disabled'); else $(this).attr('aria-disabled', 'true');
+			});
 
-                updatePriceAndQty();
-            } else {
-                // Không có biến thể nào còn hàng
-                $('.product-detail-addcart').text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
-                updateStockInfo(0);
-            }
-        });
-        function themGioHang() {
-            if (!selectedSize || !selectedColor) {
-                alert('Vui lòng chọn size và màu!');
-                return;
-            }
+			if (!validPatterns.includes(String(selectedPattern).trim().toLowerCase())) {
+				selectedPattern = '';
+				$('.product-detail-btn-option[data-pattern]').removeClass('selected');
+			}
 
-            const bienThe = bienThes.find(b =>
-                String(b.Size).trim().toLowerCase() === String(selectedSize).trim().toLowerCase() &&
-                String(b.Mau).trim().toLowerCase() === String(selectedColor).trim().toLowerCase()
-            );
-            if (!bienThe) {
-                alert('Vui lòng chọn đúng biến thể!');
-                return;
-            }
+			updatePriceAndQty();
+		});
 
-            // Kiểm tra số lượng tồn kho
-            if (bienThe.SoLuong <= 0) {
-                alert('Sản phẩm đã hết hàng!');
-                return;
-            }
+		$(document).on('click', '.product-detail-btn-option[data-pattern]', function () {
+			if ($(this).hasClass('disabled')) return;
 
-            const soLuong = parseInt($('#soLuong').val());
-            if (soLuong <= 0) {
-                alert('Số lượng phải lớn hơn 0!');
-                return;
-            }
+			const pattern = $(this).data('pattern');
+			if (selectedPattern === pattern) return;
 
-            if (soLuong > bienThe.SoLuong) {
-                alert(`Số lượng vượt quá tồn kho! Hiện có: ${bienThe.SoLuong}`);
-                return;
-            }
+			$('.product-detail-btn-option[data-pattern]').removeClass('selected');
+			$(this).addClass('selected');
 
-            // Hàm decode HTML entities
-            function decodeHtmlEntities(text) {
-                const textarea = document.createElement('textarea');
-                textarea.innerHTML = text;
-                return textarea.value;
-            }
+			selectedPattern = pattern;
 
-            // Thông báo xác nhận trước khi thêm vào giỏ hàng
-            const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
-            const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
+			updatePriceAndQty();
+		});
 
-            if (!confirm(confirmMessage)) {
-                return;
-            }
+		// quantity controls
+		$('#btnMinus').on('click', function () {
+			let val = parseInt($('#soLuong').val()) || 1;
+			if (val > 1) $('#soLuong').val(val - 1);
+		});
+		$('#btnPlus').on('click', function () {
+			let val = parseInt($('#soLuong').val()) || 1;
+			let max = parseInt($('#soLuong').attr('max')) || 1;
+			if (val < max) $('#soLuong').val(val + 1);
+		});
 
-            $.post('/GioHang/Add', {
-                idsp: bienThe.IDSanPhamChiTiet,
-                soluong: soLuong
-            }, function (res) {
-                // Chuẩn hóa dữ liệu trả về
-                try { if (typeof res === 'string') res = JSON.parse(res); } catch (e) { }
-                if (res && res.success === true) {
-                    alert('Sản phẩm đã được thêm vào giỏ hàng!');
-                } else {
-                    const msg = (res && res.message ? String(res.message) : '').toLowerCase();
-                    if (msg.includes('vượt quá tồn kho') || msg.includes('tối đa')) {
-                        alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
-                    } else {
-                        alert('Thêm vào giỏ hàng thất bại!');
-                    }
-                }
-            }).fail(function () {
-                // Fallback: lỗi HTTP
-                alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
-            });
-        }
-    </script>
+		$(document).ready(function () {
+			renderOptions();
+
+			// ensure manual typing respects max/min
+			$('#soLuong').on('input', function () {
+				let val = parseInt($(this).val());
+				let max = parseInt($(this).attr('max')) || 1;
+				let min = parseInt($(this).attr('min')) || 1;
+
+				if (isNaN(val)) return;
+
+				if (val > max) {
+					$(this).val(max);
+					alert(lang === "vi" ? `Số lượng tối đa là ${max}` : `Maximum quantity is ${max}`);
+				} else if (val < min) {
+					$(this).val(min);
+				}
+			});
+
+			$('#soLuong').on('keydown', function (e) {
+				if (['e', 'E', '+', '-'].includes(e.key)) {
+					e.preventDefault();
+				}
+			});
+
+			// Chọn mặc định biến thể còn hàng đầu tiên để tránh hiển thị "Hết hàng"
+			const firstAvailable = bienThes.find(b => b.SoLuong > 0);
+			if (firstAvailable) {
+				selectedColor = firstAvailable.Mau;
+				selectedSize = firstAvailable.Size;
+				selectedPattern = firstAvailable.HoaTiet;
+
+				$(`[data-mau="${selectedColor}"]`).addClass('selected');
+				$(`[data-size="${selectedSize}"]`).addClass('selected');
+				$(`[data-pattern="${selectedPattern}"]`).addClass('selected');
+
+				// ensure renderOptions was aware of selectedColor/Size so patterns disabled state is correct
+				renderOptions();
+
+				// mark selected again (renderOptions re-rendered the DOM)
+				$(`[data-mau="${selectedColor}"]`).addClass('selected');
+				$(`[data-size="${selectedSize}"]`).addClass('selected');
+				$(`[data-pattern="${selectedPattern}"]`).addClass('selected');
+
+				updatePriceAndQty();
+			} else {
+				$('.product-detail-addcart').text('Hết hàng').prop('disabled', true).css('background', '#6c757d');
+				updateStockInfo(0);
+			}
+		});
+
+		function themGioHang() {
+			if (!selectedSize || !selectedColor || !selectedPattern) {
+				alert('Vui lòng chọn đầy đủ!');
+				return;
+			}
+
+			const bienThe = bienThes.find(b =>
+				String(b.Size).trim().toLowerCase() === selectedSize.toLowerCase() &&
+				String(b.Mau).trim().toLowerCase() === selectedColor.toLowerCase() &&
+				String(b.HoaTiet).trim().toLowerCase() === selectedPattern.toLowerCase()
+			);
+			if (!bienThe) {
+				alert('Vui lòng chọn đúng biến thể!');
+				return;
+			}
+
+			if (bienThe.SoLuong <= 0) {
+				alert('Sản phẩm đã hết hàng!');
+				return;
+			}
+
+			const soLuong = parseInt($('#soLuong').val());
+			if (soLuong <= 0) {
+				alert('Số lượng phải lớn hơn 0!');
+				return;
+			}
+
+			if (soLuong > bienThe.SoLuong) {
+				alert(`Số lượng vượt quá tồn kho! Hiện có: ${bienThe.SoLuong}`);
+				return;
+			}
+
+			function decodeHtmlEntities(text) {
+				const textarea = document.createElement('textarea');
+				textarea.innerHTML = text;
+				return textarea.value;
+			}
+
+			const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
+			const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
+
+			if (!confirm(confirmMessage)) {
+				return;
+			}
+
+			$.post('/GioHang/Add', {
+				idsp: bienThe.IDSanPhamChiTiet,
+				soluong: soLuong
+			}, function (res) {
+				try { if (typeof res === 'string') res = JSON.parse(res); } catch (e) { }
+				if (res && res.success === true) {
+					alert('Sản phẩm đã được thêm vào giỏ hàng!');
+				} else {
+					const msg = (res && res.message ? String(res.message) : '').toLowerCase();
+					if (msg.includes('vượt quá tồn kho') || msg.includes('tối đa')) {
+						alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
+					} else {
+						alert('Thêm vào giỏ hàng thất bại!');
+					}
+				}
+			}).fail(function () {
+				alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
+			});
+		}
+
+		// Thumbnail click -> đổi ảnh chính
+		$(document).on('click', '.thumb-item', function () {
+			const index = $(this).data('index');
+			$('#mainImage').attr('src', images[index]);
+			$('.thumb-item').removeClass('active');
+			$(this).addClass('active');
+		});
+	</script>
 }

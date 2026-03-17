@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
 namespace QuanView.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize]
+    //[Authorize]
     public class AnhSanPhamController : Controller
     {
         private readonly HttpClient _http;
@@ -51,42 +51,54 @@ namespace QuanView.Areas.Admin.Controllers
             }
         }
 
-        // POST: Thêm ảnh mới
-        [HttpPost]
-        public async Task<IActionResult> AddImage(Guid sanPhamChiTietId, [FromBody] QuanView.Areas.Admin.Models.AddAnhSanPhamDto dto)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return Json(new { success = false, message = "Dữ liệu không hợp lệ" });
-                }
+		[HttpPost]
+		public async Task<IActionResult> AddImage(
+		Guid sanPhamChiTietId,
+		[FromForm] IFormFile file,
+		[FromForm] bool laAnhChinh)
+		{
+			try
+			{
+				if (file == null || file.Length == 0)
+				{
+					return Json(new { success = false, message = "File không hợp lệ" });
+				}
 
-                // Map từ Admin DTO sang API DTO
-                var apiDto = new QuanApi.Dtos.AddAnhSanPhamDto
-                {
-                    UrlAnh = dto.UrlAnh,
-                    LaAnhChinh = dto.LaAnhChinh
-                };
+				var formData = new MultipartFormDataContent();
+				formData.Add(new StreamContent(file.OpenReadStream()), "file", file.FileName);
+				formData.Add(new StringContent(laAnhChinh.ToString()), "laAnhChinh");
 
-                var response = await _http.PostAsJsonAsync($"sanphams/chitiet/{sanPhamChiTietId}/images", apiDto);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    return Json(new { success = false, message = $"Lỗi: {response.StatusCode} - {errorMessage}" });
-                }
+				var response = await _http.PostAsync(
+					$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
+					formData
+				);
 
-                var result = await response.Content.ReadFromJsonAsync<object>();
-                return Json(new { success = true, data = result });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Lỗi không xác định: {ex.Message}" });
-            }
-        }
+				if (!response.IsSuccessStatusCode)
+				{
+					var error = await response.Content.ReadAsStringAsync();
+					return Json(new { success = false, message = error });
+				}
 
-        // DELETE: Xóa ảnh
-        [HttpDelete]
+				var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+
+				return Json(new
+				{
+					success = true,
+					urlAnh = result.UrlAnh
+				});
+			}
+			catch (Exception ex)
+			{
+				return Json(new
+				{
+					success = false,
+					message = ex.Message
+				});
+			}
+		}
+
+		// DELETE: Xóa ảnh
+		[HttpDelete]
         public async Task<IActionResult> DeleteImage(Guid imageId)
         {
             try
@@ -145,4 +157,12 @@ namespace QuanView.Areas.Admin.Controllers
             }).ToList() ?? new List<QuanView.Areas.Admin.Models.AnhSanPhamDto>();
         }
     }
+}
+public class UploadImageResponse
+{
+	public string Message { get; set; }
+	public string UrlAnh { get; set; }
+	public Guid IDAnhSanPham { get; set; }
+	public string MaAnh { get; set; }
+	public bool LaAnhChinh { get; set; }
 }

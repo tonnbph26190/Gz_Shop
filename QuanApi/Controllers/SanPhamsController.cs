@@ -641,20 +641,38 @@ namespace QuanApi.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("Không có file ảnh.");
 
-            // Tạo tên file duy nhất
-            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+			// Tạo tên file duy nhất
+			var viewProjectPath = Path.Combine(
+				Directory.GetParent(Directory.GetCurrentDirectory()).FullName,
+				"QuanView",
+				"wwwroot",
+				"uploads"
+			);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(uploadPath));
-            using (var stream = new FileStream(uploadPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+			var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+			var fullPath = Path.Combine(viewProjectPath, fileName);
 
-            var urlAnh = $"/uploads/{fileName}";
+			using (var stream = new FileStream(fullPath, FileMode.Create))
+			{
+				await file.CopyToAsync(stream);
+			}
 
-            // Tạo bản ghi ảnh sản phẩm như logic cũ
-            var anhSanPham = new AnhSanPham
+			var urlAnh = $"/uploads/{fileName}";
+
+			var danhSachAnhCu = await _context.AnhSanPhams.Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai).ToListAsync();
+
+			if (danhSachAnhCu.Any())
+			{
+				foreach (var anh in danhSachAnhCu)
+				{
+					anh.TrangThai = false; // hoặc = 1 nếu bạn dùng 1 là inactive
+					anh.LanCapNhatCuoi = DateTime.UtcNow;
+					anh.NguoiCapNhat = User?.Identity?.Name ?? "System";
+				}
+			}
+
+			// Tạo bản ghi ảnh sản phẩm như logic cũ
+			var anhSanPham = new AnhSanPham
             {
                 IDAnhSanPham = Guid.NewGuid(),
                 MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
