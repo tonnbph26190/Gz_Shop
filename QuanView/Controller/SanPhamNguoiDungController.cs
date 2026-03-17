@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanView.ViewModels;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -33,27 +34,22 @@ namespace QuanView.Controllers
                 query += $"&size={Uri.EscapeDataString(size)}";
             if (!string.IsNullOrEmpty(color))
                 query += $"&color={Uri.EscapeDataString(color)}";
-
-            var response = await _http.GetAsync(query);
+			if (!string.IsNullOrEmpty(sortOrder))
+				query += $"&sortOrder={sortOrder}";
+			var response = await _http.GetAsync(query);
             if (!response.IsSuccessStatusCode)
             {
                 ViewData["ErrorMessage"] = "Không thể tải danh sách sản phẩm.";
                 return View("Error");
             }
-            var list = await response.Content.ReadFromJsonAsync<List<SanPhamKhachHangViewModel>>();
-            if (!string.IsNullOrEmpty(sortOrder) && list != null)
-            {
-                if (sortOrder == "asc")
-                {
-                    list = list.OrderBy(sp => sp.BienThes != null && sp.BienThes.Any() ? sp.BienThes.Min(b => b.GiaSauGiam) : decimal.MaxValue).ToList();
-                }
-                else if (sortOrder == "desc")
-                {
-                    list = list.OrderByDescending(sp => sp.BienThes != null && sp.BienThes.Any() ? sp.BienThes.Min(b => b.GiaSauGiam) : decimal.MinValue).ToList();
-                }
-            }
-            // Fetch filter options
-            var filterResponse = await _http.GetAsync("SanPhamNguoiDungs/filter-options");
+
+			var result = await response.Content.ReadFromJsonAsync<PagedResult<SanPhamKhachHangViewModel>>();
+
+			var list = result?.Data ?? new List<SanPhamKhachHangViewModel>();
+			var total = result?.Total ?? 0;
+		
+			// Fetch filter options
+			var filterResponse = await _http.GetAsync("SanPhamNguoiDungs/filter-options");
             if (filterResponse.IsSuccessStatusCode)
             {
                 var filterOptions = await filterResponse.Content.ReadFromJsonAsync<FilterOptionsDto>();
@@ -70,8 +66,8 @@ namespace QuanView.Controllers
 
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
-            ViewBag.Total = list?.Count ?? 0;
-            return View(list);
+			ViewBag.Total = total;
+			return View(list);
         }
 
         // GET: /SanPhamNguoiDung/Detail/{id}
