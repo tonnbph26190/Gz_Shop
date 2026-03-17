@@ -129,25 +129,25 @@
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdKichCo" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdMauSac" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdHoaTiet" />
-                                    @Model.ChiTietSanPhams[i].TenKichCo
+                                    <strong>@Model.ChiTietSanPhams[i].TenKichCo</strong>
                                 </td>
                                 <td>
-                                    <select asp-for="ChiTietSanPhams[i].IdMauSac" class="form-control form-control-sm variant-mausac-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.MauSacs)">
+                                    <select asp-for="ChiTietSanPhams[i].IdMauSac" class="form-control form-control-sm" asp-items="@((IEnumerable<SelectListItem>)ViewBag.MauSacs)">
                                         <option value="">-- Chọn --</option>
                                     </select>
                                     <small class="text-muted d-block">Hiện tại: @variant.TenMauSac</small>
                                 </td>
                                 <td>
-                                    <select asp-for="ChiTietSanPhams[i].IdHoaTiet" class="form-control form-control-sm variant-hoatiet-select" asp-items="@((IEnumerable<SelectListItem>)ViewBag.HoaTiets)">
+                                    <select asp-for="ChiTietSanPhams[i].IdHoaTiet" class="form-control form-control-sm" asp-items="@((IEnumerable<SelectListItem>)ViewBag.HoaTiets)">
                                         <option value="00000000-0000-0000-0000-000000000000">-- Không --</option>
                                     </select>
                                     <small class="text-muted d-block">Hiện tại: @(variant.TenHoaTiet ?? "Không")</small>
                                 </td>
                                 <td>
-                                    <input asp-for="ChiTietSanPhams[i].SoLuong" class="form-control form-control-sm quantity-input" type="number" min="0" step="1" />
+                                    <input asp-for="ChiTietSanPhams[i].SoLuong" class="form-control form-control-sm quantity-input" type="number" min="0" />
                                 </td>
                                 <td>
-                                    <input asp-for="ChiTietSanPhams[i].GiaBan" class="form-control form-control-sm price-input" type="number" min="0.01" step="0.01" />
+                                    <input asp-for="ChiTietSanPhams[i].GiaBan" class="form-control form-control-sm price-input" type="number" min="0" step="1000" />
                                 </td>
                                 <td>
                                     <div class="form-check form-switch">
@@ -155,20 +155,19 @@
                                         <label class="form-check-label small">Hoạt động</label>
                                     </div>
                                 </td>
-                                <td>
-                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-variant" title="Xóa biến thể">
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-variant">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>
                         }
+
                         <tr class="variant-row new-variant-row" id="newVariantTemplateRow" data-index="@newVariantIndex" style="display: none;">
                             <td>
                                 <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPham" value="@Model.IDSanPham" />
-                            </td>
-                            <td>
                                 <select name="ChiTietSanPhams[@newVariantIndex].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
                                     <option value="">-- Chọn --</option>
                                 </select>
@@ -184,17 +183,16 @@
                                 </select>
                             </td>
                             <td>
-                                <input name="ChiTietSanPhams[@newVariantIndex].SoLuong" class="form-control form-control-sm quantity-input" type="number" min="0" value="0" step="1" />
+                                <input name="ChiTietSanPhams[@newVariantIndex].SoLuong" class="form-control form-control-sm quantity-input" type="number" min="0" value="0" />
                             </td>
                             <td>
-                                <input name="ChiTietSanPhams[@newVariantIndex].GiaBan" class="form-control form-control-sm price-input" type="number" min="0.01" value="0" step="0.01" />
+                                <input name="ChiTietSanPhams[@newVariantIndex].GiaBan" class="form-control form-control-sm price-input" type="number" min="0" value="0" />
                             </td>
                             <td>
-                                <span class="badge bg-info">Biến thể mới</span>
+                                <span class="badge bg-info">Mới</span>
                             </td>
-                            <td>
-                                <span class="text-muted">-</span>
-                            </td>
+                            <td class="text-center">
+                                </td>
                         </tr>
                     </tbody>
                 </table>
@@ -381,6 +379,7 @@
         });
 
         // Thêm nhiều dòng biến thể mới (mỗi dòng = 1 biến thể khi Cập nhật)
+        // ... inside your script tag ...
         (function() {
             var templateRow = document.getElementById('newVariantTemplateRow');
             if (!templateRow) return;
@@ -392,39 +391,33 @@
                 clone.id = '';
                 clone.classList.remove('new-variant-row');
                 clone.classList.add('new-variant-clone');
-                clone.style.display = ''; // Hiển thị dòng clone
+                clone.style.display = ''; 
                 
                 var oldPrefix = 'ChiTietSanPhams[' + templateIndex + ']';
                 var newPrefix = 'ChiTietSanPhams[' + nextNewIndex + ']';
+                
                 clone.querySelectorAll('[name]').forEach(function(el) {
                     if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
                 });
+
                 clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(function(el) {
                     el.value = nextNewIndex;
                 });
-                clone.querySelectorAll('select').forEach(function(s) { s.selectedIndex = 0; });
+
+                // Initialize values and apply validation
                 clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
                     i.value = '0';
-                    // Apply validation to new inputs
                     addValidationToInput(i, 'quantity');
                 });
                 clone.querySelectorAll('input.price-input').forEach(function(i) { 
                     i.value = '0';
-                    // Apply validation to new inputs
                     addValidationToInput(i, 'price');
                 });
+
+                // Add the Delete button to the LAST <td> specifically to maintain alignment
+                var actionTd = clone.querySelector('td:last-child');
+                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>';
                 
-                // Xóa text "Hiện tại: ..." nếu có
-                clone.querySelectorAll('small.text-muted').forEach(function(el) {
-                    el.remove();
-                });
-                
-                clone.querySelectorAll('input.quantity-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'quantity');});
-                clone.querySelectorAll('input.price-input').forEach(function(i) { i.value = '0'; addValidationToInput(i, 'price'); });
-                var lastTd = clone.querySelector('td:last-child');
-                lastTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i> Xóa</button>';
-                
-                // Thêm dòng mới vào trước dòng template (ẩn)
                 templateRow.parentNode.insertBefore(clone, templateRow);
                 nextNewIndex++;
                 updateSTT();
