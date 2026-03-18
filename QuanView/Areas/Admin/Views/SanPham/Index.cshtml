@@ -253,29 +253,29 @@
             </div>
             
             <!-- Khoảng giá -->
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label for="priceFrom" class="form-label">Giá từ</label>
                 <input type="number" class="form-control" id="priceFrom" name="priceFrom" value="@Model.PriceFrom" placeholder="0" min="0">
             </div>
             
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label for="priceTo" class="form-label">Giá đến</label>
                 <input type="number" class="form-control" id="priceTo" name="priceTo" value="@Model.PriceTo" placeholder="999999999" min="0">
             </div>
             
             <!-- Khoảng số lượng -->
-            <div class="col-md-1">
+            <div class="col-md-3">
                 <label for="qtyFrom" class="form-label">SL từ</label>
                 <input type="number" class="form-control" id="qtyFrom" name="qtyFrom" value="@Model.QtyFrom" placeholder="0" min="0">
             </div>
             
-            <div class="col-md-1">
+            <div class="col-md-3">
                 <label for="qtyTo" class="form-label">SL đến</label>
                 <input type="number" class="form-control" id="qtyTo" name="qtyTo" value="@Model.QtyTo" placeholder="9999" min="0">
             </div>
             
-            <!-- Khoảng ngày -->
-            <div class="col-md-2">
+            <!-- Khoảng ngày (cần fix) --> 
+            @* <div class="col-md-2">
                 <label for="dateFrom" class="form-label">Ngày từ</label>
                 <input type="date" class="form-control" id="dateFrom" name="dateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")">
             </div>
@@ -283,7 +283,7 @@
             <div class="col-md-2">
                 <label for="dateTo" class="form-label">Ngày đến</label>
                 <input type="date" class="form-control" id="dateTo" name="dateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")">
-            </div>
+            </div> *@
             
             <!-- Nút tìm kiếm -->
             <div class="col-md-3 pt-4 mt-2">
