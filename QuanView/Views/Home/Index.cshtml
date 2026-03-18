@@ -105,9 +105,46 @@
     /* --- Animations --- */
     .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s ease-out; visibility: hidden; }
     .reveal-on-scroll.active { opacity: 1; transform: translateY(0); visibility: visible; }
-</style>
 
-<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+    .category-btn {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    z-index: 5; 
+    }
+
+    .category-btn:hover {
+        background-color: #dc3545 !important; 
+        color: #fff !important;
+        border-color: #fff;
+        transform: scale(1.1);
+    }
+
+    .category-btn {
+        opacity: 0.9;
+        transform: translateY(10px);
+    }
+
+    .category-banner:hover .category-btn {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .category-btn:hover {
+        background-color: #6c757d !important;
+        color: white !important;
+    }
+    /* For Chrome, Safari and Opera */
+    section::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* For IE, Edge and Firefox */
+    section {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+</style>
+<!-- Banner section 1 -->
+<section id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
@@ -138,21 +175,28 @@
     <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
         <span class="carousel-control-next-icon"></span>
     </button>
-</div>
-
-<section class="py-5">
+</section>
+<!-- Category section -->
+<section class="py-5 reveal-on-scroll">
     <div class="container">
+        <div class="section-title">
+            <h2>Danh mục sản phẩm</h2>
+        </div>
         <div class="row g-4 justify-content-center">
             @if (Model?.Any() == true)
             {
                 foreach (var b in Model)
                 {
                     <div class="col-12 col-sm-6 col-md-4">
-                        <div class="category-banner rounded-3 shadow-sm">
-                            <img src="@b.ImageUrl" alt="@b.Title" class="transition-zoom" />
+                        <div class="category-banner rounded-3 shadow-sm border-0">
+                            <img src="@b.ImageUrl" alt="@b.Title" class="transition-zoom" loading="lazy" />
+                            
                             <div class="category-overlay d-flex flex-column align-items-center justify-content-center">
-                                <h4 class="text-white fw-bold mb-3 text-uppercase">@b.Title</h4>
-                                <a href="@b.Link" class="btn btn-light btn-sm px-4 fw-bold stretched-link">KHÁM PHÁ</a>
+                                <h4 class="text-white fw-bold mb-3 text-uppercase text-shadow">@b.Title</h4>
+                                
+                            <a href="@b.Link" class="btn btn-light btn-sm px-4 py-2 fw-bold shadow-sm category-btn">
+                                KHÁM PHÁ
+                            </a>
                             </div>
                         </div>
                     </div>
@@ -161,7 +205,7 @@
         </div>
     </div>
 </section>
-
+<!-- Product section -->
 <section id="featured-products" class="py-5 bg-light reveal-on-scroll">
     <div class="container">
         <div class="section-title">
@@ -213,7 +257,7 @@
         </div>
     </div>
 </section>
-
+<!-- Banner section 2 -->
 <section class="reveal-on-scroll">
     <div class="banner-bg" style="background-image: url('../img/banner/Homepage_Video-First_Frame.jpg');">
         <div class="banner-overlay"></div>

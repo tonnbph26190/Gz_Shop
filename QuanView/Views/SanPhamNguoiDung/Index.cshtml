@@ -215,6 +215,7 @@
                     <input type="hidden" name="size" value="@size" />
                     <input type="hidden" name="color" value="@color" />
                     <select class="form-select w-auto" name="sortOrder" onchange="document.getElementById('sortForm').submit()">
+                        <option value="" @(string.IsNullOrEmpty(Context.Request.Query["sortOrder"]) ? "selected" : "")>Mặc định (None)</option>
                         <option value="asc" @(Context.Request.Query["sortOrder"] == "asc" ? "selected" : "")>Sắp xếp theo giá tăng dần</option>
                         <option value="desc" @(Context.Request.Query["sortOrder"] == "desc" ? "selected" : "")>Sắp xếp theo giá giảm dần</option>
                     </select>
@@ -281,13 +282,14 @@
                     {
                         <li class="page-item @(i == (int)page ? "active" : "")">
                             <a class="page-link" href="?page=@i
-&search=@Context.Request.Query["search"]
-&priceFrom=@priceFrom
-&priceTo=@priceTo
-&category=@category
-&size=@size
-&color=@color
-&sortOrder=@Context.Request.Query["sortOrder"]">@i</a>
+                                &search=@Context.Request.Query["search"]
+                                &priceFrom=@priceFrom
+                                &priceTo=@priceTo
+                                &category=@category
+                                &size=@size
+                                &color=@color
+                                &sortOrder=@Context.Request.Query["sortOrder"]">@i
+                            </a>
                         </li>
                     }
                 </ul>

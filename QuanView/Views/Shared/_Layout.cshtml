@@ -12,7 +12,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - QuanView</title>
+    <style>
+        /* Target both html and body to be safe */
+        html, body {
+            -ms-overflow-style: none !important;  /* IE and Edge */
+            scrollbar-width: none !important;     /* Firefox */
+        }
 
+        /* For Chrome, Safari and Opera */
+        html::-webkit-scrollbar, 
+        body::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+    </style>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
