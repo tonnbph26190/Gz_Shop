@@ -57,7 +57,7 @@
                 </div>
                 <div class="col-md-3 mt-2">
                     <label for="trangThai" class="form-label fw-bold">Trạng thái:</label>
-                    <select id="trangThai" class="form-select shadow-sm" name="trangThai">
+                    <select id="trangThai" class="form-control shadow-sm" name="trangThai">
                         <option value="">Tất cả</option>
                         @foreach (var option in new[] { ("true", "Đang kích hoạt"), ("false", "Tạm ngưng") })
                         {
@@ -68,16 +68,17 @@
                     </select>
                 </div>
 
-                <div class="col-md-2 align-self-end">
-                    <button type="submit" class="btn btn-primary">Lọc</button>
-                </div>
+                <div class="col-md-6 align-self-end row">
+                    <div class="col-1">
+                        <button type="submit" class="btn btn-primary">Lọc</button>
+                    </div>
 
-                <div class="col-md-2 d-flex align-items-end mt-3">
-                    <a asp-action="Index" asp-route-pageSize="5" class="btn btn-secondary w-100">
-                        <i class="bi bi-arrow-clockwise"></i> Làm mới
-                    </a>
+                    <div class="col-3">
+                        <a asp-action="Index" asp-route-pageSize="5" class="btn btn-secondary w-100">
+                            <i class="bi bi-arrow-clockwise"></i> Làm mới
+                        </a>
+                    </div>
                 </div>
-
             </form>
         </div>
     </div>
@@ -120,19 +121,16 @@
                                 <td>
                                     @if (item.TrangThai)
                                     {
-                                        <span class="badge bg-success">Đang kích hoạt</span>
+                                        <span class="badge bg-success text-light p-2">Đang kích hoạt</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning">Tạm ngưng</span>
+                                        <span class="badge bg-warning text-light p-2">Tạm ngưng</span>
                                     }
                                 </td>
                                 <td>
                                     <a asp-action="Edit" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-primary">✏️</a>
                                     <a asp-action="Delete" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-danger">🗑️</a>
-
-
-
                                 </td>
                             </tr>
                             stt++;
