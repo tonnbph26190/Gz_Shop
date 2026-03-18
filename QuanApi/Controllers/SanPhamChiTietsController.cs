@@ -61,18 +61,18 @@ namespace QuanApi.Controllers
                              join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                              where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
                                 && dgg.TrangThai == true
-                                && dgg.NgayBatDau <= DateTime.Now
-                                && dgg.NgayKetThuc >= DateTime.Now
-                             select dgg.PhanTramGiam
+                                && dgg.NgayBatDau <= DateTime.UtcNow
+                                && dgg.NgayKetThuc >= DateTime.UtcNow
+							 select dgg.PhanTramGiam
                             ).FirstOrDefault() > 0
                             ? ct.GiaBan * (1 - (decimal)(
                                 (from dgg in _context.DotGiamGias
                                  join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                                  where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
                                     && dgg.TrangThai == true
-                                    && dgg.NgayBatDau <= DateTime.Now
-                                    && dgg.NgayKetThuc >= DateTime.Now
-                                 select dgg.PhanTramGiam
+                                    && dgg.NgayBatDau <= DateTime.UtcNow
+									&& dgg.NgayKetThuc >= DateTime.UtcNow
+								 select dgg.PhanTramGiam
                                 ).FirstOrDefault() / 100.0m))
                             : ct.GiaBan
                         ),
