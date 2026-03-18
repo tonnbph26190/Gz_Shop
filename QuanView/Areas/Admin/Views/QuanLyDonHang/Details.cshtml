@@ -403,6 +403,10 @@
                                 <span class="info-label">Trạng thái:</span>
                                 <span class="status-badge">@Model.TrangThai</span>
                             </div>
+                            <div class="info-row">
+                                <span class="info-label">Loại đơn:</span>
+                                <span class="info-value">@(Model.BanTaiQuay ? "Mua tại quầy" : "Mua online")</span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-row">
@@ -512,6 +516,19 @@
                             <form method="post" action="@Url.Action("Rollback", new { id = Model.IDHoaDon })" class="mt-2">
                                 <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
                                     <i class="fas fa-undo-alt"></i> @rollbackText
+                                </button>
+                            </form>
+                        }
+
+                        @if (!Model.BanTaiQuay && Model.TrangThai != "Đã hủy")
+                        {
+                            var cancelMessage = Model.TrangThai == "Chờ xác nhận"
+                                ? "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy."
+                                : "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy và số lượng sản phẩm sẽ được hoàn lại kho.";
+
+                            <form method="post" action="@Url.Action("HuyDonHang", new { id = Model.IDHoaDon })" class="mt-2">
+                                <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('@cancelMessage')">
+                                    <i class="fas fa-times-circle"></i> Hủy đơn hàng
                                 </button>
                             </form>
                         }
