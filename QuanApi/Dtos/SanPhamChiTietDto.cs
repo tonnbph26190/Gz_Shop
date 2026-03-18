@@ -1,4 +1,4 @@
-﻿namespace QuanApi.Dtos
+namespace QuanApi.Dtos
 {
     public class SanPhamChiTietDto
     {
@@ -19,5 +19,6 @@
         public string? AnhDaiDien { get; set; } // Thêm trường này cho view khách hàng
         public bool TrangThai { get; set; } // Thêm trường này
         public string? MaSPChiTiet { get; set; } // Thêm trường này nếu cần
-    }
+		public List<string> DanhSachAnh { get; set; } = new List<string>();
+	}
 }

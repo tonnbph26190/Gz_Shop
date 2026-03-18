@@ -335,16 +335,16 @@ namespace QuanApi.Controllers
 
                     _context.ChiTietHoaDons.Add(chiTietHoaDon);
 
-                    // Cập nhật số lượng sản phẩm
-                    var sanPhamChiTiet = await _context.SanPhamChiTiets.FindAsync(chiTiet.IDSanPhamChiTiet);
-                    if (sanPhamChiTiet != null)
-                    {
-                        sanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
-                        if (sanPhamChiTiet.SoLuong < 0)
-                        {
-                            return BadRequest($"Sản phẩm {sanPhamChiTiet.MaSPChiTiet} không đủ số lượng");
-                        }
-                    }
+                    //// Cập nhật số lượng sản phẩm
+                    //var sanPhamChiTiet = await _context.SanPhamChiTiets.FindAsync(chiTiet.IDSanPhamChiTiet);
+                    //if (sanPhamChiTiet != null)
+                    //{
+                    //    sanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
+                    //    if (sanPhamChiTiet.SoLuong < 0)
+                    //    {
+                    //        return BadRequest($"Sản phẩm {sanPhamChiTiet.MaSPChiTiet} không đủ số lượng");
+                    //    }
+                    //}
                 }
 
                 await _context.SaveChangesAsync();
@@ -400,9 +400,24 @@ namespace QuanApi.Controllers
 
                     _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
                 }
+				// Nếu admin xác nhận đơn hàng thì mới trừ tồn
+				if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai == "Chờ xác nhận")
+				{
+					foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+					{
+						if (chiTiet.SanPhamChiTiet != null)
+						{
+							if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
+							{
+								return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
+							}
 
-                // Cập nhật trạng thái
-                hoaDon.TrangThai = dto.TrangThai;
+							chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
+						}
+					}
+				}
+				// Cập nhật trạng thái
+				hoaDon.TrangThai = dto.TrangThai;
                 hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
                 hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
 
@@ -414,8 +429,23 @@ namespace QuanApi.Controllers
 
                 // Lưu lịch sử thay đổi trạng thái
                 await _orderHistoryService.SaveOrderHistoryAsync(id, oldStatus, dto.TrangThai, dto.NguoiCapNhat, dto.LyDoHuyDon);
+				// Nếu chuyển sang "Đã xác nhận" thì mới trừ tồn
+				if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai != "Đã xác nhận")
+				{
+					foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+					{
+						if (chiTiet.SanPhamChiTiet != null)
+						{
+							if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
+							{
+								return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
+							}
 
-                await _context.SaveChangesAsync();
+							chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
+						}
+					}
+				}
+				await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
 
@@ -594,6 +624,7 @@ namespace QuanApi.Controllers
                 }
 
                 _context.HoaDons.Remove(hoaDon);
+
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Đã xóa đơn hàng {id} thành công");

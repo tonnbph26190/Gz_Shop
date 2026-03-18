@@ -7,171 +7,160 @@
 }
 
 <style>
-    .text-shadow {
-        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    /* --- Base & Utility --- */
+    html { scroll-behavior: smooth; }
+    .text-shadow { text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    .transition-zoom { transition: transform .5s ease; }
+
+    /* --- Section Headers --- */
+    .section-title { 
+        text-align: center; 
+        margin-bottom: 40px; 
+        cursor: default; 
     }
 
-    html {
-        scroll-behavior: smooth;
+    .section-title h2 {
+        font-size: 28px;
+        font-weight: 700;
+        display: inline-block;
+        position: relative;
+        padding-bottom: 8px;
     }
 
-    .section-title {
-        text-align: center;
-        margin-bottom: 40px;
+    .section-title h2::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%; /* Start at center */
+        transform: translateX(-50%); /* Center the bar */
+        height: 3px;
+        width: 60px; /* Original width */
+        background: #dc3545;
+        border-radius: 3px;
+        transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smooth expansion */
     }
 
-        .section-title h2 {
-            font-size: 28px;
-            font-weight: 700;
-            display: inline-block;
-            position: relative;
-        }
-
-            .section-title h2::after {
-                content: "";
-                display: block;
-                height: 3px;
-                width: 60px;
-                background: #dc3545;
-                margin: 8px auto 0;
-                border-radius: 3px;
-            }
-
-    .product-card {
-        display: flex;
-        flex-direction: column;
-        border: 1px solid #eee;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #fff;
-        transition: all .3s ease;
+    /* The hover effect */
+    .section-title:hover h2::after {
+        width: 100%; /* Expands to fit the full sentence */
     }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-        }
-
-        .product-card img {
-            width: 100%;
-            aspect-ratio: 4/3;
-            object-fit: cover;
-        }
-
-    .product-card-body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 15px;
-    }
-
-        .product-card-body h6 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .product-card-body p {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-    /* Side Arrows: Slide from left/right */
-    #heroCarousel .carousel-control-prev {
-        opacity: 0;
-        transform: translateX(-10px);
-        transition: all 0.3s ease;
-    }
-
-    #heroCarousel .carousel-control-next {
-        opacity: 0;
-        transform: translateX(10px);
-        transition: all 0.3s ease;
-    }
-
-    /* Bottom Indicators: Slide from bottom */
+    /* --- Hero Carousel --- */
+    .hero__items { height: 70vh; }
+    #heroCarousel .carousel-control-prev, 
+    #heroCarousel .carousel-control-next,
     #heroCarousel .carousel-indicators {
         opacity: 0;
-        transform: translateY(10px);
         transition: all 0.3s ease;
     }
-
-    /* Reset everything on hover */
+    #heroCarousel .carousel-control-prev { transform: translateX(-15px); }
+    #heroCarousel .carousel-control-next { transform: translateX(15px); }
     #heroCarousel:hover .carousel-control-prev,
     #heroCarousel:hover .carousel-control-next,
     #heroCarousel:hover .carousel-indicators {
         opacity: 1;
-        transform: translate(0);
+        transform: translateX(0);
     }
 
-    /* Initial state: hidden, slightly lower, and transparent */
-    .reveal-on-scroll {
-        opacity: 0;
-        transform: translateY(50px);
-        transition: all 0.8s ease-out;
-        visibility: hidden;
+    /* --- Category Banners --- */
+    .category-banner { height: 350px; background-color: #f8f9fa; position: relative; overflow: hidden; }
+    .category-banner img { height: 100%; width: 100%; object-fit: cover; }
+    .category-banner:hover img { transform: scale(1.1); }
+    .category-overlay {
+        position: absolute; inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        transition: background 0.3s ease;
+    }
+    .category-banner:hover .category-overlay { background: rgba(0, 0, 0, 0.5); }
+
+    /* --- Product Cards --- */
+    .product-card {
+        border: none;
+        background: #fff;
+        border-radius: 12px;
+        transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
+    }
+    .product-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+    .product-img-container { position: relative; overflow: hidden; border-radius: 12px 12px 0 0; }
+    .product-card img { aspect-ratio: 4/3; object-fit: cover; transition: transform 0.6s ease; }
+    .product-card:hover img { transform: scale(1.08); }
+
+    .badge-sale {
+        position: absolute; top: 12px; left: 12px;
+        background-color: #dc3545; color: white;
+        padding: 4px 10px; font-size: 11px; font-weight: 700;
+        border-radius: 4px; z-index: 2; text-transform: uppercase;
     }
 
-    /* Active state: slides up and fades in */
-    .reveal-on-scroll.active {
+    .product-title {
+        font-size: 0.95rem; font-weight: 600; color: #212529;
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .current-price { font-size: 1.1rem; font-weight: 700; color: #dc3545; }
+    .old-price { font-size: 0.85rem; color: #adb5bd; text-decoration: line-through; margin-left: 6px; }
+
+    .btn-detail {
+        border-radius: 6px; font-weight: 600; padding: 8px;
+        transition: all 0.3s; border: 1.5px solid #dc3545;
+        background: transparent; color: #dc3545; text-align: center;
+    }
+    .btn-detail:hover { background: #dc3545; color: #fff; }
+
+    /* --- Parallax/Banner Section 2 --- */
+    .banner-bg {
+        background-size: cover; background-position: center;
+        min-height: 500px; display: flex; align-items: center; justify-content: center;
+        position: relative; color: white; text-align: center;
+    }
+    .banner-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 1; }
+    .banner-content { position: relative; z-index: 2; max-width: 800px; padding: 20px; }
+
+    /* --- Animations --- */
+    .reveal-on-scroll { opacity: 0; transform: translateY(40px); transition: all 0.8s ease-out; visibility: hidden; }
+    .reveal-on-scroll.active { opacity: 1; transform: translateY(0); visibility: visible; }
+
+    .category-btn {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    z-index: 5; 
+    }
+
+    .category-btn:hover {
+        background-color: #dc3545 !important; 
+        color: #fff !important;
+        border-color: #fff;
+        transform: scale(1.1);
+    }
+
+    .category-btn {
+        opacity: 0.9;
+        transform: translateY(10px);
+    }
+
+    .category-banner:hover .category-btn {
         opacity: 1;
         transform: translateY(0);
-        visibility: visible;
     }
-    /* This makes the inner cards fade in slightly after the section appears */
-    .reveal-on-scroll.active .product-card {
-        animation: fadeInUp 0.6s ease forwards;
+    .category-btn:hover {
+        background-color: #6c757d !important;
+        color: white !important;
     }
-
-    @@keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* For Chrome, Safari and Opera */
+    section::-webkit-scrollbar {
+        display: none;
     }
 
-    /* Add a tiny delay to each card based on its position (optional) */
-    .reveal-on-scroll .col-md-4:nth-child(1) .product-card { animation-delay: 0.1s; }
-    .reveal-on-scroll .col-md-4:nth-child(2) .product-card { animation-delay: 0.2s; }
-    .reveal-on-scroll .col-md-4:nth-child(3) .product-card { animation-delay: 0.3s; }
-    /* New styles for Banner Section 2 */
-    .banner-bg {
-        background-size: cover;
-        background-position: center;
-        min-height: 600px; /* Adjust height as needed */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        padding: 40px;
-        color: white; /* Make text white to stand out */
-    }
-
-    .banner-overlay {
-        background: rgba(0, 0, 0, 0.6); /* Darkens the image so text is readable */
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 1;
-    }
-
-    .banner-content {
-        position: relative;
-        z-index: 2;
-        max-width: 1000px;
+    /* For IE, Edge and Firefox */
+    section {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
 </style>
-
-<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+<!-- Banner section 1 -->
+<section id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
     </div>
@@ -179,24 +168,18 @@
     <div class="carousel-inner">
         <div class="carousel-item active">
             <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/img/banner/Banner2.jpg') center/cover no-repeat; height: 70vh;">
-                <div style="margin-top: -12.5rem;">
+                style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/img/banner/Banner2.jpg') center/cover no-repeat;">
+                <div style="margin-top: -10rem;">
                     <h1 class="display-4 fw-bold text-shadow">BỘ QUẦN ĐÔNG-XUÂN 2026</h1>
                     <a href="#featured-products" class="btn btn-danger btn-lg mt-3">Mua ngay</a>
                 </div>
             </section>
         </div>
-
         <div class="carousel-item">
-            <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-                style="background: url('/img/banner/Banner3.jpg') center/cover no-repeat; height: 70vh;">
-            </section>
+            <section class="hero__items" style="background: url('/img/banner/Banner3.jpg') center/cover no-repeat;"></section>
         </div>
-
         <div class="carousel-item">
-            <section class="hero__items text-white text-center d-flex align-items-center justify-content-center"
-                style="background: url('/img/banner/Banner4.jpg') center/cover no-repeat; height: 70vh;">
-            </section>
+            <section class="hero__items" style="background: url('/img/banner/Banner4.jpg') center/cover no-repeat;"></section>
         </div>
     </div>
 
@@ -206,29 +189,37 @@
     <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
         <span class="carousel-control-next-icon"></span>
     </button>
-</div>
-
-<!-- Banner Section 1 -->
-<section class="py-5">
+</section>
+<!-- Category section -->
+<section class="py-5 reveal-on-scroll">
     <div class="container">
-        <div class="row g-4">
-            @foreach (var b in Model)
+        <div class="section-title">
+            <h2>Danh mục sản phẩm</h2>
+        </div>
+        <div class="row g-4 justify-content-center">
+            @if (Model?.Any() == true)
             {
-                <div class="col-12 col-sm-6 col-md-4 d-flex">
-                    <div class="product-card h-100 w-100">
-                        <img src="@b.ImageUrl" alt="@b.Title" />
-                        <div class="product-card-body text-center">
-                            <h5>@b.Title</h5>
-                            <a href="@b.Link" class="btn btn-outline-danger btn-sm mt-auto">Xem ngay</a>
+                foreach (var b in Model)
+                {
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <div class="category-banner rounded-3 shadow-sm border-0">
+                            <img src="@b.ImageUrl" alt="@b.Title" class="transition-zoom" loading="lazy" />
+                            
+                            <div class="category-overlay d-flex flex-column align-items-center justify-content-center">
+                                <h4 class="text-white fw-bold mb-3 text-uppercase text-shadow">@b.Title</h4>
+                                
+                            <a href="@b.Link" class="btn btn-light btn-sm px-4 py-2 fw-bold shadow-sm category-btn">
+                                KHÁM PHÁ
+                            </a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                }
             }
         </div>
     </div>
 </section>
-
-<!-- Product Section -->
+<!-- Product section -->
 <section id="featured-products" class="py-5 bg-light reveal-on-scroll">
     <div class="container">
         <div class="section-title">
@@ -244,28 +235,35 @@
                 var anhDaiDien = !string.IsNullOrEmpty(product.UrlAnh) ? product.UrlAnh : "/img/default-product.jpg";
                 var soLuongTon = product.BienThes?.Sum(b => b.SoLuong) ?? 0;
 
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
-                    <div class="product-card h-100 w-100">
-                        <img src="@anhDaiDien" alt="@product.TenSanPham" />
-                        <div class="product-card-body">
-                            <h6>@product.TenSanPham</h6>
-                            <p>@product.DanhMuc</p>
-                            <div>
-                                @if (coGiamGia)
-                                {
-                                    <span class="text-danger fw-bold">@giaSauGiam.ToString("N0") đ</span>
-                                    <small class="text-muted text-decoration-line-through ms-2">@giaGoc.ToString("N0") đ</small>
-                                }
-                                else
-                                {
-                                    <span class="text-danger fw-bold">@giaGoc.ToString("N0") đ</span>
-                                }
+                <div class="col-6 col-md-4 col-lg-3 d-flex">
+                    <div class="product-card shadow-sm h-100 w-100 d-flex flex-column">
+                        @if (coGiamGia) { <div class="badge-sale">Giảm giá</div> }
+
+                        <div class="product-img-container">
+                            <img src="@anhDaiDien" alt="@product.TenSanPham" class="w-100" />
+                        </div>
+
+                        <div class="p-3 d-flex flex-column flex-grow-1">
+                            <div class="d-flex align-items-baseline mb-2">
+                                <h6 class="product-title mb-0 fw-bold">@product.TenSanPham</h6>
+                                <span class="mx-2 text-muted" style="font-size: 0.8rem;">•</span>
+                                <span class="text-muted" style="font-size: 0.75rem; white-space: nowrap;">@product.DanhMuc</span>
                             </div>
-                            <small class="d-block text-success mt-1">Còn @soLuongTon sản phẩm</small>
-                            <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })"
-                               class="btn btn-danger btn-sm w-100 mt-auto">
-                                Xem chi tiết
-                            </a>
+                            
+                            <div class="mt-auto">
+                                <div class="mb-2">
+                                    <span class="current-price">@((coGiamGia ? giaSauGiam : giaGoc).ToString("N0")) đ</span>
+                                    @if (coGiamGia) { <span class="old-price">@giaGoc.ToString("N0") đ</span> }
+                                </div>
+
+                                <small class="text-muted d-block mb-3">
+                                    <i class="bi bi-box-seam me-1"></i>Kho: @soLuongTon
+                                </small>
+
+                                <a href="@Url.Action("Detail", "SanPhamNguoiDung", new { id = firstBienThe?.IDSanPhamChiTiet })" class="btn btn-detail d-block w-100">
+                                    Chi tiết
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -273,48 +271,36 @@
         </div>
     </div>
 </section>
-
-<!-- Banner Section 2 -->
+<!-- Banner section 2 -->
 <section class="reveal-on-scroll">
-    <div class="banner position-relative overflow-hidden banner-bg" 
-         style="background-image: url('../img/banner/Homepage_Video-First_Frame.jpg');">
-        
+    <div class="banner-bg" style="background-image: url('../img/banner/Homepage_Video-First_Frame.jpg');">
         <div class="banner-overlay"></div>
-
         <div class="banner-content text-shadow">
-            <h1 class="fw-bold mb-3 text-light fs-1">Khám Phá Nghệ Thuật Đồ Jeans Hiệu Năng</h1>
-            <p class="text-light fs-6">
+            <h1 class="fw-bold mb-3 fs-1 text-light">Khám Phá Nghệ Thuật Đồ Jeans Hiệu Năng</h1>
+            <p class="fs-6 opacity-90" style="color:#ffffff93">
                 Không chỉ dừng lại ở chất liệu denim, đồ jeans còn là một biểu tượng văn hóa — đại diện cho phong cách ăn mặc cổ điển, tự do và không bao giờ lỗi mốt. 
-                Hãy cùng khám phá quy trình của chúng tôi để thấy cách chúng tôi kết hợp giữa kỹ nghệ thủ công lâu đời, cải tiến kỹ thuật và thiết kế thượng lưu để tái định nghĩa phong cách vượt thời gian này cho thế kỷ 21.
+                Chúng tôi kết hợp giữa kỹ nghệ thủ công và thiết kế thượng lưu để tái định nghĩa phong cách này cho thế kỷ 21.
             </p>
         </div>
     </div>
 </section>
 
-<br class="mb-5">
+<br class="pt-5">
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const observerOptions = {
-            root: null, // use the viewport
-            threshold: 0.05 // trigger when 10% of the element is visible
-        };
+        const observerOptions = { threshold: 0.1 };
 
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    // When scrolling down into view
                     entry.target.classList.add('active');
                 } else {
-                    // When scrolling away (Up or Down)
-                    // Removing 'active' creates the "hide itself" effect
                     entry.target.classList.remove('active');
                 }
             });
         }, observerOptions);
 
-        // Targeted element
-        const targets = document.querySelectorAll('.reveal-on-scroll');
-        targets.forEach(target => observer.observe(target));
+        document.querySelectorAll('.reveal-on-scroll').forEach(target => observer.observe(target));
     });
 </script>
