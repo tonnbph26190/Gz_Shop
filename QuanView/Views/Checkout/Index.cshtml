@@ -2657,130 +2657,187 @@ function loadCustomerDiscountVouchers() {
             }, 100);
         }
 
-        // Load danh sách phiếu giảm giá công khai
-			function loadCustomerDiscountVouchers() {
+		   // Load danh sách phiếu giảm giá công khai
+						/* Replaced function: loadCustomerDiscountVouchers */
+				function loadCustomerDiscountVouchers() {
 
-		console.log("Loading public vouchers...");
+					console.log("Loading public vouchers...");
 
-		let total = 0;
+					let total = 0;
 
-		// 1) Prefer session/JS cart data if available
-		try {
-			if (typeof gioHangData !== 'undefined' && gioHangData && Array.isArray(gioHangData.chiTietGioHangs) && gioHangData.chiTietGioHangs.length > 0) {
-				gioHangData.chiTietGioHangs.forEach(item => {
-					const giaBan = parseFloat(item.GiaBan) || 0;
-					const soLuong = parseInt(item.SoLuong) || 0;
-					total += giaBan * soLuong;
-				});
-			}
-		} catch (e) {
-			console.warn('Error computing total from gioHangData:', e);
-			total = 0;
-		}
+					// 1) Prefer session/JS cart data if available
+					try {
+						if (typeof gioHangData !== 'undefined' && gioHangData && Array.isArray(gioHangData.chiTietGioHangs) && gioHangData.chiTietGioHangs.length > 0) {
+							gioHangData.chiTietGioHangs.forEach(item => {
+								const giaBan = parseFloat(item.GiaBan) || 0;
+								const soLuong = parseInt(item.SoLuong) || 0;
+								total += giaBan * soLuong;
+							});
+						}
+					} catch (e) {
+						console.warn('Error computing total from gioHangData:', e);
+						total = 0;
+					}
 
-		// 2) Fallback to server-side ViewBag.TongTien injected into page
-		if (!total || total === 0) {
-			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
-			total = parseFloat(serverTongTien) || 0;
-		}
+					// 2) Fallback to server-side ViewBag.TongTien injected into page
+					if (!total || total === 0) {
+						const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
+						total = parseFloat(serverTongTien) || 0;
+					}
 
-		// 3) Final fallback: parse displayed tamTinh element (e.g., "1,234,000 VND")
-		if (!total || total === 0) {
-			const tamTinhElement = document.getElementById('tamTinh');
-			if (tamTinhElement) {
-				const tamTinhText = tamTinhElement.textContent || tamTinhElement.innerText || '';
-				const match = tamTinhText.match(/(\d+(?:[.,]\d+)*)/);
-				if (match) {
-					total = parseFloat(match[1].replace(/[.,]/g, '')) || 0;
+					// 3) Final fallback: parse displayed tamTinh element (e.g., "1,234,000 VND")
+					if (!total || total === 0) {
+						const tamTinhElement = document.getElementById('tamTinh');
+						if (tamTinhElement) {
+							const tamTinhText = tamTinhElement.textContent || tamTinhElement.innerText || '';
+							const match = tamTinhText.match(/(\d+(?:[.,]\d+)*)/);
+							if (match) {
+								total = parseFloat(match[1].replace(/[.,]/g, '')) || 0;
+							}
+						}
+					}
+
+					console.log("Tong tien used for voucher lookup:", total);
+
+					// Ensure we send a numeric value
+					total = Number(total) || 0;
+
+					$.get('/Checkout/GetCustomerVouchers',
+						{ tongTien: total },
+						function (data) {
+
+							console.log("Public vouchers response:", data);
+
+							if (data && data.length > 0) {
+								renderVoucherList(data, total);
+								$('#voucherList').show();
+								$('#noVoucherMessage').hide();
+							} else {
+								$('#voucherList').hide();
+								$('#noVoucherMessage').show();
+							}
+
+						}).fail(function (xhr, status, error) {
+							console.error("Error loading vouchers:", error);
+						});
 				}
-			}
-		}
 
-		console.log("Tong tien used for voucher lookup:", total);
+				// Render danh sách phiếu giảm giá
+					function renderVoucherList(vouchers, currentTotal = 0) {
+			let now = new Date();
 
-		// Ensure we send a numeric value
-		total = Number(total) || 0;
+			// ✅ Map + tính toán trước
+			let mapped = vouchers.map(v => {
+				let isExpired = new Date(v.ngayKetThuc) < now;
+				let isActive = !isExpired && new Date(v.ngayBatDau) <= now;
 
-		$.get('/Checkout/GetCustomerVouchers',
-			{ tongTien: total },
-			function (data) {
+				let soLuongConLai = v.soLuongConLai !== undefined ? v.soLuongConLai : v.soLuong;
+				let isAvailable = soLuongConLai > 0;
 
-				console.log("Public vouchers response:", data);
+				let isEnoughCondition = currentTotal >= v.donToiThieu;
+				let isUsable = isActive && isAvailable && isEnoughCondition;
 
-				if (data && data.length > 0) {
-					renderVoucherList(data);
-					$('#voucherList').show();
-					$('#noVoucherMessage').hide();
-				} else {
-					$('#voucherList').hide();
-					$('#noVoucherMessage').show();
-				}
+				// ✅ Tính giảm thực tế
+				let discount = (currentTotal * v.giaTriGiam) / 100;
+				let realDiscount = Math.min(discount, v.giaTriGiamToiDa);
 
-			}).fail(function (xhr, status, error) {
-				console.error("Error loading vouchers:", error);
+				return {
+					...v,
+					isExpired,
+					isActive,
+					isAvailable,
+					isEnoughCondition,
+					isUsable,
+					realDiscount
+				};
 			});
-	}
 
-        // Render danh sách phiếu giảm giá
-        function renderVoucherList(vouchers) {
-            let html = '<div class="row">';
-            vouchers.forEach(function(voucher, index) {
-                let isExpired = new Date(voucher.ngayKetThuc) < new Date();
-                let isActive = !isExpired && new Date(voucher.ngayBatDau) <= new Date();
+			// ✅ SORT: usable lên đầu + giảm nhiều hơn đứng trước
+			mapped.sort((a, b) => {
+				if (a.isUsable !== b.isUsable) return b.isUsable - a.isUsable;
+				return b.realDiscount - a.realDiscount;
+			});
 
-                // Kiểm tra số lượng còn lại (nếu có)
-                let soLuongConLai = voucher.soLuongConLai !== undefined ? voucher.soLuongConLai : voucher.soLuong;
-                let isAvailable = soLuongConLai > 0;
+			// ✅ tìm BEST voucher
+			let bestVoucher = mapped.find(v => v.isUsable);
 
-                html += `
-                    <div class="col-md-6 mb-3">
-                        <div class="card voucher-card ${isExpired ? 'border-danger' : isActive && isAvailable ? 'border-success' : 'border-warning'} h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">${voucher.tenPhieu}</h6>
-                                <span class="badge ${isExpired ? 'bg-danger' : isActive && isAvailable ? 'bg-success' : 'bg-warning'}">
-                                    ${isExpired ? 'Hết hạn' : isActive && isAvailable ? 'Có hiệu lực' : 'Chưa có hiệu lực'}
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-2">
-                                    <strong>Mã:</strong> <code>${voucher.maCode}</code>
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Giảm giá:</strong> ${voucher.giaTriGiam}% (tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Đơn tối thiểu:</strong> ${voucher.donToiThieu.toLocaleString()} VND
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Loại:</strong>
-                                    <span class="badge ${voucher.loaiPhieu === 'Công khai' ? 'bg-info' : 'bg-warning'}">
-                                        ${voucher.loaiPhieu || 'Công khai'}
-                                    </span>
-                                </div>
-                                ${voucher.soLuongConLai !== undefined ? `
-                                <div class="mb-2">
-                                    <strong>Số lượng còn lại:</strong> ${soLuongConLai}
-                                </div>
-                                ` : ''}
-                            </div>
-                            <div class="card-footer">
-                                <button class="btn btn-primary btn-sm w-100"
-                                        onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
-                                        ${!isActive || !isAvailable ? 'disabled' : ''}>
-                                    ${isActive && isAvailable ? 'Chọn phiếu này' : 'Không có hiệu lực'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            $('#voucherList').html(html);
-        }
+			let html = '<div class="row">';
 
+			mapped.forEach(function(voucher) {
+
+				let isBest = bestVoucher && voucher.maCode === bestVoucher.maCode;
+
+				html += `
+					<div class="col-md-6 mb-3">
+						<div class="card voucher-card
+							${voucher.isExpired ? 'border-danger' : voucher.isUsable ? 'border-success' : 'border-secondary'}
+							h-100 ${!voucher.isUsable ? 'opacity-50' : ''}
+							${isBest ? 'shadow-lg border-warning' : ''}">
+
+							<div class="card-header d-flex justify-content-between align-items-center">
+								<h6 class="mb-0">
+									${voucher.tenPhieu}
+									${isBest ? '<span class="badge bg-warning text-dark ms-2">🔥 Tốt nhất</span>' : ''}
+								</h6>
+
+								<span class="badge
+									${voucher.isExpired ? 'bg-danger' : voucher.isUsable ? 'bg-success' : 'bg-secondary'}">
+
+									${
+										voucher.isExpired ? 'Hết hạn' :
+										!voucher.isEnoughCondition ? 'Chưa đủ điều kiện' :
+										voucher.isAvailable ? 'Có hiệu lực' : 'Hết lượt'
+									}
+								</span>
+							</div>
+
+							<div class="card-body">
+
+								<div class="mb-2">
+									<strong>Mã:</strong> <code>${voucher.maCode}</code>
+								</div>
+
+								<div class="mb-2">
+									<strong>Giảm giá:</strong> ${voucher.giaTriGiam}%
+									(tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
+								</div>
+
+								<div class="mb-2 text-success">
+									<strong>💰 Tiết kiệm:</strong> ${voucher.realDiscount.toLocaleString()} VND
+								</div>
+
+								<div class="mb-2">
+									<strong>Đơn tối thiểu:</strong> ${voucher.donToiThieu.toLocaleString()} VND
+								</div>
+
+								${
+									!voucher.isEnoughCondition
+									? `<div class="text-danger small">⚠ Cần thêm ${(voucher.donToiThieu - currentTotal).toLocaleString()} VND</div>`
+									: ''
+								}
+
+								<div class="mb-2">
+									<strong>Hiệu lực:</strong>
+									${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} -
+									${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
+								</div>
+							</div>
+
+							<div class="card-footer">
+								<button class="btn btn-primary btn-sm w-100"
+										onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
+										${!voucher.isUsable ? 'disabled' : ''}>
+									${voucher.isUsable ? 'Chọn phiếu này' : 'Không đủ điều kiện'}
+								</button>
+							</div>
+						</div>
+					</div>
+				`;
+			});
+
+			html += '</div>';
+			$('#voucherList').html(html);
+		}
         // Chọn phiếu giảm giá
         function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
             // Kiểm tra xem user có đăng nhập không
