@@ -475,15 +475,31 @@
                                         <td class="text-center">
                                             <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                 <div class="images-preview">
-                                                    @if (!string.IsNullOrEmpty(ct.AnhDaiDien))
-                                                    {
-                                                        <img src="@ct.AnhDaiDien" class="img-thumbnail" 
-                                                            style="max-width:50px;max-height:50px;border-radius:4px;" alt="Ảnh chính" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted small"><i class="fas fa-image"></i> Chưa có ảnh</span>
-                                                    }
+												@if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any(a => a.TrangThai))
+												{
+													var danhSachAnhPhu = ct.DanhSachAnh
+													.Where(a => !a.LaAnhChinh && a.TrangThai)
+													.ToList();
+
+													<div class="d-flex flex-wrap gap-1 justify-content-center">
+
+														<!-- Ảnh phụ -->
+														@foreach (var img in danhSachAnhPhu)
+														{
+															<img src="@img.UrlAnh"
+																 class="img-thumbnail"
+																 style="max-width:40px;max-height:40px;cursor:pointer;"
+																 onclick="previewImage('@img.UrlAnh')"
+																 title="Ảnh phụ" />
+														}
+													</div>
+												}
+												else
+												{
+													<span class="text-muted small">
+														<i class="fas fa-image"></i> Chưa có ảnh
+													</span>
+												}
                                                 </div>
                                                 <div class="images-list" style="display:none;"></div>
                                             </div>
@@ -614,39 +630,49 @@
                 </ul>
             </nav>
         }
+
     }
 
-<!-- Modal thêm ảnh -->
-<div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addImageModalLabel">Thêm ảnh sản phẩm</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addImageForm" enctype="multipart/form-data">
-                    <input type="hidden" id="sanPhamChiTietId" />
-                    <div class="mb-3">
-                        <label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
-                        <input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
-                        <div id="imagePreview" class="image-upload-preview" style="display:none;">
-                            <img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
-                        </div>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isMainImage">
-                        <label class="form-check-label" for="isMainImage">Đặt làm ảnh chính</label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="addImage()">Thêm ảnh</button>
-            </div>
-        </div>
-    </div>
-</div>
+	<!-- Modal thêm ảnh -->
+	<div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="addImageModalLabel">Thêm ảnh sản phẩm</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<form id="addImageForm" enctype="multipart/form-data">
+						<input type="hidden" id="sanPhamChiTietId" />
+						<div class="mb-3">
+							<label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
+							<input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
+							<div id="imagePreview" class="image-upload-preview" style="display:none;">
+								<img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
+							</div>
+						</div>
+						<div class="mb-3 form-check">
+							<input type="checkbox" class="form-check-input" id="isMainImage">
+							<label class="form-check-label" for="isMainImage">Đặt làm ảnh chính</label>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+					<button type="button" class="btn btn-primary" onclick="addImage()">Thêm ảnh</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content bg-dark text-center">
+				<div class="modal-body p-2">
+					<img id="previewImage" src="" class="img-fluid rounded" />
+				</div>
+			</div>
+		</div>
+	</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -733,17 +759,42 @@
             });
         });
         // Hiển thị modal thêm ảnh
-        function showAddImageModal(sanPhamChiTietId) {
-            document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
-            document.getElementById('imageFile').value = ''; // Clear file input
-            document.getElementById('isMainImage').checked = false;
-            document.getElementById('imagePreview').style.display = 'none';
-            const modalElement = document.getElementById('addImageModal');
-            if (modalElement) {
-                // Bootstrap 4
-                $(modalElement).modal('show');
-            }
-        }
+		function showAddImageModal(sanPhamChiTietId) {
+			document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
+
+			const fileInput = document.getElementById('imageFile');
+			const checkbox = document.getElementById('isMainImage');
+			const preview = document.getElementById('imagePreview');
+
+			fileInput.value = '';
+			preview.style.display = 'none';
+
+			// ✅ Tìm container của biến thể hiện tại
+			const currentContainer = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
+
+			let hasAnyImageInProduct = false;
+
+			if (currentContainer) {
+				// 🔥 tìm product-group cha
+				const productGroup = currentContainer.closest('.product-group');
+
+				if (productGroup) {
+					// 🔥 check toàn bộ ảnh trong product này
+					if (productGroup.querySelectorAll('.product-images-container img').length > 0) {
+						hasAnyImageInProduct = true;
+					}
+				}
+			}
+
+			// ✅ Nếu toàn bộ SP chưa có ảnh → auto check
+			checkbox.checked = !hasAnyImageInProduct;
+
+			const modalElement = document.getElementById('addImageModal');
+			if (modalElement) {
+				var modal = new bootstrap.Modal(modalElement);
+				modal.show();
+			}
+		}
 
         // Preview ảnh khi chọn file
         function previewImageFile() {
@@ -789,7 +840,7 @@
             formData.append('sanPhamChiTietId', sanPhamChiTietId);
             formData.append('laAnhChinh', isMainImage);
 
-            fetch('/Admin/AnhSanPham/UploadImage', {
+			fetch('/Admin/AnhSanPham/AddImage', {
                 method: 'POST',
                 body: formData
             })
@@ -828,7 +879,7 @@
             notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             notification.innerHTML = `
                          <i class="${icon}"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert">x</button>
             `;
             
             document.body.appendChild(notification);
@@ -968,6 +1019,12 @@
                 previewDiv.innerHTML = '<span class="text-muted small">Chưa có ảnh</span>';
             }
         }
+
+		function previewImage(url) {
+			document.getElementById("previewImage").src = url;
+			var modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+			modal.show();
+		}
 
     </script>
 }

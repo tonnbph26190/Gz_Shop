@@ -12,7 +12,42 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - QuanView</title>
+    <style>
+        /* Target both html and body to be safe */
+        html, body {
+            -ms-overflow-style: none !important;  /* IE and Edge */
+            scrollbar-width: none !important;     /* Firefox */
+        }
 
+        /* For Chrome, Safari and Opera */
+        html::-webkit-scrollbar, 
+        body::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+        /* Ensure the nav container is the reference point */
+        #navMenu {
+            position: relative;
+        }
+
+        /* The red underline bar */
+        .nav-underline-bar {
+            position: absolute;
+            bottom: 0;
+            height: 3px;
+            background-color: #dc3545; /* Bootstrap danger color */
+            transition: all 0.3s ease-in-out;
+            border-radius: 2px;
+            pointer-events: none; /* Don't block clicks */
+        }
+
+        /* Optional: remove the text-danger from your C# IsActive helper 
+        if you only want the red bar to signify the active state */
+        .nav-link.active {
+            color: #dc3545 !important;
+        }
+    </style>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -41,7 +76,7 @@
 
                 <!-- Menu -->
                 <div class="collapse navbar-collapse" id="mainNavbar">
-                    <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav mx-auto mb-2 mb-lg-0 position-relative" id="navMenu">
                         <li class="nav-item">
                             <a asp-controller="Home" asp-action="Index" class="nav-link @(IsActive("Home"))">Trang chủ</a>
                         </li>
@@ -54,6 +89,7 @@
                         <li class="nav-item">
                             <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">Đơn mua của tôi</a>
                         </li>
+                        <div class="nav-underline-bar"></div>
                     </ul>
 
                     <!-- User & Cart -->
@@ -123,5 +159,37 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const nav = document.querySelector("#navMenu");
+            const underline = document.querySelector(".nav-underline-bar");
+            const activeLink = nav.querySelector(".nav-link.active");
+
+            function moveUnderline(element) {
+                if (element) {
+                    underline.style.left = element.offsetLeft + "px";
+                    underline.style.width = element.offsetWidth + "px";
+                }
+            }
+
+            // Initial position on page load
+            if (activeLink) {
+                moveUnderline(activeLink);
+            } else {
+                underline.style.width = "0"; // Hide if no active link
+            }
+
+            // Optional: Hover effect (moves bar when mouse enters, returns when mouse leaves)
+            const links = nav.querySelectorAll(".nav-link");
+            links.forEach(link => {
+                link.addEventListener("mouseenter", () => moveUnderline(link));
+            });
+
+            nav.addEventListener("mouseleave", () => {
+                if (activeLink) moveUnderline(activeLink);
+                else underline.style.width = "0";
+            });
+        });
+    </script>
 </body>
 </html>
