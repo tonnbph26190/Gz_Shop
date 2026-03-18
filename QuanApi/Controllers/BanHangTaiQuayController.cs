@@ -535,38 +535,86 @@ namespace QuanApi.Controllers
             return Ok(methods);
         }
 
-        [HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
-        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
-        {
-            var now = DateTime.UtcNow;
-            var vouchers = await _context.KhachHangPhieuGiams
-                .Include(k => k.PhieuGiamGia)
-                .Where(x => x.IDKhachHang == customerId &&
-                           x.TrangThai &&
-                           x.PhieuGiamGia.TrangThai &&
-                           x.SoLuongDaSuDung < x.SoLuong && // Chỉ lấy phiếu còn số lượng
-                           x.PhieuGiamGia.NgayBatDau <= now && // Kiểm tra thời gian hiệu lực
-                           x.PhieuGiamGia.NgayKetThuc >= now)
-                .Select(x => new
-                {
-                    id = x.IDPhieuGiamGia,
-                    maCode = x.PhieuGiamGia.MaCode,
-                    tenPhieu = x.PhieuGiamGia.TenPhieu,
-                    giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
-                    giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
-                    donToiThieu = x.PhieuGiamGia.DonToiThieu,
-                    ngayBatDau = x.PhieuGiamGia.NgayBatDau,
-                    ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
-                    soLuong = x.SoLuong,
-                    soLuongDaSuDung = x.SoLuongDaSuDung,
-                    soLuongConLai = x.SoLuong - x.SoLuongDaSuDung
-                })
-                .ToListAsync();
-            return Ok(vouchers);
-        }
+		[HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		{
+			var now = DateTime.UtcNow;
 
-        // Lấy chi tiết sản phẩm với đầy đủ ảnh
-        [HttpGet("chi-tiet-san-pham/{id}")]
+			var raw = await _context.KhachHangPhieuGiams
+				.Include(k => k.PhieuGiamGia)
+				.Where(x => x.IDKhachHang == customerId &&
+							x.TrangThai &&
+							x.PhieuGiamGia.TrangThai &&
+							x.SoLuongDaSuDung < x.SoLuong &&
+							x.PhieuGiamGia.NgayBatDau <= now &&
+							x.PhieuGiamGia.NgayKetThuc >= now)
+				.Select(x => new
+				{
+					id = x.IDPhieuGiamGia,
+					maCode = x.PhieuGiamGia.MaCode,
+					tenPhieu = x.PhieuGiamGia.TenPhieu,
+					giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
+					giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
+					donToiThieu = x.PhieuGiamGia.DonToiThieu,
+					ngayBatDau = x.PhieuGiamGia.NgayBatDau,
+					ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
+					soLuong = x.SoLuong,
+					soLuongDaSuDung = x.SoLuongDaSuDung,
+					soLuongConLai = x.SoLuong - x.SoLuongDaSuDung
+				})
+				.ToListAsync(); // 🔥 lấy về trước
+
+			// 👉 xử lý tại C#
+			var vouchers = raw.Select(x =>
+			{
+				var hopLe = tongTien >= (x.donToiThieu ?? 0);
+
+				decimal tienGiam = 0;
+
+				if (x.giaTriGiam <= 100)
+				{
+					tienGiam = tongTien * x.giaTriGiam / 100;
+				}
+				else
+				{
+					tienGiam = x.giaTriGiam;
+				}
+
+				if (x.giaTriGiamToiDa.HasValue)
+				{
+					tienGiam = Math.Min(tienGiam, x.giaTriGiamToiDa.Value);
+				}
+
+				return new
+				{
+					x.id,
+					x.maCode,
+					x.tenPhieu,
+					x.giaTriGiam,
+					x.giaTriGiamToiDa,
+					x.donToiThieu,
+					x.ngayBatDau,
+					x.ngayKetThuc,
+					x.soLuong,
+					x.soLuongDaSuDung,
+					x.soLuongConLai,
+					hopLe,
+					tienGiamThucTe = tienGiam,
+					doLech = Math.Abs((x.donToiThieu ?? 0) - tongTien)
+				};
+			})
+			.OrderByDescending(x => x.hopLe)
+			.ThenByDescending(x => x.tienGiamThucTe) // 🔥 giờ mới đúng
+			.ThenBy(x => x.doLech)
+			.ThenByDescending(x => x.soLuongConLai)
+			.ThenBy(x => x.ngayKetThuc)
+			.ToList();
+
+			return Ok(vouchers);
+		}
+
+		// Lấy chi tiết sản phẩm với đầy đủ ảnh
+		[HttpGet("chi-tiet-san-pham/{id}")]
         public async Task<IActionResult> GetProductDetail(Guid id)
         {
             var product = await _context.SanPhamChiTiets
