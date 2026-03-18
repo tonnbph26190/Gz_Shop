@@ -403,6 +403,10 @@
                                 <span class="info-label">Trạng thái:</span>
                                 <span class="status-badge">@Model.TrangThai</span>
                             </div>
+                            <div class="info-row">
+                                <span class="info-label">Loại đơn:</span>
+                                <span class="info-value">@(Model.BanTaiQuay ? "Mua tại quầy" : "Mua online")</span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-row">

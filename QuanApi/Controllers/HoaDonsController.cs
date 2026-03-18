@@ -186,6 +186,7 @@ namespace QuanApi.Controllers
                         {
                             IDHoaDon = h.IDHoaDon,
                             MaHoaDon = h.MaHoaDon,
+                            BanTaiQuay = h.BanTaiQuay,
                             TongTien = h.TongTien,
                             TienGiam = h.TienGiam,
                             PhiVanChuyen = h.PhiVanChuyen,
@@ -305,6 +306,7 @@ namespace QuanApi.Controllers
                     TongTien = dto.TongTien,
                     TienGiam = dto.TienGiam ?? 0,
                     PhiVanChuyen = dto.PhiVanChuyen ?? 0, // Thêm phí vận chuyển
+                    BanTaiQuay = dto.BanTaiQuay,
                     TrangThai = "Chờ xác nhận",
                     TenNguoiNhan = dto.TenNguoiNhan ?? "",
                     SoDienThoaiNguoiNhan = dto.SoDienThoaiNguoiNhan ?? "",
@@ -400,24 +402,24 @@ namespace QuanApi.Controllers
 
                     _logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
                 }
-				// Nếu admin xác nhận đơn hàng thì mới trừ tồn
-				if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai == "Chờ xác nhận")
-				{
-					foreach (var chiTiet in hoaDon.ChiTietHoaDons)
-					{
-						if (chiTiet.SanPhamChiTiet != null)
-						{
-							if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
-							{
-								return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
-							}
+                // Nếu admin xác nhận đơn hàng thì mới trừ tồn
+                if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai == "Chờ xác nhận")
+                {
+                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+                    {
+                        if (chiTiet.SanPhamChiTiet != null)
+                        {
+                            if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
+                            {
+                                return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
+                            }
 
-							chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
-						}
-					}
-				}
-				// Cập nhật trạng thái
-				hoaDon.TrangThai = dto.TrangThai;
+                            chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
+                        }
+                    }
+                }
+                // Cập nhật trạng thái
+                hoaDon.TrangThai = dto.TrangThai;
                 hoaDon.NguoiCapNhat = dto.NguoiCapNhat;
                 hoaDon.LanCapNhatCuoi = dto.LanCapNhatCuoi;
 
@@ -429,23 +431,23 @@ namespace QuanApi.Controllers
 
                 // Lưu lịch sử thay đổi trạng thái
                 await _orderHistoryService.SaveOrderHistoryAsync(id, oldStatus, dto.TrangThai, dto.NguoiCapNhat, dto.LyDoHuyDon);
-				// Nếu chuyển sang "Đã xác nhận" thì mới trừ tồn
-				if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai != "Đã xác nhận")
-				{
-					foreach (var chiTiet in hoaDon.ChiTietHoaDons)
-					{
-						if (chiTiet.SanPhamChiTiet != null)
-						{
-							if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
-							{
-								return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
-							}
+                // Nếu chuyển sang "Đã xác nhận" thì mới trừ tồn
+                if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai != "Đã xác nhận")
+                {
+                    foreach (var chiTiet in hoaDon.ChiTietHoaDons)
+                    {
+                        if (chiTiet.SanPhamChiTiet != null)
+                        {
+                            if (chiTiet.SanPhamChiTiet.SoLuong < chiTiet.SoLuong)
+                            {
+                                return BadRequest($"Sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} không đủ tồn kho");
+                            }
 
-							chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
-						}
-					}
-				}
-				await _context.SaveChangesAsync();
+                            chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
 
@@ -796,6 +798,7 @@ namespace QuanApi.Controllers
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
         public decimal? PhiVanChuyen { get; set; }
+        public bool BanTaiQuay { get; set; } = false;
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }

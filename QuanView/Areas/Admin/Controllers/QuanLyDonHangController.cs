@@ -74,6 +74,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public Guid IDHoaDon { get; set; }
             public string MaHoaDon { get; set; }
+            public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
             public decimal? PhiVanChuyen { get; set; }
@@ -282,6 +283,7 @@ namespace QuanView.Areas.Admin.Controllers
                         {
                             IDHoaDon = hoaDonData.IDHoaDon,
                             MaHoaDon = hoaDonData.MaHoaDon,
+                            BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
