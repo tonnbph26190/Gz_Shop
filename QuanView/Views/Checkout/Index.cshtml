@@ -576,8 +576,8 @@
 
 <!-- jQuery cho esgoo.net API -->
 <script src="https://esgoo.net/scripts/jquery.js"></script>
-
-<script>
+@section Scripts {
+	<script>
 			let gioHangData = null;
 			let phuongThucThanhToan = null;
 			let discountValue = 0;
@@ -3272,6 +3272,9 @@
 				const soDienThoai = $('#soDienThoaiNguoiNhan').val();
 				const diaChiChiTiet = $('#diaChiChiTiet').val();
 				const fullAddress = $('#diaChiGiaoHang').val();
+				const tinhId = $('#tinh').val(); 
+				const quanId = $('#quan').val();
+				const phuongId = $('#phuong').val();
 
 				// Reset modal dropdowns trước
 				resetSaveAddressDropdowns();
@@ -3281,7 +3284,16 @@
 				$('#saveAddressPhone').val(soDienThoai);
 				$('#saveAddressChiTiet').val(diaChiChiTiet);
 
-				// Nếu có địa chỉ đầy đủ từ form chính, điền vào modal
+				if (tinhId && tinhId !== '0') {
+						$('#saveAddressTinh').val(tinhId).change();
+						setTimeout(() => {
+							$('#saveAddressQuan').val(quanId).change();
+							setTimeout(() => {
+								$('#saveAddressPhuong').val(phuongId);
+							}, 300);
+						}, 300);
+					}
+
 				if (fullAddress && fullAddress.trim() !== '') {
 					$('#saveAddressDetail').val(fullAddress);
 				}
@@ -3292,43 +3304,46 @@
 
 			// Lưu địa chỉ mới
 			function saveNewAddress() {
+				// 1. Get the values from the dropdowns (optional but recommended for better data)
+				const tinh = $("#saveAddressTinh option:selected").text();
+				const quan = $("#saveAddressQuan option:selected").text();
+				const phuong = $("#saveAddressPhuong option:selected").text();
+				const chiTiet = $('#saveAddressChiTiet').val();
+
+				// 2. Build the full address string from dropdowns if they are selected
+				// This ensures that even if the textarea hasn't updated yet, the data is fresh.
+				let finalAddress = $('#saveAddressDetail').val(); 
+				
+				// 3. Construct the Data Object (Matches your naming convention)
 				const addressData = {
 					idKhachHang: '@User.FindFirst("custom:id_khachhang")?.Value',
 					tenNguoiNhan: $('#saveAddressName').val(),
 					sdtNguoiNhan: $('#saveAddressPhone').val(),
-					diaChiChiTiet: $('#saveAddressDetail').val(),
+					diaChiChiTiet: finalAddress, // Sending the full string to your Backend
 					laMacDinh: $('#saveAddressDefault').is(':checked')
 				};
 
-				// Lấy địa chỉ đầy đủ từ textarea readonly
-				const fullAddressFromModal = $('#saveAddressDetail').val();
-				if (fullAddressFromModal && fullAddressFromModal.trim() !== '') {
-					addressData.diaChiChiTiet = fullAddressFromModal;
-				}
-
-				// Validation
-				if (!addressData.diaChiChiTiet || addressData.diaChiChiTiet.trim() === '') {
-					alert('Vui lòng chọn địa chỉ từ dropdown hoặc nhập địa chỉ chi tiết!');
-					$('#saveAddressChiTiet').focus();
-					return;
-				}
-
-				if (!addressData.tenNguoiNhan) {
+				// --- Validation ---
+				if (!addressData.tenNguoiNhan || addressData.tenNguoiNhan.trim() === '') {
 					alert('Vui lòng nhập tên người nhận!');
 					$('#saveAddressName').focus();
 					return;
 				}
 
-				// Validate số điện thoại nếu có nhập
+				if (!addressData.diaChiChiTiet || addressData.diaChiChiTiet.trim() === '' || $("#saveAddressTinh").val() === '0') {
+					alert('Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã!');
+					return;
+				}
+
 				if (addressData.sdtNguoiNhan && addressData.sdtNguoiNhan.trim() !== '') {
-					if (!validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
-						alert('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.');
+					if (typeof validateVietnamesePhoneNumber === "function" && !validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
+						alert('Số điện thoại không hợp lệ.');
 						$('#saveAddressPhone').focus();
 						return;
 					}
 				}
 
-				// Gọi API tạo địa chỉ
+				// --- API Call ---
 				$.ajax({
 					url: '/Checkout/TaoDiaChi',
 					method: 'POST',
@@ -3338,22 +3353,23 @@
 						alert('Lưu địa chỉ thành công!');
 						$('#saveAddressModal').modal('hide');
 
-						// Cập nhật form checkout nếu là địa chỉ mặc định
+						// Update main checkout form if checked as default
 						if (addressData.laMacDinh) {
 							$('#tenNguoiNhan').val(addressData.tenNguoiNhan);
 							$('#soDienThoaiNguoiNhan').val(addressData.sdtNguoiNhan);
 							$('#diaChiGiaoHang').val(addressData.diaChiChiTiet);
+							
+							// Also update the main page dropdowns if you have them
+							// Note: This requires your main page to have the same logic/IDs
 						}
 					},
 					error: function(xhr) {
 						let errorMessage = 'Lỗi khi lưu địa chỉ!';
-						if (xhr.responseText) {
-							try {
-								const error = JSON.parse(xhr.responseText);
-								errorMessage = error.message || errorMessage;
-							} catch (e) {
-								errorMessage = xhr.responseText;
-							}
+						try {
+							const error = JSON.parse(xhr.responseText);
+							errorMessage = error.message || errorMessage;
+						} catch (e) {
+							errorMessage = xhr.responseText || errorMessage;
 						}
 						alert(errorMessage);
 					}
@@ -3415,7 +3431,8 @@
 					resetSaveAddressDropdowns();
 				});
 			});
-</script>
+	</script>
+} 
 
 <!-- Modal Lưu Địa Chỉ -->
 <div class="modal fade" id="saveAddressModal" tabindex="-1" aria-labelledby="saveAddressModalLabel" aria-hidden="true">
