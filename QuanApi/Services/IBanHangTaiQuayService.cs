@@ -43,6 +43,7 @@ public class BanHangTaiQuayService : IBanHangTaiQuayService
             IDHoaDon = Guid.NewGuid(),
             IDNhanVien = idNhanVien,
             NgayTao = DateTime.UtcNow,
+            BanTaiQuay = true,
             TrangThai = "ChoThanhToan"
         };
 

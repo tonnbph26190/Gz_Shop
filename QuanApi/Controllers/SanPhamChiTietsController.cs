@@ -61,18 +61,18 @@ namespace QuanApi.Controllers
                              join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                              where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
                                 && dgg.TrangThai == true
-                                && dgg.NgayBatDau <= DateTime.Now
-                                && dgg.NgayKetThuc >= DateTime.Now
-                             select dgg.PhanTramGiam
+                                && dgg.NgayBatDau <= DateTime.UtcNow
+                                && dgg.NgayKetThuc >= DateTime.UtcNow
+							 select dgg.PhanTramGiam
                             ).FirstOrDefault() > 0
                             ? ct.GiaBan * (1 - (decimal)(
                                 (from dgg in _context.DotGiamGias
                                  join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
                                  where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
                                     && dgg.TrangThai == true
-                                    && dgg.NgayBatDau <= DateTime.Now
-                                    && dgg.NgayKetThuc >= DateTime.Now
-                                 select dgg.PhanTramGiam
+                                    && dgg.NgayBatDau <= DateTime.UtcNow
+									&& dgg.NgayKetThuc >= DateTime.UtcNow
+								 select dgg.PhanTramGiam
                                 ).FirstOrDefault() / 100.0m))
                             : ct.GiaBan
                         ),
@@ -232,7 +232,7 @@ namespace QuanApi.Controllers
                     ),
                     TenDanhMuc = ct.SanPham?.DanhMuc?.TenDanhMuc ?? "",
                     AnhDaiDien = ct.AnhSanPhams != null ? ct.AnhSanPhams.Where(a => a.LaAnhChinh).Select(a => a.UrlAnh).FirstOrDefault() ?? "" : "",
-                }).ToList();
+				}).ToList();
 
                 return Ok(result);
             }
@@ -242,8 +242,84 @@ namespace QuanApi.Controllers
             }
         }
 
-        // POST: api/sanphamchitiets
-        [HttpPost]
+		[HttpGet("getDetailSp")]
+		public async Task<ActionResult<SanPhamDetailDto>> GetDetailSanPham([FromQuery] Guid idsanpham)
+		{
+			if (idsanpham == Guid.Empty)
+				return BadRequest("ID sản phẩm không hợp lệ.");
+
+			var list = await _context.SanPhamChiTiets
+				.Where(ct => ct.IDSanPham == idsanpham)
+				.Include(ct => ct.KichCo)
+				.Include(ct => ct.MauSac)
+				.Include(ct => ct.HoaTiet)
+				.Include(ct => ct.SanPham)
+				.Include(ct => ct.AnhSanPhams)
+				.ToListAsync();
+
+			if (!list.Any())
+				return NotFound();
+
+			// 👉 Gom toàn bộ ảnh của tất cả SPCT
+			var allImages = list
+				.SelectMany(ct => ct.AnhSanPhams)
+				.Where(a => a.TrangThai)
+				.OrderByDescending(a => a.LaAnhChinh)
+				.ThenBy(a => a.NgayTao)
+				.Select(a => a.UrlAnh)
+				.Distinct()
+				.ToList();
+
+			var result = new SanPhamDetailDto
+			{
+				IdSanPham = idsanpham,
+				TenSanPham = list.First().SanPham?.TenSanPham ?? "",
+				TenDanhMuc = list.First().SanPham?.DanhMuc?.TenDanhMuc ?? "",
+
+				DanhSachAnh = allImages,
+
+				BienThes = list.Select(ct => new SanPhamChiTietDto
+				{
+					IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
+					IdSanPham = ct.IDSanPham,
+					IdKichCo = ct.IDKichCo,
+					IdMauSac = ct.IDMauSac,
+					IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
+					SoLuong = ct.SoLuong,
+					GiaBan = ct.GiaBan,
+					TenKichCo = ct.KichCo?.TenKichCo,
+					TenMauSac = ct.MauSac?.TenMauSac,
+					TenHoaTiet = ct.HoaTiet?.TenHoaTiet,
+					TrangThai = ct.TrangThai,
+					price = (
+						(from dgg in _context.DotGiamGias
+						 join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+						 where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+							&& dgg.TrangThai == true
+							&& dgg.NgayBatDau <= DateTime.UtcNow
+							&& dgg.NgayKetThuc >= DateTime.UtcNow
+						 select dgg.PhanTramGiam
+						).FirstOrDefault() > 0
+						? ct.GiaBan * (1 - (decimal)(
+							(from dgg in _context.DotGiamGias
+							 join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+							 where sp.IDSanPhamChiTiet == ct.IDSanPhamChiTiet
+								&& dgg.TrangThai == true
+								&& dgg.NgayBatDau <= DateTime.UtcNow
+								&& dgg.NgayKetThuc >= DateTime.UtcNow
+							 select dgg.PhanTramGiam
+							).FirstOrDefault() / 100.0m))
+						: ct.GiaBan
+					),
+					MaSPChiTiet = ct.MaSPChiTiet
+				}).ToList()
+			};
+
+			return Ok(result);
+		}
+
+		// POST: api/sanphamchitiets
+		[HttpPost]
         public async Task<IActionResult> Post(SanPhamChiTietDto dto)
         {
             try

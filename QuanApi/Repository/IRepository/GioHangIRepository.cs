@@ -1,4 +1,4 @@
-﻿using QuanApi.Data;
+using QuanApi.Data;
 using QuanApi.Dtos;
 
 namespace QuanApi.Repository.IRepository
