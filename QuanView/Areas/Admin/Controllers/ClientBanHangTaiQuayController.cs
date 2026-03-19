@@ -184,29 +184,33 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+		[HttpGet]
+		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		{
+			try
+			{
+				var response = await _httpClient.GetAsync(
+					$"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}&tongTien={tongTien.ToString(CultureInfo.InvariantCulture)}"
+				);
 
-        [HttpGet]
-        [Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
-        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync($"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(vouchers);
-                }
-                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+				if (response.IsSuccessStatusCode)
+				{
+					var vouchers = await response.Content.ReadFromJsonAsync<object>();
+					return Ok(vouchers);
+				}
 
-        // Lấy địa chỉ của khách hàng
-        [HttpGet]
+				var error = await response.Content.ReadAsStringAsync(); // 👈 debug thêm
+				return StatusCode((int)response.StatusCode, error);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Lỗi: {ex.Message}");
+			}
+		}
+
+		// Lấy địa chỉ của khách hàng
+		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddress(Guid customerId)
         {
