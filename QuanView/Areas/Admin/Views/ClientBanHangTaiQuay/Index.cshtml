@@ -203,6 +203,24 @@
             border-color: #007bff;
             background-color: #f8f9ff;
         }
+    [id^="btn-voucher-"] {
+        background-color: #007bff !important;
+        border-color: #007bff !important;
+        color: white !important;
+        transition: background-color 0.3s ease; 
+    }
+
+    [id^="btn-voucher-"]:hover:not(:disabled) {
+        background-color: #00ffff !important; 
+        border-color: #00ffff !important;
+        color: #333 !important; 
+    }
+
+    [id^="btn-voucher-"]:disabled {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="container mt-3">
@@ -880,7 +898,8 @@
                                 ${voucher.moTa ? `<div class="mb-2"><strong>Mô tả:</strong> ${voucher.moTa}</div>` : ''}
                             </div>
                             <div class="card-footer">
-                                <button class="btn btn-primary btn-sm w-100"
+                                <button id="btn-voucher-${voucher.maCode}" 
+                                        class="btn btn-sm w-100 custom-voucher-btn"
                                         onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
                                         ${!isActive ? 'disabled' : ''}>
                                     ${isActive ? 'Chọn phiếu này' : 'Không có hiệu lực'}
