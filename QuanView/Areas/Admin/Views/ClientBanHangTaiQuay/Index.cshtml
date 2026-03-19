@@ -203,6 +203,24 @@
             border-color: #007bff;
             background-color: #f8f9ff;
         }
+    [id^="btn-voucher-"] {
+        background-color: #007bff !important;
+        border-color: #007bff !important;
+        color: white !important;
+        transition: background-color 0.3s ease; 
+    }
+
+    [id^="btn-voucher-"]:hover:not(:disabled) {
+        background-color: #00ffff !important; 
+        border-color: #00ffff !important;
+        color: #333 !important; 
+    }
+
+    [id^="btn-voucher-"]:disabled {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="container mt-3">
@@ -991,46 +1009,45 @@
 				let cardClass = isDisabled ? 'voucher-card-disabled' : '';
 				let buttonClass = isDisabled ? 'disabled' : '';
 
-				html += `
-					<div class="col-md-6 mb-3">
-						<div class="card ${statusClass} h-100 ${cardClass}">
-							<div class="card-header d-flex justify-content-between align-items-center">
-								<h6 class="mb-0">${voucher.tenPhieu}</h6>
-								<span class="badge ${statusBadgeClass}">
-									${statusText}
-								</span>
-							</div>
-							<div class="card-body">
-								<div class="mb-2">
-									<strong>Mã:</strong> <code>${voucher.maCode}</code>
-								</div>
-								<div class="mb-2">
-									<strong>Giảm giá:</strong> ${voucher.giaTriGiam}% (tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
-								</div>
-								<div class="mb-2">
-									<strong>Đơn tối thiểu:</strong>
-									<span class="${!meetsMinimum && isActive ? 'text-danger fw-bold' : ''}">${voucher.donToiThieu.toLocaleString()} VND</span>
-									${!meetsMinimum && isActive ? `<span class="badge bg-danger ms-2">Thiếu ${(voucher.donToiThieu - orderTotal).toLocaleString()} VND</span>` : ''}
-								</div>
-								<div class="mb-2">
-									<strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
-								</div>
-								${voucher.moTa ? `<div class="mb-2"><strong>Mô tả:</strong> ${voucher.moTa}</div>` : ''}
-							</div>
-							<div class="card-footer">
-								<button class="btn btn-primary btn-sm w-100 ${buttonClass}"
-										onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
-										${!isActive ? 'disabled' : ''}>
-									${isExpired ? 'Hết hạn' : !meetsMinimum ? 'Không đủ điều kiện' : !isActive ? 'Không có hiệu lực' : 'Chọn phiếu này'}
-								</button>
-							</div>
-						</div>
-					</div>
-				`;
-			});
-			html += '</div>';
-			$('#voucherList').html(html);
-		}
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card ${isExpired ? 'border-danger' : isActive ? 'border-success' : 'border-warning'} h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${voucher.tenPhieu}</h6>
+                                <span class="badge ${isExpired ? 'bg-danger' : isActive ? 'bg-success' : 'bg-warning'}">
+                                    ${isExpired ? 'Hết hạn' : isActive ? 'Có hiệu lực' : 'Chưa có hiệu lực'}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>Mã:</strong> <code>${voucher.maCode}</code>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Giảm giá:</strong> ${voucher.giaTriGiam}% (tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Đơn tối thiểu:</strong> ${voucher.donToiThieu.toLocaleString()} VND
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
+                                </div>
+                                ${voucher.moTa ? `<div class="mb-2"><strong>Mô tả:</strong> ${voucher.moTa}</div>` : ''}
+                            </div>
+                            <div class="card-footer">
+                                <button id="btn-voucher-${voucher.maCode}" 
+                                        class="btn btn-sm w-100 custom-voucher-btn"
+                                        onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
+                                        ${!isActive ? 'disabled' : ''}>
+                                    ${isActive ? 'Chọn phiếu này' : 'Không có hiệu lực'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            $('#voucherList').html(html);
+        }
 
 
         // Chọn phiếu giảm giá
@@ -1068,7 +1085,7 @@
             showSuccess(`Đã áp dụng phiếu giảm giá ${code}! Giảm ${discountAmount.toLocaleString()} VND`);
         }
 
-                // Xóa phiếu giảm giá
+        // Xóa phiếu giảm giá
         function clearDiscount() {
             $('#discountCode').val('');
             discountValue = 0;
