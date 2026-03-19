@@ -116,12 +116,6 @@
         overflow: hidden;
     }
 
-    .product-title {
-        font-size: 0.95rem; font-weight: 600; color: #212529;
-        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
     .current-price { font-size: 1.1rem; font-weight: 700; color: #dc3545; }
     .old-price { font-size: 0.85rem; color: #adb5bd; text-decoration: line-through; margin-left: 6px; }
 
@@ -262,7 +256,7 @@
 
                 <div class="col-6 col-md-4 col-lg-3 d-flex">
                     <div class="product-card shadow-sm h-100 w-100 d-flex flex-column">
-                        @if (coGiamGia) { <div class="badge-sale">Giảm giá</div> }
+                        @if (coGiamGia) { <div class="badge-sale">Giảm giá</div> } 
 
                         <div class="product-img-container">
                             <img src="@anhDaiDien" alt="@product.TenSanPham" class="w-100" />

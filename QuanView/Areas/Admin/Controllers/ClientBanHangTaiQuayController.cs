@@ -185,7 +185,6 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
-
 		[HttpGet]
 		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
 		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
@@ -210,6 +209,7 @@ namespace QuanView.Areas.Admin.Controllers
 				return StatusCode(500, $"Lỗi: {ex.Message}");
 			}
 		}
+
 		// Lấy địa chỉ của khách hàng
 		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang")]

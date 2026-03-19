@@ -615,6 +615,7 @@ namespace QuanApi.Controllers
 			return Ok(vouchers);
 		}
 
+
 		// Lấy chi tiết sản phẩm với đầy đủ ảnh
 		[HttpGet("chi-tiet-san-pham/{id}")]
         public async Task<IActionResult> GetProductDetail(Guid id)
@@ -710,25 +711,18 @@ namespace QuanApi.Controllers
             }
         }
 
-		// Tạo địa chỉ mới cho khách hàng
-		// Tạo địa chỉ mới cho khách hàng
-		[HttpPost("tao-dia-chi")]
-		public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
-		{
-			try
-			{
-				// 🔥 validate
-				if (string.IsNullOrWhiteSpace(dto.DiaChiChiTiet))
-				{
-					return BadRequest("Địa chỉ không được để trống.");
-				}
-
-				// Kiểm tra khách hàng
-				var khachHang = await _context.KhachHang.FindAsync(dto.IDKhachHang);
-				if (khachHang == null)
-				{
-					return BadRequest("Khách hàng không tồn tại.");
-				}
+        // Tạo địa chỉ mới cho khách hàng
+        [HttpPost("tao-dia-chi")]
+        public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
+        {
+            try
+            {
+                // Kiểm tra khách hàng có tồn tại không
+                var khachHang = await _context.KhachHang.FindAsync(dto.IDKhachHang);
+                if (khachHang == null)
+                {
+                    return BadRequest("Khách hàng không tồn tại.");
+                }
 
 				// 🔥 normalize để so sánh
 				string Normalize(string s) => (s ?? "").Trim().ToLower();
@@ -786,29 +780,29 @@ namespace QuanApi.Controllers
 				_context.DiaChis.Add(diaChi);
 				await _context.SaveChangesAsync();
 
-				return Ok(new
-				{
-					message = "Tạo địa chỉ thành công",
-					diaChi = new
-					{
-						id = diaChi.IDDiaChi,
-						maDiaChi = diaChi.MaDiaChi,
-						diaChiChiTiet = diaChi.DiaChiChiTiet,
-						tenNguoiNhan = diaChi.TenNguoiNhan,
-						sdtNguoiNhan = diaChi.SdtNguoiNhan,
-						laMacDinh = diaChi.LaMacDinh
-					}
-				});
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Lỗi khi tạo địa chỉ: {ex.Message}");
-				return StatusCode(500, "Lỗi khi tạo địa chỉ");
-			}
-		}
+                return Ok(new
+                {
+                    message = "Tạo địa chỉ thành công",
+                    diaChi = new
+                    {
+                        id = diaChi.IDDiaChi,
+                        maDiaChi = diaChi.MaDiaChi,
+                        diaChiChiTiet = diaChi.DiaChiChiTiet,
+                        tenNguoiNhan = diaChi.TenNguoiNhan,
+                        sdtNguoiNhan = diaChi.SdtNguoiNhan,
+                        laMacDinh = diaChi.LaMacDinh
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi tạo địa chỉ: {ex.Message}");
+                return StatusCode(500, "Lỗi khi tạo địa chỉ");
+            }
+        }
 
-		// Lấy danh sách địa chỉ của khách hàng
-		[HttpGet("danh-sach-dia-chi-khach-hang")]
+        // Lấy danh sách địa chỉ của khách hàng
+        [HttpGet("danh-sach-dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddresses(Guid customerId)
         {
             try
