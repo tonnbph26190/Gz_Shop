@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
@@ -185,28 +186,32 @@ namespace QuanView.Areas.Admin.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
-        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync($"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(vouchers);
-                }
-                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+		[HttpGet]
+		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		{
+			try
+			{
+				var response = await _httpClient.GetAsync(
+					$"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}&tongTien={tongTien.ToString(CultureInfo.InvariantCulture)}"
+				);
 
-        // Lấy địa chỉ của khách hàng
-        [HttpGet]
+				if (response.IsSuccessStatusCode)
+				{
+					var vouchers = await response.Content.ReadFromJsonAsync<object>();
+					return Ok(vouchers);
+				}
+
+				var error = await response.Content.ReadAsStringAsync(); // 👈 debug thêm
+				return StatusCode((int)response.StatusCode, error);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Lỗi: {ex.Message}");
+			}
+		}
+		// Lấy địa chỉ của khách hàng
+		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddress(Guid customerId)
         {
@@ -226,30 +231,41 @@ namespace QuanView.Areas.Admin.Controllers
             }
         }
 
-        // Tạo địa chỉ mới cho khách hàng
-        [HttpPost]
-        [Route("Admin/ClientBanHangTaiQuay/tao-dia-chi")]
-        public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(result);
-                }
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, errorContent);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+		// Tạo địa chỉ mới cho khách hàng
+		[HttpPost]
+		[Route("Admin/ClientBanHangTaiQuay/tao-dia-chi")]
+		public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
+		{
+			try
+			{
+				var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
 
-        // Lấy danh sách địa chỉ của khách hàng
-        [HttpGet]
+				var content = await response.Content.ReadAsStringAsync();
+
+				// ✅ thành công
+				if (response.IsSuccessStatusCode)
+				{
+					return Ok(content); // hoặc Deserialize nếu muốn
+				}
+
+				// 🚫 lỗi (ví dụ: trùng địa chỉ)
+				return StatusCode((int)response.StatusCode, new
+				{
+					message = content
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new
+				{
+					message = "Lỗi server",
+					detail = ex.Message
+				});
+			}
+		}
+
+		// Lấy danh sách địa chỉ của khách hàng
+		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddresses(Guid customerId)
         {

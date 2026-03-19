@@ -219,6 +219,11 @@
             // Chỉ apply validation cho các input KHÔNG nằm trong dòng template
             const allQuantityInputs = document.querySelectorAll('.quantity-input');
             const allPriceInputs = document.querySelectorAll('.price-input');
+=========
+            updateSTT();
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const priceInputs = document.querySelectorAll('.price-input');
+>>>>>>>>> Temporary merge branch 2
 
             allQuantityInputs.forEach(input => {
                 const row = input.closest('tr');

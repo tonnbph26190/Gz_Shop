@@ -207,7 +207,7 @@ namespace QuanApi.Controllers.Api
 
                 if (!string.IsNullOrEmpty(khachHang.Email))
                 {
-                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần áo GZ!";
+                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần GZ!";
                     var emailBody = new StringBuilder();
                     emailBody.AppendLine($"<p>Xin chào <strong>{khachHang.TenKhachHang}</strong>,</p>");
                     emailBody.AppendLine("<p>Bạn đã đăng ký tài khoản thành công tại Hệ thống Quản lý Bán Quần Áo của chúng tôi.</p>");
@@ -246,8 +246,7 @@ namespace QuanApi.Controllers.Api
 
                     emailBody.AppendLine("<p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>");
                     emailBody.AppendLine("<p>Trân trọng,</p>");
-                    emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
-
+					emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
                     try
                     {
                         await _emailService.SendEmailAsync(khachHang.Email, subject, emailBody.ToString());
