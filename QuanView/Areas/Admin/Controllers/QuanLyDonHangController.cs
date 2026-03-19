@@ -74,6 +74,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public Guid IDHoaDon { get; set; }
             public string MaHoaDon { get; set; }
+            public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
             public decimal? PhiVanChuyen { get; set; }
@@ -282,6 +283,7 @@ namespace QuanView.Areas.Admin.Controllers
                         {
                             IDHoaDon = hoaDonData.IDHoaDon,
                             MaHoaDon = hoaDonData.MaHoaDon,
+                            BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
@@ -495,6 +497,66 @@ namespace QuanView.Areas.Admin.Controllers
                 }
             }
             return await CapNhatTrangThai(id, "Giao hàng thành công");
+        }
+
+        // POST: Admin/QuanLyDonHang/HuyDonHang/{id}
+        [HttpPost]
+        public async Task<IActionResult> HuyDonHang(Guid id)
+        {
+            try
+            {
+                var detailResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!detailResponse.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = await detailResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
+                if (hoaDon == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.BanTaiQuay)
+                {
+                    TempData["ErrorMessage"] = "Chỉ cho phép hủy đơn online ở màn hình này.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai == "Đã hủy")
+                {
+                    TempData["ErrorMessage"] = "Đơn hàng đã ở trạng thái hủy.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var payload = new
+                {
+                    TrangThai = "Đã hủy",
+                    NguoiCapNhat = User.Identity?.Name ?? "Admin",
+                    LanCapNhatCuoi = DateTime.UtcNow,
+                    LyDoHuyDon = "Hủy đơn bởi quản trị viên"
+                };
+
+                var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
+
+                if (updateResponse.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Đã hủy đơn hàng thành công.";
+                }
+                else
+                {
+                    var error = await updateResponse.Content.ReadAsStringAsync();
+                    TempData["ErrorMessage"] = $"Lỗi khi hủy đơn hàng: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi hủy đơn hàng: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // POST: Admin/QuanLyDonHang/Rollback/{id}

@@ -463,13 +463,67 @@
         // Final function: Add to Cart
 		function themGioHang() {
 			if (!selectedSize || !selectedColor || !selectedPattern) {
-				alert(lang === "vi" ? "Vui lòng chọn đầy đủ Màu, Size và Họa tiết!" : "Please select Color, Size, and Pattern!");
+				alert('Vui lòng chọn đầy đủ!');
 				return;
 			}
-			
-			const soLuong = $('#soLuong').val();
-			// Your AJAX logic...
-			alert("Thêm vào giỏ hàng thành công!");
+
+			const bienThe = bienThes.find(b =>
+				String(b.Size).trim().toLowerCase() === selectedSize.toLowerCase() &&
+				String(b.Mau).trim().toLowerCase() === selectedColor.toLowerCase() &&
+				String(b.HoaTiet).trim().toLowerCase() === selectedPattern.toLowerCase()
+			);
+			if (!bienThe) {
+				alert('Vui lòng chọn đúng biến thể!');
+				return;
+			}
+
+			if (bienThe.SoLuong <= 0) {
+				alert('Sản phẩm đã hết hàng!');
+				return;
+			}
+
+			const soLuong = parseInt($('#soLuong').val());
+			if (soLuong <= 0) {
+				alert('Số lượng phải lớn hơn 0!');
+				return;
+			}
+
+			if (soLuong > bienThe.SoLuong) {
+				alert(`Số lượng vượt quá tồn kho! Hiện có: ${bienThe.SoLuong}`);
+				return;
+			}
+
+			function decodeHtmlEntities(text) {
+				const textarea = document.createElement('textarea');
+				textarea.innerHTML = text;
+				return textarea.value;
+			}
+
+			const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
+			const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
+
+			if (!confirm(confirmMessage)) {
+				return;
+			}
+
+			$.post('/GioHang/Add', {
+				idsp: bienThe.IDSanPhamChiTiet,
+				soluong: soLuong
+			}, function (res) {
+				try { if (typeof res === 'string') res = JSON.parse(res); } catch (e) { }
+				if (res && res.success === true) {
+					alert('Sản phẩm đã được thêm vào giỏ hàng!');
+				} else {
+					const msg = (res && res.message ? String(res.message) : '').toLowerCase();
+					if (msg.includes('vượt quá tồn kho') || msg.includes('tối đa')) {
+						alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
+					} else {
+						alert('Thêm vào giỏ hàng thất bại!');
+					}
+				}
+			}).fail(function () {
+				alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
+			});
 		}
     </script>
 }

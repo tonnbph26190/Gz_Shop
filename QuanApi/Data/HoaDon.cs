@@ -35,7 +35,9 @@ namespace QuanApi.Data
         [MaxLength(50)]
         public string TrangThai { get; set; }
 
-        [MaxLength(100)]
+		public bool BanTaiQuay { get; set; } = false;
+
+		[MaxLength(100)]
         public string? TenNguoiNhan { get; set; }
 
         [MaxLength(20)]
