@@ -235,8 +235,8 @@
                     <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;" onclick="clearCustomer()" title="Hủy chọn khách hàng">
                         <i class="bi bi-x-circle"></i> Hủy chọn
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
-                    <button class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
                 </div>
             </div>
 
@@ -1693,8 +1693,8 @@
         $('#customerEmail').text(selectedCustomer.email || '—');
         $('#customerPoint').text(selectedCustomer.point != null ? selectedCustomer.point : 0);
         $('#btnClearCustomer').show();
-        $('#btnShowAddress').show();
-        $('#btnAddAddress').show();
+        @* $('#btnShowAddress').show();
+        $('#btnAddAddress').show(); *@
 
         // Reset phiếu giảm giá khi chọn khách hàng mới
         $('#discountCode').val('');
@@ -1787,14 +1787,11 @@
             $('#shippingFormCard').show();
             $('#btnShowAddress').show();
             $('#btnAddAddress').show();
-
+            
             calculateShippingFee();
-
-            // ❌ QUAN TRỌNG: KHÔNG load lại nếu vừa thanh toán
             if (selectedCustomer && selectedCustomerId) {
                 loadCustomerAddress();
             }
-
         } else {
             $('#shippingFormCard').hide();
             $('#btnShowAddress').hide();
@@ -1803,8 +1800,6 @@
             shippingFee = 0;
             $('#shippingFee').val(0);
             $('#shippingFeeDisplay').html('');
-
-            // ✅ THÊM DÒNG NÀY
             clearCustomerForm();
         }
 
