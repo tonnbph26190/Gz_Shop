@@ -646,6 +646,35 @@
     let selectedPaymentCode;
     let shippingFee = 0;
 
+
+    function resetKhachHangForm() {
+    // Xóa input text
+    document.querySelectorAll('#khachHangForm input[type="text"], #khachHangForm input[type="email"]').forEach(el => el.value = '');
+
+    // Xóa textarea
+    document.querySelectorAll('#khachHangForm textarea').forEach(el => el.value = '');
+
+    // Reset select
+    document.querySelectorAll('#khachHangForm select').forEach(el => el.selectedIndex = 0);
+
+    // Tắt checkbox giao hàng
+    const giaoHangCheckbox = document.querySelector('#GiaoHang');
+    if (giaoHangCheckbox) {
+        giaoHangCheckbox.checked = false;
+    }
+
+    // Xóa địa chỉ hiển thị
+    const diaChiContainer = document.querySelector('#diaChiContainer');
+    if (diaChiContainer) {
+        diaChiContainer.innerHTML = '';
+    }
+
+    // Reset text hiển thị địa chỉ
+    const diaChiFull = document.querySelector('#DiaChiDayDu');
+    if (diaChiFull) {
+        diaChiFull.value = '';
+    }
+}
     // Toast Notification System
     function showToast(message, type = 'success', duration = 4000) {
         const toastContainer = document.getElementById('toastContainer');
@@ -1725,30 +1754,60 @@
         // Cập nhật lại thông tin thanh toán
         updatePaymentInfo();
     }
+    function clearCustomerForm() {
+        // Xóa input
+        // ===== XÓA THÔNG TIN KHÁCH =====
+        $('#shipName').val('');
+        $('#shipPhone').val('');
+        $('#shipEmail').val('');
 
+        // ===== XÓA ĐỊA CHỈ =====
+        $('#shipTinh').val('0').change();
+        $('#shipQuan').html('<option value="0">Quận Huyện</option>');
+        $('#shipPhuong').html('<option value="0">Phường Xã</option>');
+
+        $('#shipDiaChiChiTiet').val('');
+        $('#shipAddress').val('');
+        $('#shipNote').val('');
+
+        // ===== RESET BIẾN =====
+        selectedCustomer = null;
+        selectedCustomerId = null;
+
+        // Nếu có cache
+        if (typeof lastRenderedCustomerList !== 'undefined') {
+            lastRenderedCustomerList = [];
+        }
+    }
     // Toggle giao hàng
     function toggleShipping() {
         useShipping = $('#shippingSwitch').is(':checked');
+
         if (useShipping) {
             $('#shippingFormCard').show();
             $('#btnShowAddress').show();
             $('#btnAddAddress').show();
-            // Tính phí vận chuyển động thay vì cố định
+
             calculateShippingFee();
-            // Nếu đã chọn khách hàng thì tự động điền địa chỉ
-            if (selectedCustomer) {
+
+            // ❌ QUAN TRỌNG: KHÔNG load lại nếu vừa thanh toán
+            if (selectedCustomer && selectedCustomerId) {
                 loadCustomerAddress();
             }
+
         } else {
             $('#shippingFormCard').hide();
             $('#btnShowAddress').hide();
             $('#btnAddAddress').hide();
-            // Reset phí vận chuyển về 0
+
             shippingFee = 0;
             $('#shippingFee').val(0);
-            // Xóa hiển thị phí vận chuyển
             $('#shippingFeeDisplay').html('');
+
+            // ✅ THÊM DÒNG NÀY
+            clearCustomerForm();
         }
+
         updatePaymentInfo();
     }
 
@@ -1937,8 +1996,18 @@
             data: JSON.stringify(dto),
             success: function (res) {
                 showSuccess('Thanh toán thành công!');
-                $('#confirmPaymentModal').modal('hide');
+                // RESET KHÁCH HÀNG
+                clearCustomerForm();
 
+                // Tắt giao hàng
+                $('#shippingSwitch').prop('checked', false);
+
+                // 🔥 Reset luôn biến control
+                useShipping = false;
+
+                toggleShipping();
+
+                $('#confirmPaymentModal').modal('hide');
                 // Xóa giỏ hàng đã thanh toán
                 gioHangs.splice(currentGioHang, 1);
                 if (gioHangs.length === 0) {
