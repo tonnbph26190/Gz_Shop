@@ -426,11 +426,11 @@
                 <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
                 <button class="btn btn-primary btn-sm mb-2" onclick="searchCustomer()">Tìm kiếm</button>
                 <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-bordered table-sm">
+                    <table class="table table-bordered table-sm text-center">
                         <thead class="table-light sticky-top">
                             <tr>
                                 <th>STT</th>
-                                <th>Ảnh</th>
+                                @* <th>Ảnh</th> *@
                                 <th>Tên</th>
                                 <th>Email</th>
                                 <th>SĐT</th>
@@ -1667,8 +1667,8 @@
         lastRenderedCustomerList = list || [];
         let html = lastRenderedCustomerList.map((c, i) => `
                     <tr>
-                        <td>${i + 1}</td>
-                        <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td>
+                        <td><b>${i + 1}</b></td>
+                        @* <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td> *@
                         <td>${(c.name || '—')}</td>
                         <td>${(c.email || '—')}</td>
                         <td>${(c.phone || '—')}</td>

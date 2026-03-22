@@ -98,10 +98,10 @@
         }
 
     .product-detail-qty {
+		margin-bottom: 0;
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 18px;
     }
 
     .product-detail-qty-btn {
@@ -137,19 +137,17 @@
         }
 
     media (max-width: 900px) {
-        .product-detail-container
+        .product-detail-container {
+			padding: 12px 2vw;
+		}
 
-    {
-        padding: 12px 2vw;
-    }
+		.product-detail-title {
+			font-size: 1.3rem;
+		}
 
-    .product-detail-title {
-        font-size: 1.3rem;
-    }
-
-    .product-detail-price {
-        font-size: 1.3rem;
-    }
+		.product-detail-price {
+			font-size: 1.3rem;
+		}
 
     }
 
@@ -183,6 +181,28 @@
 	#soLuong[type=number] {
 	-moz-appearance: textfield;
 	}
+
+	.product-info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .product-info-label {
+        width: 110px;
+        font-weight: 600;
+        flex-shrink: 0;
+        color: #333;
+    }
+
+    .product-info-content {
+        flex-grow: 1;
+    }
+
+	.stock-status-container {
+        padding: 4px 0;
+        min-height: 24px;
+    }
 </style>
 	<a href="/SanPhamNguoiDung/Index" class="back-to-index-btn m-2"><i class="fa fa-arrow-left"></i> @((lang == "vi") ? "Quay lại" : "Back")</a>
 <div class="container product-detail-container">
@@ -219,61 +239,58 @@
 				<span class="product-detail-oldprice" id="giaGoc"></span>
 			</div>
 
-			<table class="table table-bordered product-info-table">
-				<tbody>
-					<tr>
-						<td style="width: 120px; vertical-align: middle;">
-							<strong>@((lang == "vi") ? "Màu sắc:" : "Color:")</strong>
-						</td>
-						<td>
-							<span id="colorOptions"></span>
-						</td>
-					</tr>
+<div class="product-variant-selectors">
+                
+                <div class="product-info-row">
+                    <div class="product-info-label">
+                        @((lang == "vi") ? "Màu sắc:" : "Color:")
+                    </div>
+                    <div class="product-info-content">
+                        <div id="colorOptions"></div>
+                    </div>
+                </div>
 
-					<tr>
-						<td style="vertical-align: middle;">
-							<strong>@((lang == "vi") ? "Size:" : "Size:")</strong>
-						</td>
-						<td>
-							<span id="sizeOptions"></span>
-						</td>
-					</tr>
+                <div class="product-info-row">
+                    <div class="product-info-label">
+                        @((lang == "vi") ? "Size:" : "Size:")
+                    </div>
+                    <div class="product-info-content">
+                        <div id="sizeOptions"></div>
+                    </div>
+                </div>
 
-					<tr>
-						<td style="vertical-align: middle;">
-							<strong>@((lang == "vi") ? "Họa tiết:" : "Pattern:")</strong>
-						</td>
-						<td>
-							<span id="patternOptions"></span>
-						</td>
-					</tr>
+                <div class="product-info-row">
+                    <div class="product-info-label">
+                        @((lang == "vi") ? "Họa tiết:" : "Pattern:")
+                    </div>
+                    <div class="product-info-content">
+                        <div id="patternOptions"></div>
+                    </div>
+                </div>
 
-					<tr>
-						<td style="vertical-align: middle;">
-							<strong>@((lang == "vi") ? "Số lượng:" : "Quantity:")</strong>
-						</td>
-						<td>
-							<div class="product-detail-qty d-flex align-items-center">
-								<button type="button" class="product-detail-qty-btn" id="btnMinus">-</button>
-								<input type="number" id="soLuong" class="form-control mx-1" 
-									style="width: 70px; text-align: center; border-radius: 6px;" 
-									min="1" value="1">
-								<button type="button" class="product-detail-qty-btn" id="btnPlus">+</button>
-							</div>
-						</td>
-					</tr>
+                <div class="product-info-row">
+                    <div class="product-info-label">
+                        @((lang == "vi") ? "Số lượng:" : "Quantity:")
+                    </div>
+                    <div class="product-info-content">
+                        <div class="product-detail-qty">
+                            <button type="button" class="product-detail-qty-btn" id="btnMinus">-</button>
+                            <input type="number" id="soLuong" class="form-control mx-1" 
+                                   style="width: 70px; text-align: center; border-radius: 6px;" 
+                                   min="1" value="1">
+                            <button type="button" class="product-detail-qty-btn" id="btnPlus">+</button>
+                        </div>
+                    </div>
+                </div>
 
-					<tr>
-						<td colspan="2">
-							<div id="stockInfo" class="mt-2">
-								<span class="text-muted small">
-									@((lang == "vi") ? "Chọn size và màu để xem thông tin tồn kho" : "Select size and color to view stock information")
-								</span>
-							</div>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+                <div class="stock-status-container mt-2">
+                    <div id="stockInfo">
+                        <span class="text-muted small">
+                            @((lang == "vi") ? "Chọn size và màu để xem thông tin tồn kho" : "Select size and color to view stock information")
+                        </span>
+                    </div>
+                </div>
+            </div>
 
 			<button class="btn btn-primary product-detail-addcart w-100 mt-3" onclick="themGioHang()">
 				<i class="fas fa-shopping-cart mr-2"></i>
