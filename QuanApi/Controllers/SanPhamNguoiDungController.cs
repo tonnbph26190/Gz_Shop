@@ -46,24 +46,21 @@ namespace QuanApi.Controllers
 					query = query.Where(x => x.BienThes.Any(b => b.Mau.Contains(color, StringComparison.OrdinalIgnoreCase))).ToList();
 				// ✅ SORT
 				// ✅ SORT THEO GIÁ GỐC (MAX)
-				if (!string.IsNullOrEmpty(sortOrder))
+				if (sortOrder == "asc")
 				{
-					if (sortOrder == "asc")
-					{
-						query = query
-							.OrderBy(x => x.BienThes != null && x.BienThes.Any()
-								? x.BienThes.Max(b => b.GiaGoc)
-								: decimal.MaxValue)
-							.ToList();
-					}
-					else if (sortOrder == "desc")
-					{
-						query = query
-							.OrderByDescending(x => x.BienThes != null && x.BienThes.Any()
-								? x.BienThes.Max(b => b.GiaGoc)
-								: decimal.MinValue)
-							.ToList();
-					}
+					query = query
+						.OrderBy(x => x.BienThes != null && x.BienThes.Any()
+							? x.BienThes.Min(b => b.GiaSauGiam > 0 ? b.GiaSauGiam : b.GiaGoc)
+							: decimal.MaxValue)
+						.ToList();
+				}
+				else if (sortOrder == "desc")
+				{
+					query = query
+						.OrderByDescending(x => x.BienThes != null && x.BienThes.Any()
+							? x.BienThes.Min(b => b.GiaSauGiam > 0 ? b.GiaSauGiam : b.GiaGoc)
+							: decimal.MinValue)
+						.ToList();
 				}
 				var total = query.Count();
 

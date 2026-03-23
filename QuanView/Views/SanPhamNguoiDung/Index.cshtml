@@ -226,7 +226,12 @@
                 {
                     var sp = Model[i];
 
-                    var giaGoc = sp.BienThes.Max(b => b.GiaGoc);
+                    var minBienThe = sp.BienThes
+                    .OrderBy(b => b.GiaSauGiam > 0 ? b.GiaSauGiam : b.GiaGoc)
+                    .FirstOrDefault();
+
+                    var giaGoc = minBienThe?.GiaGoc ?? 0;
+                    var giaSauGiam = minBienThe?.GiaSauGiam ?? 0;
                     <div class="col-12 col-sm-6 col-md-4">
                         <div class="product-card h-100 d-flex flex-column">
                           
@@ -235,7 +240,21 @@
                                 <div class="product-title">@sp.TenSanPham</div>
                                 <div class="text-muted mb-1" style="font-size:0.95rem;">@sp.DanhMuc</div>
                                 <div>
-                                    <span class="product-price">@giaGoc.ToString("N0") ₫</span>
+                                    @if (giaSauGiam > 0 && giaSauGiam < giaGoc)
+                                    {
+                                        <span class="product-price text-danger fw-bold">
+                                            @giaSauGiam.ToString("N0") ₫
+                                        </span>
+                                        <span class="text-muted text-decoration-line-through ms-2">
+                                            @giaGoc.ToString("N0") ₫
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="product-price">
+                                            @giaGoc.ToString("N0") ₫
+                                        </span>
+                                    }
                                 </div>
 
                                 <!-- Hiển thị số lượng tồn kho -->
