@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -8,8 +9,9 @@ using static QuanApi.Services.PhieuGiamGiaService;
 
 namespace QuanApi.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
+	[EnableCors("AllowFrontend")]
+	[ApiController]
+	[Route("api/[controller]")]
     public class PhieuGiamGiaController : ControllerBase
     {
         private readonly IPhieuGiamGiaService _service;
@@ -117,9 +119,9 @@ namespace QuanApi.Controllers
             return Ok(result.message);
         }
 
-        // GET: api/PhieuGiamGia/customers/{id}
-        [HttpGet("customers/{id:guid}")]
-        public async Task<IActionResult> GetVoucherCustomers(Guid id)
+		// GET: api/PhieuGiamGia/customers/{id}
+		[HttpGet("{id:guid}/customers")]
+		public async Task<IActionResult> GetVoucherCustomers(Guid id)
         {
             var result = await _service.GetVoucherCustomersAsync(id);
             if (result == null)
@@ -173,7 +175,6 @@ namespace QuanApi.Controllers
             var result = await _service.CheckVoucherCodeAsync(code);
             return Ok(result);
         }
-
-    }
+	}
 
 }
