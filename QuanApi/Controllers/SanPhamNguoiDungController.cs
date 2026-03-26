@@ -20,7 +20,7 @@ namespace QuanApi.Controllers
 		public IActionResult GetSanPhamChiTiets(
 			int pageNumber = 1, int pageSize = 10,
 			string search = null, int? priceFrom = null, int? priceTo = null,
-			string category = null, string size = null, string color = null, string sortOrder = null)
+			string category = null, string size = null, string color = null, string sortOrder = null, string stockFilter = null)
 
 		{
 			try
@@ -44,6 +44,23 @@ namespace QuanApi.Controllers
 
 				if (!string.IsNullOrEmpty(color))
 					query = query.Where(x => x.BienThes.Any(b => b.Mau.Contains(color, StringComparison.OrdinalIgnoreCase))).ToList();
+				if (!string.IsNullOrEmpty(stockFilter))
+				{
+					if (stockFilter == "inStock")
+					{
+						query = query.Where(x =>
+							x.BienThes != null &&
+							x.BienThes.Sum(b => b.SoLuong) > 0
+						).ToList();
+					}
+					else if (stockFilter == "outStock")
+					{
+						query = query.Where(x =>
+							x.BienThes != null &&
+							x.BienThes.Sum(b => b.SoLuong) == 0
+						).ToList();
+					}
+				}
 				// ✅ SORT
 				// ✅ SORT THEO GIÁ GỐC (MAX)
 				if (sortOrder == "asc")
