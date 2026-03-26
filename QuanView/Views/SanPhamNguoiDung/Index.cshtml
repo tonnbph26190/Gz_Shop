@@ -103,11 +103,11 @@
         color: inherit;
     }
 
-    .filter-toggle:hover,
-    .filter-toggle:focus {
-        text-decoration: none;
-        color: inherit;
-    }
+        .filter-toggle:hover,
+        .filter-toggle:focus {
+            text-decoration: none;
+            color: inherit;
+        }
 
     .toggle-icon {
         font-size: 1.1rem;
@@ -128,7 +128,6 @@
         #filterContent {
             /* .show is added by Bootstrap when open */
         }
-        
         /* You can choose to start closed on mobile */
         /* #filterContent:not(.show) { max-height: 0; }  ← already handled by collapse */
     }
@@ -141,11 +140,11 @@
         <div class="col-lg-3 mb-4">
             <div class="sidebar-section">
                 <!-- Toggle header -->
-                <button class="btn btn-link w-100 text-start p-2 mb-3 filter-toggle border border-secondary rounded" 
-                        type="button" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#filterContent" 
-                        aria-expanded="true" 
+                <button class="btn btn-link w-100 text-start p-2 mb-3 filter-toggle border border-secondary rounded"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#filterContent"
+                        aria-expanded="true"
                         aria-controls="filterContent">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 d-flex align-items-center gap-2">
@@ -160,22 +159,22 @@
                 <div class="collapse @(ViewContext.HttpContext.Request.Headers["User-Agent"].ToString().Contains("Mobile") ? "" : "show")" id="filterContent">
                     <form method="get" asp-action="Index" id="filterForm">
                         <input type="text" class="form-control mb-3" name="search" placeholder="Tìm kiếm sản phẩm..." value="@Context.Request.Query["search"]" />
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Giá từ</label>
                             <input type="number" class="form-control" name="priceFrom" min="0" placeholder="Từ..." value="@priceFrom">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Đến</label>
                             <input type="number" class="form-control" name="priceTo" min="0" placeholder="Đến..." value="@priceTo">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Danh mục</label>
                             <input type="text" class="form-control" name="category" placeholder="Nhập tên danh mục..." value="@category">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Kích cỡ</label>
                             <select class="form-select" name="size">
@@ -186,7 +185,7 @@
                                 }
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Màu sắc</label>
                             <select class="form-select" name="color">
@@ -219,6 +218,20 @@
                         <option value="asc" @(Context.Request.Query["sortOrder"] == "asc" ? "selected" : "")>Sắp xếp theo giá tăng dần</option>
                         <option value="desc" @(Context.Request.Query["sortOrder"] == "desc" ? "selected" : "")>Sắp xếp theo giá giảm dần</option>
                     </select>
+                    <!-- Combobox trạng thái -->
+                    <select name="stockFilter" class="form-select"
+                            onchange="document.getElementById('sortForm').submit()">
+                        <option value="" @(string.IsNullOrEmpty(Context.Request.Query["stockFilter"]) ? "selected" : "")>
+                            Tất cả sản phẩm
+                        </option>
+                        <option value="inStock" @(Context.Request.Query["stockFilter"] == "inStock" ? "selected" : "")>
+                            Còn hàng
+                        </option>
+
+                        <option value="outStock" @(Context.Request.Query["stockFilter"] == "outStock" ? "selected" : "")>
+                            Hết hàng
+                        </option>
+                    </select>
                 </form>
             </div>
             <div class="row g-4">
@@ -234,7 +247,7 @@
                     var giaSauGiam = minBienThe?.GiaSauGiam ?? 0;
                     <div class="col-12 col-sm-6 col-md-4">
                         <div class="product-card h-100 d-flex flex-column">
-                          
+
                             <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" />
                             <div class="p-3 flex-grow-1 d-flex flex-column">
                                 <div class="product-title">@sp.TenSanPham</div>
@@ -307,7 +320,9 @@
                                 &category=@category
                                 &size=@size
                                 &color=@color
-                                &sortOrder=@Context.Request.Query["sortOrder"]">@i
+                                &sortOrder=@Context.Request.Query["sortOrder"]">
+                                @i
+                                &stockFilter=@Context.Request.Query["stockFilter"]
                             </a>
                         </li>
                     }
