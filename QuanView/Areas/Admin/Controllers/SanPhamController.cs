@@ -309,7 +309,7 @@ namespace QuanView.Areas.Admin.Controllers
                     .Where(ct => ct != null &&
                                  ct.IdKichCo != Guid.Empty &&
                                  ct.IdMauSac != Guid.Empty &&
-                                 ct.SoLuong > 0 &&
+                                 ct.SoLuong >= 0 &&
                                  ct.GiaBan > 0)
                     .ToList();
             }

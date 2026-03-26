@@ -158,13 +158,13 @@
                                 </td>
                                 <td class="text-center align-middle">
                                     <div class="form-check form-switch d-inline-flex align-items-center">
-                                        <input name="ChiTietSanPhams[@newVariantIndex].TrangThai" 
+                                        <input name="ChiTietSanPhams[@i].TrangThai" 
                                             class="form-check-input custom-slider" 
                                             type="checkbox" 
                                             role="switch" 
-                                            value="true" 
-                                            checked>
-                                        <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].TrangThai" value="false" />&nbsp; Hoạt động
+                                            value="true"
+                                            @(variant.TrangThai ? "checked" : "") >
+                                        <input type="hidden" name="ChiTietSanPhams[@i].TrangThai" value="false" />&nbsp; Hoạt động
                                     </div>
                                 </td>
                                 <td class="text-center">
@@ -303,57 +303,49 @@
         function addValidationToInput(input, fieldType) {
             const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
 
-            // Kiểm tra xem input có nằm trong dòng template không
             function isInTemplateRow(element) {
                 const row = element.closest('tr');
                 return row && row.id === 'newVariantTemplateRow';
             }
 
-            // Prevent negative input
             input.addEventListener('keydown', function(e) {
                 if (e.key === '-' || e.key === 'Minus') {
                     e.preventDefault();
-                    if (!isInTemplateRow(this)) {
-                        showError(this, `${fieldName} không được là số âm!`);
-                    }
                     return false;
                 }
             });
 
-            // Validate on input
             input.addEventListener('input', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
-                    clearError(this);
-                    return;
-                }
+                if (isInTemplateRow(this)) { clearError(this); return; }
 
                 const value = parseFloat(this.value);
-                if (value < 0 || this.value.includes('-')) {
-                    this.value = this.value.replace('-', '');
+                if (value < 0) {
+                    this.value = 0;
                     showError(this, `${fieldName} không được là số âm!`);
-                } else if (fieldType === 'price' && value === 0) {
-                    // Chỉ cảnh báo, không block
-                    showError(this, 'Giá bán phải lớn hơn 0!');
                 } else {
-                    clearError(this);
+                    clearError(this); // ← remove the price===0 check here entirely
                 }
             });
 
-            // Validate on blur
             input.addEventListener('blur', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
+                if (isInTemplateRow(this)) return;
+
+                if (this.value.trim() === '' || isNaN(parseFloat(this.value))) {
+                    this.value = "0";
                     clearError(this);
                     return;
                 }
 
                 const value = parseFloat(this.value);
-                if (fieldType === 'price' && value === 0) {
-                    showError(this, 'Giá bán phải lớn hơn 0!');
-                } else if (value < 0) {
-                    this.value = '';
+
+                if (value < 0) {
+                    this.value = "0";
                     showError(this, `${fieldName} không được là số âm!`);
+                } else if (fieldType === 'price' && value <= 0) {
+                    showError(this, `Giá bán phải lớn hơn 0!`);
+                    // ← Do NOT reset value here, let user correct it
+                } else {
+                    clearError(this);
                 }
             });
         }
@@ -422,13 +414,16 @@
 
                 // Initialize values and apply validation
                 clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
-                    i.value = '0';
+                    i.value = "0"; // Set as string "0"
                     addValidationToInput(i, 'quantity');
+                    i.dispatchEvent(new Event('input')); // Trigger update
                 });
+
                 clone.querySelectorAll('input.price-input').forEach(function(i) { 
-                    i.value = '0';
+                    i.value = "0"; // Set as string "0"
                     i.setAttribute('step', 'any'); 
                     addValidationToInput(i, 'price');
+                    i.dispatchEvent(new Event('input')); // Trigger update
                 });
 
                 // Add the Delete button to the LAST <td> specifically to maintain alignment
@@ -441,23 +436,20 @@
             });
         })();
 
-        // Form validation on submit (bỏ qua dòng biến thể mới chưa chọn Kích cỡ + Màu)
         document.querySelector('form').addEventListener('submit', function(e) {
             let hasError = false;
             document.querySelectorAll('tr.variant-row').forEach(function(row) {
-                // Bỏ qua dòng template (new-variant-row) và các dòng clone chưa điền đầy đủ
                 var isTemplateRow = row.id === 'newVariantTemplateRow';
                 var isNewRow = row.classList.contains('new-variant-row') || row.classList.contains('new-variant-clone');
                 
-                // Nếu là dòng template, bỏ qua hoàn toàn
                 if (isTemplateRow) return;
                 
                 var kichCoSelect = row.querySelector('select[name*="IdKichCo"]');
                 var mauSacSelect = row.querySelector('select[name*="IdMauSac"]');
                 
-                // Nếu là dòng mới và chưa chọn kích cỡ hoặc màu sắc, bỏ qua validation
                 var skipValidation = isNewRow && kichCoSelect && mauSacSelect &&
-                    (!kichCoSelect.value || kichCoSelect.value === '' || !mauSacSelect.value || mauSacSelect.value === '');
+                    (!kichCoSelect.value || !mauSacSelect.value);
+                    
                 if (skipValidation) return;
 
                 var qtyInput = row.querySelector('.quantity-input');
@@ -466,25 +458,24 @@
                 if (qtyInput) {
                     var q = parseInt(qtyInput.value, 10);
                     if (isNaN(q) || q < 0) { 
-                        showError(qtyInput, 'Số lượng không được là số âm!'); 
+                        showError(qtyInput, 'Số lượng không được âm!'); 
                         hasError = true; 
                     }
                 }
+
                 if (priceInput) {
                     var p = parseFloat(priceInput.value);
-                    if (isNaN(p) || p < 0) { 
-                        showError(priceInput, 'Giá bán không hợp lệ!'); 
+                    // Price MUST be > 0
+                    if (isNaN(p) || p <= 0) { 
+                        showError(priceInput, 'Giá bán phải lớn hơn 0!'); 
                         hasError = true; 
-                    }
-                    else if (p === 0) { 
-                        console.warn("Price is zero for " + priceInput.name);
                     }
                 }
             });
 
             if (hasError) {
                 e.preventDefault();
-                alert('Vui lòng kiểm tra lại thông tin. Số lượng và giá bán không được là số âm; giá bán phải lớn hơn 0.');
+                alert('Vui lòng kiểm tra lại: Số lượng không được âm và Giá bán phải lớn hơn 0.');
                 return false;
             }
         });
