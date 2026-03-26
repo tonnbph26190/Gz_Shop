@@ -1,4 +1,4 @@
-@model QuanApi.Data.PhieuGiamGia
+﻿@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Chi tiết phiếu giảm giá";
@@ -207,7 +207,7 @@
         </div>
 
         <div class="mt-4">
-			<button type="button" class="btn btn-info" data-toggle="modal" data-target="#customerModal">
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#customerModal">
                 <i class="fas fa-users"></i> Xem danh sách khách hàng
             </button>
         </div>
@@ -243,51 +243,49 @@
                 </div>
             </div>
             <div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-	<script>
-		$(document).ready(function () {
-					$('#customerModal').on('shown.bs.modal', function () {
-			loadCustomerData();
-		});
+    <script>
+        $(document).ready(function () {
+            $('#customerModal').on('show.bs.modal', function () {
+                // Load customer data when modal opens
+                loadCustomerData();
+            });
 
-			function loadCustomerData() {
-				console.log("Call API");
+            function loadCustomerData() {
+                $.ajax({
+                    url: '@Url.Action("GetKhachHangsByPhieuGiamGia", "PhieuGiamGia")',
+                    type: 'GET',
+                    data: { phieuGiamGiaId: '@Model.IDPhieuGiamGia' },
+                    success: function (data) {
+                        var tbody = $('#customerTableBody');
+                        tbody.empty();
 
-				$.ajax({
-					url: `https://localhost:7130/api/PhieuGiamGia/@Model.IDPhieuGiamGia/customers`,
-					type: 'GET',
-					success: function (data) {
-						console.log("DATA:", data);
-
-						var tbody = $('#customerTableBody');
-						tbody.empty();
-
-						if (data && data.customers && data.customers.length > 0) {
-							data.customers.forEach(function (customer) {
-								tbody.append(`
-									<tr>
-										<td>${customer.maKhachHang || '-'}</td>
-										<td>${customer.tenKhachHang || '-'}</td>
-										<td>${customer.soDienThoai || '-'}</td>
-										<td>${customer.email || '-'}</td>
-									</tr>
-								`);
-							});
-						} else {
-							tbody.append('<tr><td colspan="4" class="text-center">Không có dữ liệu khách hàng</td></tr>');
-						}
-					},
-					error: function (err) {
-						console.error(err);
-					}
-				});
-			}
-		});
-	</script>
+                        if (data && data.length > 0) {
+                            data.forEach(function (customer) {
+                                tbody.append(`
+                                            <tr>
+                                                <td>${customer.maKhachHang || '-'}</td>
+                                                <td>${customer.tenKhachHang || '-'}</td>
+                                                <td>${customer.soDienThoai || '-'}</td>
+                                                <td>${customer.email || '-'}</td>
+                                            </tr>
+                                        `);
+                            });
+                        } else {
+                            tbody.append('<tr><td colspan="4" class="text-center">Không có dữ liệu khách hàng</td></tr>');
+                        }
+                    },
+                    error: function () {
+                        $('#customerTableBody').html('<tr><td colspan="4" class="text-center text-danger">Lỗi khi tải dữ liệu</td></tr>');
+                    }
+                });
+            }
+        });
+    </script>
 }

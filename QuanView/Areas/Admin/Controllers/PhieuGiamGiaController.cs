@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Services;
@@ -202,5 +202,7 @@ namespace QuanView.Areas.Admin.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+
     }
 }
