@@ -30,11 +30,11 @@
                     <label asp-for="MaSanPham">Mã sản phẩm</label>
                     <div class="input-group">
                         <input asp-for="MaSanPham" class="form-control" readonly />
-                        <div class="input-group-append">
+                        @* <div class="input-group-append">
                             <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
                                 <i class="fas fa-sync-alt"></i> Tạo mã mới
                             </button>
-                        </div>
+                        </div> *@
                     </div>
                     <small class="form-text text-muted">Mã sản phẩm hiện tại hoặc tạo mã mới</small>
                     <span asp-validation-for="MaSanPham" class="text-danger"></span>
@@ -412,27 +412,18 @@
                     el.disabled = false;
                 });
 
-                // Initialize values and apply validation
-                clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
-                    i.value = "0"; // Set as string "0"
-                    addValidationToInput(i, 'quantity');
-                    i.dispatchEvent(new Event('input')); // Trigger update
-                });
+                // Initialize values and validation...
+                // (Keep your existing validation logic here)
 
-                clone.querySelectorAll('input.price-input').forEach(function(i) { 
-                    i.value = "0"; // Set as string "0"
-                    i.setAttribute('step', 'any'); 
-                    addValidationToInput(i, 'price');
-                    i.dispatchEvent(new Event('input')); // Trigger update
-                });
-
-                // Add the Delete button to the LAST <td> specifically to maintain alignment
                 var actionTd = clone.querySelector('td:last-child');
                 actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>';
                 
-                templateRow.parentNode.insertBefore(clone, templateRow);
+                // CHANGE IS HERE: Insert at the top
+                var tbody = templateRow.parentNode;
+                tbody.insertBefore(clone, tbody.firstChild); 
+                
                 nextNewIndex++;
-                updateSTT();
+                updateSTT(); // This will re-number the list if you use row numbers
             });
         })();
 
@@ -550,6 +541,13 @@
         .variant-row td .form-check {
             justify-content: center;
             width: 100%;
+        }
+        @@keyframes highlight-fade {
+            from { background-color: #fff3cd; }
+            to { background-color: transparent; }
+        }
+        .new-variant-clone {
+            animation: highlight-fade 2s ease-out;
         }
     </style>
 
