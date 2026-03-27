@@ -1,4 +1,4 @@
-﻿namespace QuanView.Areas.Admin.Models
+namespace QuanView.Areas.Admin.Models
 {
     public class SanPhamChiTietDto
     {
@@ -11,6 +11,8 @@
         public decimal GiaBan { get; set; }
         public decimal originalPrice { get; set; }
         public decimal price { get; set; }
+        public string? MaSPChiTiet { get; set; }
+        public string? QrCode { get; set; }
         public string? TenKichCo { get; set; }
         public string? TenMauSac { get; set; }
         public string? TenHoaTiet { get; set; }
@@ -20,5 +22,7 @@
         
         // Thêm danh sách ảnh
         public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
-    }
+
+		public bool IsDeleted { get; set; } = false;
+	}
 }

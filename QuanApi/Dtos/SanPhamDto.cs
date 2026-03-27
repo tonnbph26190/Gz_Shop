@@ -1,4 +1,4 @@
-﻿namespace QuanApi.Dtos
+namespace QuanApi.Dtos
 {
     public class SanPhamDto
     {
@@ -27,5 +27,5 @@
         public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
 
         public List<SanPhamChiTietDto> ChiTietSanPhams { get; set; }
-    }
+	}
 }

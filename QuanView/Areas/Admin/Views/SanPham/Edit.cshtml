@@ -23,6 +23,7 @@
         }
 
         <form asp-area="Admin" asp-controller="SanPham" asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
             <div class="row">
                 <input type="hidden" asp-for="IDSanPham" class="col-3"/>
 
@@ -30,11 +31,11 @@
                     <label asp-for="MaSanPham">Mã sản phẩm</label>
                     <div class="input-group">
                         <input asp-for="MaSanPham" class="form-control" readonly />
-                        <div class="input-group-append">
+                        @* <div class="input-group-append">
                             <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
                                 <i class="fas fa-sync-alt"></i> Tạo mã mới
                             </button>
-                        </div>
+                        </div> *@
                     </div>
                     <small class="form-text text-muted">Mã sản phẩm hiện tại hoặc tạo mã mới</small>
                     <span asp-validation-for="MaSanPham" class="text-danger"></span>
@@ -98,35 +99,66 @@
             @{
                 var variantList = Model.ChiTietSanPhams ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
                 var variantCount = variantList.Count;
+                var activeVariantCount = variantList.Count(x => x.TrangThai);
+                var inactiveVariantCount = variantList.Count(x => !x.TrangThai);
                 var newVariantIndex = variantCount;
             }
             
         
             <div class="mt-4">
                 <h4 class="mb-2">Biến thể sản phẩm <span class="badge bg-secondary text-light">@variantCount</span></h4>
-                <p class="text-muted small mb-2">Sửa số lượng, giá bán, bật/tắt trạng thái. Bấm <strong>Xóa</strong> để xóa mềm (ngưng bán). Dòng trống: thêm biến thể mới — có thể thêm nhiều dòng rồi bấm <strong>Cập nhật</strong> một lần.</p>
+                <p class="text-muted small mb-2">Sửa số lượng, giá bán, bật/tắt trạng thái và tạo QR cho từng biến thể. Bấm <strong>Xóa</strong> để xóa mềm (ngưng bán). Với biến thể mới, QR sẽ khả dụng sau khi lưu.</p>
                 <div class="mb-2">
                     <button type="button" class="btn btn-outline-success btn-sm" id="btnAddNewVariantRow">
                         <i class="fas fa-plus"></i> Thêm dòng biến thể
                     </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" id="btnGenerateSelectedQrs">
+                        <i class="fas fa-qrcode"></i> Tạo QR cho biến thể đã chọn
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm ms-2" id="btnExportSelectedQrs">
+                        <i class="fas fa-download"></i> Export QR đã chọn
+                    </button>
                 </div>
+                <ul class="nav nav-tabs mb-3" id="variantStatusTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link active variant-status-tab" data-variant-status="active">
+                            Đang hoạt động <span class="badge bg-success ms-1" id="activeVariantCountBadge">@activeVariantCount</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link variant-status-tab" data-variant-status="inactive">
+                            Ngưng hoạt động <span class="badge bg-secondary ms-1" id="inactiveVariantCountBadge">@inactiveVariantCount</span>
+                        </button>
+                    </li>
+                </ul>
+                <div class="alert alert-light border py-2 px-3 d-none" id="variantEmptyState"></div>
                 <table class="table table-bordered table-hover text-center" id="variantTable">
                     <thead class="table-light">
                     <tr>
+                        <th style="width: 6%;">
+                            <input type="checkbox" id="selectAllVariantQr" title="Chọn tất cả biến thể đã lưu" />
+                        </th>
                         <th style="width: 10%;">Kích cỡ</th>
-                        <th style="width: 25%;">Màu sắc</th>
-                        <th style="width: 25%;">Họa tiết</th>
+                        <th style="width: 20%;">Màu sắc</th>
+                        <th style="width: 20%;">Họa tiết</th>
                         <th style="width: 10%;">Số lượng</th>
                         <th style="width: 10%;">Giá bán</th>
-                        <th style="width: 10%;">Trạng thái</th> 
-                        <th style="width: 10%;">Xóa</th>
+                        <th style="width: 10%;">Trạng thái</th>
+                        <th style="width: 15%;">Mã QR</th>
+                        <th style="width: 9%;">Xóa</th>
                     </tr>
                     </thead>
                     <tbody>
                         @for (int i = 0; i < variantList.Count; i++)
                         {
                             var variant = variantList[i];
-                            <tr class="variant-row" data-variant-index="@i">
+                            <tr class="variant-row" data-variant-index="@i" data-status="@(variant.TrangThai ? "active" : "inactive")">
+                                <td class="align-middle">
+                                    <input type="checkbox"
+                                           class="variant-qr-selector"
+                                           value="@variant.IdSanPhamChiTiet"
+                                           data-variant-id="@variant.IdSanPhamChiTiet" />
+                                </td>
                                 <td>
                                     <input type="hidden" name="ChiTietSanPhams.Index" value="@i" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPhamChiTiet" />
@@ -158,14 +190,23 @@
                                 </td>
                                 <td class="text-center align-middle">
                                     <div class="form-check form-switch d-inline-flex align-items-center">
-                                        <input name="ChiTietSanPhams[@newVariantIndex].TrangThai" 
+                                        <input name="ChiTietSanPhams[@i].TrangThai" 
                                             class="form-check-input custom-slider" 
                                             type="checkbox" 
                                             role="switch" 
-                                            value="true" 
-                                            checked>
-                                        <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].TrangThai" value="false" />&nbsp; Hoạt động
+                                            value="true"
+                                            @(variant.TrangThai ? "checked" : "") >
+                                        <input type="hidden" name="ChiTietSanPhams[@i].TrangThai" value="false" />&nbsp; Hoạt động
                                     </div>
+                                </td>
+                                <td class="align-middle">
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].MaSPChiTiet" class="variant-code-input" />
+                                    <input type="hidden" asp-for="ChiTietSanPhams[i].QrCode" class="variant-qr-input" />
+                                    <div class="small text-muted mb-2 variant-code-label">
+                                        @(string.IsNullOrWhiteSpace(variant.MaSPChiTiet) ? "Chưa có mã biến thể" : variant.MaSPChiTiet)
+                                    </div>
+                                    <div class="qr-preview mb-2" data-qr-value="@variant.QrCode"></div>
+                                    <small class="text-muted">Chọn biến thể và bấm nút tạo QR phía trên</small>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-outline-danger btn-sm btn-remove-variant">
@@ -175,7 +216,10 @@
                             </tr>
                         }
 
-                        <tr class="variant-row new-variant-row" id="newVariantTemplateRow" data-index="@newVariantIndex" style="display: none;">
+                        <tr class="variant-row new-variant-row" id="newVariantTemplateRow" data-index="@newVariantIndex" data-status="active" style="display: none;">
+                            <td class="align-middle">
+                                <input type="checkbox" disabled />
+                            </td>
                             <td>
                                 <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" disabled/>
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
@@ -213,6 +257,14 @@
                                     <span class="badge bg-info ms-2">Mới</span>
                                 </div>
                             </td>
+                            <td class="align-middle">
+                                <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].MaSPChiTiet" value="" class="variant-code-input" />
+                                <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].QrCode" value="" class="variant-qr-input" />
+                                <div class="small text-muted mb-2 variant-code-label">Lưu biến thể để tạo QR</div>
+                                <div class="qr-preview mb-2"></div>
+                                <small class="text-muted">Biến thể mới cần lưu trước</small>
+                            </td>
+                            <td></td>
                         </tr>
                     </tbody>
                 </table>
@@ -224,136 +276,48 @@
     </div>
 </div>
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
-    function updateSTT() {
-        const rows = document.querySelectorAll('#variantTable tbody tr.variant-row');
-            rows.forEach((row, index) => {
-                const sttSpan = row.querySelector('.row-number');
-                if (sttSpan) {  
-                    sttSpan.textContent = index + 1;
-                }
-            });
-        }
-        // Apply validation to existing inputs when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Chỉ apply validation cho các input KHÔNG nằm trong dòng template
-            const allQuantityInputs = document.querySelectorAll('.quantity-input');
-            const allPriceInputs = document.querySelectorAll('.price-input');
-            updateSTT();
-
-            allQuantityInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'quantity');
-                }
-            });
-
-            allPriceInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'price');
-                }
-            });
-
-            updateSTT();
-            const quantityInputs = document.querySelectorAll('.quantity-input');
-            const priceInputs = document.querySelectorAll('.price-input');
-
-            // Debug: Log all select values to check if they are set correctly
-            console.log('=== DEBUG: Checking select values ===');
-            document.querySelectorAll('select[name*="IdKichCo"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`KichCo[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdMauSac"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`MauSac[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdHoaTiet"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`HoaTiet[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-        });
-
-        // Function to generate product code
-        function generateProductCode() {
-            const now = new Date();
-            const year = now.getFullYear().toString().substr(-2);
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const hour = now.getHours().toString().padStart(2, '0');
-            const minute = now.getMinutes().toString().padStart(2, '0');
-            const second = now.getSeconds().toString().padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-
-            const productCode = `SP${year}${month}${day}${hour}${minute}${second}${random}`;
-            document.querySelector('input[name="MaSanPham"]').value = productCode;
-
-            // Show confirmation
-            alert(`Đã tạo mã sản phẩm mới: ${productCode}`);
-        }
-
-        // Validation functions
+        // === Validation functions (kept as you had) ===
         function addValidationToInput(input, fieldType) {
             const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
 
-            // Kiểm tra xem input có nằm trong dòng template không
             function isInTemplateRow(element) {
                 const row = element.closest('tr');
                 return row && row.id === 'newVariantTemplateRow';
             }
 
-            // Prevent negative input
-            input.addEventListener('keydown', function(e) {
-                if (e.key === '-' || e.key === 'Minus') {
-                    e.preventDefault();
-                    if (!isInTemplateRow(this)) {
-                        showError(this, `${fieldName} không được là số âm!`);
-                    }
-                    return false;
-                }
+            input.addEventListener('keydown', e => {
+                if (e.key === '-' || e.key === 'Minus') e.preventDefault();
             });
 
-            // Validate on input
             input.addEventListener('input', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
-                    clearError(this);
-                    return;
-                }
-
+                if (isInTemplateRow(this)) { clearError(this); return; }
                 const value = parseFloat(this.value);
-                if (value < 0 || this.value.includes('-')) {
-                    this.value = this.value.replace('-', '');
+                if (value < 0) {
+                    this.value = 0;
                     showError(this, `${fieldName} không được là số âm!`);
-                } else if (fieldType === 'price' && value === 0) {
-                    // Chỉ cảnh báo, không block
-                    showError(this, 'Giá bán phải lớn hơn 0!');
                 } else {
                     clearError(this);
                 }
             });
 
-            // Validate on blur
             input.addEventListener('blur', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
+                if (isInTemplateRow(this)) return;
+                if (!this.value.trim() || isNaN(parseFloat(this.value))) {
+                    this.value = "0";
                     clearError(this);
                     return;
                 }
-
                 const value = parseFloat(this.value);
-                if (fieldType === 'price' && value === 0) {
-                    showError(this, 'Giá bán phải lớn hơn 0!');
-                } else if (value < 0) {
-                    this.value = '';
+                if (value < 0) {
+                    this.value = "0";
                     showError(this, `${fieldName} không được là số âm!`);
+                } else if (fieldType === 'price' && value <= 0) {
+                    showError(this, `Giá bán phải lớn hơn 0!`);
+                } else {
+                    clearError(this);
                 }
             });
         }
@@ -367,11 +331,7 @@
             errorDiv.id = input.name + '_error';
             input.parentNode.appendChild(errorDiv);
             input.classList.add('is-invalid');
-
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                clearError(input);
-            }, 3000);
+            setTimeout(() => clearError(input), 3000);
         }
 
         function clearError(input) {
@@ -380,185 +340,515 @@
             input.classList.remove('is-invalid');
         }
 
-        // Xóa biến thể: chỉ xóa dòng (không xóa dòng "Biến thể mới")
-        document.getElementById('variantTable')?.addEventListener('click', function(e) {
-            if (e.target.classList.contains('btn-remove-variant')) {
-                var row = e.target.closest('tr.variant-row');
-                if (row && !row.classList.contains('new-variant-row')) {
-                    if (confirm('Xóa biến thể này khỏi sản phẩm?')) row.remove();
-                }
+        function renderQrPreview(container, value) {
+            if (!container) return;
+
+            container.innerHTML = '';
+            if (!value) {
+                container.innerHTML = '<span class="text-muted small">Chưa tạo QR</span>';
+                return;
             }
-            if (e.target.classList.contains('btn-remove-new-row')) {
-                var row = e.target.closest('tr.new-variant-clone');
-                if (row) row.remove();
-            }
-        });
 
-        // Thêm nhiều dòng biến thể mới (mỗi dòng = 1 biến thể khi Cập nhật)
-        (function() {
-            var templateRow = document.getElementById('newVariantTemplateRow');
-            if (!templateRow) return;
-            var templateIndex = parseInt(templateRow.getAttribute('data-index'), 10);
-            var nextNewIndex = templateIndex;
-
-            document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
-                var clone = templateRow.cloneNode(true);
-                clone.id = '';
-                clone.classList.remove('new-variant-row');
-                clone.classList.add('new-variant-clone');
-                clone.style.display = ''; 
-                
-                var oldPrefix = 'ChiTietSanPhams[' + templateIndex + ']';
-                var newPrefix = 'ChiTietSanPhams[' + nextNewIndex + ']';
-                
-                clone.querySelectorAll('[name]').forEach(function(el) {
-                    if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
-                });
-
-                clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(function(el) {
-                    el.value = nextNewIndex;
-                    el.disabled = false;
-                });
-
-                // Initialize values and apply validation
-                clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
-                    i.value = '0';
-                    addValidationToInput(i, 'quantity');
-                });
-                clone.querySelectorAll('input.price-input').forEach(function(i) { 
-                    i.value = '0';
-                    i.setAttribute('step', 'any'); 
-                    addValidationToInput(i, 'price');
-                });
-
-                // Add the Delete button to the LAST <td> specifically to maintain alignment
-                var actionTd = clone.querySelector('td:last-child');
-                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>';
-                
-                templateRow.parentNode.insertBefore(clone, templateRow);
-                nextNewIndex++;
-                updateSTT();
+            new QRCode(container, {
+                text: value,
+                width: 72,
+                height: 72,
+                correctLevel: QRCode.CorrectLevel.M
             });
-        })();
+        }
 
-        // Form validation on submit (bỏ qua dòng biến thể mới chưa chọn Kích cỡ + Màu)
-        document.querySelector('form').addEventListener('submit', function(e) {
-            let hasError = false;
-            document.querySelectorAll('tr.variant-row').forEach(function(row) {
-                // Bỏ qua dòng template (new-variant-row) và các dòng clone chưa điền đầy đủ
-                var isTemplateRow = row.id === 'newVariantTemplateRow';
-                var isNewRow = row.classList.contains('new-variant-row') || row.classList.contains('new-variant-clone');
-                
-                // Nếu là dòng template, bỏ qua hoàn toàn
-                if (isTemplateRow) return;
-                
-                var kichCoSelect = row.querySelector('select[name*="IdKichCo"]');
-                var mauSacSelect = row.querySelector('select[name*="IdMauSac"]');
-                
-                // Nếu là dòng mới và chưa chọn kích cỡ hoặc màu sắc, bỏ qua validation
-                var skipValidation = isNewRow && kichCoSelect && mauSacSelect &&
-                    (!kichCoSelect.value || kichCoSelect.value === '' || !mauSacSelect.value || mauSacSelect.value === '');
-                if (skipValidation) return;
+        // === DOM Ready ===
+        document.addEventListener('DOMContentLoaded', function() {
+            const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const generateSelectedQrsUrl = '@Url.Action("GenerateSelectedVariantQrs", "SanPham", new { area = "Admin" })';
+            const selectAllCheckbox = document.getElementById('selectAllVariantQr');
+            const generateSelectedButton = document.getElementById('btnGenerateSelectedQrs');
+            const exportSelectedButton = document.getElementById('btnExportSelectedQrs');
+            const variantStatusTabs = document.querySelectorAll('.variant-status-tab');
+            const variantEmptyState = document.getElementById('variantEmptyState');
+            const activeVariantCountBadge = document.getElementById('activeVariantCountBadge');
+            const inactiveVariantCountBadge = document.getElementById('inactiveVariantCountBadge');
+            let currentVariantStatus = 'active';
 
-                var qtyInput = row.querySelector('.quantity-input');
-                var priceInput = row.querySelector('.price-input');
-                
-                if (qtyInput) {
-                    var q = parseInt(qtyInput.value, 10);
-                    if (isNaN(q) || q < 0) { 
-                        showError(qtyInput, 'Số lượng không được là số âm!'); 
-                        hasError = true; 
-                    }
-                }
-                if (priceInput) {
-                    var p = parseFloat(priceInput.value);
-                    if (isNaN(p) || p < 0) { 
-                        showError(priceInput, 'Giá bán không hợp lệ!'); 
-                        hasError = true; 
-                    }
-                    else if (p === 0) { 
-                        console.warn("Price is zero for " + priceInput.name);
-                    }
+            // Apply validation
+            document.querySelectorAll('.quantity-input, .price-input').forEach(input => {
+                const row = input.closest('tr');
+                if (row && row.id !== 'newVariantTemplateRow') {
+                    const type = input.classList.contains('quantity-input') ? 'quantity' : 'price';
+                    addValidationToInput(input, type);
                 }
             });
 
-            if (hasError) {
-                e.preventDefault();
-                alert('Vui lòng kiểm tra lại thông tin. Số lượng và giá bán không được là số âm; giá bán phải lớn hơn 0.');
-                return false;
+            document.querySelectorAll('.qr-preview').forEach(preview => {
+                renderQrPreview(preview, preview.dataset.qrValue || '');
+            });
+
+            function getManagedVariantRows() {
+                return Array.from(document.querySelectorAll('#variantTable tbody tr.variant-row'))
+                    .filter(row => row.id !== 'newVariantTemplateRow' && !row.classList.contains('deleted-row'));
             }
+
+            function updateVariantCounts() {
+                const rows = getManagedVariantRows();
+                const activeCount = rows.filter(row => (row.dataset.status || 'active') === 'active').length;
+                const inactiveCount = rows.filter(row => (row.dataset.status || 'active') === 'inactive').length;
+
+                if (activeVariantCountBadge) activeVariantCountBadge.textContent = activeCount;
+                if (inactiveVariantCountBadge) inactiveVariantCountBadge.textContent = inactiveCount;
+            }
+
+            function updateVariantEmptyState() {
+                if (!variantEmptyState) return;
+
+                const visibleRows = getManagedVariantRows()
+                    .filter(row => !row.classList.contains('variant-filter-hidden'));
+
+                if (visibleRows.length > 0) {
+                    variantEmptyState.classList.add('d-none');
+                    variantEmptyState.textContent = '';
+                    return;
+                }
+
+                variantEmptyState.classList.remove('d-none');
+                variantEmptyState.textContent = currentVariantStatus === 'active'
+                    ? 'Không có biến thể đang hoạt động.'
+                    : 'Không có biến thể ngưng hoạt động.';
+            }
+
+            function applyVariantTabFilter(status) {
+                currentVariantStatus = status;
+
+                variantStatusTabs.forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.variantStatus === status);
+                });
+
+                document.querySelectorAll('#variantTable tbody tr.variant-row').forEach(row => {
+                    if (row.id === 'newVariantTemplateRow' || row.classList.contains('deleted-row')) return;
+
+                    const rowStatus = row.dataset.status || 'active';
+                    row.classList.toggle('variant-filter-hidden', rowStatus !== status);
+                });
+
+                updateVariantCounts();
+                updateVariantEmptyState();
+                syncSelectAllState();
+            }
+
+            // ==================== DELETE ====================
+            document.getElementById('variantTable').addEventListener('click', function(e) {
+                if (e.target.closest('.btn-remove-variant')) {
+                    const row = e.target.closest('tr.variant-row');
+                    if (row && !row.classList.contains('new-variant-row') && row.id !== 'newVariantTemplateRow') {
+                        if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
+                            let delInput = row.querySelector('input[name$=".IsDeleted"]');
+                            if (!delInput) {
+                                delInput = document.createElement('input');
+                                delInput.type = 'hidden';
+                                delInput.name = `ChiTietSanPhams[${row.dataset.variantIndex}].IsDeleted`;
+                                row.appendChild(delInput);
+                            }
+                            delInput.value = 'true';
+
+                            row.style.display = 'none';           // Hide visually
+                            row.classList.add('deleted-row');
+                            row.querySelectorAll('input, select, textarea, button').forEach(control => {
+                                if (!control.name || control === delInput) return;
+                                if (control.name === 'ChiTietSanPhams.Index' ||
+                                    control.name.endsWith('.IdSanPhamChiTiet') ||
+                                    control.name.endsWith('.IdSanPham')) {
+                                    return;
+                                }
+
+                                control.disabled = true;
+                            });
+                            updateVariantCounts();
+                            updateVariantEmptyState();
+                            syncSelectAllState();
+                        }
+                    }
+                }
+
+                if (e.target.closest('.btn-remove-new-row')) {
+                    const row = e.target.closest('tr');
+                    if (row) {
+                        row.remove();
+                        updateVariantCounts();
+                        updateVariantEmptyState();
+                        syncSelectAllState();
+                    }
+                }
+            });
+
+            function getSelectableQrCheckboxes() {
+                return Array.from(document.querySelectorAll('.variant-qr-selector'))
+                    .filter(checkbox => {
+                        const row = checkbox.closest('tr.variant-row');
+                        return row && row.style.display !== 'none' && !row.classList.contains('variant-filter-hidden');
+                    });
+            }
+
+            function syncSelectAllState() {
+                if (!selectAllCheckbox) return;
+
+                const checkboxes = getSelectableQrCheckboxes();
+                const checkedBoxes = checkboxes.filter(x => x.checked);
+
+                selectAllCheckbox.checked = checkboxes.length > 0 && checkedBoxes.length === checkboxes.length;
+                selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
+            }
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    getSelectableQrCheckboxes().forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                    syncSelectAllState();
+                });
+            }
+
+            document.getElementById('variantTable').addEventListener('change', function(e) {
+                if (e.target.classList.contains('variant-qr-selector')) {
+                    syncSelectAllState();
+                }
+
+                if (e.target.matches('input[type="checkbox"][name*=".TrangThai"]')) {
+                    const row = e.target.closest('tr.variant-row');
+                    if (row && row.id !== 'newVariantTemplateRow' && !row.classList.contains('deleted-row')) {
+                        row.dataset.status = e.target.checked ? 'active' : 'inactive';
+                        applyVariantTabFilter(currentVariantStatus);
+                    }
+                }
+            });
+
+            variantStatusTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    applyVariantTabFilter(this.dataset.variantStatus || 'active');
+                });
+            });
+
+            if (generateSelectedButton) {
+                generateSelectedButton.addEventListener('click', generateSelectedVariantQrs);
+            }
+
+            if (exportSelectedButton) {
+                exportSelectedButton.addEventListener('click', exportSelectedVariantQrs);
+            }
+
+            async function generateSelectedVariantQrs() {
+                const selectedCheckboxes = getSelectableQrCheckboxes().filter(x => x.checked);
+                if (!selectedCheckboxes.length) {
+                    alert('Vui lòng chọn ít nhất một biến thể để tạo QR.');
+                    return;
+                }
+
+                generateSelectedButton.disabled = true;
+                const originalText = generateSelectedButton.textContent;
+                generateSelectedButton.textContent = 'Đang tạo QR...';
+
+                try {
+                    const formData = new URLSearchParams();
+                    selectedCheckboxes.forEach(checkbox => {
+                        formData.append('selectedVariantIds', checkbox.value);
+                    });
+
+                    const response = await fetch(generateSelectedQrsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Không thể tạo mã QR.');
+                    }
+
+                    (data.results || []).forEach(item => {
+                        const row = document.querySelector(`.variant-qr-selector[data-variant-id="${item.id}"]`)?.closest('tr.variant-row');
+                        if (!row) return;
+
+                        const qrInput = row.querySelector('.variant-qr-input');
+                        const codeInput = row.querySelector('.variant-code-input');
+                        const codeLabel = row.querySelector('.variant-code-label');
+                        const preview = row.querySelector('.qr-preview');
+
+                        if (qrInput) qrInput.value = item.qrCode || '';
+                        if (codeInput && item.maSPChiTiet) codeInput.value = item.maSPChiTiet;
+                        if (codeLabel) codeLabel.textContent = item.maSPChiTiet || codeInput?.value || 'Chưa có mã biến thể';
+                        renderQrPreview(preview, item.qrCode || '');
+                    });
+
+                    alert(`Đã tạo QR cho ${data.count || selectedCheckboxes.length} biến thể.`);
+                } catch (error) {
+                    alert(error.message || 'Không thể tạo mã QR.');
+                } finally {
+                    generateSelectedButton.disabled = false;
+                    generateSelectedButton.textContent = originalText;
+                    syncSelectAllState();
+                }
+            }
+
+            function slugifyFileName(value) {
+                return (value || 'qr-code')
+                    .toString()
+                    .trim()
+                    .replace(/[\\/:*?"<>|]/g, '-')
+                    .replace(/\s+/g, '-');
+            }
+
+            function getCanvasFromRow(row) {
+                return row?.querySelector('.qr-preview canvas');
+            }
+
+            function downloadBlob(blob, fileName) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+            }
+
+            async function exportSelectedVariantQrs() {
+                const selectedCheckboxes = getSelectableQrCheckboxes().filter(x => x.checked);
+                if (!selectedCheckboxes.length) {
+                    alert('Vui lòng chọn ít nhất một biến thể để export QR.');
+                    return;
+                }
+
+                const rowsToExport = [];
+                const missingQrCodes = [];
+
+                selectedCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr.variant-row');
+                    const qrInput = row?.querySelector('.variant-qr-input');
+                    const codeInput = row?.querySelector('.variant-code-input');
+                    const codeLabel = row?.querySelector('.variant-code-label');
+                    const qrValue = qrInput?.value?.trim();
+                    const variantCode = codeInput?.value?.trim() || codeLabel?.textContent?.trim() || checkbox.value;
+
+                    if (!qrValue) {
+                        missingQrCodes.push(variantCode);
+                        return;
+                    }
+
+                    rowsToExport.push({
+                        row,
+                        variantCode,
+                        qrValue
+                    });
+                });
+
+                if (missingQrCodes.length) {
+                    alert(`Một số biến thể chưa có QR: ${missingQrCodes.join(', ')}. Vui lòng tạo QR trước khi export.`);
+                    return;
+                }
+
+                exportSelectedButton.disabled = true;
+                const originalText = exportSelectedButton.textContent;
+                exportSelectedButton.textContent = 'Đang export...';
+
+                try {
+                    const zip = new JSZip();
+
+                    rowsToExport.forEach(item => {
+                        const preview = item.row.querySelector('.qr-preview');
+                        if (preview && !getCanvasFromRow(item.row)) {
+                            renderQrPreview(preview, item.qrValue);
+                        }
+
+                        const canvas = getCanvasFromRow(item.row);
+                        if (!canvas) {
+                            throw new Error(`Không thể tạo ảnh QR cho biến thể ${item.variantCode}.`);
+                        }
+
+                        const base64 = canvas.toDataURL('image/png').split(',')[1];
+                        zip.file(`${slugifyFileName(item.variantCode)}.png`, base64, { base64: true });
+                    });
+
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const productCode = slugifyFileName(document.querySelector('input[name="MaSanPham"]')?.value || 'san-pham');
+                    downloadBlob(zipBlob, `${productCode}-qr-codes.zip`);
+                } catch (error) {
+                    alert(error.message || 'Không thể export QR.');
+                } finally {
+                    exportSelectedButton.disabled = false;
+                    exportSelectedButton.textContent = originalText;
+                }
+            }
+
+            // ==================== ADD NEW ROW ====================
+            (function() {
+                const templateRow = document.getElementById('newVariantTemplateRow');
+                if (!templateRow) return;
+                let nextNewIndex = parseInt(templateRow.getAttribute('data-index'), 10);
+
+                document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
+                    const clone = templateRow.cloneNode(true);
+                    clone.id = '';
+                    clone.classList.remove('new-variant-row');
+                    clone.classList.add('new-variant-clone');
+                    clone.dataset.status = 'active';
+                    clone.style.display = '';
+
+                    const oldPrefix = `ChiTietSanPhams[${templateRow.getAttribute('data-index')}]`;
+                    const newPrefix = `ChiTietSanPhams[${nextNewIndex}]`;
+
+                    clone.querySelectorAll('[name]').forEach(el => {
+                        if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
+                    });
+
+                    clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(el => {
+                        el.value = nextNewIndex;
+                        el.disabled = false;
+                    });
+
+                    const actionTd = clone.querySelector('td:last-child');
+                    if (actionTd) actionTd.innerHTML = `<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>`;
+
+                    templateRow.parentNode.insertBefore(clone, templateRow.parentNode.firstChild);
+                    applyVariantTabFilter('active');
+                    nextNewIndex++;
+                });
+            })();
+
+            applyVariantTabFilter(currentVariantStatus);
+
+            // ==================== SUBMIT ====================
+            document.querySelector('form').addEventListener('submit', function(e) {
+                let hasError = false;
+
+                // Validation
+                document.querySelectorAll('#variantTable tbody tr.variant-row').forEach(row => {
+                    if (row.style.display === 'none' || row.id === 'newVariantTemplateRow') return;
+
+                    const isNewRow = row.classList.contains('new-variant-clone');
+                    const kichCo = row.querySelector('select[name*="IdKichCo"]');
+                    const mauSac = row.querySelector('select[name*="IdMauSac"]');
+
+                    if (isNewRow && (!kichCo?.value || !mauSac?.value)) return;
+
+                    const qty = row.querySelector('.quantity-input');
+                    const price = row.querySelector('.price-input');
+
+                    if (qty) {
+                        const q = parseInt(qty.value, 10);
+                        if (isNaN(q) || q < 0) {
+                            showError(qty, 'Số lượng không được âm!');
+                            hasError = true;
+                        }
+                    }
+                    if (price) {
+                        const p = parseFloat(price.value);
+                        if (isNaN(p) || p <= 0) {
+                            showError(price, 'Giá bán phải lớn hơn 0!');
+                            hasError = true;
+                        }
+                    }
+                });
+
+                if (hasError) {
+                    e.preventDefault();
+                    alert('Vui lòng kiểm tra lại: Số lượng không được âm và Giá bán phải lớn hơn 0.');
+                    return;
+                }
+
+                // Remove template row
+                const template = document.getElementById('newVariantTemplateRow');
+                if (template) template.remove();
+            });
         });
-        
     </script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap & styles (kept your original) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* Your existing styles here - copy them from your previous code */
+        .is-invalid { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
+        .validation-error { margin-top: 5px; }
+        /* ... paste the rest of your .variant-row, .form-switch, custom-slider styles ... */
+    </style>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <style>
         .is-invalid {
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
-
         .validation-error {
             margin-top: 5px;
         }
-
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-
         input[type="number"] {
             -moz-appearance: textfield;
         }
-        /* Center text in all cells within this specific table */
         .variant-row td {
             text-align: center;
-            vertical-align: middle; /* Keeps content centered vertically too */
+            vertical-align: middle;
         }
-
-        /* Center the text inside the inputs and selects */
         .variant-row .form-control, 
         .variant-row .form-select {
             text-align: center;
         }
-
-        /* Center the Bootstrap switch container */
         .variant-row .form-check {
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        /* Container for the slider */
+        /* Your custom switch styles */
         .form-switch {
             padding-left: 2.5em; 
             min-height: 1.5rem;
         }
-
-        /* The actual slider track */
         .form-check-input.custom-slider {
-            width: 2.5em;      /* Wider for a better "pill" look */
-            height: 1.25em;    /* Balanced height */
+            width: 2.5em;
+            height: 1.25em;
             margin-left: -7.5em;
             cursor: pointer;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0, 0, 0, 0.25)'/%3e%3c/svg%3e");
             background-position: left center;
             border-radius: 2em;
-            transition: background-position 0.2s ease-in-out, background-color 0.2s ease-in-out; /* The Animation */
+            transition: background-position 0.2s ease-in-out, background-color 0.2s ease-in-out;
         }
-
-        /* The slider handle when "ON" */
         .form-check-input.custom-slider:checked {
             background-position: right center;
-            background-color: #0d6efd; /* Primary Blue */
+            background-color: #0d6efd;
             border-color: #0d6efd;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
         }
-
-        /* Center alignment fix for the table cell */
-        .variant-row td .form-check {
+        @@keyframes highlight-fade {
+            from { background-color: #fff3cd; }
+            to { background-color: transparent; }
+        }
+        .new-variant-clone {
+            animation: highlight-fade 2s ease-out;
+        }
+        .qr-preview {
+            min-height: 72px;
+            display: flex;
             justify-content: center;
-            width: 100%;
+            align-items: center;
+        }
+        .qr-preview img,
+        .qr-preview canvas {
+            max-width: 72px;
+            max-height: 72px;
+            margin: 0 auto;
+        }
+        .variant-filter-hidden {
+            display: none !important;
         }
     </style>
 
