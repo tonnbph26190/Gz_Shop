@@ -226,11 +226,12 @@ namespace QuanApi.Controllers
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet)
-                .Where(x => x.TrangThai)
+                .Where(x => x.TrangThai && x.SanPham.TrangThai)
                 .Select(x => new
                 {
                     id = x.IDSanPhamChiTiet,
                     name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
+                    qrCode = x.QRCode,
                     // Giá gốc
                     originalPrice = x.GiaBan,
                     // Tính giá giảm nếu có đợt giảm giá đang áp dụng
@@ -286,6 +287,81 @@ namespace QuanApi.Controllers
                         }).ToList()
                 }).ToListAsync();
             return Ok(products);
+        }
+
+        [HttpGet("tim-san-pham-theo-qr")]
+        public async Task<IActionResult> FindProductByQr([FromQuery] string qrCode)
+        {
+            if (string.IsNullOrWhiteSpace(qrCode))
+                return BadRequest(new { message = "Mã QR không được để trống." });
+
+            var now = DateTime.UtcNow;
+            var normalizedQrCode = qrCode.Trim();
+            var (sanPhamChiTietId, maSanPhamChiTiet) = ParseQrCode(normalizedQrCode);
+
+            var product = await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(x => x.KichCo)
+                .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
+                .Where(x => x.TrangThai && x.SanPham.TrangThai)
+                .Where(x =>
+                    x.QRCode == normalizedQrCode ||
+                    (sanPhamChiTietId.HasValue && x.IDSanPhamChiTiet == sanPhamChiTietId.Value) ||
+                    (!string.IsNullOrWhiteSpace(maSanPhamChiTiet) && x.MaSPChiTiet == maSanPhamChiTiet))
+                .Select(x => new
+                {
+                    id = x.IDSanPhamChiTiet,
+                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
+                    qrCode = x.QRCode,
+                    originalPrice = x.GiaBan,
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= now
+                            && dgg.NgayKetThuc >= now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? x.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= now
+                                && dgg.NgayKetThuc >= now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : x.GiaBan
+                    ),
+                    size = x.KichCo.TenKichCo,
+                    color = x.MauSac.TenMauSac,
+                    pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "Không có",
+                    img = x.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    mainImage = x.AnhSanPhams
+                        .Where(a => a.TrangThai && a.LaAnhChinh)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    stock = x.SoLuong,
+                    productId = x.IDSanPham,
+                    productName = x.SanPham.TenSanPham
+                })
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return NotFound(new { message = "Không tìm thấy sản phẩm đang kinh doanh từ mã QR." });
+
+            if (product.stock <= 0)
+                return BadRequest(new { message = "Sản phẩm đã hết hàng, không thể thêm vào giỏ." });
+
+            return Ok(product);
         }
 
         [HttpGet("danh-sach-khach-hang")]
@@ -1368,6 +1444,28 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             return khachHang;
+        }
+
+        private static (Guid? sanPhamChiTietId, string? maSanPhamChiTiet) ParseQrCode(string qrCode)
+        {
+            if (string.IsNullOrWhiteSpace(qrCode))
+                return (null, null);
+
+            var normalized = qrCode.Trim();
+            if (Guid.TryParse(normalized, out var directId))
+                return (directId, null);
+
+            var segments = normalized
+                .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (segments.Length >= 3 && segments[0].Equals("SPCT", StringComparison.OrdinalIgnoreCase))
+            {
+                Guid? parsedId = Guid.TryParse(segments[^1], out var qrId) ? qrId : null;
+                var parsedCode = string.IsNullOrWhiteSpace(segments[1]) ? null : segments[1];
+                return (parsedId, parsedCode);
+            }
+
+            return (null, normalized);
         }
     }
 }
