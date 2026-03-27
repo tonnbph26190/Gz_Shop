@@ -421,7 +421,8 @@
 
                 // Add the Delete button to the LAST <td> specifically to maintain alignment
                 var actionTd = clone.querySelector('td:last-child');
-                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>';
+                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row">' +
+                     '<i class="fas fa-trash"></i></button>';
                 
                 templateRow.parentNode.insertBefore(clone, templateRow);
                 nextNewIndex++;
