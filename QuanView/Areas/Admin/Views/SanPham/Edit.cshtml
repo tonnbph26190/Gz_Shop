@@ -225,81 +225,7 @@
 </div>
 @section Scripts {
     <script>
-    function updateSTT() {
-        const rows = document.querySelectorAll('#variantTable tbody tr.variant-row');
-            rows.forEach((row, index) => {
-                const sttSpan = row.querySelector('.row-number');
-                if (sttSpan) {  
-                    sttSpan.textContent = index + 1;
-                }
-            });
-        }
-        // Apply validation to existing inputs when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Chỉ apply validation cho các input KHÔNG nằm trong dòng template
-            const allQuantityInputs = document.querySelectorAll('.quantity-input');
-            const allPriceInputs = document.querySelectorAll('.price-input');
-            updateSTT();
-
-            allQuantityInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'quantity');
-                }
-            });
-
-            allPriceInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'price');
-                }
-            });
-
-            updateSTT();
-            const quantityInputs = document.querySelectorAll('.quantity-input');
-            const priceInputs = document.querySelectorAll('.price-input');
-
-            // Debug: Log all select values to check if they are set correctly
-            console.log('=== DEBUG: Checking select values ===');
-            document.querySelectorAll('select[name*="IdKichCo"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`KichCo[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdMauSac"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`MauSac[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdHoaTiet"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`HoaTiet[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-        });
-
-        // Function to generate product code
-        function generateProductCode() {
-            const now = new Date();
-            const year = now.getFullYear().toString().substr(-2);
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const hour = now.getHours().toString().padStart(2, '0');
-            const minute = now.getMinutes().toString().padStart(2, '0');
-            const second = now.getSeconds().toString().padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-
-            const productCode = `SP${year}${month}${day}${hour}${minute}${second}${random}`;
-            document.querySelector('input[name="MaSanPham"]').value = productCode;
-
-            // Show confirmation
-            alert(`Đã tạo mã sản phẩm mới: ${productCode}`);
-        }
-
-        // Validation functions
+        // === Validation functions (kept as you had) ===
         function addValidationToInput(input, fieldType) {
             const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
 
@@ -308,42 +234,34 @@
                 return row && row.id === 'newVariantTemplateRow';
             }
 
-            input.addEventListener('keydown', function(e) {
-                if (e.key === '-' || e.key === 'Minus') {
-                    e.preventDefault();
-                    return false;
-                }
+            input.addEventListener('keydown', e => {
+                if (e.key === '-' || e.key === 'Minus') e.preventDefault();
             });
 
             input.addEventListener('input', function() {
                 if (isInTemplateRow(this)) { clearError(this); return; }
-
                 const value = parseFloat(this.value);
                 if (value < 0) {
                     this.value = 0;
                     showError(this, `${fieldName} không được là số âm!`);
                 } else {
-                    clearError(this); // ← remove the price===0 check here entirely
+                    clearError(this);
                 }
             });
 
             input.addEventListener('blur', function() {
                 if (isInTemplateRow(this)) return;
-
-                if (this.value.trim() === '' || isNaN(parseFloat(this.value))) {
+                if (!this.value.trim() || isNaN(parseFloat(this.value))) {
                     this.value = "0";
                     clearError(this);
                     return;
                 }
-
                 const value = parseFloat(this.value);
-
                 if (value < 0) {
                     this.value = "0";
                     showError(this, `${fieldName} không được là số âm!`);
                 } else if (fieldType === 'price' && value <= 0) {
                     showError(this, `Giá bán phải lớn hơn 0!`);
-                    // ← Do NOT reset value here, let user correct it
                 } else {
                     clearError(this);
                 }
@@ -359,11 +277,7 @@
             errorDiv.id = input.name + '_error';
             input.parentNode.appendChild(errorDiv);
             input.classList.add('is-invalid');
-
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                clearError(input);
-            }, 3000);
+            setTimeout(() => clearError(input), 3000);
         }
 
         function clearError(input) {
@@ -372,175 +286,199 @@
             input.classList.remove('is-invalid');
         }
 
-        // Xóa biến thể: chỉ xóa dòng (không xóa dòng "Biến thể mới")
-        document.getElementById('variantTable')?.addEventListener('click', function(e) {
-            if (e.target.classList.contains('btn-remove-variant')) {
-                var row = e.target.closest('tr.variant-row');
-                if (row && !row.classList.contains('new-variant-row')) {
-                    if (confirm('Xóa biến thể này khỏi sản phẩm?')) row.remove();
-                }
-            }
-            if (e.target.classList.contains('btn-remove-new-row')) {
-                var row = e.target.closest('tr.new-variant-clone');
-                if (row) row.remove();
-            }
-        });
+        // === DOM Ready ===
+        document.addEventListener('DOMContentLoaded', function() {
 
-        // Thêm nhiều dòng biến thể mới (mỗi dòng = 1 biến thể khi Cập nhật)
-        (function() {
-            var templateRow = document.getElementById('newVariantTemplateRow');
-            if (!templateRow) return;
-            var templateIndex = parseInt(templateRow.getAttribute('data-index'), 10);
-            var nextNewIndex = templateIndex;
-
-            document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
-                var clone = templateRow.cloneNode(true);
-                clone.id = '';
-                clone.classList.remove('new-variant-row');
-                clone.classList.add('new-variant-clone');
-                clone.style.display = ''; 
-                
-                var oldPrefix = 'ChiTietSanPhams[' + templateIndex + ']';
-                var newPrefix = 'ChiTietSanPhams[' + nextNewIndex + ']';
-                
-                clone.querySelectorAll('[name]').forEach(function(el) {
-                    if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
-                });
-
-                clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(function(el) {
-                    el.value = nextNewIndex;
-                    el.disabled = false;
-                });
-
-                // Initialize values and validation...
-                // (Keep your existing validation logic here)
-
-                var actionTd = clone.querySelector('td:last-child');
-                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>';
-                
-                // CHANGE IS HERE: Insert at the top
-                var tbody = templateRow.parentNode;
-                tbody.insertBefore(clone, tbody.firstChild); 
-                
-                nextNewIndex++;
-                updateSTT(); // This will re-number the list if you use row numbers
-            });
-        })();
-
-        document.querySelector('form').addEventListener('submit', function(e) {
-            let hasError = false;
-            document.querySelectorAll('tr.variant-row').forEach(function(row) {
-                var isTemplateRow = row.id === 'newVariantTemplateRow';
-                var isNewRow = row.classList.contains('new-variant-row') || row.classList.contains('new-variant-clone');
-                
-                if (isTemplateRow) return;
-                
-                var kichCoSelect = row.querySelector('select[name*="IdKichCo"]');
-                var mauSacSelect = row.querySelector('select[name*="IdMauSac"]');
-                
-                var skipValidation = isNewRow && kichCoSelect && mauSacSelect &&
-                    (!kichCoSelect.value || !mauSacSelect.value);
-                    
-                if (skipValidation) return;
-
-                var qtyInput = row.querySelector('.quantity-input');
-                var priceInput = row.querySelector('.price-input');
-                
-                if (qtyInput) {
-                    var q = parseInt(qtyInput.value, 10);
-                    if (isNaN(q) || q < 0) { 
-                        showError(qtyInput, 'Số lượng không được âm!'); 
-                        hasError = true; 
-                    }
-                }
-
-                if (priceInput) {
-                    var p = parseFloat(priceInput.value);
-                    // Price MUST be > 0
-                    if (isNaN(p) || p <= 0) { 
-                        showError(priceInput, 'Giá bán phải lớn hơn 0!'); 
-                        hasError = true; 
-                    }
+            // Apply validation
+            document.querySelectorAll('.quantity-input, .price-input').forEach(input => {
+                const row = input.closest('tr');
+                if (row && row.id !== 'newVariantTemplateRow') {
+                    const type = input.classList.contains('quantity-input') ? 'quantity' : 'price';
+                    addValidationToInput(input, type);
                 }
             });
 
-            if (hasError) {
-                e.preventDefault();
-                alert('Vui lòng kiểm tra lại: Số lượng không được âm và Giá bán phải lớn hơn 0.');
-                return false;
-            }
+            // ==================== DELETE ====================
+            document.getElementById('variantTable').addEventListener('click', function(e) {
+                if (e.target.closest('.btn-remove-variant')) {
+                    const row = e.target.closest('tr.variant-row');
+                    if (row && !row.classList.contains('new-variant-row') && row.id !== 'newVariantTemplateRow') {
+                        if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
+                            // Mark as deleted
+                            const delInput = document.createElement('input');
+                            delInput.type = 'hidden';
+                            delInput.name = `ChiTietSanPhams[${row.dataset.variantIndex}].IsDeleted`;
+                            delInput.value = 'true';
+                            row.appendChild(delInput);
+
+                            row.style.display = 'none';           // Hide visually
+                            row.classList.add('deleted-row');
+                        }
+                    }
+                }
+
+                if (e.target.closest('.btn-remove-new-row')) {
+                    const row = e.target.closest('tr');
+                    if (row) row.remove();
+                }
+            });
+
+            // ==================== ADD NEW ROW ====================
+            (function() {
+                const templateRow = document.getElementById('newVariantTemplateRow');
+                if (!templateRow) return;
+                let nextNewIndex = parseInt(templateRow.getAttribute('data-index'), 10);
+
+                document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
+                    const clone = templateRow.cloneNode(true);
+                    clone.id = '';
+                    clone.classList.remove('new-variant-row');
+                    clone.classList.add('new-variant-clone');
+                    clone.style.display = '';
+
+                    const oldPrefix = `ChiTietSanPhams[${templateRow.getAttribute('data-index')}]`;
+                    const newPrefix = `ChiTietSanPhams[${nextNewIndex}]`;
+
+                    clone.querySelectorAll('[name]').forEach(el => {
+                        if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
+                    });
+
+                    clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(el => {
+                        el.value = nextNewIndex;
+                        el.disabled = false;
+                    });
+
+                    const actionTd = clone.querySelector('td:last-child');
+                    if (actionTd) actionTd.innerHTML = `<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>`;
+
+                    templateRow.parentNode.insertBefore(clone, templateRow.parentNode.firstChild);
+                    nextNewIndex++;
+                });
+            })();
+
+            // ==================== SUBMIT - REINDEX + FILTER ====================
+            document.querySelector('form').addEventListener('submit', function(e) {
+                let hasError = false;
+
+                // Validation
+                document.querySelectorAll('#variantTable tbody tr.variant-row').forEach(row => {
+                    if (row.style.display === 'none' || row.id === 'newVariantTemplateRow') return;
+
+                    const isNewRow = row.classList.contains('new-variant-clone');
+                    const kichCo = row.querySelector('select[name*="IdKichCo"]');
+                    const mauSac = row.querySelector('select[name*="IdMauSac"]');
+
+                    if (isNewRow && (!kichCo?.value || !mauSac?.value)) return;
+
+                    const qty = row.querySelector('.quantity-input');
+                    const price = row.querySelector('.price-input');
+
+                    if (qty) {
+                        const q = parseInt(qty.value, 10);
+                        if (isNaN(q) || q < 0) {
+                            showError(qty, 'Số lượng không được âm!');
+                            hasError = true;
+                        }
+                    }
+                    if (price) {
+                        const p = parseFloat(price.value);
+                        if (isNaN(p) || p <= 0) {
+                            showError(price, 'Giá bán phải lớn hơn 0!');
+                            hasError = true;
+                        }
+                    }
+                });
+
+                if (hasError) {
+                    e.preventDefault();
+                    alert('Vui lòng kiểm tra lại: Số lượng không được âm và Giá bán phải lớn hơn 0.');
+                    return;
+                }
+
+                // Re-index only visible rows
+                const visibleRows = Array.from(document.querySelectorAll('#variantTable tbody tr.variant-row'))
+                    .filter(r => r.style.display !== 'none' && r.id !== 'newVariantTemplateRow');
+
+                visibleRows.forEach((row, newIndex) => {
+                    row.querySelectorAll('[name^="ChiTietSanPhams["]').forEach(input => {
+                        input.name = input.name.replace(/ChiTietSanPhams\[\d+\]/, `ChiTietSanPhams[${newIndex}]`);
+                    });
+
+                    const idxInput = row.querySelector('input[name*="ChiTietSanPhams.Index"]');
+                    if (idxInput) idxInput.value = newIndex;
+                    row.dataset.variantIndex = newIndex;
+                });
+
+                // Remove template row
+                const template = document.getElementById('newVariantTemplateRow');
+                if (template) template.remove();
+            });
         });
-        
     </script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap & styles (kept your original) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* Your existing styles here - copy them from your previous code */
+        .is-invalid { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
+        .validation-error { margin-top: 5px; }
+        /* ... paste the rest of your .variant-row, .form-switch, custom-slider styles ... */
+    </style>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <style>
         .is-invalid {
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
-
         .validation-error {
             margin-top: 5px;
         }
-
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-
         input[type="number"] {
             -moz-appearance: textfield;
         }
-        /* Center text in all cells within this specific table */
         .variant-row td {
             text-align: center;
-            vertical-align: middle; /* Keeps content centered vertically too */
+            vertical-align: middle;
         }
-
-        /* Center the text inside the inputs and selects */
         .variant-row .form-control, 
         .variant-row .form-select {
             text-align: center;
         }
-
-        /* Center the Bootstrap switch container */
         .variant-row .form-check {
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        /* Container for the slider */
+        /* Your custom switch styles */
         .form-switch {
             padding-left: 2.5em; 
             min-height: 1.5rem;
         }
-
-        /* The actual slider track */
         .form-check-input.custom-slider {
-            width: 2.5em;      /* Wider for a better "pill" look */
-            height: 1.25em;    /* Balanced height */
+            width: 2.5em;
+            height: 1.25em;
             margin-left: -7.5em;
             cursor: pointer;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0, 0, 0, 0.25)'/%3e%3c/svg%3e");
             background-position: left center;
             border-radius: 2em;
-            transition: background-position 0.2s ease-in-out, background-color 0.2s ease-in-out; /* The Animation */
+            transition: background-position 0.2s ease-in-out, background-color 0.2s ease-in-out;
         }
-
-        /* The slider handle when "ON" */
         .form-check-input.custom-slider:checked {
             background-position: right center;
-            background-color: #0d6efd; /* Primary Blue */
+            background-color: #0d6efd;
             border-color: #0d6efd;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-        }
-
-        /* Center alignment fix for the table cell */
-        .variant-row td .form-check {
-            justify-content: center;
-            width: 100%;
         }
         @@keyframes highlight-fade {
             from { background-color: #fff3cd; }

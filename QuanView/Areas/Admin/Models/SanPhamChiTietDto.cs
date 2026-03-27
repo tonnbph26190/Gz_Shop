@@ -1,4 +1,4 @@
-﻿namespace QuanView.Areas.Admin.Models
+namespace QuanView.Areas.Admin.Models
 {
     public class SanPhamChiTietDto
     {
@@ -20,5 +20,7 @@
         
         // Thêm danh sách ảnh
         public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
-    }
+
+		public bool IsDeleted { get; set; } = false;
+	}
 }
