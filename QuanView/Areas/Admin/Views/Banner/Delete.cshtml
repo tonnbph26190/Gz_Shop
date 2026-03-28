@@ -1,39 +1,83 @@
 ﻿@model QuanApi.Data.Banner
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Xác nhận xóa Banner";
 }
 
-<h1>Delete</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header bg-danger text-white py-4 text-center border-0">
+                    <i class="fa fa-exclamation-triangle fa-3x mb-3 animate__animated animate__shakeX"></i>
+                    <h3 class="fw-bold mb-0">Xác Nhận Xóa?</h3>
+                    <p class="mb-0 opacity-75">Hành động này không thể hoàn tác!</p>
+                </div>
 
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Banner</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.ImageUrl)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.ImageUrl)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Link)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Link)
-        </dd>
-    </dl>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <p class="text-muted">Bạn có chắc chắn muốn xóa banner sau đây khỏi hệ thống?</p>
+                        
+                        <div class="p-2 border rounded bg-light d-inline-block w-100">
+                            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                            {
+                                <img src="@Model.ImageUrl" class="rounded shadow-sm mb-3" style="max-height: 150px; width: 100%; object-fit: cover;" />
+                            }
+                            <h5 class="fw-bold text-dark mb-1">@Model.Title</h5>
+                            <span class="text-muted small text-break">@Model.Link</span>
+                        </div>
+                    </div>
 
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
+                    <ul class="list-group list-group-flush mb-4 small">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-secondary">Mã định danh (ID):</span>
+                            <span class="fw-bold">#@Model.Id</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-secondary">Trạng thái:</span>
+                            <span class="badge bg-warning text-dark">Đang chờ xóa</span>
+                        </li>
+                    </ul>
+
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg shadow-sm" style="border-radius: 12px;">
+                                <i class="fa fa-trash-alt me-2"></i> Xác nhận xóa ngay
+                            </button>
+                            <a asp-action="Index" class="btn btn-light btn-sm text-secondary border-0">
+                                <i class="fa fa-times me-1"></i> Hủy bỏ và Quay lại
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-4 text-center">
+                <small class="text-muted italic">
+                    <i class="fa fa-info-circle me-1"></i> Mẹo: Hãy kiểm tra kỹ hình ảnh trước khi xác nhận.
+                </small>
+            </div>
+        </div>
+    </div>
 </div>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    body {
+        background-color: #fdf2f2; /* Nền hơi hồng nhẹ để báo hiệu khu vực nguy hiểm */
+    }
+
+    .card {
+        border: none;
+    }
+
+    .btn-danger {
+        transition: all 0.3s ease;
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4) !important;
+    }
+</style>
