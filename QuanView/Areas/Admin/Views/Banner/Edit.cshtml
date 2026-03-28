@@ -9,84 +9,108 @@
 
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-9">
             <div class="mb-4">
-                <a asp-action="Index" class="text-decoration-none text-muted small fw-bold">
-                    <i class="fa fa-arrow-left me-1"></i> QUAY LẠI DANH SÁCH
+                <a asp-action="Index" class="text-decoration-none text-muted small fw-bold d-inline-flex align-items-center gap-1">
+                    <i class="fa fa-arrow-left"></i> QUAY LẠI DANH SÁCH
                 </a>
-                <h2 class="fw-bold text-dark mt-2">Chỉnh sửa Banner</h2>
-                <p class="text-secondary">Cập nhật thông tin hình ảnh và sản phẩm liên kết cho banner của bạn.</p>
+                <h2 class="fw-bold text-dark mt-2 mb-1">Chỉnh sửa Banner</h2>
+                <p class="text-secondary">Cập nhật hình ảnh và sản phẩm liên kết cho banner.</p>
             </div>
 
-            <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
                 <div class="card-body p-4 p-md-5">
                     <form asp-action="Edit" asp-route-id="@Model.Id" enctype="multipart/form-data">
                         <input type="hidden" asp-for="Id" />
 
-                        <div class="row">
-                            <div class="col-md-5 mb-4 mb-md-0 text-center border-end-md">
+                        <div class="row g-4">
+                            <!-- Image Section -->
+                            <div class="col-md-5 text-center">
                                 <label class="fw-bold text-dark d-block mb-3">Hình ảnh Banner</label>
 
-                                <div class="image-preview-container mb-3">
-                                    <img id="preview" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
-                                         class="img-fluid rounded shadow-sm border"
-                                         style="max-height: 200px; width: 100%; object-fit: cover;" />
+                                <div class="image-preview-container mb-4">
+                                    <img id="preview" 
+                                         src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
+                                         class="img-fluid rounded-3 shadow-sm border"
+                                         style="max-height: 240px; width: 100%; object-fit: cover; aspect-ratio: 16/9;" />
                                 </div>
 
                                 <div class="custom-file-upload">
-                                    <label for="ImageFile" class="btn btn-outline-primary btn-sm w-100">
+                                    <label for="ImageFile" class="btn btn-outline-primary w-100 py-2">
                                         <i class="fa fa-upload me-2"></i> Thay đổi ảnh
                                     </label>
-                                    <input type="file" id="ImageFile" name="ImageFile" class="d-none" onchange="previewImage(event)" />
-                                    <small class="text-muted d-block mt-2">Định dạng: JPG, PNG, WebP</small>
+                                    <input type="file" id="ImageFile" name="ImageFile" class="d-none" accept="image/jpeg,image/png,image/webp" onchange="previewImage(event)" />
+                                    <small class="text-muted d-block mt-2">JPG, PNG, WebP • Tối đa 5MB</small>
                                 </div>
                             </div>
 
-                            <div class="col-md-7 ps-md-4">
-                                <div class="mb-3">
-                                    <label asp-for="Title" class="form-label fw-bold text-secondary">Tiêu đề Banner</label>
-                                    <input asp-for="Title" class="form-control form-control-lg border-2" placeholder="Nhập tiêu đề..." style="border-radius: 10px; font-size: 1rem;" />
+                            <!-- Form Section -->
+                            <div class="col-md-7">
+                                <div class="mb-4">
+                                    <label asp-for="Title" class="form-label fw-semibold text-secondary">Tiêu đề Banner</label>
+                                    <input asp-for="Title" class="form-control form-control-lg" 
+                                           placeholder="Nhập tiêu đề banner..." style="border-radius: 12px;" />
                                     <span asp-validation-for="Title" class="text-danger small"></span>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold text-secondary">Link banner</label>
-                                    <input class="form-control border-2" value="@productLink" readonly />
-                                    <small class="text-muted">Link này luôn dẫn tới danh sách sản phẩm đã gán và không thể sửa tay.</small>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-secondary">Link banner</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light" value="@productLink" readonly />
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">
+                                            <i class="fa fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Link tự động dẫn đến danh sách sản phẩm đã gán.</small>
                                 </div>
 
+                                <!-- Products Section with Toggle Switches -->
                                 <div class="mb-4">
-                                    <label class="fw-bold text-secondary">Sản phẩm gán cho banner</label>
-                                    <div class="border rounded p-2 bg-white" style="max-height: 320px; overflow-y: auto;">
+                                    <label class="form-label fw-semibold text-secondary mb-3 d-flex align-items-center gap-2">
+                                        Sản phẩm gán cho banner
+                                        <span class="badge bg-primary rounded-pill">@(Model.AvailableProducts?.Count ?? 0)</span>
+                                    </label>
+
+                                    <div class="border rounded-3 bg-white p-2" 
+                                         style="max-height: 380px; overflow-y: auto; scrollbar-width: thin;">
                                         @if (Model.AvailableProducts == null || !Model.AvailableProducts.Any())
                                         {
-                                            <div class="text-muted">Không có sản phẩm để chọn.</div>
+                                            <div class="text-center text-muted py-5">
+                                                Không có sản phẩm nào để chọn.
+                                            </div>
                                         }
                                         else
                                         {
                                             @foreach (var p in Model.AvailableProducts)
                                             {
                                                 var isChecked = Model.SelectedProductIds?.Contains(p.ProductId) == true;
-                                                <label class="d-flex align-items-center gap-2 py-1 border-bottom">
-                                                    <input type="checkbox"
-                                                           name="SelectedProductIds"
-                                                           value="@p.ProductId"
-                                                           @(isChecked ? "checked" : null) />
-                                                    <span>[@p.ProductCode] @p.ProductName</span>
-                                                    @if (!p.IsActive)
-                                                    {
-                                                        <span class="badge bg-secondary ms-2">Ngưng bán</span>
-                                                    }
-                                                </label>
+                                                <div class="product-item d-flex align-items-center justify-content-between py-3 px-3 border-bottom last:border-0">
+                                                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                                        <span class="fw-medium text-dark">
+                                                            [@p.ProductCode] @p.ProductName
+                                                        </span>
+                                                        @if (!p.IsActive)
+                                                        {
+                                                            <span class="badge bg-secondary ms-2">Ngưng bán</span>
+                                                        }
+                                                    </div>
+
+                                                    <!-- Modern Toggle Switch -->
+                                                    <label class="toggle-switch">
+                                                        <input type="checkbox"
+                                                               name="SelectedProductIds"
+                                                               value="@p.ProductId"
+                                                               @(isChecked ? "checked" : "") />
+                                                        <span class="slider"></span>
+                                                    </label>
+                                                </div>
                                             }
                                         }
                                     </div>
                                 </div>
 
-                                <hr class="my-4 opacity-50">
-
-                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" style="border-radius: 10px;">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" style="border-radius: 12px;">
                                         <i class="fa fa-save me-2"></i> Lưu thay đổi
                                     </button>
                                 </div>
@@ -101,32 +125,110 @@
 
 <style>
     body {
-        background-color: #f4f7f6;
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     }
 
     .form-control:focus {
         border-color: #0d6efd;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+        box-shadow: 0 0 0 0.3rem rgba(13, 110, 253, 0.12);
     }
 
-    .border-end-md {
-        border-right: 1px solid #dee2e6;
+    /* Modern Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 28px;
+        flex-shrink: 0;
     }
 
-    @@media (max-width: 767.98px) {
-        .border-end-md {
-            border-right: none;
-        }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #e9ecef;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 50px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    input:checked + .slider {
+        background-color: #0d6efd;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+
+    /* Hover effect */
+    .product-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .product-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .product-item:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Scrollbar styling */
+    .border.rounded-3::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .border.rounded-3::-webkit-scrollbar-thumb {
+        background-color: #ced4da;
+        border-radius: 20px;
     }
 </style>
 
 <script>
     function previewImage(event) {
-        var reader = new FileReader();
+        const reader = new FileReader();
         reader.onload = function () {
-            var output = document.getElementById('preview');
+            const output = document.getElementById('preview');
             output.src = reader.result;
         };
         reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function copyToClipboard() {
+        const linkInput = document.querySelector('input[readonly]');
+        if (linkInput) {
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+                const originalText = linkInput.value;
+                linkInput.value = "Đã sao chép!";
+                setTimeout(() => {
+                    linkInput.value = originalText;
+                }, 1500);
+            });
+        }
     }
 </script>
