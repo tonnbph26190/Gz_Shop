@@ -24,6 +24,12 @@ public class KhachHang
     [MaxLength(20)]
     public string SoDienThoai { get; set; }
 
+    public int SoDiemHienTai { get; set; } = 0;
+
+    public int TongDiemTichLuy { get; set; } = 0;
+
+    public Guid? IDHangKhachHang { get; set; }
+
     public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
     [MaxLength(100)]
@@ -40,6 +46,8 @@ public class KhachHang
     public virtual ICollection<GioHang>? GioHangs { get; set; }
     public virtual ICollection<KhachHangPhieuGiam>? KhachHangPhieuGiams { get; set; }
     public virtual ICollection<HoaDon>? HoaDons { get; set; }
+    public virtual HangKhachHang? HangKhachHang { get; set; }
+    public virtual ICollection<LichSuDiemKhachHang>? LichSuDiemKhachHangs { get; set; }
     public virtual ICollection<PhongTroChuyen>? PhongTroChuyens { get; set; }
     public virtual ICollection<TinNhan>? TinNhans { get; set; }
 }

@@ -1,0 +1,192 @@
+@model QuanView.Areas.Admin.Models.CauHinhBanHangPageVm
+@{
+    ViewData["Title"] = "Cấu hình ship và điểm";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-3 text-gray-800">Cấu hình ship và điểm</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Cấu hình chung</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="SaveConfig" method="post" id="shippingConfigForm">
+                @Html.AntiForgeryToken()
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Nguồn tính phí ship mặc định</label>
+                        <input class="form-control" value="Giá cấu hình hệ thống" readonly />
+                        <input type="hidden" name="NguonTinhPhiShipMacDinh" value="Config" />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Tỉnh áp dụng nội/ngoại thành</label>
+                        <input class="form-control shipping-config-manual" name="TinhApDungPhiShip" value="@Model.Config.TinhApDungPhiShip" placeholder="Ví dụ: Hà Nội" required />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Phí ship nội thành</label>
+                        <input class="form-control shipping-config-manual" type="number" min="0" name="PhiShipNoiThanh" value="@Model.Config.PhiShipNoiThanh" required />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Phí ship ngoại thành</label>
+                        <input class="form-control shipping-config-manual" type="number" min="0" name="PhiShipNgoaiThanh" value="@Model.Config.PhiShipNgoaiThanh" required />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Phí ship toàn quốc</label>
+                        <input class="form-control shipping-config-manual" type="number" min="0" name="PhiShipToanQuoc" value="@Model.Config.PhiShipToanQuoc" required />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Phí ship mặc định fallback</label>
+                        <input class="form-control" type="number" min="0" name="PhiShipMacDinh" value="@Model.Config.PhiShipMacDinh" required />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Danh sách quận/huyện nội thành</label>
+                        <input class="form-control shipping-config-manual" name="DanhSachQuanHuyenNoiThanh" value="@Model.Config.DanhSachQuanHuyenNoiThanh" placeholder="Nhập cách nhau bằng dấu phẩy" />
+                        <small class="form-text text-muted">Ví dụ: Ba Đình, Hoàn Kiếm, Cầu Giấy</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Số tiền để tích 1 điểm</label>
+                        <input class="form-control" type="number" min="1" name="SoTienTrenMotDiemTich" value="@Model.Config.SoTienTrenMotDiemTich" required />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Số tiền giảm cho 1 điểm</label>
+                        <input class="form-control" type="number" min="1" name="SoTienGiamTrenMotDiem" value="@Model.Config.SoTienGiamTrenMotDiem" required />
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Điểm tối đa dùng mỗi đơn (0 = không giới hạn)</label>
+                        <input class="form-control" type="number" min="0" step="1" name="DiemToiDaSuDungMoiDon" value="@Model.Config.DiemToiDaSuDungMoiDon" required />
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Lưu cấu hình</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Hạng khách hàng theo điểm</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Mã hạng</th>
+                            <th>Tên hạng</th>
+                            <th>Điểm từ</th>
+                            <th>Điểm đến</th>
+                            <th>Giảm ship (%)</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tier in Model.Tiers)
+                        {
+                            <tr>
+                                <td>@tier.MaHang</td>
+                                <td>@tier.TenHang</td>
+                                <td>@tier.DiemTu</td>
+                                <td>@(tier.DiemDen?.ToString() ?? "Không giới hạn")</td>
+                                <td>@tier.PhanTramGiamPhiShip</td>
+                                <td>@(tier.TrangThai ? "Hoạt động" : "Ngừng")</td>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            onclick="fillTierForm('@tier.IDHangKhachHang','@tier.MaHang','@tier.TenHang',@tier.DiemTu,@(tier.DiemDen?.ToString() ?? "null"),@tier.PhanTramGiamPhiShip,'@tier.TrangThai.ToString().ToLower()')">
+                                        Sửa
+                                    </button>
+                                    <form asp-action="DeleteTier" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@tier.IDHangKhachHang" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Ngừng</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <hr />
+            <h6>Thêm / cập nhật hạng</h6>
+            <form asp-action="SaveTier" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="tierId" name="IDHangKhachHang" />
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <label>Mã hạng</label>
+                        <input id="tierCode" class="form-control" name="MaHang" required />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Tên hạng</label>
+                        <input id="tierName" class="form-control" name="TenHang" required />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Điểm từ</label>
+                        <input id="tierFrom" class="form-control" type="number" min="0" name="DiemTu" required />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Điểm đến (trống = max)</label>
+                        <input id="tierTo" class="form-control" type="number" min="0" name="DiemDen" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Giảm ship (%)</label>
+                        <input id="tierDiscount" class="form-control" type="number" min="0" max="100" step="0.1" name="PhanTramGiamPhiShip" required />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Trạng thái</label>
+                        <select id="tierStatus" class="form-control" name="TrangThai">
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Ngừng</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-success" type="submit">Lưu hạng</button>
+                <button class="btn btn-secondary" type="button" onclick="resetTierForm()">Mới</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function fillTierForm(id, code, name, fromPoint, toPoint, discount, active) {
+        document.getElementById('tierId').value = id || '';
+        document.getElementById('tierCode').value = code || '';
+        document.getElementById('tierName').value = name || '';
+        document.getElementById('tierFrom').value = fromPoint || 0;
+        document.getElementById('tierTo').value = (toPoint === null || toPoint === undefined) ? '' : toPoint;
+        document.getElementById('tierDiscount').value = discount || 0;
+        document.getElementById('tierStatus').value = active === 'true' ? 'true' : 'false';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function resetTierForm() {
+        document.getElementById('tierId').value = '';
+        document.getElementById('tierCode').value = '';
+        document.getElementById('tierName').value = '';
+        document.getElementById('tierFrom').value = 0;
+        document.getElementById('tierTo').value = '';
+        document.getElementById('tierDiscount').value = 0;
+        document.getElementById('tierStatus').value = 'true';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Config mode is now fixed: keep manual shipping fields editable.
+    });
+</script>
+}

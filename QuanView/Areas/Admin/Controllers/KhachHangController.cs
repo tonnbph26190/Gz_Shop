@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
 using System.Text.Json;
@@ -202,6 +202,8 @@ namespace QuanView.Areas.Admin.Controllers
                         NguoiCapNhat = khachHangDto.NguoiCapNhat,
                         DiaChis = khachHangDto.DiaChis // truyền địa chỉ sang view
                     };
+                    ViewBag.SoDiemHienTai = khachHangDto.SoDiemHienTai;
+                    ViewBag.TongDiemTichLuy = khachHangDto.TongDiemTichLuy;
                     return View(updateKhachHangDto);
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -283,7 +285,34 @@ namespace QuanView.Areas.Admin.Controllers
                     ModelState.AddModelError(string.Empty, $"Lỗi xử lý phản hồi từ API: {ex.Message}");
                 }
             }
+
+            await SetKhachHangDiemViewBagAsync(id);
             return View(updateKhachHangDto);
+        }
+
+        private async Task SetKhachHangDiemViewBagAsync(Guid id)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"KhachHang/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var dto = await response.Content.ReadFromJsonAsync<KhachHangDto>();
+                    if (dto != null)
+                    {
+                        ViewBag.SoDiemHienTai = dto.SoDiemHienTai;
+                        ViewBag.TongDiemTichLuy = dto.TongDiemTichLuy;
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore — view dùng 0
+            }
+
+            ViewBag.SoDiemHienTai = 0;
+            ViewBag.TongDiemTichLuy = 0;
         }
 
         // GET: Admin/KhachHang/Delete/5

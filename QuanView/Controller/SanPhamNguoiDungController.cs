@@ -90,13 +90,24 @@ namespace QuanView.Controllers
 				return View("Error");
 			}
 
-			// --- CALL NEW DETAIL ENDPOINT ---
-			var detailRes = await _http.GetAsync($"SanPhamChiTiets/getDetailSp?idsanpham={bienThe.IdSanPham}");
+			return await RenderDetailByProductId(bienThe.IdSanPham, bienThe.TenSanPham, bienThe.TenDanhMuc);
+		}
+
+		// GET: /SanPhamNguoiDung/DetailByProduct/{id}
+		public async Task<IActionResult> DetailByProduct(Guid id)
+		{
+			return await RenderDetailByProductId(id, null, null);
+		}
+
+		private async Task<IActionResult> RenderDetailByProductId(Guid productId, string? fallbackProductName, string? fallbackCategory)
+		{
+			var detailRes = await _http.GetAsync($"SanPhamChiTiets/getDetailSp?idsanpham={productId}");
 			if (!detailRes.IsSuccessStatusCode)
 			{
 				ViewData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
 				return View("Error");
 			}
+
 			var spDetail = await detailRes.Content.ReadFromJsonAsync<SanPhamDetailDto>();
 			if (spDetail == null || !spDetail.BienThes.Any())
 			{
@@ -104,17 +115,15 @@ namespace QuanView.Controllers
 				return View("Error");
 			}
 
-			// Lấy ảnh hiển thị chính: ưu tiên ảnh đầu ở DanhSachAnh, fallback sang ảnh biến thể
 			string urlAnh = spDetail.DanhSachAnh?.FirstOrDefault()
 							?? spDetail.BienThes.SelectMany(b => new[] { b.AnhDaiDien }).FirstOrDefault(s => !string.IsNullOrEmpty(s))
 							?? "/img/default-product.jpg";
 
-			var firstBienThe = spDetail.BienThes.FirstOrDefault() ?? bienThe;
-
+			var firstBienThe = spDetail.BienThes.First();
 			var model = new SanPhamKhachHangViewModel
 			{
-				TenSanPham = spDetail.TenSanPham ?? bienThe.TenSanPham,
-				DanhMuc = spDetail.TenDanhMuc ?? firstBienThe.TenDanhMuc ?? "",
+				TenSanPham = spDetail.TenSanPham ?? fallbackProductName ?? "Sản phẩm",
+				DanhMuc = spDetail.TenDanhMuc ?? fallbackCategory ?? firstBienThe.TenDanhMuc ?? "",
 				UrlAnh = urlAnh,
 				DanhSachAnh = spDetail.DanhSachAnh ?? new List<string> { urlAnh },
 				BienThes = spDetail.BienThes.Select(b => new BienTheSanPhamViewModel
@@ -129,7 +138,7 @@ namespace QuanView.Controllers
 				}).ToList()
 			};
 
-			return View(model);
+			return View("Detail", model);
 		}
 	}
 }

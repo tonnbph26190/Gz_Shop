@@ -1,4 +1,4 @@
-﻿@model IEnumerable<QuanApi.Data.Banner>
+@model IEnumerable<QuanApi.Data.Banner>
 
 @{
     ViewData["Title"] = "Banners";
@@ -33,7 +33,10 @@
                 </td>
                 <td>@item.Title</td>
                 <td>
-                    <a href="@item.Link" target="_blank">@item.Link</a>
+                    @{
+                        var productLink = Url.Action("SanPhamTheoLink", "Banner", new { area = "", id = item.Id }) ?? "#";
+                    }
+                    <a href="@productLink" target="_blank">@productLink</a>
                 </td>
                 <td class="text-center">
                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">

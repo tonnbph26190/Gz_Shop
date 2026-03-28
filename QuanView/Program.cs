@@ -129,6 +129,15 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("DatabaseSchemaRepair");
+    var dbContext = scope.ServiceProvider.GetRequiredService<BanQuanAu1DbContext>();
+    await EnsureBannerLinkSchemaAsync(dbContext, logger);
+}
+
 // 7️⃣ MIDDLEWARE PIPELINE
 if (!app.Environment.IsDevelopment())
 {
@@ -159,4 +168,52 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+static async Task EnsureBannerLinkSchemaAsync(BanQuanAu1DbContext dbContext, ILogger logger)
+{
+    if (!dbContext.Database.IsNpgsql())
+    {
+        logger.LogInformation("Skip banner-link schema repair because provider is not PostgreSQL.");
+        return;
+    }
+
+    const string sql = """
+CREATE TABLE IF NOT EXISTS "BannerSanPhams" (
+    "IDBannerSanPham" uuid NOT NULL PRIMARY KEY,
+    "BannerId" integer NOT NULL,
+    "IDSanPham" uuid NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS "IX_BannerSanPhams_BannerId" ON "BannerSanPhams" ("BannerId");
+CREATE INDEX IF NOT EXISTS "IX_BannerSanPhams_IDSanPham" ON "BannerSanPhams" ("IDSanPham");
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_BannerSanPhams_BannerId_IDSanPham" ON "BannerSanPhams" ("BannerId", "IDSanPham");
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'FK_BannerSanPhams_Banners_BannerId'
+    ) THEN
+        ALTER TABLE "BannerSanPhams"
+            ADD CONSTRAINT "FK_BannerSanPhams_Banners_BannerId"
+            FOREIGN KEY ("BannerId") REFERENCES "Banners" ("Id") ON DELETE CASCADE;
+    END IF;
+END
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'FK_BannerSanPhams_SanPhams_IDSanPham'
+    ) THEN
+        ALTER TABLE "BannerSanPhams"
+            ADD CONSTRAINT "FK_BannerSanPhams_SanPhams_IDSanPham"
+            FOREIGN KEY ("IDSanPham") REFERENCES "SanPhams" ("IDSanPham") ON DELETE CASCADE;
+    END IF;
+END
+$$;
+""";
+
+    await dbContext.Database.ExecuteSqlRawAsync(sql);
+    logger.LogInformation("Banner-link schema repair completed.");
+}
 
