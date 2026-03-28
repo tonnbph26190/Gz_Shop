@@ -1,0 +1,102 @@
+@model QuanView.Areas.Admin.Models.BannerSanPhamVm
+
+@{
+    ViewData["Title"] = "Gán sản phẩm cho banner";
+}
+
+<h2 class="mb-3">Gán sản phẩm cho banner: @Model.BannerTitle</h2>
+
+<div class="alert alert-info">
+    <strong>Link xem sản phẩm:</strong>
+    <a href="@Model.ProductLink" target="_blank">@Model.ProductLink</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Sản phẩm đã gán (@Model.AssignedProducts.Count)</h4>
+        @if (!Model.AssignedProducts.Any())
+        {
+            <p class="text-muted">Chưa có sản phẩm nào được gán cho banner này.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Tên</th>
+                        <th>Giá từ</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sp in Model.AssignedProducts)
+                    {
+                        <tr>
+                            <td>@sp.ProductCode</td>
+                            <td>@sp.ProductName</td>
+                            <td>@(sp.MinPrice?.ToString("N0") ?? "-")</td>
+                            <td class="text-center">
+                                <form asp-action="XoaSanPham" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="bannerId" value="@Model.BannerId" />
+                                    <input type="hidden" name="sanPhamId" value="@sp.ProductId" />
+                                    <button type="submit" class="btn btn-sm btn-danger">Gỡ</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="col-md-6">
+        <h4>Thêm sản phẩm</h4>
+        <form asp-action="GanSanPham" method="get" class="mb-3">
+            <input type="hidden" name="id" value="@Model.BannerId" />
+            <div class="input-group">
+                <input type="text" name="keyword" value="@Model.Keyword" class="form-control" placeholder="Nhập mã hoặc tên sản phẩm..." />
+                <button type="submit" class="btn btn-outline-secondary">Tìm</button>
+            </div>
+        </form>
+
+        @if (!Model.AvailableProducts.Any())
+        {
+            <p class="text-muted">Không còn sản phẩm phù hợp để thêm.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Tên</th>
+                        <th>Giá từ</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sp in Model.AvailableProducts)
+                    {
+                        <tr>
+                            <td>@sp.ProductCode</td>
+                            <td>@sp.ProductName</td>
+                            <td>@(sp.MinPrice?.ToString("N0") ?? "-")</td>
+                            <td class="text-center">
+                                <form asp-action="ThemSanPham" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="bannerId" value="@Model.BannerId" />
+                                    <input type="hidden" name="sanPhamId" value="@sp.ProductId" />
+                                    <button type="submit" class="btn btn-sm btn-success">Thêm</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary mt-3">Quay lại danh sách banner</a>

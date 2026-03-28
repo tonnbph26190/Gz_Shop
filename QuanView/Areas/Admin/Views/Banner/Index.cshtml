@@ -1,4 +1,4 @@
-﻿@model IEnumerable<QuanApi.Data.Banner>
+@model IEnumerable<QuanApi.Data.Banner>
 
 @{
     ViewData["Title"] = "Quản lý Banner";
@@ -30,6 +30,7 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
+                            var productLink = Url.Action("SanPhamTheoLink", "Banner", new { area = "", id = item.Id }) ?? "#";
                             <tr>
                                 <td class="ps-4">
                                     @if (!string.IsNullOrEmpty(item.ImageUrl))
@@ -47,7 +48,7 @@
                                     <span class="fw-semibold text-dark">@item.Title</span>
                                 </td>
                                 <td>
-                                    <a href="@item.Link" target="_blank" class="text-decoration-none text-info">
+                                    <a href="@productLink" target="_blank" class="text-decoration-none text-info">
                                         <i class="fa fa-external-link-alt small me-1"></i> Truy cập
                                     </a>
                                 </td>

@@ -47,6 +47,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             // Cố định pageSize = 5
             int pageSize = 5;
+            var effectiveTrangThai = string.IsNullOrWhiteSpace(trangThai) ? "active" : trangThai;
 
             // Tạo query string cho API
             var queryParams = new List<string>();
@@ -55,8 +56,8 @@ namespace QuanView.Areas.Admin.Controllers
 
             if (!string.IsNullOrWhiteSpace(keyword))
                 queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
-            if (!string.IsNullOrWhiteSpace(trangThai))
-                queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+            if (!string.IsNullOrWhiteSpace(effectiveTrangThai))
+                queryParams.Add($"trangThai={Uri.EscapeDataString(effectiveTrangThai)}");
             if (priceFrom.HasValue)
                 queryParams.Add($"priceFrom={priceFrom.Value}");
             if (priceTo.HasValue)
@@ -142,7 +143,7 @@ namespace QuanView.Areas.Admin.Controllers
                 PageSize = pageSize,
                 TotalItems = total,
                 Keyword = keyword,
-                TrangThai = trangThai,
+                TrangThai = effectiveTrangThai,
                 PriceFrom = priceFrom,
                 PriceTo = priceTo,
                 QtyFrom = qtyFrom,
@@ -349,9 +350,9 @@ namespace QuanView.Areas.Admin.Controllers
 				var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(
 					new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-				if (existingList != null)
+                if (existingList != null)
 					foreach (var x in existingList)
-						if (x.IdSanPhamChiTiet != Guid.Empty)
+                        if (x.TrangThai && x.IdSanPhamChiTiet != Guid.Empty)
 							existingIds.Add(x.IdSanPhamChiTiet);
 			}
 
@@ -1127,6 +1128,89 @@ namespace QuanView.Areas.Admin.Controllers
                 NguoiCapNhat = img.NguoiCapNhat,
                 TrangThai = img.TrangThai
             }).ToList() ?? new List<QuanView.Areas.Admin.Models.AnhSanPhamDto>();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateVariantQr(Guid id)
+        {
+            var response = await _http.PostAsync($"sanphamchitiets/{id}/generate-qr", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+                return Json(new { success = false, message });
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<JsonElement>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            var qrCode = payload.TryGetProperty("qrCode", out var qrCodeProp)
+                ? qrCodeProp.GetString()
+                : null;
+            var maSpChiTiet = payload.TryGetProperty("maSPChiTiet", out var maProp)
+                ? maProp.GetString()
+                : null;
+
+            return Json(new
+            {
+                success = true,
+                qrCode,
+                maSPChiTiet = maSpChiTiet
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateSelectedVariantQrs([FromForm] List<Guid> selectedVariantIds)
+        {
+            if (selectedVariantIds == null || !selectedVariantIds.Any())
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Vui lòng chọn ít nhất một biến thể để tạo QR."
+                });
+            }
+
+            var results = new List<object>();
+
+            foreach (var id in selectedVariantIds.Distinct())
+            {
+                var response = await _http.PostAsync($"sanphamchitiets/{id}/generate-qr", null);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Không thể tạo QR cho biến thể {id}: {message}"
+                    });
+                }
+
+                var payload = await response.Content.ReadFromJsonAsync<JsonElement>(
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var qrCode = payload.TryGetProperty("qrCode", out var qrCodeProp)
+                    ? qrCodeProp.GetString()
+                    : null;
+                var maSpChiTiet = payload.TryGetProperty("maSPChiTiet", out var maProp)
+                    ? maProp.GetString()
+                    : null;
+
+                results.Add(new
+                {
+                    id,
+                    qrCode,
+                    maSPChiTiet = maSpChiTiet
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                count = results.Count,
+                results
+            });
         }
 
         [HttpPost]

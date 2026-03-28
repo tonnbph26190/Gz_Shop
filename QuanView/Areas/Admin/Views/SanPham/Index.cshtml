@@ -350,6 +350,9 @@
         @foreach (var item in Model.SanPhams)
         {
             var targetId = "collapse-variant-" + item.IDSanPham;
+            var activeVariants = item.ChiTietSanPhams?
+                .Where(ct => ct.TrangThai)
+                .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
 
             <div class="product-group">
                 <!-- Sản phẩm chính -->
@@ -391,10 +394,10 @@
                             <td class="align-middle"> 
                                 <div class="d-flex align-items-center justify-content-center">
                                     <strong class="me-2">@item.TenSanPham</strong>
-                                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                                    @if (activeVariants.Any())
                                     {
                                         <span class="variant-count-badge flex-shrink-0 text-dark">
-                                            <i class="fas fa-layer-group"></i> @item.ChiTietSanPhams.Count
+                                            <i class="fas fa-layer-group"></i> @activeVariants.Count
                                         </span>
                                     }
                                 </div>
@@ -445,7 +448,7 @@
                 </table>
 
                 <!-- Biến thể - collapsible -->
-                @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                @if (activeVariants.Any())
                 {
                     <div id="@targetId" class="collapse variant-section">
                         <table class="table table-sm table-bordered table-hover mb-0">
@@ -461,7 +464,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var ct in item.ChiTietSanPhams)
+                                @foreach (var ct in activeVariants)
                                 {
                                     <tr class="variant-row text-center">
                                         <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
