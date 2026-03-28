@@ -1,70 +1,132 @@
 @model QuanView.Areas.Admin.Models.BannerFormVm
 @{
-    ViewData["Title"] = "Edit Banner";
+    ViewData["Title"] = "Chỉnh sửa Banner";
     var productLink = Model.ProductLink ?? (Url.Action("SanPhamTheoLink", "Banner", new { area = "", id = Model.Id }) ?? "");
 }
 
-<h1>Edit Banner</h1>
-<hr />
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit" asp-route-id="@Model.Id" enctype="multipart/form-data">
-            <input type="hidden" asp-for="Id" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-            <div class="form-group">
-                <label for="imageFile">Upload new image:</label>
-                <input type="file" name="imageFile" class="form-control" />
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <a asp-action="Index" class="text-decoration-none text-muted small fw-bold">
+                    <i class="fa fa-arrow-left me-1"></i> QUAY LẠI DANH SÁCH
+                </a>
+                <h2 class="fw-bold text-dark mt-2">Chỉnh sửa Banner</h2>
+                <p class="text-secondary">Cập nhật thông tin hình ảnh và sản phẩm liên kết cho banner của bạn.</p>
             </div>
 
-            @if (!string.IsNullOrEmpty(Model.ImageUrl))
-            {
-                <div class="form-group">
-                    <label>Current Image:</label>
-                    <img src="@Model.ImageUrl" width="300" class="img-thumbnail" />
+            <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Edit" asp-route-id="@Model.Id" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="row">
+                            <div class="col-md-5 mb-4 mb-md-0 text-center border-end-md">
+                                <label class="fw-bold text-dark d-block mb-3">Hình ảnh Banner</label>
+
+                                <div class="image-preview-container mb-3">
+                                    <img id="preview" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/no-image.png" : Model.ImageUrl)"
+                                         class="img-fluid rounded shadow-sm border"
+                                         style="max-height: 200px; width: 100%; object-fit: cover;" />
+                                </div>
+
+                                <div class="custom-file-upload">
+                                    <label for="ImageFile" class="btn btn-outline-primary btn-sm w-100">
+                                        <i class="fa fa-upload me-2"></i> Thay đổi ảnh
+                                    </label>
+                                    <input type="file" id="ImageFile" name="ImageFile" class="d-none" onchange="previewImage(event)" />
+                                    <small class="text-muted d-block mt-2">Định dạng: JPG, PNG, WebP</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7 ps-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="Title" class="form-label fw-bold text-secondary">Tiêu đề Banner</label>
+                                    <input asp-for="Title" class="form-control form-control-lg border-2" placeholder="Nhập tiêu đề..." style="border-radius: 10px; font-size: 1rem;" />
+                                    <span asp-validation-for="Title" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-secondary">Link banner</label>
+                                    <input class="form-control border-2" value="@productLink" readonly />
+                                    <small class="text-muted">Link này luôn dẫn tới danh sách sản phẩm đã gán và không thể sửa tay.</small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="fw-bold text-secondary">Sản phẩm gán cho banner</label>
+                                    <div class="border rounded p-2 bg-white" style="max-height: 320px; overflow-y: auto;">
+                                        @if (Model.AvailableProducts == null || !Model.AvailableProducts.Any())
+                                        {
+                                            <div class="text-muted">Không có sản phẩm để chọn.</div>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var p in Model.AvailableProducts)
+                                            {
+                                                var isChecked = Model.SelectedProductIds?.Contains(p.ProductId) == true;
+                                                <label class="d-flex align-items-center gap-2 py-1 border-bottom">
+                                                    <input type="checkbox"
+                                                           name="SelectedProductIds"
+                                                           value="@p.ProductId"
+                                                           @(isChecked ? "checked" : null) />
+                                                    <span>[@p.ProductCode] @p.ProductName</span>
+                                                    @if (!p.IsActive)
+                                                    {
+                                                        <span class="badge bg-secondary ms-2">Ngưng bán</span>
+                                                    }
+                                                </label>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+
+                                <hr class="my-4 opacity-50">
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" style="border-radius: 10px;">
+                                        <i class="fa fa-save me-2"></i> Lưu thay đổi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            }
-
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
             </div>
-
-            <div class="form-group">
-                <label class="control-label">Link banner</label>
-                <input class="form-control" value="@productLink" readonly />
-                <small class="form-text text-muted">Link này luôn dẫn tới danh sách sản phẩm đã gán và không thể sửa tay.</small>
-            </div>
-
-            <div class="form-group mt-3">
-                <label class="fw-bold">Sản phẩm gán cho banner</label>
-                <div class="border rounded p-2" style="max-height: 320px; overflow-y: auto;">
-                    @if (Model.AvailableProducts == null || !Model.AvailableProducts.Any())
-                    {
-                        <div class="text-muted">Không có sản phẩm để chọn.</div>
-                    }
-                    else
-                    {
-                        @foreach (var p in Model.AvailableProducts)
-                        {
-                            var isChecked = Model.SelectedProductIds?.Contains(p.ProductId) == true;
-                            <label class="d-flex align-items-center gap-2 py-1 border-bottom">
-                                <input type="checkbox"
-                                       name="SelectedProductIds"
-                                       value="@p.ProductId"
-                                       @(isChecked ? "checked" : null) />
-                                <span>[@p.ProductCode] @p.ProductName</span>
-                                @if (!p.IsActive)
-                                {
-                                    <span class="badge bg-secondary ms-2">Ngưng bán</span>
-                                }
-                            </label>
-                        }
-                    }
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Save</button>
-            <a asp-action="Index" class="btn btn-secondary">Back</a>
-        </form>
+        </div>
     </div>
 </div>
+
+<style>
+    body {
+        background-color: #f4f7f6;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+    }
+
+    .border-end-md {
+        border-right: 1px solid #dee2e6;
+    }
+
+    @@media (max-width: 767.98px) {
+        .border-end-md {
+            border-right: none;
+        }
+    }
+</style>
+
+<script>
+    function previewImage(event) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            var output = document.getElementById('preview');
+            output.src = reader.result;
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+</script>
