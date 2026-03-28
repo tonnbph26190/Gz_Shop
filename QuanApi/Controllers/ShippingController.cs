@@ -10,11 +10,16 @@ namespace QuanApi.Controllers
     {
         private readonly IShippingService _shippingService;
         private readonly IGHNService _ghnService;
+        private readonly IShippingPolicyService _shippingPolicyService;
 
-        public ShippingController(IShippingService shippingService, IGHNService ghnService)
+        public ShippingController(
+            IShippingService shippingService,
+            IGHNService ghnService,
+            IShippingPolicyService shippingPolicyService)
         {
             _shippingService = shippingService;
             _ghnService = ghnService;
+            _shippingPolicyService = shippingPolicyService;
         }
 
         [HttpPost("calculate")]
@@ -27,61 +32,108 @@ namespace QuanApi.Controllers
                 if (request.OrderValue < 0)
                     return BadRequest("Giá trị đơn hàng không được âm");
 
-                // Ưu tiên gọi GHN nếu client gửi ToDistrictId + ToWardCode và đã cấu hình GHN
-                if (request.ToDistrictId.HasValue && request.ToDistrictId.Value > 0 && !string.IsNullOrWhiteSpace(request.ToWardCode))
+                var shippingConfig = await _shippingPolicyService.GetActiveShippingConfigAsync();
+                var resolvedSource = _shippingPolicyService.ResolveShippingFeeSourceFromConfig(shippingConfig);
+                var customerPolicy = await _shippingPolicyService.ResolveCustomerDiscountAsync(request.CustomerId);
+                var district = request.District ?? string.Empty;
+
+                async Task<ShippingInfoDto> BuildConfigShippingInfoAsync(string fallbackReason)
                 {
-                    if (await _ghnService.IsConfiguredAsync())
+                    if (!string.IsNullOrWhiteSpace(request.Province))
                     {
-                        var weight = request.Weight ?? 500;
-                        var ghnFee = await _ghnService.GetFeeAsync(request.ToDistrictId.Value, request.ToWardCode!.Trim(), weight);
+                        return _shippingService.GetShippingInfo(
+                            request.Province,
+                            district,
+                            request.OrderValue,
+                            request.Weight ?? 0,
+                            customerPolicy.Percent,
+                            CombineMessage(customerPolicy.Message, fallbackReason),
+                            shippingConfig,
+                            ShippingFeeSources.Config);
+                    }
+
+                    var originalFee = await _shippingPolicyService.ResolveDefaultShippingFeeAsync();
+                    var finalFee = _shippingService.ApplyShippingDiscount(originalFee, customerPolicy.Percent);
+                    return new ShippingInfoDto
+                    {
+                        Province = request.Province,
+                        District = district,
+                        OriginalFee = originalFee,
+                        DiscountAmount = Math.Max(originalFee - finalFee, 0),
+                        FinalFee = finalFee,
+                        DiscountMessage = CombineMessage(customerPolicy.Message, fallbackReason),
+                        DiscountPercent = Math.Clamp(customerPolicy.Percent, 0, 100),
+                        EstimatedDeliveryDays = 0,
+                        AppliedFeeSource = ShippingFeeSources.Config,
+                        AppliedFeeZone = ShippingFeeZones.ToanQuoc
+                    };
+                }
+
+                if (resolvedSource == ShippingFeeSources.Ghn)
+                {
+                    var hasCompleteGhnAddress = request.ToDistrictId.HasValue
+                        && request.ToDistrictId.Value > 0
+                        && !string.IsNullOrWhiteSpace(request.ToWardCode);
+
+                    if (hasCompleteGhnAddress && await _ghnService.IsConfiguredAsync())
+                    {
+                        var ghnFee = await _ghnService.GetFeeAsync(
+                            request.ToDistrictId!.Value,
+                            request.ToWardCode!.Trim(),
+                            request.Weight ?? 500);
+
                         if (ghnFee != null)
                         {
-                            var originalFee = ghnFee.Total;
-                            var finalFee = _shippingService.ApplyShippingDiscount(originalFee, request.OrderValue);
-                            var discount = originalFee - finalFee;
-                            var discountMessage = request.OrderValue >= 500000 ? "Miễn phí vận chuyển cho đơn từ 500.000đ"
-                                : request.OrderValue >= 300000 ? "Giảm 50% phí vận chuyển cho đơn từ 300.000đ"
-                                : request.OrderValue >= 200000 ? "Giảm 20% phí vận chuyển cho đơn từ 200.000đ" : "";
+                            var originalFee = Math.Max(ghnFee.Total, 0);
+                            var finalFee = _shippingService.ApplyShippingDiscount(originalFee, customerPolicy.Percent);
                             return Ok(new ShippingInfoDto
                             {
                                 Province = request.Province,
-                                District = request.District ?? "",
+                                District = district,
                                 OriginalFee = originalFee,
-                                DiscountAmount = discount,
                                 FinalFee = finalFee,
-                                DiscountMessage = discountMessage,
-                                EstimatedDeliveryDays = 3
+                                DiscountAmount = Math.Max(originalFee - finalFee, 0),
+                                DiscountMessage = customerPolicy.Message,
+                                DiscountPercent = Math.Clamp(customerPolicy.Percent, 0, 100),
+                                EstimatedDeliveryDays = 3,
+                                AppliedFeeSource = ShippingFeeSources.Ghn,
+                                AppliedFeeZone = ShippingFeeSources.Ghn
                             });
                         }
+
+                        return Ok(await BuildConfigShippingInfoAsync("GHN tạm thời không trả về phí, đã chuyển sang phí cấu hình."));
                     }
-                }
 
-                // Fallback: tính theo vùng (Province, District)
-                if (string.IsNullOrEmpty(request.Province))
-                {
-                    return Ok(new ShippingInfoDto
+                    if (!hasCompleteGhnAddress)
                     {
-                        Province = "",
-                        District = "",
-                        OriginalFee = 50000,
-                        FinalFee = 50000,
-                        DiscountAmount = 0,
-                        DiscountMessage = "Chưa chọn địa chỉ giao hàng. Chọn Tỉnh/Quận (hoặc cấu hình GHN để chọn Phường và tính phí chính xác).",
-                        EstimatedDeliveryDays = 0
-                    });
+                        return Ok(await BuildConfigShippingInfoAsync("Thiếu địa chỉ GHN (quận/phường), đã chuyển sang phí cấu hình."));
+                    }
+
+                    return Ok(await BuildConfigShippingInfoAsync("GHN chưa được cấu hình, đã chuyển sang phí cấu hình."));
                 }
 
-                var shippingInfo = _shippingService.GetShippingInfo(
-                    request.Province,
-                    request.District ?? "",
-                    request.OrderValue
-                );
+                var shippingInfo = await BuildConfigShippingInfoAsync(string.Empty);
                 return Ok(shippingInfo);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new ShippingInfoDto { OriginalFee = 50000, FinalFee = 50000, DiscountAmount = 0, DiscountMessage = ex.Message });
             }
+        }
+
+        private static string CombineMessage(string primary, string secondary)
+        {
+            if (string.IsNullOrWhiteSpace(primary))
+            {
+                return secondary?.Trim() ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(secondary))
+            {
+                return primary.Trim();
+            }
+
+            return $"{primary.Trim()} | {secondary.Trim()}";
         }
 
         [HttpGet("ghn/provinces")]

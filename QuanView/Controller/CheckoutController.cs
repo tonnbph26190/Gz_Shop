@@ -237,13 +237,16 @@ namespace QuanView.Controllers
                     var orderValue = chiTietHoaDons.Sum(x => x.thanhTien);
                     if (!string.IsNullOrWhiteSpace(checkoutData.Province))
                     {
-                        var calcRequest = new
-                        {
-                            Province = checkoutData.Province,
-                            District = checkoutData.District,
-                            OrderValue = orderValue
-                        };
-                        var shippingResp = await _httpClient.PostAsJsonAsync("shipping/calculate", calcRequest);
+                    var calcRequest = new
+                    {
+                        Province = checkoutData.Province,
+                        District = checkoutData.District,
+                        OrderValue = orderValue,
+                        ToDistrictId = checkoutData.ToDistrictId,
+                        ToWardCode = checkoutData.ToWardCode,
+                        Weight = checkoutData.Weight
+                    };
+                    var shippingResp = await _httpClient.PostAsJsonAsync("api/shipping/calculate", calcRequest);
                         if (shippingResp.IsSuccessStatusCode)
                         {
                             var shippingInfo = await shippingResp.Content.ReadFromJsonAsync<ShippingInfoDto>();
@@ -413,7 +416,7 @@ namespace QuanView.Controllers
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
+                var response = await _httpClient.PostAsJsonAsync("api/shipping/calculate", shippingData);
                 var result = await response.Content.ReadAsStringAsync();
                 return Content(result, "application/json");
             }
@@ -989,6 +992,9 @@ namespace QuanView.Controllers
         public string GhiChu { get; set; }
         public string MaGiamGia { get; set; }
         public decimal PhiVanChuyen { get; set; } = 50000;
+        public int? ToDistrictId { get; set; }
+        public string? ToWardCode { get; set; }
+        public int? Weight { get; set; } = 500;
     }
 
     public class PhieuGiamGiaResponse

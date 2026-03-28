@@ -1,4 +1,4 @@
-﻿@model QuanApi.Dtos.UpdateKhachHangDto
+@model QuanApi.Dtos.UpdateKhachHangDto
 
 @{
     ViewData["Title"] = "Chỉnh sửa Khách Hàng và Địa Chỉ";
@@ -57,6 +57,19 @@
                         <label asp-for="SoDienThoai" class="block text-sm font-medium text-gray-700 mb-1"></label>
                         <input asp-for="SoDienThoai" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                         <span asp-validation-for="SoDienThoai" class="text-red-600 text-xs mt-1 block"></span>
+                    </div>
+                    <div class="form-group md:col-span-2 rounded-md border border-gray-200 bg-gray-100 px-3 py-3">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Điểm tích lũy <span class="text-gray-500 font-normal">(chỉ xem, hệ thống cập nhật khi mua hàng)</span></p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="text-gray-500">Điểm hiện tại:</span>
+                                <span class="ml-2 font-semibold text-gray-900">@(ViewBag.SoDiemHienTai ?? 0)</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Tổng điểm tích lũy:</span>
+                                <span class="ml-2 font-semibold text-gray-900">@(ViewBag.TongDiemTichLuy ?? 0)</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group form-check md:col-span-2">
                         <label class="form-check-label inline-flex items-center text-sm text-gray-700">

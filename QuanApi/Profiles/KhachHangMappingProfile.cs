@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using QuanApi.Data;
 using QuanApi.Dtos;
 
@@ -18,7 +18,9 @@ namespace QuanApi.MappingProfiles
                 .ForMember(dest => dest.LanCapNhatCuoi, opt => opt.Ignore())
                 .ForMember(dest => dest.NguoiCapNhat, opt => opt.Ignore())
                 .ForMember(dest => dest.MatKhau, opt => opt.Ignore())
-                .ForMember(dest => dest.DiaChis, opt => opt.Ignore());
+                .ForMember(dest => dest.DiaChis, opt => opt.Ignore())
+                .ForMember(dest => dest.SoDiemHienTai, opt => opt.Ignore())
+                .ForMember(dest => dest.TongDiemTichLuy, opt => opt.Ignore());
 
             CreateMap<CreateDiaChiDto, DiaChi>();
 
@@ -28,7 +30,9 @@ namespace QuanApi.MappingProfiles
                 .ForMember(dest => dest.LanCapNhatCuoi, opt => opt.Ignore())
                 .ForMember(dest => dest.NguoiCapNhat, opt => opt.Ignore())
                 .ForMember(dest => dest.MatKhau, opt => opt.Ignore())
-                .ForMember(dest => dest.DiaChis, opt => opt.Ignore());
+                .ForMember(dest => dest.DiaChis, opt => opt.Ignore())
+                .ForMember(dest => dest.SoDiemHienTai, opt => opt.Ignore())
+                .ForMember(dest => dest.TongDiemTichLuy, opt => opt.Ignore());
 
             CreateMap<DiaChiDto, DiaChi>();
         }

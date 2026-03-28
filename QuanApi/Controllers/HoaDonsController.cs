@@ -20,14 +20,19 @@ namespace QuanApi.Controllers
         private readonly ILogger<HoaDonsController> _logger;
         private readonly IEmailService _emailService;
         private readonly IOrderHistoryService _orderHistoryService;
+        private readonly ILoyaltyService _loyaltyService;
+        private readonly IShippingPolicyService _shippingPolicyService;
 
         public HoaDonsController(BanQuanAu1DbContext context, ILogger<HoaDonsController> logger,
-            IEmailService emailService, IOrderHistoryService orderHistoryService)
+            IEmailService emailService, IOrderHistoryService orderHistoryService,
+            ILoyaltyService loyaltyService, IShippingPolicyService shippingPolicyService)
         {
             _context = context;
             _logger = logger;
             _emailService = emailService;
             _orderHistoryService = orderHistoryService;
+            _loyaltyService = loyaltyService;
+            _shippingPolicyService = shippingPolicyService;
         }
 
         // GET: api/HoaDons - Cho admin (hiển thị tất cả đơn hàng)
@@ -305,7 +310,7 @@ namespace QuanApi.Controllers
                     IDPhuongThucThanhToan = dto.PhuongThucThanhToanId,
                     TongTien = dto.TongTien,
                     TienGiam = dto.TienGiam ?? 0,
-                    PhiVanChuyen = dto.PhiVanChuyen ?? 0, // Thêm phí vận chuyển
+                    PhiVanChuyen = 0,
                     BanTaiQuay = dto.BanTaiQuay,
                     TrangThai = "Chờ xác nhận",
                     TenNguoiNhan = dto.TenNguoiNhan ?? "",
@@ -347,6 +352,36 @@ namespace QuanApi.Controllers
                     //        return BadRequest($"Sản phẩm {sanPhamChiTiet.MaSPChiTiet} không đủ số lượng");
                     //    }
                     //}
+                }
+
+                hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);
+
+                var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(dto.KhachHangId, hoaDon.TongTien, dto.UsePoint);
+                if (loyaltyResult.DiscountFromPoints > 0)
+                {
+                    hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+                    hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                    hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
+                }
+
+                hoaDon.DiemCong = loyaltyResult.EarnedPoints;
+
+                var originalShippingFee = dto.PhiVanChuyen ?? 0;
+                if (originalShippingFee > 0)
+                {
+                    var shippingPolicy = await _shippingPolicyService.ResolveCustomerDiscountAsync(dto.KhachHangId);
+                    var finalShippingFee = originalShippingFee * (1 - shippingPolicy.Percent / 100m);
+                    finalShippingFee = Math.Max(finalShippingFee, 0);
+
+                    hoaDon.PhiVanChuyenGoc = originalShippingFee;
+                    hoaDon.PhiVanChuyen = finalShippingFee;
+                    hoaDon.SoTienGiamPhiVanChuyen = originalShippingFee - finalShippingFee;
+                    hoaDon.TongTien += finalShippingFee;
+                }
+
+                if (dto.KhachHangId.HasValue)
+                {
+                    await _loyaltyService.ApplyCheckoutPointChangesAsync(dto.KhachHangId.Value, hoaDon.IDHoaDon, loyaltyResult, "Online");
                 }
 
                 await _context.SaveChangesAsync();
@@ -803,6 +838,7 @@ namespace QuanApi.Controllers
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
         public decimal? PhiVanChuyen { get; set; }
+        public bool UsePoint { get; set; }
         public bool BanTaiQuay { get; set; } = false;
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }

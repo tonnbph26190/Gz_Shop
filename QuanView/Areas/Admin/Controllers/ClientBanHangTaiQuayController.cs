@@ -134,6 +134,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
             var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
             return Content(result, "application/json");
         }
 
