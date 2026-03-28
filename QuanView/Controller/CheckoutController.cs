@@ -50,6 +50,17 @@ namespace QuanView.Controllers
             _logger = logger;
         }
 
+        private Guid? ResolveCurrentCustomerId()
+        {
+            var customerIdClaim = User.FindFirst("custom:id_khachhang");
+            if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
+            {
+                return parsedCustomerId;
+            }
+
+            return null;
+        }
+
         private bool ValidateVietnamesePhoneNumber(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -197,12 +208,7 @@ namespace QuanView.Controllers
                 }
 
                 // Lấy KhachHangId từ claims nếu user đã đăng nhập
-                Guid? khachHangId = null;
-                var customerIdClaim = User.FindFirst("custom:id_khachhang");
-                if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
-                {
-                    khachHangId = parsedCustomerId;
-                }
+                Guid? khachHangId = ResolveCurrentCustomerId();
 
                 // Xử lý phiếu giảm giá nếu có
                 Guid? phieuGiamGiaId = null;
@@ -235,24 +241,28 @@ namespace QuanView.Controllers
                 try
                 {
                     var orderValue = chiTietHoaDons.Sum(x => x.thanhTien);
-                    if (!string.IsNullOrWhiteSpace(checkoutData.Province))
+                    if (!string.IsNullOrWhiteSpace(checkoutData.Province)
+                        || checkoutData.ToDistrictId.GetValueOrDefault() > 0
+                        || !string.IsNullOrWhiteSpace(checkoutData.ToWardCode))
                     {
-                    var calcRequest = new
-                    {
-                        Province = checkoutData.Province,
-                        District = checkoutData.District,
-                        OrderValue = orderValue,
-                        ToDistrictId = checkoutData.ToDistrictId,
-                        ToWardCode = checkoutData.ToWardCode,
-                        Weight = checkoutData.Weight
-                    };
-                    var shippingResp = await _httpClient.PostAsJsonAsync("api/shipping/calculate", calcRequest);
+                        var calcRequest = new CalculateShippingRequest
+                        {
+                            Province = checkoutData.Province ?? string.Empty,
+                            District = checkoutData.District ?? string.Empty,
+                            OrderValue = orderValue,
+                            ToDistrictId = checkoutData.ToDistrictId,
+                            ToWardCode = checkoutData.ToWardCode,
+                            Weight = checkoutData.Weight,
+                            CustomerId = khachHangId
+                        };
+                        var shippingResp = await _httpClient.PostAsJsonAsync("shipping/calculate", calcRequest);
                         if (shippingResp.IsSuccessStatusCode)
                         {
                             var shippingInfo = await shippingResp.Content.ReadFromJsonAsync<ShippingInfoDto>();
                             if (shippingInfo != null)
                             {
                                 checkoutData.PhiVanChuyen = shippingInfo.FinalFee;
+                                checkoutData.PhiVanChuyenDaGiam = true;
                             }
                         }
                     }
@@ -277,6 +287,7 @@ namespace QuanView.Controllers
                             TongTien = checkoutData.TongTien,
                             TienGiam = checkoutData.TienGiam ?? 0,
                             PhiVanChuyen = checkoutData.PhiVanChuyen,
+                            PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                             DiaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -324,6 +335,7 @@ namespace QuanView.Controllers
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
                     phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
+                    phiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -412,13 +424,33 @@ namespace QuanView.Controllers
 
         // Proxy tính phí vận chuyển giống bán hàng tại quầy
         [HttpPost]
-        public async Task<IActionResult> CalculateShipping([FromBody] object shippingData)
+        public async Task<IActionResult> CalculateShipping([FromBody] CalculateShippingRequest shippingData)
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("api/shipping/calculate", shippingData);
+                if (shippingData == null)
+                {
+                    return BadRequest(new { error = "Thiếu dữ liệu tính phí vận chuyển" });
+                }
+
+                if (!shippingData.CustomerId.HasValue)
+                {
+                    shippingData.CustomerId = ResolveCurrentCustomerId();
+                }
+
+                if (!shippingData.Weight.HasValue || shippingData.Weight.Value <= 0)
+                {
+                    shippingData.Weight = 500;
+                }
+
+                var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
                 var result = await response.Content.ReadAsStringAsync();
-                return Content(result, "application/json");
+                return new ContentResult
+                {
+                    StatusCode = (int)response.StatusCode,
+                    Content = result,
+                    ContentType = "application/json"
+                };
             }
             catch (Exception ex)
             {
@@ -872,6 +904,7 @@ namespace QuanView.Controllers
                             tongTien = checkoutInfo.TongTien,
                             tienGiam = checkoutInfo.TienGiam,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
+                            phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
                             soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
                             diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
@@ -992,6 +1025,7 @@ namespace QuanView.Controllers
         public string GhiChu { get; set; }
         public string MaGiamGia { get; set; }
         public decimal PhiVanChuyen { get; set; } = 50000;
+        public bool PhiVanChuyenDaGiam { get; set; } = true;
         public int? ToDistrictId { get; set; }
         public string? ToWardCode { get; set; }
         public int? Weight { get; set; } = 500;

@@ -366,17 +366,27 @@ namespace QuanApi.Controllers
 
                 hoaDon.DiemCong = loyaltyResult.EarnedPoints;
 
-                var originalShippingFee = dto.PhiVanChuyen ?? 0;
-                if (originalShippingFee > 0)
+                var shippingFeeFromRequest = dto.PhiVanChuyen ?? 0;
+                if (shippingFeeFromRequest > 0)
                 {
-                    var shippingPolicy = await _shippingPolicyService.ResolveCustomerDiscountAsync(dto.KhachHangId);
-                    var finalShippingFee = originalShippingFee * (1 - shippingPolicy.Percent / 100m);
-                    finalShippingFee = Math.Max(finalShippingFee, 0);
+                    if (dto.PhiVanChuyenDaGiam)
+                    {
+                        hoaDon.PhiVanChuyenGoc = shippingFeeFromRequest;
+                        hoaDon.PhiVanChuyen = shippingFeeFromRequest;
+                        hoaDon.SoTienGiamPhiVanChuyen = 0;
+                        hoaDon.TongTien += shippingFeeFromRequest;
+                    }
+                    else
+                    {
+                        var shippingPolicy = await _shippingPolicyService.ResolveCustomerDiscountAsync(dto.KhachHangId);
+                        var finalShippingFee = shippingFeeFromRequest * (1 - shippingPolicy.Percent / 100m);
+                        finalShippingFee = Math.Max(finalShippingFee, 0);
 
-                    hoaDon.PhiVanChuyenGoc = originalShippingFee;
-                    hoaDon.PhiVanChuyen = finalShippingFee;
-                    hoaDon.SoTienGiamPhiVanChuyen = originalShippingFee - finalShippingFee;
-                    hoaDon.TongTien += finalShippingFee;
+                        hoaDon.PhiVanChuyenGoc = shippingFeeFromRequest;
+                        hoaDon.PhiVanChuyen = finalShippingFee;
+                        hoaDon.SoTienGiamPhiVanChuyen = shippingFeeFromRequest - finalShippingFee;
+                        hoaDon.TongTien += finalShippingFee;
+                    }
                 }
 
                 if (dto.KhachHangId.HasValue)
@@ -838,6 +848,7 @@ namespace QuanApi.Controllers
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
         public decimal? PhiVanChuyen { get; set; }
+        public bool PhiVanChuyenDaGiam { get; set; }
         public bool UsePoint { get; set; }
         public bool BanTaiQuay { get; set; } = false;
         public string TenNguoiNhan { get; set; }
