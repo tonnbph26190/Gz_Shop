@@ -133,6 +133,11 @@ namespace QuanApi.Controllers
                     query = query.Where(h => h.MaHoaDon.ToLower().Contains(maDonHangLower));
                 }
 
+                // Thống kê trên toàn bộ tập dữ liệu sau khi lọc (không bị giới hạn theo page)
+                var totalOnlineCount = await query.CountAsync(h => !h.BanTaiQuay);
+                var totalTaiQuayCount = await query.CountAsync(h => h.BanTaiQuay);
+                var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
+
                 // Tính tổng số bản ghi sau khi lọc
                 var totalCount = await query.CountAsync();
                 var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -185,6 +190,12 @@ namespace QuanApi.Controllers
                         PageSize = pageSize,
                         HasPreviousPage = page > 1,
                         HasNextPage = page < totalPages
+                    },
+                    Statistics = new
+                    {
+                        TotalOnlineCount = totalOnlineCount,
+                        TotalTaiQuayCount = totalTaiQuayCount,
+                        TotalPendingCount = totalPendingCount
                     }
                 });
             }
