@@ -11,6 +11,7 @@ namespace QuanApi.Dtos
         public decimal GiaBan { get; set; }
         public decimal originalPrice { get; set; }
         public decimal price { get; set; }
+        public string? QrCode { get; set; }
         public string? TenKichCo { get; set; }
         public string? TenMauSac { get; set; }
         public string? TenHoaTiet { get; set; }

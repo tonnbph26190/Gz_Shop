@@ -36,6 +36,16 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/tim-san-pham-theo-qr")]
+        public async Task<IActionResult> FindProductByQr(string qrCode)
+        {
+            var response = await _httpClient.GetAsync($"BanHangTaiQuay/tim-san-pham-theo-qr?qrCode={Uri.EscapeDataString(qrCode ?? string.Empty)}");
+            var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
+            return Content(result, "application/json");
+        }
+
         // Lấy danh sách khách hàng
         [HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-khach-hang")]
@@ -124,6 +134,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
             var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
             return Content(result, "application/json");
         }
 

@@ -770,6 +770,7 @@
 			orderItemsContainer.innerHTML = html;
 			document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
 			document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+			recalcShipping();
 		}
 
 			// Load phương thức thanh toán
@@ -899,8 +900,12 @@
 				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
+				phiVanChuyenDaGiam: true,
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
+				toDistrictId: getSelectedToDistrictId(),
+				toWardCode: getSelectedToWardCode(),
+				weight: calculateShippingWeight(),
 				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
 				};
 
@@ -1524,6 +1529,23 @@
 						if (data_quan.error == 0) {
 							$("#quan").html('<option value="0">Quận Huyện</option>');
 							$("#phuong").html('<option value="0">Phường Xã</option>');
+							$("#quan").off('change').on('change', function(e) {
+								var idquan = $(this).val();
+								if (idquan != '0') {
+									$.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
+										if (data_phuong.error == 0) {
+											$("#phuong").html('<option value="0">Phường Xã</option>');
+											$.each(data_phuong.data, function(key_phuong, val_phuong) {
+												$("#phuong").append('<option value="' + val_phuong.id + '">' + val_phuong.full_name + '</option>');
+											});
+										}
+									});
+								} else {
+									$("#phuong").html('<option value="0">Phường Xã</option>');
+								}
+								updateFullAddress();
+								recalcShipping();
+							});
 
 							let selectedQuanId = null;
 							$.each(data_quan.data, function(key_quan, val_quan) {
@@ -1559,6 +1581,7 @@
 					// Cập nhật địa chỉ đầy đủ
 					setTimeout(() => {
 						updateFullAddress();
+						recalcShipping();
 					}, 500);
 
 				} catch (error) {
@@ -1788,6 +1811,7 @@
 			orderItemsContainer.innerHTML = html;
 			document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
 			document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+			recalcShipping();
 		}
 
 			// Load phương thức thanh toán
@@ -1917,8 +1941,12 @@
 				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
+				phiVanChuyenDaGiam: true,
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
+				toDistrictId: getSelectedToDistrictId(),
+				toWardCode: getSelectedToWardCode(),
+				weight: calculateShippingWeight(),
 				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
 				};
 
@@ -2542,6 +2570,23 @@
 						if (data_quan.error == 0) {
 							$("#quan").html('<option value="0">Quận Huyện</option>');
 							$("#phuong").html('<option value="0">Phường Xã</option>');
+							$("#quan").off('change').on('change', function(e) {
+								var idquan = $(this).val();
+								if (idquan != '0') {
+									$.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
+										if (data_phuong.error == 0) {
+											$("#phuong").html('<option value="0">Phường Xã</option>');
+											$.each(data_phuong.data, function(key_phuong, val_phuong) {
+												$("#phuong").append('<option value="' + val_phuong.id + '">' + val_phuong.full_name + '</option>');
+											});
+										}
+									});
+								} else {
+									$("#phuong").html('<option value="0">Phường Xã</option>');
+								}
+								updateFullAddress();
+								recalcShipping();
+							});
 
 							let selectedQuanId = null;
 							$.each(data_quan.data, function(key_quan, val_quan) {
@@ -2577,6 +2622,7 @@
 					// Cập nhật địa chỉ đầy đủ
 					setTimeout(() => {
 						updateFullAddress();
+						recalcShipping();
 					}, 500);
 
 				} catch (error) {
@@ -3010,6 +3056,51 @@
 
 
 
+			function getCheckoutCustomerId() {
+				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+				return customerIdClaim && customerIdClaim !== '' ? customerIdClaim : null;
+			}
+
+			function getSelectedToDistrictId() {
+				const districtValue = $('#quan').val();
+				if (!districtValue || districtValue === '0') {
+					return null;
+				}
+
+				const districtId = parseInt(districtValue, 10);
+				return Number.isNaN(districtId) ? null : districtId;
+			}
+
+			function getSelectedToWardCode() {
+				const wardValue = $('#phuong').val();
+				if (!wardValue || wardValue === '0') {
+					return null;
+				}
+
+				return String(wardValue);
+			}
+
+			function calculateShippingWeight() {
+				let totalQuantity = 0;
+				if (gioHangData && gioHangData.chiTietGioHangs) {
+					gioHangData.chiTietGioHangs.forEach(item => {
+						const quantity = parseInt(item.SoLuong ?? item.soLuong ?? 0, 10) || 0;
+						totalQuantity += quantity;
+					});
+				}
+
+				if (totalQuantity <= 0) {
+					const serverCartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
+					if (serverCartItems && serverCartItems.length) {
+						serverCartItems.forEach(item => {
+							totalQuantity += parseInt(item.SoLuong ?? item.soLuong ?? 0, 10) || 0;
+						});
+					}
+				}
+
+				return Math.max(500, totalQuantity * 500);
+			}
+
 			// Cập nhật thông tin thanh toán
 			async function recalcShipping() {
 				try {
@@ -3033,10 +3124,22 @@
 					// Kiểm tra xem có địa chỉ từ dropdown hay từ textarea
 					let hasValidAddress = false;
 					let payload = {};
+					const customerId = getCheckoutCustomerId();
+					const toDistrictId = getSelectedToDistrictId();
+					const toWardCode = getSelectedToWardCode();
+					const weight = calculateShippingWeight();
 
 					if (provinceText && provinceText !== 'Tỉnh Thành') {
 						// Sử dụng địa chỉ từ dropdown
-						payload = { province: provinceText, district: (districtText !== 'Quận Huyện' ? districtText : ''), orderValue: subtotal };
+						payload = {
+							province: provinceText,
+							district: (districtText !== 'Quận Huyện' ? districtText : ''),
+							orderValue: subtotal,
+							customerId: customerId,
+							toDistrictId: toDistrictId,
+							toWardCode: toWardCode,
+							weight: weight
+						};
 						hasValidAddress = true;
 					} else if (fullAddress && fullAddress.trim() !== '') {
 						// Sử dụng địa chỉ từ textarea - parse để lấy tỉnh/thành
@@ -3044,7 +3147,15 @@
 						if (addressParts.length >= 2) {
 							const province = addressParts[addressParts.length - 1]; // Tỉnh thường ở cuối
 							const district = addressParts.length >= 3 ? addressParts[addressParts.length - 2] : ''; // Quận/huyện
-							payload = { province: province, district: district, orderValue: subtotal };
+							payload = {
+								province: province,
+								district: district,
+								orderValue: subtotal,
+								customerId: customerId,
+								toDistrictId: toDistrictId,
+								toWardCode: toWardCode,
+								weight: weight
+							};
 							hasValidAddress = true;
 						}
 					}

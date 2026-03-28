@@ -2003,6 +2003,14 @@
             return;
         }
 
+        const tinhText = $('#shipTinh option:selected').text() || '';
+        const quanText = $('#shipQuan option:selected').text() || '';
+        const shipQuanVal = $('#shipQuan').val();
+        const shipPhuongVal = $('#shipPhuong').val();
+        const parsedDistrictId = parseInt(shipQuanVal, 10);
+        const hasValidDistrictId = Number.isFinite(parsedDistrictId) && parsedDistrictId > 0;
+        const hasValidWardCode = !!(shipPhuongVal && shipPhuongVal !== '0');
+
         // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
         let dto = {
             idGioHang: gh.id,
@@ -2015,7 +2023,13 @@
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,
-            shippingFee: shippingFee
+            shippingFee: shippingFee,
+            province: tinhText && tinhText !== 'Tỉnh Thành' ? tinhText : '',
+            district: quanText && quanText !== 'Quận Huyện' ? quanText : '',
+            toDistrictId: hasValidDistrictId ? parsedDistrictId : null,
+            toWardCode: hasValidWardCode ? String(shipPhuongVal) : null,
+            weight: (hasValidDistrictId && hasValidWardCode) ? 500 : null,
+            shippingFeeSource: 'Config'
         };
 
         // Nếu chọn chuyển khoản/thẻ (VNPay): theo mã thường là "vnpay", "bank", "chuyển khoản", "thẻ"
@@ -2803,7 +2817,7 @@
 
         // Khi dùng GHN: cần chọn đủ tỉnh, quận, phường. Không dùng GHN: chỉ cần tỉnh + quận
         const phuongText = $('#shipPhuong option:selected').text() || '';
-        const needWard = useGHN;
+        const needWard = false;
         const hasWard = phuongText && phuongText !== 'Phường Xã';
         if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện' || (needWard && !hasWard)) {
             shippingFee = 0;
@@ -2824,7 +2838,7 @@
         // GHN: gửi thêm ToDistrictId, ToWardCode, Weight để API tính phí chính xác
         const shipQuanVal = $('#shipQuan').val();
         const shipPhuongVal = $('#shipPhuong').val();
-        if (useGHN && shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
+        if (shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
             requestData.ToDistrictId = parseInt(shipQuanVal, 10);
             requestData.ToWardCode = String(shipPhuongVal);
             requestData.Weight = 500; // gram, mặc định

@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Data.Banner>
+@model List<QuanApi.Data.Banner>
 
 @{
     ViewData["Title"] = "Home Page";
@@ -222,6 +222,9 @@
             {
                 foreach (var b in Model)
                 {
+                    var bannerLink = !string.IsNullOrWhiteSpace(b.Link)
+                        ? b.Link
+                        : Url.Action("SanPhamTheoLink", "Banner", new { id = b.Id });
                     <div class="col-12 col-sm-6 col-md-4">
                         <div class="category-banner rounded-3 shadow-sm border-0">
                             <img src="@b.ImageUrl" alt="@b.Title" class="transition-zoom" loading="lazy" />
@@ -229,7 +232,7 @@
                             <div class="category-overlay d-flex flex-column align-items-center justify-content-center">
                                 <h4 class="text-white fw-bold mb-3 text-uppercase text-shadow">@b.Title</h4>
                                 
-                            <a href="@b.Link" class="btn btn-light btn-sm px-4 py-2 fw-bold shadow-sm category-btn">
+                            <a href="@bannerLink" class="btn btn-light btn-sm px-4 py-2 fw-bold shadow-sm category-btn">
                                 KHÁM PHÁ
                             </a>
                             </div>

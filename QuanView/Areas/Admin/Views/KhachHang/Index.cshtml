@@ -1,4 +1,4 @@
-﻿
+
 @{
     ViewData["Title"] = "Index";
 }
@@ -70,6 +70,8 @@
                             <th>@Html.DisplayNameFor(model => model.TenKhachHang)</th>
                             <th>@Html.DisplayNameFor(model => model.Email)</th>
                             <th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
+                            <th>@Html.DisplayNameFor(model => model.SoDiemHienTai)</th>
+                            <th>@Html.DisplayNameFor(model => model.TongDiemTichLuy)</th>
                             <th>@Html.DisplayNameFor(model => model.NgayTao)</th>
                             <th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
                             @*                             <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
@@ -86,6 +88,8 @@
                                 <td>@Html.DisplayFor(modelItem => item.TenKhachHang)</td>
                                 <td>@Html.DisplayFor(modelItem => item.Email)</td>
                                 <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
+                                <td>@Html.DisplayFor(modelItem => item.SoDiemHienTai)</td>
+                                <td>@Html.DisplayFor(modelItem => item.TongDiemTichLuy)</td>
                                 <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
                                 @*                                 <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>

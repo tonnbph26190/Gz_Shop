@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.Banner
+@model QuanView.Areas.Admin.Models.BannerFormVm
 @{
     ViewData["Title"] = "Thêm Banner Mới";
 }
@@ -39,12 +39,9 @@
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Link" class="form-label fw-bold text-dark">Đường dẫn liên kết (Link)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-2"><i class="fa fa-link text-success"></i></span>
-                                <input asp-for="Link" class="form-control border-2 shadow-none" placeholder="https://yourwebsite.com/promo" style="border-radius: 0 10px 10px 0;" />
-                            </div>
-                            <span asp-validation-for="Link" class="text-danger small"></span>
+                            <label class="form-label fw-bold text-dark">Link banner</label>
+                            <input class="form-control border-2 shadow-none" value="Tự sinh sau khi lưu banner" readonly />
+                            <small class="text-muted">Link cố định theo banner. Chọn sản phẩm ngay bên dưới khi tạo mới.</small>
                         </div>
 
                         <div class="mb-5">
@@ -53,6 +50,30 @@
                                 <i class="fa fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
                                 <input type="file" name="ImageFile" id="ImageFile" class="form-control" onchange="previewImage(event)" required />
                                 <small class="text-muted d-block mt-1">Hỗ trợ định dạng: .jpg, .png, .webp (Tối đa 2MB)</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="fw-bold text-dark">Chọn sản phẩm gán cho banner</label>
+                            <div class="border rounded p-3 bg-white" style="max-height: 320px; overflow-y: auto;">
+                                @if (Model.AvailableProducts == null || !Model.AvailableProducts.Any())
+                                {
+                                    <div class="text-muted">Không có sản phẩm để chọn.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var p in Model.AvailableProducts)
+                                    {
+                                        <label class="d-flex align-items-center gap-2 py-1 border-bottom">
+                                            <input type="checkbox" name="SelectedProductIds" value="@p.ProductId" />
+                                            <span>[@p.ProductCode] @p.ProductName</span>
+                                            @if (!p.IsActive)
+                                            {
+                                                <span class="badge bg-secondary ms-2">Ngưng bán</span>
+                                            }
+                                        </label>
+                                    }
+                                }
                             </div>
                         </div>
 

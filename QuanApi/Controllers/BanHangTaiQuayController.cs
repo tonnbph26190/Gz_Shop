@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using System.Collections.Generic; // Added for List
+using QuanApi.Services;
 
 namespace QuanApi.Controllers
 {
@@ -15,9 +16,23 @@ namespace QuanApi.Controllers
     public class BanHangTaiQuayController : ControllerBase
     {
         private readonly BanQuanAu1DbContext _context;
-        public BanHangTaiQuayController(BanQuanAu1DbContext context)
+        private readonly IShippingService _shippingService;
+        private readonly IGHNService _ghnService;
+        private readonly IShippingPolicyService _shippingPolicyService;
+        private readonly ILoyaltyService _loyaltyService;
+
+        public BanHangTaiQuayController(
+            BanQuanAu1DbContext context,
+            IShippingService shippingService,
+            IGHNService ghnService,
+            IShippingPolicyService shippingPolicyService,
+            ILoyaltyService loyaltyService)
         {
             _context = context;
+            _shippingService = shippingService;
+            _ghnService = ghnService;
+            _shippingPolicyService = shippingPolicyService;
+            _loyaltyService = loyaltyService;
         }
 
         // 1. Tạo đơn hàng mới
@@ -226,11 +241,12 @@ namespace QuanApi.Controllers
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet)
-                .Where(x => x.TrangThai)
+                .Where(x => x.TrangThai && x.SanPham.TrangThai)
                 .Select(x => new
                 {
                     id = x.IDSanPhamChiTiet,
                     name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
+                    qrCode = x.QRCode,
                     // Giá gốc
                     originalPrice = x.GiaBan,
                     // Tính giá giảm nếu có đợt giảm giá đang áp dụng
@@ -288,6 +304,81 @@ namespace QuanApi.Controllers
             return Ok(products);
         }
 
+        [HttpGet("tim-san-pham-theo-qr")]
+        public async Task<IActionResult> FindProductByQr([FromQuery] string qrCode)
+        {
+            if (string.IsNullOrWhiteSpace(qrCode))
+                return BadRequest(new { message = "Mã QR không được để trống." });
+
+            var now = DateTime.UtcNow;
+            var normalizedQrCode = qrCode.Trim();
+            var (sanPhamChiTietId, maSanPhamChiTiet) = ParseQrCode(normalizedQrCode);
+
+            var product = await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                .Include(x => x.AnhSanPhams.Where(a => a.TrangThai))
+                .Include(x => x.KichCo)
+                .Include(x => x.MauSac)
+                .Include(x => x.HoaTiet)
+                .Where(x => x.TrangThai && x.SanPham.TrangThai)
+                .Where(x =>
+                    x.QRCode == normalizedQrCode ||
+                    (sanPhamChiTietId.HasValue && x.IDSanPhamChiTiet == sanPhamChiTietId.Value) ||
+                    (!string.IsNullOrWhiteSpace(maSanPhamChiTiet) && x.MaSPChiTiet == maSanPhamChiTiet))
+                .Select(x => new
+                {
+                    id = x.IDSanPhamChiTiet,
+                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
+                    qrCode = x.QRCode,
+                    originalPrice = x.GiaBan,
+                    price = (
+                        (from dgg in _context.DotGiamGias
+                         join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                         where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                            && dgg.TrangThai == true
+                            && dgg.NgayBatDau <= now
+                            && dgg.NgayKetThuc >= now
+                         select dgg.PhanTramGiam
+                        ).FirstOrDefault() > 0
+                        ? x.GiaBan * (1 - (decimal)(
+                            (from dgg in _context.DotGiamGias
+                             join sp in _context.SanPhamDotGiams on dgg.IDDotGiamGia equals sp.IDDotGiamGia
+                             where sp.IDSanPhamChiTiet == x.IDSanPhamChiTiet
+                                && dgg.TrangThai == true
+                                && dgg.NgayBatDau <= now
+                                && dgg.NgayKetThuc >= now
+                             select dgg.PhanTramGiam
+                            ).FirstOrDefault() / 100.0m))
+                        : x.GiaBan
+                    ),
+                    size = x.KichCo.TenKichCo,
+                    color = x.MauSac.TenMauSac,
+                    pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "Không có",
+                    img = x.AnhSanPhams
+                        .Where(a => a.TrangThai)
+                        .OrderByDescending(a => a.LaAnhChinh)
+                        .ThenBy(a => a.NgayTao)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    mainImage = x.AnhSanPhams
+                        .Where(a => a.TrangThai && a.LaAnhChinh)
+                        .Select(a => a.UrlAnh)
+                        .FirstOrDefault() ?? "/img/default-product.jpg",
+                    stock = x.SoLuong,
+                    productId = x.IDSanPham,
+                    productName = x.SanPham.TenSanPham
+                })
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return NotFound(new { message = "Không tìm thấy sản phẩm đang kinh doanh từ mã QR." });
+
+            if (product.stock <= 0)
+                return BadRequest(new { message = "Sản phẩm đã hết hàng, không thể thêm vào giỏ." });
+
+            return Ok(product);
+        }
+
         [HttpGet("danh-sach-khach-hang")]
         public async Task<IActionResult> GetCustomers()
         {
@@ -299,7 +390,7 @@ namespace QuanApi.Controllers
                     name = x.TenKhachHang,
                     email = x.Email,
                     phone = x.SoDienThoai,
-                    point = 0, // Nếu có trường điểm thì thay thế
+                    point = x.SoDiemHienTai,
                     img = "/img/default-user.png" // Nếu có trường ảnh thì thay thế
                 }).ToListAsync();
             return Ok(customers);
@@ -316,7 +407,7 @@ namespace QuanApi.Controllers
                     name = x.TenKhachHang,
                     email = x.Email,
                     phone = x.SoDienThoai,
-                    point = 0, // Nếu có trường điểm thì thay thế
+                    point = x.SoDiemHienTai,
                     img = "/img/default-user.png"
                 }).ToListAsync();
             return Ok(customers);
@@ -373,6 +464,12 @@ namespace QuanApi.Controllers
             public string? PaymentMethod { get; set; } // Mã phương thức thanh toán ("cash", "bank", ...)
             public decimal? CustomerPaid { get; set; }
             public decimal? ShippingFee { get; set; } // Phí vận chuyển
+            public string? Province { get; set; }
+            public string? District { get; set; }
+            public int? ToDistrictId { get; set; }
+            public string? ToWardCode { get; set; }
+            public int? Weight { get; set; }
+            public string? ShippingFeeSource { get; set; }
         }
 
         [HttpPost("thanh-toan")]
@@ -516,11 +613,40 @@ namespace QuanApi.Controllers
                     return BadRequest(new { message = "Mã giảm giá không hợp lệ." });
             }
 
-            // 4. Thêm phí vận chuyển nếu có
-            if (dto.Shipping && dto.ShippingFee.HasValue && dto.ShippingFee.Value > 0)
+            // 4. Áp dụng điểm nếu có
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
-                hoaDon.TongTien += dto.ShippingFee.Value;
+                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
+            }
+
+            hoaDon.DiemCong = loyaltyResult.EarnedPoints;
+
+            // 5. Thêm phí vận chuyển sau khi tính giảm theo hạng điểm
+            if (dto.Shipping)
+            {
+                var shippingCalc = await TinhPhiVanChuyenChoThanhToanAsync(
+                    dto.Province,
+                    dto.District,
+                    dto.ToDistrictId,
+                    dto.ToWardCode,
+                    dto.Weight,
+                    hoaDon.TongTien,
+                    customerIdForInvoice,
+                    dto.ShippingFee,
+                    dto.ShippingFeeSource);
+
+                hoaDon.PhiVanChuyenGoc = shippingCalc.OriginalFee;
+                hoaDon.PhiVanChuyen = shippingCalc.FinalFee;
+                hoaDon.SoTienGiamPhiVanChuyen = shippingCalc.DiscountAmount;
+                hoaDon.TongTien += shippingCalc.FinalFee;
+            }
+
+            if (customerIdForInvoice.HasValue)
+            {
+                await _loyaltyService.ApplyCheckoutPointChangesAsync(customerIdForInvoice.Value, hoaDon.IDHoaDon, loyaltyResult, "POS");
             }
 
             await _context.SaveChangesAsync();
@@ -1313,11 +1439,40 @@ namespace QuanApi.Controllers
                 }
             }
 
-            // Thêm phí vận chuyển nếu có
-            if (dto.Shipping && dto.ShippingFee.HasValue && dto.ShippingFee.Value > 0)
+            // Áp dụng điểm khách hàng nếu có
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.PhiVanChuyen = dto.ShippingFee.Value;
-                hoaDon.TongTien += dto.ShippingFee.Value;
+                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
+            }
+
+            hoaDon.DiemCong = loyaltyResult.EarnedPoints;
+
+            // Thêm phí vận chuyển sau giảm theo hạng
+            if (dto.Shipping)
+            {
+                var shippingCalc = await TinhPhiVanChuyenChoThanhToanAsync(
+                    dto.Province,
+                    dto.District,
+                    dto.ToDistrictId,
+                    dto.ToWardCode,
+                    dto.Weight,
+                    hoaDon.TongTien,
+                    customerIdForInvoice,
+                    dto.ShippingFee,
+                    dto.ShippingFeeSource);
+
+                hoaDon.PhiVanChuyenGoc = shippingCalc.OriginalFee;
+                hoaDon.PhiVanChuyen = shippingCalc.FinalFee;
+                hoaDon.SoTienGiamPhiVanChuyen = shippingCalc.DiscountAmount;
+                hoaDon.TongTien += shippingCalc.FinalFee;
+            }
+
+            if (customerIdForInvoice.HasValue)
+            {
+                await _loyaltyService.ApplyCheckoutPointChangesAsync(customerIdForInvoice.Value, hoaDon.IDHoaDon, loyaltyResult, "POS");
             }
 
             // Xóa giỏ hàng và chi tiết giỏ hàng
@@ -1326,6 +1481,76 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
+        }
+
+        private class ShippingCheckoutResult
+        {
+            public decimal OriginalFee { get; set; }
+            public decimal FinalFee { get; set; }
+            public decimal DiscountAmount { get; set; }
+        }
+
+        private async Task<ShippingCheckoutResult> TinhPhiVanChuyenChoThanhToanAsync(
+            string? province,
+            string? district,
+            int? toDistrictId,
+            string? toWardCode,
+            int? weight,
+            decimal orderValue,
+            Guid? customerId,
+            decimal? clientShippingFee,
+            string? shippingFeeSource)
+        {
+            var shippingConfig = await _shippingPolicyService.GetActiveShippingConfigAsync();
+            var resolvedSource = _shippingPolicyService.ResolveShippingFeeSourceFromConfig(shippingConfig);
+            decimal originalFee;
+            var ghnRequested = resolvedSource == ShippingFeeSources.Ghn;
+            var hasCompleteGhnAddress = toDistrictId.HasValue
+                && toDistrictId.Value > 0
+                && !string.IsNullOrWhiteSpace(toWardCode);
+
+            async Task<decimal> ResolveConfigFeeAsync()
+            {
+                if (!string.IsNullOrWhiteSpace(province))
+                {
+                    return _shippingService.CalculateShippingFee(
+                        province,
+                        district ?? string.Empty,
+                        orderValue,
+                        0,
+                        shippingConfig);
+                }
+
+                return await _shippingPolicyService.ResolveDefaultShippingFeeAsync();
+            }
+
+            if (ghnRequested)
+            {
+                if (hasCompleteGhnAddress && await _ghnService.IsConfiguredAsync())
+                {
+                    var ghnFee = await _ghnService.GetFeeAsync(toDistrictId.Value, toWardCode.Trim(), weight ?? 500);
+                    originalFee = ghnFee?.Total ?? await ResolveConfigFeeAsync();
+                }
+                else
+                {
+                    originalFee = await ResolveConfigFeeAsync();
+                }
+            }
+            else
+            {
+                originalFee = await ResolveConfigFeeAsync();
+            }
+
+            originalFee = Math.Max(originalFee, 0);
+            var policy = await _shippingPolicyService.ResolveCustomerDiscountAsync(customerId);
+            var finalFee = _shippingService.ApplyShippingDiscount(originalFee, policy.Percent);
+
+            return new ShippingCheckoutResult
+            {
+                OriginalFee = originalFee,
+                FinalFee = finalFee,
+                DiscountAmount = Math.Max(originalFee - finalFee, 0)
+            };
         }
 
         /// <summary>
@@ -1368,6 +1593,28 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             return khachHang;
+        }
+
+        private static (Guid? sanPhamChiTietId, string? maSanPhamChiTiet) ParseQrCode(string qrCode)
+        {
+            if (string.IsNullOrWhiteSpace(qrCode))
+                return (null, null);
+
+            var normalized = qrCode.Trim();
+            if (Guid.TryParse(normalized, out var directId))
+                return (directId, null);
+
+            var segments = normalized
+                .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (segments.Length >= 3 && segments[0].Equals("SPCT", StringComparison.OrdinalIgnoreCase))
+            {
+                Guid? parsedId = Guid.TryParse(segments[^1], out var qrId) ? qrId : null;
+                var parsedCode = string.IsNullOrWhiteSpace(segments[1]) ? null : segments[1];
+                return (parsedId, parsedCode);
+            }
+
+            return (null, normalized);
         }
     }
 }
