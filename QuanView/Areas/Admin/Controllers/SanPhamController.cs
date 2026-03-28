@@ -295,131 +295,144 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(QuanView.Areas.Admin.Models.SanPhamDto dto)
-        {
-            // 🔍 Debug: Kiểm tra dữ liệu nhận được
-            System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
-            System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
-            // ❌ Xóa dòng biến thể trống (dòng thêm mới chưa chọn gì)
-            if (dto.ChiTietSanPhams != null)
-            {
-                dto.ChiTietSanPhams = dto.ChiTietSanPhams
-                    .Where(ct => ct != null &&
-                                 ct.IdKichCo != Guid.Empty &&
-                                 ct.IdMauSac != Guid.Empty &&
-                                 ct.SoLuong > 0 &&
-                                 ct.GiaBan > 0)
-                    .ToList();
-            }
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Edit(QuanView.Areas.Admin.Models.SanPhamDto dto)
+		{
+			// 🔍 Debug
+			System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
+			System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
 
-            if (dto.ChiTietSanPhams != null)
-            {
-                for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
-                {
-                    var ct = dto.ChiTietSanPhams[i];
-                    System.Diagnostics.Debug.WriteLine($"📦 [{i}] ID: {ct?.IdSanPhamChiTiet}, SL: {ct?.SoLuong}, Giá: {ct?.GiaBan}");
-                }
-            }
+			if (dto.ChiTietSanPhams != null)
+			{
+				// 1. First, remove completely empty new rows (no size + color)
+				dto.ChiTietSanPhams = dto.ChiTietSanPhams
+					.Where(ct => ct != null &&
+								 ct.IdKichCo != Guid.Empty &&
+								 ct.IdMauSac != Guid.Empty &&
+								 ct.SoLuong >= 0 &&
+								 ct.GiaBan > 0)
+					.ToList();
 
-            // Cập nhật sản phẩm chính
-            var response = await _http.PutAsJsonAsync($"sanphams/{dto.IDSanPham}", dto);
-            if (!response.IsSuccessStatusCode)
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
-                await LoadDropdownData();
-                return View(dto);
-            }
+				// 2. Then remove soft-deleted rows (this is important)
+				dto.ChiTietSanPhams = dto.ChiTietSanPhams
+					.Where(ct => !ct.IsDeleted)
+					.ToList();
+			}
 
-            // Lấy danh sách biến thể hiện có để xác định: xóa bớt / tạo mới / cập nhật
-            var existingCtRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
-            var existingIds = new HashSet<Guid>();
-            if (existingCtRes.IsSuccessStatusCode)
-            {
-                var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (existingList != null)
-                    foreach (var x in existingList)
-                        if (x.IdSanPhamChiTiet != Guid.Empty)
-                            existingIds.Add(x.IdSanPhamChiTiet);
-            }
+			// Debug after filtering
+			if (dto.ChiTietSanPhams != null)
+			{
+				for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
+				{
+					var ct = dto.ChiTietSanPhams[i];
+					System.Diagnostics.Debug.WriteLine($"📦 [{i}] ID: {ct?.IdSanPhamChiTiet}, SL: {ct?.SoLuong}, Giá: {ct?.GiaBan}, IsDeleted: {ct?.IsDeleted}");
+				}
+			}
 
-            var submittedIds = dto.ChiTietSanPhams?
-                .Where(ct => ct != null && ct.IdSanPhamChiTiet != Guid.Empty)
-                .Select(ct => ct.IdSanPhamChiTiet)
-                .ToHashSet() ?? new HashSet<Guid>();
+			// Cập nhật sản phẩm chính
+			var response = await _http.PutAsJsonAsync($"sanphams/{dto.IDSanPham}", dto);
+			if (!response.IsSuccessStatusCode)
+			{
+				var msg = await response.Content.ReadAsStringAsync();
+				ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
+				await LoadDropdownData();
+				return View(dto);
+			}
 
-            // Xóa các biến thể bị bỏ khỏi form. API: nếu biến thể có trong đơn/giỏ thì chuyển sang ngưng bán (soft-delete).
-            var softDeleteMessage = (string?)null;
-            foreach (var id in existingIds.Except(submittedIds))
-            {
-                var delRes = await _http.DeleteAsync($"sanphamchitiets/{id}");
-                if (!delRes.IsSuccessStatusCode)
-                {
-                    var msg = await delRes.Content.ReadAsStringAsync();
-                    ModelState.AddModelError(string.Empty, $"Không thể xóa biến thể: {msg}");
-                }
-                else
-                {
-                    var body = await delRes.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(body) && body.Contains("softDelete", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            var json = JsonSerializer.Deserialize<JsonElement>(body);
-                            if (json.TryGetProperty("message", out var msgProp))
-                                softDeleteMessage = msgProp.GetString();
-                        }
-                        catch { /* ignore */ }
-                    }
-                }
-            }
-            if (softDeleteMessage != null)
-                TempData["Info"] = softDeleteMessage;
+			// === SOFT DELETE LOGIC (this part is good, but now it will work because deleted items are filtered out) ===
+			var existingCtRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
+			var existingIds = new HashSet<Guid>();
 
-            // Cập nhật hoặc tạo mới từng biến thể trong form
-            if (dto.ChiTietSanPhams != null)
-            {
-                foreach (var ct in dto.ChiTietSanPhams)
-                {
-                    if (ct == null) continue;
-                    if (ct.IdSanPham == Guid.Empty) ct.IdSanPham = dto.IDSanPham;
+			if (existingCtRes.IsSuccessStatusCode)
+			{
+				var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(
+					new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                    if (ct.IdSanPhamChiTiet == Guid.Empty)
-                    {
-                        // Chỉ tạo mới khi đã chọn ít nhất Kích cỡ + Màu (bỏ qua dòng "biến thể mới" để trống)
-                        if (ct.IdKichCo == Guid.Empty || ct.IdMauSac == Guid.Empty)
-                            continue;
-                        var postRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
-                        if (!postRes.IsSuccessStatusCode)
-                        {
-                            var msg = await postRes.Content.ReadAsStringAsync();
-                            ModelState.AddModelError(string.Empty, $"Lỗi tạo biến thể mới: {msg}");
-                        }
-                    }
-                    else
-                    {
-                        var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct, ApiVariantJsonOptions);
-                        if (!putRes.IsSuccessStatusCode)
-                        {
-                            var msg = await putRes.Content.ReadAsStringAsync();
-                            ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
-                        }
-                    }
-                }
-            }
+				if (existingList != null)
+					foreach (var x in existingList)
+						if (x.IdSanPhamChiTiet != Guid.Empty)
+							existingIds.Add(x.IdSanPhamChiTiet);
+			}
 
-            if (!ModelState.IsValid)
-            {
-                await LoadDropdownData();
-                return View(dto);
-            }
-            return RedirectToAction("Index");
-        }
+			var submittedIds = dto.ChiTietSanPhams?
+				.Where(ct => ct != null && ct.IdSanPhamChiTiet != Guid.Empty)
+				.Select(ct => ct.IdSanPhamChiTiet)
+				.ToHashSet() ?? new HashSet<Guid>();
 
-        /// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
-        [HttpPost]
+			// Xóa các biến thể bị bỏ khỏi form (soft delete)
+			var softDeleteMessage = (string?)null;
+			foreach (var id in existingIds.Except(submittedIds))
+			{
+				var delRes = await _http.DeleteAsync($"sanphamchitiets/{id}");
+				if (delRes.IsSuccessStatusCode)
+				{
+					var body = await delRes.Content.ReadAsStringAsync();
+					if (!string.IsNullOrEmpty(body) && body.Contains("softDelete", StringComparison.OrdinalIgnoreCase))
+					{
+						try
+						{
+							var json = JsonSerializer.Deserialize<JsonElement>(body);
+							if (json.TryGetProperty("message", out var msgProp))
+								softDeleteMessage = msgProp.GetString();
+						}
+						catch { }
+					}
+				}
+				else
+				{
+					var msg = await delRes.Content.ReadAsStringAsync();
+					ModelState.AddModelError(string.Empty, $"Không thể xóa biến thể: {msg}");
+				}
+			}
+
+			if (softDeleteMessage != null)
+				TempData["Info"] = softDeleteMessage;
+
+			// Cập nhật / tạo mới các biến thể còn lại
+			if (dto.ChiTietSanPhams != null)
+			{
+				foreach (var ct in dto.ChiTietSanPhams)
+				{
+					if (ct == null) continue;
+					if (ct.IdSanPham == Guid.Empty) ct.IdSanPham = dto.IDSanPham;
+
+					if (ct.IdSanPhamChiTiet == Guid.Empty)
+					{
+						// Tạo mới
+						if (ct.IdKichCo == Guid.Empty || ct.IdMauSac == Guid.Empty) continue;
+
+						var postRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+						if (!postRes.IsSuccessStatusCode)
+						{
+							var msg = await postRes.Content.ReadAsStringAsync();
+							ModelState.AddModelError(string.Empty, $"Lỗi tạo biến thể mới: {msg}");
+						}
+					}
+					else
+					{
+						// Cập nhật
+						var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct, ApiVariantJsonOptions);
+						if (!putRes.IsSuccessStatusCode)
+						{
+							var msg = await putRes.Content.ReadAsStringAsync();
+							ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
+						}
+					}
+				}
+			}
+
+			if (!ModelState.IsValid)
+			{
+				await LoadDropdownData();
+				return View(dto);
+			}
+
+			return RedirectToAction("Index");
+		}
+
+		/// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
+		[HttpPost]
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
             var getRes = await _http.GetAsync($"sanphams/{id}");

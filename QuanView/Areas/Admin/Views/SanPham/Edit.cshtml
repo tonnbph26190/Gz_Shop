@@ -12,83 +12,88 @@
         @if (!ViewData.ModelState.IsValid)
         {
             <div class="alert alert-danger">
-                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                @foreach (var entry in ViewData.ModelState)
                 {
-                    <p>@error.ErrorMessage</p>
+                    if (entry.Value.Errors.Any())
+                    {
+                        <p><strong>@entry.Key:</strong> @string.Join(", ", entry.Value.Errors.Select(e => e.ErrorMessage))</p>
+                    }
                 }
             </div>
         }
 
         <form asp-area="Admin" asp-controller="SanPham" asp-action="Edit" method="post">
-            <input type="hidden" asp-for="IDSanPham" />
+            <div class="row">
+                <input type="hidden" asp-for="IDSanPham" class="col-3"/>
 
-            <div class="form-group">
-                <label asp-for="MaSanPham">Mã sản phẩm</label>
-                <div class="input-group">
-                    <input asp-for="MaSanPham" class="form-control" readonly />
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
-                            <i class="fas fa-sync-alt"></i> Tạo mã mới
-                        </button>
+                <div class="form-group col-3">
+                    <label asp-for="MaSanPham">Mã sản phẩm</label>
+                    <div class="input-group">
+                        <input asp-for="MaSanPham" class="form-control" readonly />
+                        @* <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" onclick="generateProductCode()">
+                                <i class="fas fa-sync-alt"></i> Tạo mã mới
+                            </button>
+                        </div> *@
+                    </div>
+                    <small class="form-text text-muted">Mã sản phẩm hiện tại hoặc tạo mã mới</small>
+                    <span asp-validation-for="MaSanPham" class="text-danger"></span>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="TenSanPham">Tên sản phẩm</label>
+                    <input asp-for="TenSanPham" class="form-control" />
+                    <span asp-validation-for="TenSanPham" class="text-danger"></span>
+                </div>
+
+                <!-- Dropdowns -->
+                <div class="form-group col-3">
+                    <label asp-for="IDDanhMuc">Danh mục</label>
+                    <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs"></select>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="IDThuongHieu">Thương hiệu</label>
+                    <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus"></select>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="IDChatLieu">Chất liệu</label>
+                    <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus"></select>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="IDLoaiOng">Loại ống</label>
+                    <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs"></select>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="IDKieuDang">Kiểu dáng</label>
+                    <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs"></select>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="IDLungQuan">Lưng quần</label>
+                    <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans"></select>
+                </div>
+                <div class="col-3">
+                    <div class="form-group form-check">
+                        <input asp-for="CoXepLy" class="form-check-input" />
+                        <label asp-for="CoXepLy" class="form-check-label">Có xếp ly</label>
+                    </div>
+
+                    <div class="form-group form-check">
+                        <input asp-for="CoGian" class="form-check-input" />
+                        <label asp-for="CoGian" class="form-check-label">Co giãn</label>
+                    </div>
+
+                    <div class="form-group form-check">
+                        <input asp-for="TrangThai" class="form-check-input" />
+                        <label asp-for="TrangThai" class="form-check-label">
+                            Hoạt động</label>
                     </div>
                 </div>
-                <small class="form-text text-muted">Mã sản phẩm hiện tại hoặc tạo mã mới</small>
-                <span asp-validation-for="MaSanPham" class="text-danger"></span>
             </div>
-
-            <div class="form-group">
-                <label asp-for="TenSanPham">Tên sản phẩm</label>
-                <input asp-for="TenSanPham" class="form-control" />
-                <span asp-validation-for="TenSanPham" class="text-danger"></span>
-            </div>
-
-            <!-- Dropdowns -->
-            <div class="form-group">
-                <label asp-for="IDDanhMuc">Danh mục</label>
-                <select asp-for="IDDanhMuc" class="form-control" asp-items="ViewBag.DanhMucs"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IDThuongHieu">Thương hiệu</label>
-                <select asp-for="IDThuongHieu" class="form-control" asp-items="ViewBag.ThuongHieus"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IDChatLieu">Chất liệu</label>
-                <select asp-for="IDChatLieu" class="form-control" asp-items="ViewBag.ChatLieus"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IDLoaiOng">Loại ống</label>
-                <select asp-for="IDLoaiOng" class="form-control" asp-items="ViewBag.LoaiOngs"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IDKieuDang">Kiểu dáng</label>
-                <select asp-for="IDKieuDang" class="form-control" asp-items="ViewBag.KieuDangs"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IDLungQuan">Lưng quần</label>
-                <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans"></select>
-            </div>
-
-            <div class="form-group form-check">
-                <input asp-for="CoXepLy" class="form-check-input" />
-                <label asp-for="CoXepLy" class="form-check-label">Có xếp lý</label>
-            </div>
-
-            <div class="form-group form-check">
-                <input asp-for="CoGian" class="form-check-input" />
-                <label asp-for="CoGian" class="form-check-label">Co giãn</label>
-            </div>
-
-            <div class="form-group form-check">
-                <input asp-for="TrangThai" class="form-check-input" />
-                <label asp-for="TrangThai" class="form-check-label">
-                    Hoạt động</label>
-            </div>
-
             <!-- Biến thể sản phẩm: luôn hiển thị, có số lượng và cho phép xóa/sửa/thêm -->
             @{
                 var variantList = Model.ChiTietSanPhams ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
@@ -105,17 +110,17 @@
                         <i class="fas fa-plus"></i> Thêm dòng biến thể
                     </button>
                 </div>
-                <table class="table table-bordered table-hover" id="variantTable">
+                <table class="table table-bordered table-hover text-center" id="variantTable">
                     <thead class="table-light">
-                        <tr>
-                            <th style="width: 150px;"><i class="fas fa-ruler"></i> Kích cỡ</th>
-                            <th style="width: 150px;"><i class="fas fa-palette"></i> Màu sắc</th>
-                            <th style="width: 150px;"><i class="fas fa-paint-brush"></i> Họa tiết</th>
-                            <th style="width: 120px;"><i class="fas fa-boxes"></i> Số lượng</th>
-                            <th style="width: 150px;"><i class="fas fa-tag"></i> Giá bán</th>
-                            <th style="width: 120px;"><i class="fas fa-toggle-on"></i> Trạng thái</th>
-                            <th style="width: 80px;"><i class="fas fa-cog"></i> Xóa</th>
-                        </tr>
+                    <tr>
+                        <th style="width: 10%;">Kích cỡ</th>
+                        <th style="width: 25%;">Màu sắc</th>
+                        <th style="width: 25%;">Họa tiết</th>
+                        <th style="width: 10%;">Số lượng</th>
+                        <th style="width: 10%;">Giá bán</th>
+                        <th style="width: 10%;">Trạng thái</th> 
+                        <th style="width: 10%;">Xóa</th>
+                    </tr>
                     </thead>
                     <tbody>
                         @for (int i = 0; i < variantList.Count; i++)
@@ -126,20 +131,22 @@
                                     <input type="hidden" name="ChiTietSanPhams.Index" value="@i" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPhamChiTiet" />
                                     <input type="hidden" asp-for="ChiTietSanPhams[i].IdSanPham" />
-                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdKichCo" />
-                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdMauSac" />
-                                    <input type="hidden" asp-for="ChiTietSanPhams[i].IdHoaTiet" />
-                                    <strong>@Model.ChiTietSanPhams[i].TenKichCo</strong>
+                                    
+                                    @* Change this from <strong> to <select> *@
+                                    <select asp-for="ChiTietSanPhams[i].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
+                                        <option value="">-- Chọn --</option>
+                                    </select>
+                                    <span asp-validation-for="ChiTietSanPhams[i].IdKichCo" class="text-danger"></span>
                                 </td>
                                 <td>
-                                    <select asp-for="ChiTietSanPhams[i].IdMauSac" class="form-control form-control-sm" asp-items="@((IEnumerable<SelectListItem>)ViewBag.MauSacs)">
+                                    <select asp-for="ChiTietSanPhams[i].IdMauSac" class="form-control form-control-sm" asp-items="ViewBag.MauSacs">
                                         <option value="">-- Chọn --</option>
                                     </select>
                                     <small class="text-muted d-block">Hiện tại: @variant.TenMauSac</small>
                                 </td>
                                 <td>
-                                    <select asp-for="ChiTietSanPhams[i].IdHoaTiet" class="form-control form-control-sm" asp-items="@((IEnumerable<SelectListItem>)ViewBag.HoaTiets)">
-                                        <option value="00000000-0000-0000-0000-000000000000">-- Không --</option>
+                                    <select asp-for="ChiTietSanPhams[i].IdHoaTiet" class="form-control form-control-sm" asp-items="ViewBag.HoaTiets">
+                                        <option value="">-- Không --</option>
                                     </select>
                                     <small class="text-muted d-block">Hiện tại: @(variant.TenHoaTiet ?? "Không")</small>
                                 </td>
@@ -147,12 +154,17 @@
                                     <input asp-for="ChiTietSanPhams[i].SoLuong" class="form-control form-control-sm quantity-input" type="number" min="0" />
                                 </td>
                                 <td>
-                                    <input asp-for="ChiTietSanPhams[i].GiaBan" class="form-control form-control-sm price-input" type="number" min="0" step="1000" />
+                                    <input asp-for="ChiTietSanPhams[i].GiaBan" class="form-control form-control-sm price-input" type="number" min="0" step="any" />
                                 </td>
-                                <td>
-                                    <div class="form-check form-switch">
-                                        <input asp-for="ChiTietSanPhams[i].TrangThai" class="form-check-input" type="checkbox" />
-                                        <label class="form-check-label small">Hoạt động</label>
+                                <td class="text-center align-middle">
+                                    <div class="form-check form-switch d-inline-flex align-items-center">
+                                        <input name="ChiTietSanPhams[@i].TrangThai" 
+                                            class="form-check-input custom-slider" 
+                                            type="checkbox" 
+                                            role="switch" 
+                                            value="true"
+                                            @(variant.TrangThai ? "checked" : "") >
+                                        <input type="hidden" name="ChiTietSanPhams[@i].TrangThai" value="false" />&nbsp; Hoạt động
                                     </div>
                                 </td>
                                 <td class="text-center">
@@ -165,7 +177,7 @@
 
                         <tr class="variant-row new-variant-row" id="newVariantTemplateRow" data-index="@newVariantIndex" style="display: none;">
                             <td>
-                                <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" />
+                                <input type="hidden" name="ChiTietSanPhams.Index" value="@newVariantIndex" disabled/>
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPhamChiTiet" value="00000000-0000-0000-0000-000000000000" />
                                 <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].IdSanPham" value="@Model.IDSanPham" />
                                 <select name="ChiTietSanPhams[@newVariantIndex].IdKichCo" class="form-control form-control-sm" asp-items="ViewBag.KichCos">
@@ -189,10 +201,18 @@
                                 <input name="ChiTietSanPhams[@newVariantIndex].GiaBan" class="form-control form-control-sm price-input" type="number" min="0" value="0" />
                             </td>
                             <td>
-                                <span class="badge bg-info">Mới</span>
+                                <div class="form-check form-switch d-inline-flex align-items-center">
+                                    <input type="hidden" name="ChiTietSanPhams[@newVariantIndex].TrangThai" value="false" />
+                                    
+                                    <input name="ChiTietSanPhams[@newVariantIndex].TrangThai" 
+                                        class="form-check-input custom-slider" 
+                                        type="checkbox" 
+                                        role="switch" 
+                                        value="true"
+                                        checked>
+                                    <span class="badge bg-info ms-2">Mới</span>
+                                </div>
                             </td>
-                            <td class="text-center">
-                                </td>
                         </tr>
                     </tbody>
                 </table>
@@ -205,138 +225,45 @@
 </div>
 @section Scripts {
     <script>
-    function updateSTT() {
-            const rows = document.querySelectorAll('#variantTable tbody tr.variant-row');
-            rows.forEach((row, index) => {
-                const sttSpan = row.querySelector('.row-number');
-                if (sttSpan) {
-                    sttSpan.textContent = index + 1;
-                }
-            });
-        }
-        // Apply validation to existing inputs when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Chỉ apply validation cho các input KHÔNG nằm trong dòng template
-            const allQuantityInputs = document.querySelectorAll('.quantity-input');
-            const allPriceInputs = document.querySelectorAll('.price-input');
-=========
-            updateSTT();
-            const quantityInputs = document.querySelectorAll('.quantity-input');
-            const priceInputs = document.querySelectorAll('.price-input');
->>>>>>>>> Temporary merge branch 2
-
-            allQuantityInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'quantity');
-                }
-            });
-
-            allPriceInputs.forEach(input => {
-                const row = input.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    addValidationToInput(input, 'price');
-                }
-            });
-            updateSTT();
-            const quantityInputs = document.querySelectorAll('.quantity-input');
-            const priceInputs = document.querySelectorAll('.price-input');
-
-            // Debug: Log all select values to check if they are set correctly
-            console.log('=== DEBUG: Checking select values ===');
-            document.querySelectorAll('select[name*="IdKichCo"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`KichCo[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdMauSac"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`MauSac[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-            document.querySelectorAll('select[name*="IdHoaTiet"]').forEach((select, index) => {
-                const row = select.closest('tr');
-                if (row && row.id !== 'newVariantTemplateRow') {
-                    console.log(`HoaTiet[${index}]: value="${select.value}", name="${select.name}"`);
-                }
-            });
-        });
-
-        // Function to generate product code
-        function generateProductCode() {
-            const now = new Date();
-            const year = now.getFullYear().toString().substr(-2);
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const hour = now.getHours().toString().padStart(2, '0');
-            const minute = now.getMinutes().toString().padStart(2, '0');
-            const second = now.getSeconds().toString().padStart(2, '0');
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-
-            const productCode = `SP${year}${month}${day}${hour}${minute}${second}${random}`;
-            document.querySelector('input[name="MaSanPham"]').value = productCode;
-
-            // Show confirmation
-            alert(`Đã tạo mã sản phẩm mới: ${productCode}`);
-        }
-
-        // Validation functions
+        // === Validation functions (kept as you had) ===
         function addValidationToInput(input, fieldType) {
             const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
 
-            // Kiểm tra xem input có nằm trong dòng template không
             function isInTemplateRow(element) {
                 const row = element.closest('tr');
                 return row && row.id === 'newVariantTemplateRow';
             }
 
-            // Prevent negative input
-            input.addEventListener('keydown', function(e) {
-                if (e.key === '-' || e.key === 'Minus') {
-                    e.preventDefault();
-                    if (!isInTemplateRow(this)) {
-                        showError(this, `${fieldName} không được là số âm!`);
-                    }
-                    return false;
-                }
+            input.addEventListener('keydown', e => {
+                if (e.key === '-' || e.key === 'Minus') e.preventDefault();
             });
 
-            // Validate on input
             input.addEventListener('input', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
-                    clearError(this);
-                    return;
-                }
-
+                if (isInTemplateRow(this)) { clearError(this); return; }
                 const value = parseFloat(this.value);
-                if (value < 0 || this.value.includes('-')) {
-                    this.value = this.value.replace('-', '');
+                if (value < 0) {
+                    this.value = 0;
                     showError(this, `${fieldName} không được là số âm!`);
-                } else if (fieldType === 'price' && value === 0) {
-                    // Chỉ cảnh báo, không block
-                    showError(this, 'Giá bán phải lớn hơn 0!');
                 } else {
                     clearError(this);
                 }
             });
 
-            // Validate on blur
             input.addEventListener('blur', function() {
-                // Bỏ qua validation cho dòng template
-                if (isInTemplateRow(this)) {
+                if (isInTemplateRow(this)) return;
+                if (!this.value.trim() || isNaN(parseFloat(this.value))) {
+                    this.value = "0";
                     clearError(this);
                     return;
                 }
-
                 const value = parseFloat(this.value);
-                if (fieldType === 'price' && value === 0) {
-                    showError(this, 'Giá bán phải lớn hơn 0!');
-                } else if (value < 0) {
-                    this.value = '';
+                if (value < 0) {
+                    this.value = "0";
                     showError(this, `${fieldName} không được là số âm!`);
+                } else if (fieldType === 'price' && value <= 0) {
+                    showError(this, `Giá bán phải lớn hơn 0!`);
+                } else {
+                    clearError(this);
                 }
             });
         }
@@ -350,11 +277,7 @@
             errorDiv.id = input.name + '_error';
             input.parentNode.appendChild(errorDiv);
             input.classList.add('is-invalid');
-
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                clearError(input);
-            }, 3000);
+            setTimeout(() => clearError(input), 3000);
         }
 
         function clearError(input) {
@@ -363,143 +286,206 @@
             input.classList.remove('is-invalid');
         }
 
-        // Xóa biến thể: chỉ xóa dòng (không xóa dòng "Biến thể mới")
-        document.getElementById('variantTable')?.addEventListener('click', function(e) {
-            if (e.target.classList.contains('btn-remove-variant')) {
-                var row = e.target.closest('tr.variant-row');
-                if (row && !row.classList.contains('new-variant-row')) {
-                    if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
-                        row.remove();
-                        updateSTT();
-                    }
-                }
-            }
-            if (e.target.classList.contains('btn-remove-new-row')) {
-                var row = e.target.closest('tr.new-variant-clone');
-                if (row) {
-                    row.remove();
-                    updateSTT();
-                }
-            }
-        });
+        // === DOM Ready ===
+        document.addEventListener('DOMContentLoaded', function() {
 
-        // Thêm nhiều dòng biến thể mới (mỗi dòng = 1 biến thể khi Cập nhật)
-        // ... inside your script tag ...
-        (function() {
-            var templateRow = document.getElementById('newVariantTemplateRow');
-            if (!templateRow) return;
-            var templateIndex = parseInt(templateRow.getAttribute('data-index'), 10);
-            var nextNewIndex = templateIndex;
-
-            document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
-                var clone = templateRow.cloneNode(true);
-                clone.id = '';
-                clone.classList.remove('new-variant-row');
-                clone.classList.add('new-variant-clone');
-                clone.style.display = ''; 
-                
-                var oldPrefix = 'ChiTietSanPhams[' + templateIndex + ']';
-                var newPrefix = 'ChiTietSanPhams[' + nextNewIndex + ']';
-                
-                clone.querySelectorAll('[name]').forEach(function(el) {
-                    if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
-                });
-
-                clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(function(el) {
-                    el.value = nextNewIndex;
-                });
-
-                // Initialize values and apply validation
-                clone.querySelectorAll('input.quantity-input').forEach(function(i) { 
-                    i.value = '0';
-                    addValidationToInput(i, 'quantity');
-                });
-                clone.querySelectorAll('input.price-input').forEach(function(i) { 
-                    i.value = '0';
-                    addValidationToInput(i, 'price');
-                });
-
-                // Add the Delete button to the LAST <td> specifically to maintain alignment
-                var actionTd = clone.querySelector('td:last-child');
-                actionTd.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row">' +
-                     '<i class="fas fa-trash"></i></button>';
-                
-                templateRow.parentNode.insertBefore(clone, templateRow);
-                nextNewIndex++;
-                updateSTT();
-            });
-        })();
-
-        // Form validation on submit (bỏ qua dòng biến thể mới chưa chọn Kích cỡ + Màu)
-        document.querySelector('form').addEventListener('submit', function(e) {
-            let hasError = false;
-            document.querySelectorAll('tr.variant-row').forEach(function(row) {
-                // Bỏ qua dòng template (new-variant-row) và các dòng clone chưa điền đầy đủ
-                var isTemplateRow = row.id === 'newVariantTemplateRow';
-                var isNewRow = row.classList.contains('new-variant-row') || row.classList.contains('new-variant-clone');
-                
-                // Nếu là dòng template, bỏ qua hoàn toàn
-                if (isTemplateRow) return;
-                
-                var kichCoSelect = row.querySelector('select[name*="IdKichCo"]');
-                var mauSacSelect = row.querySelector('select[name*="IdMauSac"]');
-                
-                // Nếu là dòng mới và chưa chọn kích cỡ hoặc màu sắc, bỏ qua validation
-                var skipValidation = isNewRow && kichCoSelect && mauSacSelect &&
-                    (!kichCoSelect.value || kichCoSelect.value === '' || !mauSacSelect.value || mauSacSelect.value === '');
-                if (skipValidation) return;
-
-                var qtyInput = row.querySelector('.quantity-input');
-                var priceInput = row.querySelector('.price-input');
-                
-                if (qtyInput) {
-                    var q = parseInt(qtyInput.value, 10);
-                    if (isNaN(q) || q < 0) { 
-                        showError(qtyInput, 'Số lượng không được là số âm!'); 
-                        hasError = true; 
-                    }
-                }
-                
-                if (priceInput) {
-                    var p = parseFloat(priceInput.value);
-                    if (isNaN(p) || p < 0) { 
-                        showError(priceInput, 'Giá bán không được là số âm!'); 
-                        hasError = true; 
-                    }
-                    else if (p === 0 && !isNewRow) { 
-                        // Chỉ validate giá > 0 cho biến thể đã tồn tại
-                        showError(priceInput, 'Giá bán phải lớn hơn 0!'); 
-                        hasError = true; 
-                    }
+            // Apply validation
+            document.querySelectorAll('.quantity-input, .price-input').forEach(input => {
+                const row = input.closest('tr');
+                if (row && row.id !== 'newVariantTemplateRow') {
+                    const type = input.classList.contains('quantity-input') ? 'quantity' : 'price';
+                    addValidationToInput(input, type);
                 }
             });
 
-            if (hasError) {
-                e.preventDefault();
-                alert('Vui lòng kiểm tra lại thông tin. Số lượng và giá bán không được là số âm; giá bán phải lớn hơn 0.');
-                return false;
-            }
+            // ==================== DELETE ====================
+            document.getElementById('variantTable').addEventListener('click', function(e) {
+                if (e.target.closest('.btn-remove-variant')) {
+                    const row = e.target.closest('tr.variant-row');
+                    if (row && !row.classList.contains('new-variant-row') && row.id !== 'newVariantTemplateRow') {
+                        if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
+                            // Mark as deleted
+                            const delInput = document.createElement('input');
+                            delInput.type = 'hidden';
+                            delInput.name = `ChiTietSanPhams[${row.dataset.variantIndex}].IsDeleted`;
+                            delInput.value = 'true';
+                            row.appendChild(delInput);
+
+                            row.style.display = 'none';           // Hide visually
+                            row.classList.add('deleted-row');
+                        }
+                    }
+                }
+
+                if (e.target.closest('.btn-remove-new-row')) {
+                    const row = e.target.closest('tr');
+                    if (row) row.remove();
+                }
+            });
+
+            // ==================== ADD NEW ROW ====================
+            (function() {
+                const templateRow = document.getElementById('newVariantTemplateRow');
+                if (!templateRow) return;
+                let nextNewIndex = parseInt(templateRow.getAttribute('data-index'), 10);
+
+                document.getElementById('btnAddNewVariantRow').addEventListener('click', function() {
+                    const clone = templateRow.cloneNode(true);
+                    clone.id = '';
+                    clone.classList.remove('new-variant-row');
+                    clone.classList.add('new-variant-clone');
+                    clone.style.display = '';
+
+                    const oldPrefix = `ChiTietSanPhams[${templateRow.getAttribute('data-index')}]`;
+                    const newPrefix = `ChiTietSanPhams[${nextNewIndex}]`;
+
+                    clone.querySelectorAll('[name]').forEach(el => {
+                        if (el.name) el.name = el.name.replace(oldPrefix, newPrefix);
+                    });
+
+                    clone.querySelectorAll('input[name="ChiTietSanPhams.Index"]').forEach(el => {
+                        el.value = nextNewIndex;
+                        el.disabled = false;
+                    });
+
+                    const actionTd = clone.querySelector('td:last-child');
+                    if (actionTd) actionTd.innerHTML = `<button type="button" class="btn btn-outline-danger btn-sm btn-remove-new-row"><i class="fas fa-times"></i></button>`;
+
+                    templateRow.parentNode.insertBefore(clone, templateRow.parentNode.firstChild);
+                    nextNewIndex++;
+                });
+            })();
+
+            // ==================== SUBMIT - REINDEX + FILTER ====================
+            document.querySelector('form').addEventListener('submit', function(e) {
+                let hasError = false;
+
+                // Validation
+                document.querySelectorAll('#variantTable tbody tr.variant-row').forEach(row => {
+                    if (row.style.display === 'none' || row.id === 'newVariantTemplateRow') return;
+
+                    const isNewRow = row.classList.contains('new-variant-clone');
+                    const kichCo = row.querySelector('select[name*="IdKichCo"]');
+                    const mauSac = row.querySelector('select[name*="IdMauSac"]');
+
+                    if (isNewRow && (!kichCo?.value || !mauSac?.value)) return;
+
+                    const qty = row.querySelector('.quantity-input');
+                    const price = row.querySelector('.price-input');
+
+                    if (qty) {
+                        const q = parseInt(qty.value, 10);
+                        if (isNaN(q) || q < 0) {
+                            showError(qty, 'Số lượng không được âm!');
+                            hasError = true;
+                        }
+                    }
+                    if (price) {
+                        const p = parseFloat(price.value);
+                        if (isNaN(p) || p <= 0) {
+                            showError(price, 'Giá bán phải lớn hơn 0!');
+                            hasError = true;
+                        }
+                    }
+                });
+
+                if (hasError) {
+                    e.preventDefault();
+                    alert('Vui lòng kiểm tra lại: Số lượng không được âm và Giá bán phải lớn hơn 0.');
+                    return;
+                }
+
+                // Re-index only visible rows
+                const visibleRows = Array.from(document.querySelectorAll('#variantTable tbody tr.variant-row'))
+                    .filter(r => r.style.display !== 'none' && r.id !== 'newVariantTemplateRow');
+
+                visibleRows.forEach((row, newIndex) => {
+                    row.querySelectorAll('[name^="ChiTietSanPhams["]').forEach(input => {
+                        input.name = input.name.replace(/ChiTietSanPhams\[\d+\]/, `ChiTietSanPhams[${newIndex}]`);
+                    });
+
+                    const idxInput = row.querySelector('input[name*="ChiTietSanPhams.Index"]');
+                    if (idxInput) idxInput.value = newIndex;
+                    row.dataset.variantIndex = newIndex;
+                });
+
+                // Remove template row
+                const template = document.getElementById('newVariantTemplateRow');
+                if (template) template.remove();
+            });
         });
     </script>
+
+    <!-- Bootstrap & styles (kept your original) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* Your existing styles here - copy them from your previous code */
+        .is-invalid { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
+        .validation-error { margin-top: 5px; }
+        /* ... paste the rest of your .variant-row, .form-switch, custom-slider styles ... */
+    </style>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
         .is-invalid {
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
-
         .validation-error {
             margin-top: 5px;
         }
-
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-
         input[type="number"] {
             -moz-appearance: textfield;
+        }
+        .variant-row td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .variant-row .form-control, 
+        .variant-row .form-select {
+            text-align: center;
+        }
+        .variant-row .form-check {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Your custom switch styles */
+        .form-switch {
+            padding-left: 2.5em; 
+            min-height: 1.5rem;
+        }
+        .form-check-input.custom-slider {
+            width: 2.5em;
+            height: 1.25em;
+            margin-left: -7.5em;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0, 0, 0, 0.25)'/%3e%3c/svg%3e");
+            background-position: left center;
+            border-radius: 2em;
+            transition: background-position 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        .form-check-input.custom-slider:checked {
+            background-position: right center;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+        }
+        @@keyframes highlight-fade {
+            from { background-color: #fff3cd; }
+            to { background-color: transparent; }
+        }
+        .new-variant-clone {
+            animation: highlight-fade 2s ease-out;
         }
     </style>
 

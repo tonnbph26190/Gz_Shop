@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

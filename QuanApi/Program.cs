@@ -45,17 +45,6 @@ builder.Services.AddScoped<IBanHangTaiQuayService, BanHangTaiQuayService>();
 builder.Services.AddScoped<ILungQuanService, LungQuanService>();
 
 builder.Services.AddScoped<DotGiamGiaIRepository, DotGiamGiaRepository>();
-builder.Services.AddCors(options =>
-{
-	options.AddPolicy("AllowFrontend",
-		policy =>
-		{
-			policy.WithOrigins("https://localhost:7182")
-				  .AllowAnyHeader()
-				  .AllowAnyMethod();
-		});
-});
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var profileType = Type.GetType("MyApi.MappingProfiles.KhachHangMappingProfile, QuanApi");
 if (profileType != null)
@@ -86,8 +75,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
