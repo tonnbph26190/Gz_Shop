@@ -67,6 +67,14 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public List<T> Data { get; set; }
             public PaginationInfo Pagination { get; set; }
+            public OrderStatistics Statistics { get; set; }
+        }
+
+        public class OrderStatistics
+        {
+            public int TotalOnlineCount { get; set; }
+            public int TotalTaiQuayCount { get; set; }
+            public int TotalPendingCount { get; set; }
         }
 
         // DTO classes for detailed invoice
@@ -245,6 +253,9 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalCount = pagination.TotalCount;
                         ViewBag.HasPreviousPage = pagination.HasPreviousPage;
                         ViewBag.HasNextPage = pagination.HasNextPage;
+                        ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
+                        ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
+                        ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
 
                         return View(hoaDons);
                     }

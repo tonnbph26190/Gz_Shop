@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace QuanApi.Controllers
 {
@@ -49,6 +50,9 @@ namespace QuanApi.Controllers
         {
             try
             {
+                page = page < 1 ? 1 : page;
+                pageSize = pageSize < 1 ? 10 : pageSize;
+
                 var query = _context.HoaDons
                     .Include(h => h.KhachHang)
                     .Include(h => h.NhanVien)
@@ -63,25 +67,53 @@ namespace QuanApi.Controllers
                     query = query.Where(h => h.TrangThai == trangThai);
                 }
 
-                if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
+                DateTime? fromDateLocal = null;
+                DateTime? toDateLocal = null;
+
+                if (!string.IsNullOrWhiteSpace(tuNgay)
+                    && DateTime.TryParseExact(tuNgay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedFromDate))
                 {
-                    query = query.Where(h => h.NgayTao.Date >= tuNgayDate.Date);
+                    fromDateLocal = parsedFromDate.Date;
                 }
 
-                if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
+                if (!string.IsNullOrWhiteSpace(denNgay)
+                    && DateTime.TryParseExact(denNgay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedToDate))
                 {
-                    query = query.Where(h => h.NgayTao.Date <= denNgayDate.Date);
+                    toDateLocal = parsedToDate.Date;
+                }
+
+                // Nếu người dùng nhập ngược khoảng ngày thì tự động đổi lại cho đúng.
+                if (fromDateLocal.HasValue && toDateLocal.HasValue && fromDateLocal.Value > toDateLocal.Value)
+                {
+                    (fromDateLocal, toDateLocal) = (toDateLocal, fromDateLocal);
+                }
+
+                // NgayTao đang lưu UTC. Input date từ UI là ngày local (UTC+7),
+                // nên cần chuyển mốc lọc local -> UTC để lọc đúng theo ngày người dùng chọn.
+                const int vnUtcOffsetHours = 7;
+                if (fromDateLocal.HasValue)
+                {
+                    var fromUtc = DateTime.SpecifyKind(fromDateLocal.Value.AddHours(-vnUtcOffsetHours), DateTimeKind.Utc);
+                    query = query.Where(h => h.NgayTao >= fromUtc);
+                }
+
+                if (toDateLocal.HasValue)
+                {
+                    var toExclusiveUtc = DateTime.SpecifyKind(toDateLocal.Value.AddDays(1).AddHours(-vnUtcOffsetHours), DateTimeKind.Utc);
+                    query = query.Where(h => h.NgayTao < toExclusiveUtc);
                 }
 
                 if (!string.IsNullOrEmpty(loaiDonHang))
                 {
-                    if (loaiDonHang == "online")
+                    var loaiDonHangNormalized = loaiDonHang.Trim().ToLowerInvariant();
+
+                    if (loaiDonHangNormalized == "online")
                     {
-                        query = query.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                        query = query.Where(h => !h.BanTaiQuay);
                     }
-                    else if (loaiDonHang == "taiquay")
+                    else if (loaiDonHangNormalized == "taiquay")
                     {
-                        query = query.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
+                        query = query.Where(h => h.BanTaiQuay);
                     }
                 }
 
@@ -100,6 +132,11 @@ namespace QuanApi.Controllers
                     var maDonHangLower = maDonHang.ToLower();
                     query = query.Where(h => h.MaHoaDon.ToLower().Contains(maDonHangLower));
                 }
+
+                // Thống kê trên toàn bộ tập dữ liệu sau khi lọc (không bị giới hạn theo page)
+                var totalOnlineCount = await query.CountAsync(h => !h.BanTaiQuay);
+                var totalTaiQuayCount = await query.CountAsync(h => h.BanTaiQuay);
+                var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
 
                 // Tính tổng số bản ghi sau khi lọc
                 var totalCount = await query.CountAsync();
@@ -153,6 +190,12 @@ namespace QuanApi.Controllers
                         PageSize = pageSize,
                         HasPreviousPage = page > 1,
                         HasNextPage = page < totalPages
+                    },
+                    Statistics = new
+                    {
+                        TotalOnlineCount = totalOnlineCount,
+                        TotalTaiQuayCount = totalTaiQuayCount,
+                        TotalPendingCount = totalPendingCount
                     }
                 });
             }
