@@ -570,6 +570,77 @@ namespace QuanView.Areas.Admin.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // POST: Admin/QuanLyDonHang/HoanTien/{id}
+        [HttpPost]
+        public async Task<IActionResult> HoanTien(Guid id)
+        {
+            try
+            {
+                var detailResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!detailResponse.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = await detailResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
+                if (hoaDon == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.BanTaiQuay)
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn online.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai == "Đã hoàn tiền")
+                {
+                    TempData["ErrorMessage"] = "Đơn hàng đã được hoàn tiền trước đó.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai != "Đã hủy")
+                {
+                    TempData["ErrorMessage"] = "Chỉ hoàn tiền cho đơn hàng đã hủy.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var tenPhuongThucThanhToan = hoaDon.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty;
+                if (!tenPhuongThucThanhToan.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn thanh toán chuyển khoản.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var payload = new
+                {
+                    TrangThai = "Đã hoàn tiền",
+                    NguoiCapNhat = User.Identity?.Name ?? "Admin",
+                    LanCapNhatCuoi = DateTime.UtcNow
+                };
+
+                var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
+                if (updateResponse.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Đã hoàn tiền cho đơn hàng thành công.";
+                }
+                else
+                {
+                    var error = await updateResponse.Content.ReadAsStringAsync();
+                    TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         // POST: Admin/QuanLyDonHang/Rollback/{id}
         [HttpPost]
         public async Task<IActionResult> Rollback(Guid id)

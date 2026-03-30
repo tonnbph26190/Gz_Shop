@@ -239,6 +239,9 @@
                                             Giao hàng thành công</option>
                                             <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy" ? "selected" : null)">Đã hủy
                                             </option>
+                                            <option value="Đã hoàn tiền"
+                                                    selected="@(qTrangThai == "Đã hoàn tiền" ? "selected" : null)">Đã hoàn tiền
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
@@ -387,6 +390,7 @@
                                                                     "Đã giao" => "status-delivered",
                                                                     "Giao hàng thành công" => "status-success",
                                                                     "Đã hủy" => "status-cancelled",
+                                                                    "Đã hoàn tiền" => "status-completed",
                                                                     _ => "status-pending"
                                                                 };
                                                             }
