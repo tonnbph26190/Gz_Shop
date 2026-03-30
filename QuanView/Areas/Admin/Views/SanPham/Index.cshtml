@@ -256,6 +256,15 @@
     </div>
     <div class="card-body">
         <form method="get" asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="row g-3 filter-form">
+            <select name="sortDate" class="form-select">
+                <option value="">Sắp xếp theo ngày</option>
+                <option value="asc" selected="@(Model.SortDate == "asc")">
+                    Ngày tạo tăng dần
+                </option>
+                <option value="desc" selected="@(Model.SortDate == "desc")">
+                    Ngày tạo giảm dần
+                </option>
+            </select>
             <!-- Từ khóa tìm kiếm -->
             <div class="col-md-3">
                 <label for="keyword" class="form-label">Tìm kiếm: </label>
@@ -560,7 +569,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-double-left"></i>
                             </a>
@@ -580,7 +590,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-left"></i>
                             </a>
@@ -605,7 +616,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">@i</a>
                         </li>
                     }
@@ -623,7 +635,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-right"></i>
                             </a>
@@ -643,7 +656,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-double-right"></i>
                             </a>
