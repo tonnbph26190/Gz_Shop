@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <style>
@@ -246,6 +247,13 @@
         color: white !important;
         transform: translateY(-1px);
     }
+
+    #qrReader {
+        min-height: 220px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111;
+    }
 </style>
 
 <div class="container mt-3">
@@ -254,7 +262,7 @@
         <button class="btn btn-primary" id="btnAddInvoice">+ Tạo giỏ hàng</button>
     </div>
     <div class="d-flex justify-content-end mb-2">
-        @* <button class="btn btn-info me-2" id="btnQRCode">QR Code</button> *@
+        <button class="btn btn-info me-2" id="btnQRCode"><i class="bi bi-qr-code-scan me-1"></i> QR Code</button>
         <button class="btn btn-success" id="btnAddProduct">Thêm sản phẩm</button>
     </div>
     <div id="invoiceContent"></div>
@@ -421,6 +429,40 @@
             </div>
             <div class="modal-body" id="productList">
                 <!-- Danh sách sản phẩm sẽ được load ở đây -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal quét QR -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-qr-code-scan me-2"></i>Quét mã QR sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary" id="btnQrCameraToggle" data-on="false">
+                        <i class="bi bi-camera-video me-1"></i><span id="btnQrCameraToggleText">Bật camera</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnQrUpload">
+                        <i class="bi bi-upload me-1"></i>Tải ảnh QR lên
+                    </button>
+                    <input type="file" id="qrFileInput" accept="image/*" class="d-none" />
+                </div>
+                <div id="qrReader" class="mb-3"></div>
+                <label for="qrCodeInput" class="form-label">Hoặc nhập / máy quét cầm tay</label>
+                <input type="text" class="form-control" id="qrCodeInput" placeholder="Dán mã hoặc quét bằng máy quét, sau đó nhấn Enter">
+                <div class="form-text">
+                    Sau khi nhận mã hợp lệ, hệ thống mở cửa sổ nhập số lượng (từ 1 đến tồn kho).
+                </div>
+                <div id="qrLastResult" class="small mt-3 text-muted"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button class="btn btn-primary" id="btnQrScan"><i class="bi bi-box-arrow-in-right me-1"></i>Tìm sản phẩm &amp; nhập số lượng</button>
             </div>
         </div>
     </div>
@@ -684,6 +726,9 @@
     let usePoint = false;
     let selectedPaymentCode;
     let shippingFee = 0;
+    let isHandlingQrScan = false;
+    let html5QrCodeInstance = null;
+    let qrDecodeHandled = false;
 
 
     function resetKhachHangForm() {
@@ -805,6 +850,151 @@
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-san-pham', function (data) {
             products = data;
             if (callback) callback();
+        });
+    }
+
+    function upsertProductCache(product) {
+        if (!product || !product.id) return;
+        const existingIndex = products.findIndex(p => p.id === product.id);
+        if (existingIndex >= 0) {
+            products[existingIndex] = { ...products[existingIndex], ...product };
+        } else {
+            products.push(product);
+        }
+    }
+
+    function stopQrCamera() {
+        if (!html5QrCodeInstance) return Promise.resolve();
+        return html5QrCodeInstance.stop().then(function () {
+            html5QrCodeInstance.clear();
+            html5QrCodeInstance = null;
+        }).catch(function () {
+            try {
+                if (html5QrCodeInstance) html5QrCodeInstance.clear();
+            } catch (e) { }
+            html5QrCodeInstance = null;
+        });
+    }
+
+    function startQrCamera() {
+        if (typeof Html5Qrcode === 'undefined') {
+            showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+            return;
+        }
+        stopQrCamera().then(function () {
+            $('#qrReader').empty();
+            html5QrCodeInstance = new Html5Qrcode('qrReader');
+            Html5Qrcode.getCameras().then(function (cameras) {
+                if (!cameras || cameras.length === 0) {
+                    showError('Không tìm thấy camera trên thiết bị.');
+                    html5QrCodeInstance = null;
+                    return;
+                }
+                const cameraId = cameras[0].id;
+                html5QrCodeInstance.start(
+                    cameraId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    function (decodedText) {
+                        if (qrDecodeHandled) return;
+                        const text = (decodedText || '').trim();
+                        if (!text) return;
+                        qrDecodeHandled = true;
+                        stopQrCamera().then(function () {
+                            $('#btnQrCameraToggle').data('on', false);
+                            $('#btnQrCameraToggleText').text('Bật camera');
+                            $('#qrCodeInput').val(text);
+                            lookupProductByQrAndOpenQuantity(text);
+                        });
+                    },
+                    function () { }
+                ).then(function () {
+                    $('#btnQrCameraToggle').data('on', true);
+                    $('#btnQrCameraToggleText').text('Tắt camera');
+                }).catch(function (err) {
+                    showError('Không bật được camera: ' + (err && err.message ? err.message : err));
+                    html5QrCodeInstance = null;
+                });
+            }).catch(function () {
+                showError('Không đọc được danh sách camera.');
+                html5QrCodeInstance = null;
+            });
+        });
+    }
+
+    function toggleQrCamera() {
+        const on = $('#btnQrCameraToggle').data('on');
+        if (on) {
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+            });
+        } else {
+            qrDecodeHandled = false;
+            startQrCamera();
+        }
+    }
+
+    function openQrScannerModal() {
+        qrDecodeHandled = false;
+        $('#qrCodeInput').val('');
+        $('#qrLastResult').text('');
+        stopQrCamera().then(function () {
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
+        });
+        $('#qrScannerModal').modal('show');
+        setTimeout(function () {
+            $('#qrCodeInput').trigger('focus');
+        }, 250);
+    }
+
+    /** Gọi API theo mã QR, sau đó đóng modal QR và mở popup nhập số lượng (1..tồn). */
+    function lookupProductByQrAndOpenQuantity(qrCode) {
+        if (gioHangs.length === 0) {
+            showWarning('Vui lòng tạo giỏ hàng trước!');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        const code = (qrCode || '').trim();
+        if (!code) {
+            showWarning('Vui lòng nhập hoặc quét mã QR.');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        if (isHandlingQrScan) return;
+        isHandlingQrScan = true;
+        $('#btnQrScan').prop('disabled', true);
+
+        $.get('/Admin/ClientBanHangTaiQuay/tim-san-pham-theo-qr', { qrCode: code }, function (product) {
+            upsertProductCache(product);
+            $('#qrLastResult').html(`<span class="text-success">Đã nhận diện: <b>${product.name || 'Sản phẩm'}</b></span>`);
+            $('#qrScannerModal').one('hidden.bs.modal', function () {
+                showQuantityModal(product.id);
+            });
+            $('#qrScannerModal').modal('hide');
+            $('#qrCodeInput').val('');
+        }).fail(function (xhr) {
+            let msg = 'Không tìm thấy sản phẩm từ mã QR.';
+            if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+            else if (xhr.responseText) {
+                try {
+                    const obj = JSON.parse(xhr.responseText);
+                    if (obj.message) msg = obj.message;
+                    else msg = xhr.responseText;
+                } catch {
+                    msg = xhr.responseText;
+                }
+            }
+            $('#qrLastResult').html(`<span class="text-danger">${msg}</span>`);
+            showError(msg);
+        }).always(function () {
+            isHandlingQrScan = false;
+            $('#btnQrScan').prop('disabled', false);
+            qrDecodeHandled = false;
+            $('#qrCodeInput').trigger('focus');
         });
     }
 
@@ -1667,9 +1857,15 @@
         const modal = document.getElementById('quantityModal');
         const productId = modal.getAttribute('data-product-id');
         const quantity = parseInt(document.getElementById('quantityInput').value);
+        const productInfo = products.find(p => p.id === productId);
 
         if (isNaN(quantity) || quantity <= 0) {
-            showError('Vui lòng nhập số lượng hợp lệ!');
+            showError('Số lượng phải lớn hơn 0!');
+            return;
+        }
+
+        if (productInfo && quantity > productInfo.stock) {
+            showError(`Số lượng không được vượt quá tồn kho (${productInfo.stock}).`);
             return;
         }
 
@@ -2204,6 +2400,61 @@
                 renderProductModal();
                 $('#productModal').modal('show');
             });
+        });
+
+        $('#btnQRCode').click(function () {
+            openQrScannerModal();
+        });
+
+        $('#btnQrScan').click(function () {
+            lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+        });
+
+        $('#qrCodeInput').on('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+            }
+        });
+
+        $('#btnQrCameraToggle').click(function () {
+            toggleQrCamera();
+        });
+
+        $('#btnQrUpload').click(function () {
+            $('#qrFileInput').click();
+        });
+
+        $('#qrFileInput').on('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (typeof Html5Qrcode === 'undefined') {
+                showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+                return;
+            }
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+                $('#qrReader').empty();
+                const h = new Html5Qrcode('qrReader');
+                h.scanFile(file, true).then(function (decodedText) {
+                    const text = (decodedText || '').trim();
+                    try { h.clear(); } catch (x) { }
+                    $('#qrCodeInput').val(text);
+                    lookupProductByQrAndOpenQuantity(text);
+                }).catch(function () {
+                    showError('Không đọc được mã QR từ ảnh. Thử ảnh rõ nét hơn.');
+                    try { h.clear(); } catch (x) { }
+                });
+            });
+            e.target.value = '';
+        });
+
+        $('#qrScannerModal').on('hidden.bs.modal', function () {
+            stopQrCamera();
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
         });
 
         // Cập nhật thông tin thanh toán ban đầu
