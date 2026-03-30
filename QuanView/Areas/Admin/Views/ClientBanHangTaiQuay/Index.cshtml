@@ -1355,7 +1355,7 @@
 
     // Thanh toán hóa đơn
     function openPaymentModal() {
-        let pay = $('#payAmount').text();
+        let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
         // Đặt lại phương thức thanh toán trong modal theo ngoài giao diện
@@ -2112,7 +2112,6 @@
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
         $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
         // Cập nhật phí vận chuyển trong input
@@ -2135,7 +2134,6 @@
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
         $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
         // Cập nhật phí vận chuyển trong input
@@ -2192,7 +2190,7 @@
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
         let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
-        let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
+        let pay = parseInt($('#totalAmount').text().replace(/\D/g, '')) || 0;
 
         if (customerPaid < pay) {
             showError('Khách đưa chưa đủ tiền!');
