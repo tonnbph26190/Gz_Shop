@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <style>
     :root {
         --primary-color: #007bff;
@@ -211,6 +211,45 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         min-width: 300px;
     }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Force small text on high-density data tables to prevent wrapping */
+    .table {
+        font-size: 0.9rem;
+        white-space: nowrap; 
+    }
+
+    /* Allow specific columns like 'Address' to wrap if needed */
+    .table td {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Prevent the container from feeling too tight at high zoom */
+    .container-fluid {
+        padding: 15px !important; /* Smaller padding on small screens */
+    }
+
+    @@media (min-width: 768px) {
+        .container-fluid {
+            padding: 30px !important;
+        }
+    }
+
+    /* Allow cards to shrink their padding if space is tight */
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    @@media (min-width: 992px) {
+        .card-body {
+            padding: 2rem !important;
+        }
+    }
 </style>
 
 <div class="container-fluid">
@@ -239,7 +278,7 @@
     </div>
 
     <div class="row g-4 mb-5">
-        <div class="col-md-4">
+        <div class="col-xl-4 col-md-6 col-sm-12">
             <div class="stats-card d-flex align-items-center">
                 <div class="icon-circle icon-primary me-4">
                     <i class="bi bi-people-fill"></i>
@@ -250,7 +289,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-xl-4 col-md-6 col-sm-12">
             <div class="stats-card d-flex align-items-center">
                 <div class="icon-circle icon-success me-4">
                     <i class="bi bi-person-check-fill"></i>
@@ -261,7 +300,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-xl-4 col-md-6 col-sm-12">
             <div class="stats-card d-flex align-items-center">
                 <div class="icon-circle icon-danger me-4">
                     <i class="bi bi-person-x-fill"></i>
@@ -282,17 +321,17 @@
             <form asp-action="Index" method="get" class="filter-form">
                 <h5 class="mb-4 text-primary"><i class="bi bi-funnel-fill me-2"></i>Bộ lọc tìm kiếm</h5>
                 <div class="row g-3 align-items-end">
-                    <div class="col-lg-5 col-md-12">
+                    <div class="col-xl-5 col-lg-4 col-md-12">
                         <label for="searchTerm" class="form-label">Tìm kiếm</label>
                         <input type="text" name="searchTerm" id="searchTerm" class="form-control" value="@currentSearchTerm" placeholder="Mã, tên, email, SĐT...">
                     </div>
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-xl-3 col-lg-3 col-md-6">
                         <label for="idVaiTro" class="form-label">Vai trò</label>
                         <select name="idVaiTro" id="idVaiTro" class="form-select" asp-items="ViewBag.vaiTroList">
                             <option value="">Tất cả</option>
                         </select>
                     </div>
-                    <div class="col-lg-2 col-md-6">
+                    <div class="col-xl-2 col-lg-2 col-md-6">
                         <label for="trangThai" class="form-label">Trạng thái</label>
                         <select name="trangThai" id="trangThai" class="form-select">
                             <option value="">Tất cả</option>
@@ -300,7 +339,7 @@
                             <option value="false">Không hoạt động</option>
                         </select>
                     </div>
-                    <div class="col-lg-2 col-md-12">
+                    <div class="col-xl-2 col-lg-2 col-md-12">
                         <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-search me-2"></i>Tìm</button>
                     </div>
                 </div>
