@@ -42,8 +42,10 @@ namespace QuanView.Areas.Admin.Controllers
             decimal? priceTo = null,
             int? qtyFrom = null,
             int? qtyTo = null,
+
             DateTime? dateFrom = null,
-            DateTime? dateTo = null)
+            DateTime? dateTo = null,
+			string? sortDate = null)
         {
             // Cố định pageSize = 5
             int pageSize = 5;
@@ -70,8 +72,10 @@ namespace QuanView.Areas.Admin.Controllers
                 queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
             if (dateTo.HasValue)
                 queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
+			if (!string.IsNullOrEmpty(sortDate))
+				queryParams.Add($"sortDate={sortDate}");
 
-            var queryString = string.Join("&", queryParams);
+			var queryString = string.Join("&", queryParams);
             var response = await _http.GetAsync($"sanphams/paged?{queryString}");
 
             if (!response.IsSuccessStatusCode)
@@ -149,8 +153,9 @@ namespace QuanView.Areas.Admin.Controllers
                 QtyFrom = qtyFrom,
                 QtyTo = qtyTo,
                 DateFrom = dateFrom,
-                DateTo = dateTo
-            };
+                DateTo = dateTo,
+				SortDate = sortDate
+			};
 
             return View(viewModel);
         }
