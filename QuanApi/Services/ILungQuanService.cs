@@ -50,6 +50,7 @@ namespace QuanApi.Services
 			lq.IDLungQuan = Guid.NewGuid();
 			lq.NgayTao = DateTime.UtcNow;
 			lq.NguoiTao = string.IsNullOrEmpty(lq.NguoiTao) ? "unknown" : lq.NguoiTao;
+			lq.TrangThai = true;
 
 			_context.LungQuans.Add(lq);
 			return await _context.SaveChangesAsync() > 0;
