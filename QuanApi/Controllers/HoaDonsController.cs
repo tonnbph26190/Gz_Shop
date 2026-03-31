@@ -106,6 +106,11 @@ namespace QuanApi.Controllers
 				var totalCount = await query.CountAsync();
 				var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
+				// Thống kê theo cùng bộ lọc (khớp Admin/QuanLyDonHang — online/tại quầy/chờ xác nhận)
+				var totalOnlineCount = await query.CountAsync(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+				var totalTaiQuayCount = await query.CountAsync(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
+				var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
+
 				// Áp dụng phân trang
 				var hoaDons = await query
 					.OrderByDescending(h => h.NgayTao)
@@ -154,6 +159,12 @@ namespace QuanApi.Controllers
 						PageSize = pageSize,
 						HasPreviousPage = page > 1,
 						HasNextPage = page < totalPages
+					},
+					Statistics = new
+					{
+						TotalOnlineCount = totalOnlineCount,
+						TotalTaiQuayCount = totalTaiQuayCount,
+						TotalPendingCount = totalPendingCount
 					}
 				});
 			}
