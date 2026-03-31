@@ -459,11 +459,6 @@
                 <div class="card-body">
 
                     <div class="mb-2">
-                        <label class="form-label">Phí vận chuyển:</label>
-                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
-                    </div>
-
-                    <div class="mb-2">
                         <label class="form-label">Mã giảm giá:</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="discountCode" value="" placeholder="Chọn phiếu giảm giá" readonly>
@@ -477,9 +472,14 @@
                         <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
                         <label class="form-check-label" for="shippingSwitch">Giao Hàng</label>
                     </div>
+                    <hr>
                     <div class="mb-2">
                         <span>Tiền hàng:</span>
-                        <span class="float-end" id="goodsAmount">0 VND</span>
+                        <span class="float-end" id="goodsAmount" id="shippingFee">0 VND</span>
+                        <span class="float-end" id="shippingFee"></span>
+                        @* <label class="form-label" ></label> *@
+                    </div>
+                    <div class="mb-2">
                     </div>
                     <div class="mb-2">
                         <span>Tiền thối lại:</span>
@@ -3148,7 +3148,8 @@
                                 <small>Phí gốc: <span style="text-decoration: line-through;">${originalFee.toLocaleString()} VNĐ</span></small>
                             </div>
                             <div class="final-fee text-success fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
+                                Phí vận chuyển: 
+                                <span class="float-end">${finalFee.toLocaleString()} VNĐ</span>
                             </div>
                             <div class="discount-info text-success">
                                 <small><i class="bi bi-tag"></i> ${discountMessage}</small>
@@ -3160,7 +3161,8 @@
             feeDisplayHtml = `
                         <div class="shipping-fee-details">
                             <div class="final-fee fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
+                                Phí vận chuyển: 
+                                <span class="float-end">${finalFee.toLocaleString()} VNĐ</span>
                             </div>
                         </div>
                     `;
