@@ -190,6 +190,23 @@ namespace QuanApi.Services
                     }
                     break;
 
+                case "Đã xác nhận":
+                    // Rollback từ "Đã xác nhận" về "Chờ xác nhận" => hoàn trả lại tồn kho
+                    if (targetStatus == "Chờ xác nhận")
+                    {
+                        foreach (var chiTiet in order.ChiTietHoaDons ?? new List<ChiTietHoaDon>())
+                        {
+                            if (chiTiet.SanPhamChiTiet != null)
+                            {
+                                var soLuongCu = chiTiet.SanPhamChiTiet.SoLuong;
+                                chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
+                                _logger.LogInformation(
+                                    $"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} khi rollback từ 'Đã xác nhận' về 'Chờ xác nhận': {soLuongCu} -> {chiTiet.SanPhamChiTiet.SoLuong}");
+                            }
+                        }
+                    }
+                    break;
+
                 case "Đã giao hàng":
                     // Rollback từ "Đã giao hàng" có thể cần xử lý hoàn tiền
                     if (targetStatus == "Đang giao hàng")
