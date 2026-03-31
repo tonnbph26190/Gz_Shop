@@ -143,6 +143,10 @@ namespace QuanView.Areas.Admin.Controllers
             public Guid IDSanPhamChiTiet { get; set; }
             public string MaSPChiTiet { get; set; }
             public decimal GiaBan { get; set; }
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongDatMua { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
             public KichCoDto KichCo { get; set; }
             public MauSacDto MauSac { get; set; }
             public HoaTietDto HoaTiet { get; set; }
@@ -359,6 +363,7 @@ namespace QuanView.Areas.Admin.Controllers
                                         IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                         MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
                                         GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        SoLuong = ct.SanPhamChiTiet.SoLuongTonHienTai,
                                         KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
                                         {
                                             TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo
@@ -382,6 +387,7 @@ namespace QuanView.Areas.Admin.Controllers
                                             MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
                                         };
                                     }
+
                                 }
 
                                 hoaDon.ChiTietHoaDons.Add(chiTiet);

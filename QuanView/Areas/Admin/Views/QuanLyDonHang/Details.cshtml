@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.HoaDon
+@model QuanApi.Data.HoaDon
 @using QuanView.Areas.Admin.Models
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
@@ -453,6 +453,18 @@
                             <tbody>
                                 @foreach (var chiTiet in Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>())
                                 {
+                                    var soLuongTonHienTai = chiTiet.SanPhamChiTiet?.SoLuong ?? 0;
+                                    var trangThaiDon = Model.TrangThai ?? string.Empty;
+                                    var daTruKho = trangThaiDon == "Đã xác nhận"
+                                        || trangThaiDon == "Chờ lấy hàng"
+                                        || trangThaiDon == "Đã lấy hàng"
+                                        || trangThaiDon == "Chờ giao hàng"
+                                        || trangThaiDon == "Đang giao hàng"
+                                        || trangThaiDon == "Đã giao"
+                                        || trangThaiDon == "Giao hàng thành công";
+                                    var soLuongTonTruocXacNhan = daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai;
+                                    var soLuongTonDuKienSauHuy = daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai;
+
                                     <tr>
                                         <td>
                                             <div class="font-weight-bold">
@@ -466,6 +478,11 @@
                                                 Họa tiết: @(chiTiet.SanPhamChiTiet?.HoaTiet?.TenHoaTiet ?? "Không có")
                                                 &nbsp;|&nbsp;
                                                 Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="badge badge-light border mr-1">Tồn hiện tại: @soLuongTonHienTai</span>
+                                                <span class="badge badge-light border mr-1">Tồn trước xác nhận: @soLuongTonTruocXacNhan</span>
+                                                <span class="badge badge-light border">Tồn dự kiến sau hủy: @soLuongTonDuKienSauHuy</span>
                                             </div>
                                         </td>
                                         <td>@chiTiet.DonGia.ToString("N0") VNĐ</td>
