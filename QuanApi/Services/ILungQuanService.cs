@@ -4,114 +4,121 @@ using QuanApi.Data;
 
 namespace QuanApi.Services
 {
-    public interface ILungQuanService
-    {
-        Task<IEnumerable<LungQuan>> GetAllAsync(string? keyword);
-        Task<LungQuan?> GetByIdAsync(Guid id);
-        Task<bool> CreateAsync(LungQuan lq);
-        Task<bool> UpdateAsync(Guid id, LungQuan lq);
-        Task<bool> DeleteAsync(Guid id);
-        Task<bool> ToggleStatusAsync(Guid id);
-        Task<(int total, List<LungQuan> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
-    }
+	public interface ILungQuanService
+	{
+		Task<IEnumerable<LungQuan>> GetAllAsync(string? keyword);
+		Task<LungQuan?> GetByIdAsync(Guid id);
+		Task<bool> CreateAsync(LungQuan lq);
+		Task<bool> UpdateAsync(Guid id, LungQuan lq);
+		Task<bool> DeleteAsync(Guid id);
+		Task<bool> ToggleStatusAsync(Guid id);
+		Task<(int total, List<LungQuan> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
+	}
 
-    public class LungQuanService : ILungQuanService
-    {
-        private readonly BanQuanAu1DbContext _context;
+	public class LungQuanService : ILungQuanService
+	{
+		private readonly BanQuanAu1DbContext _context;
 
-        public LungQuanService(BanQuanAu1DbContext context)
-        {
-            _context = context;
-        }
+		public LungQuanService(BanQuanAu1DbContext context)
+		{
+			_context = context;
+		}
 
-        public async Task<IEnumerable<LungQuan>> GetAllAsync(string? keyword)
-        {
-            var query = _context.LungQuans.AsQueryable();
+		public async Task<IEnumerable<LungQuan>> GetAllAsync(string? keyword)
+		{
+			var query = _context.LungQuans.AsQueryable();
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x => x.TenLungQuan.ToLower().Contains(keywordLower) || x.MaLungQuan.ToLower().Contains(keywordLower));
-            }
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x => x.TenLungQuan.ToLower().Contains(keywordLower) || x.MaLungQuan.ToLower().Contains(keywordLower));
+			}
 
-            return await query.ToListAsync();
-        }
+			// Ensure newest items appear first
+			query = query.OrderByDescending(x => x.LanCapNhatCuoi ?? x.NgayTao);
 
-        public async Task<LungQuan?> GetByIdAsync(Guid id)
-        {
-            return await _context.LungQuans.FindAsync(id);
-        }
+			return await query.ToListAsync();
+		}
 
-        public async Task<bool> CreateAsync(LungQuan lq)
-        {
-            lq.IDLungQuan = Guid.NewGuid();
-            lq.NgayTao = DateTime.UtcNow;
-            lq.NguoiTao = string.IsNullOrEmpty(lq.NguoiTao) ? "unknown" : lq.NguoiTao;
+		public async Task<LungQuan?> GetByIdAsync(Guid id)
+		{
+			return await _context.LungQuans.FindAsync(id);
+		}
 
-            _context.LungQuans.Add(lq);
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> CreateAsync(LungQuan lq)
+		{
+			lq.IDLungQuan = Guid.NewGuid();
+			lq.NgayTao = DateTime.UtcNow;
+			lq.NguoiTao = string.IsNullOrEmpty(lq.NguoiTao) ? "unknown" : lq.NguoiTao;
+			lq.TrangThai = true;
 
-        public async Task<bool> UpdateAsync(Guid id, LungQuan lq)
-        {
-            var entity = await _context.LungQuans.FindAsync(id);
-            if (entity == null) return false;
+			_context.LungQuans.Add(lq);
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            entity.TenLungQuan = lq.TenLungQuan;
-            entity.MaLungQuan = lq.MaLungQuan;
-            entity.TrangThai = lq.TrangThai;
-            entity.LanCapNhatCuoi = DateTime.UtcNow;
-            entity.NguoiCapNhat = string.IsNullOrEmpty(lq.NguoiCapNhat) ? "unknown" : lq.NguoiCapNhat;
+		public async Task<bool> UpdateAsync(Guid id, LungQuan lq)
+		{
+			var entity = await _context.LungQuans.FindAsync(id);
+			if (entity == null) return false;
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+			entity.TenLungQuan = lq.TenLungQuan;
+			entity.MaLungQuan = lq.MaLungQuan;
+			entity.TrangThai = lq.TrangThai;
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = string.IsNullOrEmpty(lq.NguoiCapNhat) ? "unknown" : lq.NguoiCapNhat;
 
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            var entity = await _context.LungQuans.FindAsync(id);
-            if (entity == null) return false;
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            _context.LungQuans.Remove(entity);
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> DeleteAsync(Guid id)
+		{
+			var entity = await _context.LungQuans.FindAsync(id);
+			if (entity == null) return false;
 
-        public async Task<bool> ToggleStatusAsync(Guid id)
-        {
-            var lq = await _context.LungQuans.FindAsync(id);
-            if (lq == null) return false;
+			_context.LungQuans.Remove(entity);
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            lq.TrangThai = !lq.TrangThai;
-            lq.LanCapNhatCuoi = DateTime.UtcNow;
-            lq.NguoiCapNhat = "auto-toggle";
+		public async Task<bool> ToggleStatusAsync(Guid id)
+		{
+			var lq = await _context.LungQuans.FindAsync(id);
+			if (lq == null) return false;
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+			lq.TrangThai = !lq.TrangThai;
+			lq.LanCapNhatCuoi = DateTime.UtcNow;
+			lq.NguoiCapNhat = "auto-toggle";
 
-        public async Task<(int total, List<LungQuan> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
-        {
-            var query = _context.LungQuans.AsQueryable();
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x => x.TenLungQuan.ToLower().Contains(keywordLower) || x.MaLungQuan.ToLower().Contains(keywordLower));
-            }
+		public async Task<(int total, List<LungQuan> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
+		{
+			var query = _context.LungQuans.AsQueryable();
 
-            if (trangThai == "active")
-                query = query.Where(x => x.TrangThai);
-            else if (trangThai == "inactive")
-                query = query.Where(x => !x.TrangThai);
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x => x.TenLungQuan.ToLower().Contains(keywordLower) || x.MaLungQuan.ToLower().Contains(keywordLower));
+			}
 
-            int total = await query.CountAsync();
+			if (trangThai == "active")
+				query = query.Where(x => x.TrangThai);
+			else if (trangThai == "inactive")
+				query = query.Where(x => !x.TrangThai);
 
-            var data = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+			// Ensure newest items appear first
+			query = query.OrderByDescending(x => x.LanCapNhatCuoi ?? x.NgayTao);
 
-            return (total, data);
-        }
-    }
+			int total = await query.CountAsync();
+
+			var data = await query
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return (total, data);
+		}
+	}
 }
 
 

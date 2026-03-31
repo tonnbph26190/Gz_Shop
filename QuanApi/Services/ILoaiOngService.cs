@@ -4,114 +4,123 @@ using QuanApi.Data;
 
 namespace QuanApi.Services
 {
-    public interface ILoaiOngService
-    {
-        Task<List<LoaiOng>> GetAllAsync(string? keyword);
-        Task<LoaiOng?> GetByIdAsync(Guid id);
-        Task<bool> CreateAsync(LoaiOng lo);
-        Task<bool> UpdateAsync(Guid id, LoaiOng lo);
-        Task<bool> DeleteAsync(Guid id);
-        Task<bool> ToggleStatusAsync(Guid id);
-        Task<(int total, List<LoaiOng> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
-    }
+	public interface ILoaiOngService
+	{
+		Task<List<LoaiOng>> GetAllAsync(string? keyword);
+		Task<LoaiOng?> GetByIdAsync(Guid id);
+		Task<bool> CreateAsync(LoaiOng lo);
+		Task<bool> UpdateAsync(Guid id, LoaiOng lo);
+		Task<bool> DeleteAsync(Guid id);
+		Task<bool> ToggleStatusAsync(Guid id);
+		Task<(int total, List<LoaiOng> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
+	}
 
-    public class LoaiOngService : ILoaiOngService
-    {
-        private readonly BanQuanAu1DbContext _context;
+	public class LoaiOngService : ILoaiOngService
+	{
+		private readonly BanQuanAu1DbContext _context;
 
-        public LoaiOngService(BanQuanAu1DbContext context)
-        {
-            _context = context;
-        }
+		public LoaiOngService(BanQuanAu1DbContext context)
+		{
+			_context = context;
+		}
 
-        public async Task<List<LoaiOng>> GetAllAsync(string? keyword)
-        {
-            var query = _context.LoaiOngs.AsQueryable();
+		public async Task<List<LoaiOng>> GetAllAsync(string? keyword)
+		{
+			var query = _context.LoaiOngs.AsQueryable();
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x =>
-                    x.TenLoaiOng.ToLower().Contains(keywordLower) ||
-                    x.MaLoaiOng.ToLower().Contains(keywordLower));
-            }
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x =>
+					x.TenLoaiOng.ToLower().Contains(keywordLower) ||
+					x.MaLoaiOng.ToLower().Contains(keywordLower));
+			}
 
-            return await query.ToListAsync();
-        }
+			// Order by last update if exists, otherwise by creation date so updated items appear first
+			query = query.OrderByDescending(x => (x.LanCapNhatCuoi ?? x.NgayTao));
 
-        public async Task<LoaiOng?> GetByIdAsync(Guid id)
-        {
-            return await _context.LoaiOngs.FindAsync(id);
-        }
+			return await query.ToListAsync();
+		}
 
-        public async Task<bool> CreateAsync(LoaiOng lo)
-        {
-            lo.IDLoaiOng = Guid.NewGuid();
-            lo.NgayTao = DateTime.UtcNow;
-            lo.NguoiTao ??= "unknown";
+		public async Task<LoaiOng?> GetByIdAsync(Guid id)
+		{
+			return await _context.LoaiOngs.FindAsync(id);
+		}
 
-            _context.LoaiOngs.Add(lo);
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> CreateAsync(LoaiOng lo)
+		{
+			lo.IDLoaiOng = Guid.NewGuid();
+			lo.NgayTao = DateTime.UtcNow;
+			lo.NguoiTao ??= "unknown";
 
-        public async Task<bool> UpdateAsync(Guid id, LoaiOng lo)
-        {
-            var entity = await _context.LoaiOngs.FindAsync(id);
-            if (entity == null) return false;
+			_context.LoaiOngs.Add(lo);
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            entity.TenLoaiOng = lo.TenLoaiOng;
-            entity.MaLoaiOng = lo.MaLoaiOng;
-            entity.TrangThai = lo.TrangThai;
-            entity.LanCapNhatCuoi = DateTime.UtcNow;
-            entity.NguoiCapNhat = string.IsNullOrEmpty(lo.NguoiCapNhat) ? "unknown" : lo.NguoiCapNhat;
+		public async Task<bool> UpdateAsync(Guid id, LoaiOng lo)
+		{
+			var entity = await _context.LoaiOngs.FindAsync(id);
+			if (entity == null) return false;
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+			entity.TenLoaiOng = lo.TenLoaiOng;
+			entity.MaLoaiOng = lo.MaLoaiOng;
+			entity.TrangThai = lo.TrangThai;
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = string.IsNullOrEmpty(lo.NguoiCapNhat) ? "unknown" : lo.NguoiCapNhat;
 
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            var entity = await _context.LoaiOngs.FindAsync(id);
-            if (entity == null) return false;
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            _context.LoaiOngs.Remove(entity);
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> DeleteAsync(Guid id)
+		{
+			var entity = await _context.LoaiOngs.FindAsync(id);
+			if (entity == null) return false;
 
-        public async Task<bool> ToggleStatusAsync(Guid id)
-        {
-            var lo = await _context.LoaiOngs.FindAsync(id);
-            if (lo == null) return false;
+			_context.LoaiOngs.Remove(entity);
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            lo.TrangThai = !lo.TrangThai;
-            lo.LanCapNhatCuoi = DateTime.UtcNow;
-            lo.NguoiCapNhat = "auto-toggle";
+		public async Task<bool> ToggleStatusAsync(Guid id)
+		{
+			var lo = await _context.LoaiOngs.FindAsync(id);
+			if (lo == null) return false;
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+			lo.TrangThai = !lo.TrangThai;
+			lo.LanCapNhatCuoi = DateTime.UtcNow;
+			lo.NguoiCapNhat = "auto-toggle";
 
-        public async Task<(int total, List<LoaiOng> data)> GetPagedAsync(
-            int page, int pageSize, string? keyword, string? trangThai)
-        {
-            var query = _context.LoaiOngs.AsQueryable();
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x =>
-                    x.TenLoaiOng.ToLower().Contains(keywordLower) ||
-                    x.MaLoaiOng.ToLower().Contains(keywordLower));
-            }
+		public async Task<(int total, List<LoaiOng> data)> GetPagedAsync(
+			int page, int pageSize, string? keyword, string? trangThai)
+		{
+			var query = _context.LoaiOngs.AsQueryable();
 
-            if (!string.IsNullOrEmpty(trangThai))
-            {
-                if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
-                if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);
-            }
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x =>
+					x.TenLoaiOng.ToLower().Contains(keywordLower) ||
+					x.MaLoaiOng.ToLower().Contains(keywordLower));
+			}
 
-            var total = await query.CountAsync();
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+			if (!string.IsNullOrEmpty(trangThai))
+			{
+				if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
+				if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);
+			}
 
-            return (total, data);
-        }
-    }
+			var total = await query.CountAsync();
+
+			// Order by last update if exists, otherwise by creation date so updated items appear first
+			var data = await query
+				.OrderByDescending(x => (x.LanCapNhatCuoi ?? x.NgayTao))
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return (total, data);
+		}
+	}
 }
