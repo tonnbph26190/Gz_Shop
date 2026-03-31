@@ -1,13 +1,94 @@
 @{
     ViewBag.Title = "Bán hàng";
 }
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <style>
+    .nav-tabs {
+        border-bottom: none !important;
+        gap: 3px;
+    }
+
+    .nav-tabs .nav-link {
+        border: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 16px 8px 16px;
+        font-weight: 500;
+        position: relative;
+        min-width: 170px;
+        background: #f8f9fa;
+        color: #555;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+    }
+
+    .nav-tabs .nav-link.active {
+        background: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+        color: #000;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        border-bottom: 2px solid #fff; /* blends with content */
+    }
+
+    .nav-tabs .nav-link:hover {
+        background: #fff;
+        border-color: #adb5bd;
+        color: #333;
+    }
+
+    .tab-close {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 18px;
+        color: #999;
+        opacity: 0.75;
+        transition: all 0.2s;
+    }
+    .nav-link:hover .tab-close {
+        opacity: 1;
+    }
+
+    .tab-close:hover {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.15);
+    }
+
+    .invoice-tabs-container {
+        display: flex;
+        align-items: end;
+        gap: 3px;
+        flex-wrap: wrap;
+    }
+    #btnAddInvoice {
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+    }
+    #btnAddInvoice:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+    /* Toast styles (kept from your original) */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 350px;
+    }
     /* Toast Notification Styles */
     .toast-container {
         position: fixed;
@@ -257,15 +338,28 @@
 </style>
 
 <div class="container mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <ul class="nav nav-tabs" id="invoiceTabs"></ul>
-        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo giỏ hàng</button>
+    <!-- Tab Header - Chrome-like Style with Clear Outlines -->
+    <div class="d-flex align-items-end mb-3">
+        <div class="invoice-tabs-container d-flex align-items-end flex-grow-1" style="gap: 3px;">
+            <ul class="nav nav-tabs" id="invoiceTabs" style="border-bottom: none; background: transparent;"></ul>
+            
+            <!-- Small + Button like Chrome -->
+            <button class="btn btn-light border shadow-sm d-flex align-items-center justify-content-center" 
+                    id="btnAddInvoice" 
+                    style="width: 42px; height: 38px; border-radius: 8px 8px 0 0; margin-bottom: 2px; font-size: 1.5rem; line-height: 1;">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+
+        <div class="d-flex gap-2 ms-auto">
+            <button class="btn btn-info" id="btnQRCode">
+                <i class="bi bi-qr-code-scan me-1"></i> QR Code
+            </button>
+            <button class="btn btn-success" id="btnAddProduct">
+                <i class="bi bi-plus-circle me-1"></i> Thêm sản phẩm
+            </button>
+        </div>
     </div>
-    <div class="d-flex justify-content-end mb-2">
-        <button class="btn btn-info me-2" id="btnQRCode"><i class="bi bi-qr-code-scan me-1"></i> QR Code</button>
-        <button class="btn btn-success" id="btnAddProduct">Thêm sản phẩm</button>
-    </div>
-    <div id="invoiceContent"></div>
 
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
@@ -1355,7 +1449,7 @@
 
     // Thanh toán hóa đơn
     function openPaymentModal() {
-        let pay = $('#payAmount').text();
+        let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
         // Đặt lại phương thức thanh toán trong modal theo ngoài giao diện
@@ -1380,6 +1474,10 @@
 
     // Tạo giỏ hàng mới
     function taoGioHang() {
+        if (gioHangs.length >= maxGioHangs) {
+            showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
+            return;
+        }
         const dto = {
             idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             nguoiTao: "Admin"
@@ -1398,34 +1496,75 @@
                 };
                 gioHangs.push(gioHang);
                 currentGioHang = gioHangs.length - 1;
-                // Lưu tất cả giỏ hàng vào localStorage
+
                 saveGioHangsToStorage();
                 renderTabs();
-                loadGioHang(); // Load dữ liệu từ server
+                loadGioHang();
+                showSuccess('Đã tạo giỏ hàng mới!');
             },
-            error: function (err) {
+            error: function () {
                 showError('Tạo giỏ hàng thất bại!');
             }
         });
     }
 
-    // Render tabs giỏ hàng
     function renderTabs() {
         let html = '';
         gioHangs.forEach((gh, idx) => {
-            html += `<li class="nav-item">
-                        <a class="nav-link ${idx === currentGioHang ? 'active' : ''}" href="#" onclick="switchGioHang(${idx})">Giỏ hàng ${idx + 1}${gh.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>' + gh.products.length + '</span>' : ''}</a>
-                    </li>`;
+            const isActive = idx === currentGioHang;
+            const productCount = gh.products ? gh.products.length : 0;
+
+            html += `
+                <li class="nav-item">
+                    <a class="nav-link ${isActive ? 'active' : ''}" href="#" 
+                    onclick="switchGioHang(${idx}); event.preventDefault();">
+                        Giỏ hàng ${idx + 1}
+                        ${productCount > 0 ? `<span class="badge bg-danger ms-1">${productCount}</span>` : ''}
+                        
+                        <span class="tab-close" onclick="event.stopImmediatePropagation(); closeTab(${idx});" 
+                            title="Đóng giỏ hàng">×</span>
+                    </a>
+                </li>`;
         });
+
         $('#invoiceTabs').html(html);
+    }
+    function closeTab(index) {
+        if (gioHangs.length <= 1) {
+            showWarning("Phải giữ ít nhất một giỏ hàng!");
+            return;
+        }
+
+        // Remove the cart
+        gioHangs.splice(index, 1);
+
+        // Adjust current index
+        if (currentGioHang >= index) {
+            currentGioHang = Math.max(0, currentGioHang - 1);
+        }
+
+        saveGioHangsToStorage();
+        renderTabs();
+        loadGioHang();
+    }
+    function addMiddleClickSupport() {
+        $(document).on('mousedown', '.nav-tabs .nav-link', function (e) {
+            if (e.button === 1) { // Middle mouse button
+                e.preventDefault();
+                const index = $(this).parent().index();
+                if (index !== -1) {
+                    closeTab(index);
+                }
+            }
+        });
     }
 
     // Chuyển giỏ hàng
     function switchGioHang(idx) {
         currentGioHang = idx;
-        saveGioHangsToStorage(); // Lưu trạng thái hiện tại
+        saveGioHangsToStorage();
         renderTabs();
-        loadGioHang(); // Load dữ liệu từ server thay vì render trực tiếp
+        loadGioHang();
     }
 
     // Load thông tin giỏ hàng từ server
@@ -2112,7 +2251,6 @@
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
         $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
         // Cập nhật phí vận chuyển trong input
@@ -2135,7 +2273,6 @@
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
         $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
         // Cập nhật phí vận chuyển trong input
@@ -2192,7 +2329,7 @@
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
         let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
-        let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
+        let pay = parseInt($('#totalAmount').text().replace(/\D/g, '')) || 0;
 
         if (customerPaid < pay) {
             showError('Khách đưa chưa đủ tiền!');
@@ -2379,21 +2516,14 @@
     $(document).ready(function () {
         // Thử khôi phục giỏ hàng từ localStorage trước
         if (!restoreGioHangsFromStorage()) {
-            // Nếu không khôi phục được, tạo giỏ hàng mới
             taoGioHang();
         }
+
         loadProducts();
         loadCustomers();
-        loadPaymentMethods(); // Load phương thức thanh toán động từ API
+        loadPaymentMethods();
 
-        $('#btnAddInvoice').click(function () {
-            if (gioHangs.length < maxGioHangs) {
-                taoGioHang();
-            } else {
-                showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
-            }
-        });
-
+        $('#btnAddInvoice').click(taoGioHang);
         // Khi mở modal chọn sản phẩm, luôn reload sản phẩm mới nhất
         $('#btnAddProduct').click(function () {
             loadProducts(function () {
@@ -2402,10 +2532,8 @@
             });
         });
 
-        $('#btnQRCode').click(function () {
-            openQrScannerModal();
-        });
-
+        $('#btnQRCode').click(openQrScannerModal);
+        addMiddleClickSupport();
         $('#btnQrScan').click(function () {
             lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
         });
@@ -3280,8 +3408,11 @@
 
             // Cập nhật địa chỉ đầy đủ sau khi điền xong
             setTimeout(() => {
-                concatenateShippingAddress();
-            }, 200);
+                renderTabs();
+                if (gioHangs.length > 0) {
+                    loadGioHang();
+                }
+            }, 300);
 
         } catch (error) {
             console.error('Error populating dropdowns from parsed address:', error);
