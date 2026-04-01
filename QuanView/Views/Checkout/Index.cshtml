@@ -1382,7 +1382,7 @@
 						});
 
 						// Xử lý khi chọn phường xã - Modal
-						$("#saveAddressPhuong").change(function() {
+						$(document).on('change', '#saveAddressPhuong', function() {
 							updateSaveAddressFullAddress();
 						});
 
@@ -3438,6 +3438,7 @@
 							$('#saveAddressQuan').val(quanId).change();
 							setTimeout(() => {
 								$('#saveAddressPhuong').val(phuongId);
+								updateSaveAddressFullAddress(); // ← add this line
 							}, 300);
 						}, 300);
 					}
