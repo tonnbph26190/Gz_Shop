@@ -537,11 +537,14 @@
 
                         @if (canRollback)
                         {
-                            <form method="post" action="@Url.Action("Rollback", new { id = Model.IDHoaDon })" class="mt-2">
-                                <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
-                                    <i class="fas fa-undo-alt"></i> @rollbackText
-                                </button>
-                            </form>
+                            @if (!orderCompleted)
+                            {
+                                <form method="post" action="@Url.Action("Rollback", new { id = Model.IDHoaDon })" class="mt-2">
+                                    <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
+                                        <i class="fas fa-undo-alt"></i> @rollbackText
+                                    </button>
+                                </form>
+                            } 
                         }
 
                         @if (canShowRefundButton)
