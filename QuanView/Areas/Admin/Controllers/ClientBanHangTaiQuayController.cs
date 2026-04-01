@@ -176,6 +176,16 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/cau-hinh-ban-hang")]
+        public async Task<IActionResult> GetSalesConfig()
+        {
+            var response = await _httpClient.GetAsync("CauHinhBanHang");
+            var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
+            return Content(result, "application/json");
+        }
+
         // Lấy danh sách phương thức thanh toán
         [HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan")]

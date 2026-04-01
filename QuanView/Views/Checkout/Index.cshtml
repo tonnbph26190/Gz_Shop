@@ -546,6 +546,25 @@
 							<span>Giảm giá:</span>
 							<span style="color:#28a745;" id="giamGia">0 VND</span>
 						</div>
+						<div id="pointInfoSection" style="display:none;">
+							<div class="order-item">
+								<span>Điểm hiện có:</span>
+								<span id="availablePointsText">0 điểm</span>
+							</div>
+							<div class="order-item">
+								<span>Quy đổi:</span>
+								<span id="pointRateText">1 điểm = 0 VND</span>
+							</div>
+							<div style="margin: 8px 0;">
+								<label for="requestedUsedPoints" style="font-size: 13px; color: #666;">Nhập điểm muốn dùng</label>
+								<input type="number" id="requestedUsedPoints" min="0" step="1" class="form-control" placeholder="0" />
+								<small id="pointHintText" style="color:#6c757d; display:block; margin-top:4px;"></small>
+							</div>
+							<div class="order-item">
+								<span>Giảm từ điểm:</span>
+								<span style="color:#28a745;" id="pointDiscount">0 VND</span>
+							</div>
+						</div>
 						<div class="order-item">
 							<span>Phí vận chuyển:</span>
 							<span id="phiVanChuyen">0 VND</span>
@@ -624,6 +643,43 @@
 			let gioHangData = null;
 			let phuongThucThanhToan = null;
 			let discountValue = 0;
+			let availablePoints = 0;
+			let moneyPerPoint = 0;
+			let maxPointsPerOrder = 0;
+
+			function getPointLimitByConfig() {
+				if (maxPointsPerOrder > 0) {
+					return Math.min(availablePoints, maxPointsPerOrder);
+				}
+
+				return availablePoints;
+			}
+
+			function getPointLimitByAmount(subtotal, discount) {
+				if (!moneyPerPoint || moneyPerPoint <= 0) {
+					return 0;
+				}
+
+				const baseAmount = Math.max(0, (parseFloat(subtotal) || 0) - (parseFloat(discount) || 0));
+				return Math.floor(baseAmount / moneyPerPoint);
+			}
+
+			function getMaxUsablePoints(subtotal, discount) {
+				return Math.max(0, Math.min(getPointLimitByConfig(), getPointLimitByAmount(subtotal, discount)));
+			}
+
+			function getClampedRequestedUsedPoints(subtotal, discount) {
+				const inputEl = document.getElementById('requestedUsedPoints');
+				const requested = Math.max(0, parseInt(inputEl?.value) || 0);
+				const maxUsable = getMaxUsablePoints(subtotal, discount);
+				const clamped = Math.min(requested, maxUsable);
+
+				if (inputEl && requested !== clamped) {
+					inputEl.value = clamped.toString();
+				}
+
+				return clamped;
+			}
 
 			// Load dữ liệu khi trang được tải
 			document.addEventListener('DOMContentLoaded', async function() {
@@ -671,6 +727,7 @@
 			// Load các thông tin khác
 				loadPhuongThucThanhToan();
 			loadCustomerInfo();
+			loadPointInfo();
 			loadDiscountFromSession();
 
 			// Bind event handlers cho các nút phiếu giảm giá
@@ -890,6 +947,7 @@
 				}
 
 				// Tạo dữ liệu đặt hàng
+				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
 				const checkoutData = {
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
@@ -897,7 +955,9 @@
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
-				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
+				usePoint: requestedUsedPoints > 0,
+				requestedUsedPoints: requestedUsedPoints,
+				tongTien: Math.max(0, tongTien - discountValue - (requestedUsedPoints * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
@@ -997,6 +1057,71 @@
 					}
 				} catch (error) {
 					console.error('Lỗi khi tải thông tin khách hàng:', error);
+				}
+			}
+
+			async function loadPointInfo() {
+				try {
+					const response = await fetch('/Checkout/GetPointInfo');
+					if (!response.ok) {
+						return;
+					}
+
+					const result = await response.json();
+					if (!result.success || !result.isLoggedIn) {
+						const section = document.getElementById('pointInfoSection');
+						if (section) section.style.display = 'none';
+						return;
+					}
+
+					availablePoints = parseInt(result.availablePoints) || 0;
+					moneyPerPoint = parseFloat(result.moneyPerPoint) || 0;
+					maxPointsPerOrder = Math.max(0, parseInt(result.maxPointsPerOrder) || 0);
+					if (moneyPerPoint <= 0) {
+						const section = document.getElementById('pointInfoSection');
+						if (section) section.style.display = 'none';
+						return;
+					}
+
+					const section = document.getElementById('pointInfoSection');
+					if (section) section.style.display = 'block';
+
+					const availableEl = document.getElementById('availablePointsText');
+					const rateEl = document.getElementById('pointRateText');
+					const hintEl = document.getElementById('pointHintText');
+					const inputEl = document.getElementById('requestedUsedPoints');
+
+					if (availableEl) {
+						availableEl.textContent = `${availablePoints.toLocaleString('vi-VN')} điểm`;
+					}
+
+					if (rateEl) {
+						rateEl.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND`;
+					}
+
+					if (hintEl) {
+						const configText = maxPointsPerOrder > 0
+							? `${Math.min(availablePoints, maxPointsPerOrder).toLocaleString('vi-VN')} điểm (theo cấu hình)`
+							: `${availablePoints.toLocaleString('vi-VN')} điểm`;
+						hintEl.textContent = `Bạn có thể dùng tối đa ${configText}.`;
+					}
+
+					if (inputEl) {
+						inputEl.max = getPointLimitByConfig();
+						inputEl.addEventListener('input', () => {
+							const value = parseInt(inputEl.value) || 0;
+							if (value < 0) inputEl.value = '0';
+							getClampedRequestedUsedPoints(
+								parseFloat(document.getElementById('tamTinh')?.textContent?.replace(/[^\d]/g, '')) || 0,
+								discountValue || 0
+							);
+							updatePaymentInfo();
+						});
+					}
+
+					updatePaymentInfo();
+				} catch (error) {
+					console.error('Lỗi khi tải thông tin điểm:', error);
 				}
 			}
 
@@ -1938,7 +2063,9 @@
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
-				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
+				usePoint: (parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) > 0,
+				requestedUsedPoints: parseInt(document.getElementById('requestedUsedPoints')?.value) || 0,
+				tongTien: Math.max(0, tongTien - discountValue - ((parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
@@ -3007,8 +3134,13 @@
 
 				// Cập nhật UI trực tiếp (bao gồm phí vận chuyển)
 				const phiVanChuyen = window.currentShippingFee || 0;
-				const tongCong = Math.max(0, total - discountAmount + phiVanChuyen);
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(total, discountAmount)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+				const tongCong = Math.max(0, total - discountAmount - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = discountAmount.toLocaleString() + ' VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 
 				console.log('UI updated directly:', {
@@ -3042,8 +3174,13 @@
 				}
 
 				const phiVanChuyen = window.currentShippingFee || 0;
-				const tongCongCleared = tamTinh + phiVanChuyen;
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+				const tongCongCleared = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = '0 VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCongCleared.toLocaleString() + ' VND';
 
 				console.log('UI cleared directly:', {
@@ -3235,6 +3372,9 @@
 
 				// Phí vận chuyển động
 				const phiVanChuyen = window.currentShippingFee || 0;
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, discountValue)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 
 				// Kiểm tra phiếu giảm giá hiện tại có hợp lệ không
 				const discountInfo = sessionStorage.getItem('appliedDiscount');
@@ -3259,9 +3399,14 @@
 							// showNotification(`Phiếu giảm giá công khai ${discount.maCode} đã bị xóa vì đơn hàng không đủ điều kiện tối thiểu ${donToiThieu.toLocaleString()} VND!`, 'warning');
 
 							// Cập nhật UI với discount = 0
-							const tongCong = tamTinh + phiVanChuyen;
+							const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+							const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
+							const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+							const tongCong = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 							document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
 							document.getElementById('giamGia').textContent = '0 VND';
+							const pointDiscountEl = document.getElementById('pointDiscount');
+							if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 							document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 							return; // Thoát khỏi function để tránh cập nhật UI với discount cũ
 						}
@@ -3293,12 +3438,13 @@
 					discountValue = 0;
 				}
 
-				// Đảm bảo tổng cộng không âm (tạm tính - giảm giá + phí vận chuyển)
-				const tongCong = Math.max(0, tamTinh - discountValue + phiVanChuyen);
+				// Đảm bảo tổng cộng không âm (tạm tính - giảm giá - giảm từ điểm + phí vận chuyển)
+				const tongCong = Math.max(0, tamTinh - discountValue - pointDiscountAmount + phiVanChuyen);
 
 				console.log('updatePaymentInfo calculation:', {
 					tamTinh: tamTinh,
 					giamGia: discountValue,
+					giamTuDiem: pointDiscountAmount,
 					phiVanChuyen: phiVanChuyen,
 					tongCong: tongCong,
 					discountValue: discountValue
@@ -3307,6 +3453,10 @@
 				// Cập nhật giao diện
 				document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
 				document.getElementById('giamGia').textContent = discountValue.toLocaleString() + ' VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) {
+					pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
+				}
 				document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 			}
