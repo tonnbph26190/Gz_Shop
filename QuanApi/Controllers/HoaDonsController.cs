@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace QuanApi.Controllers
 {
@@ -105,6 +106,11 @@ namespace QuanApi.Controllers
 				var totalCount = await query.CountAsync();
 				var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
+				// Thống kê theo cùng bộ lọc (khớp Admin/QuanLyDonHang — online/tại quầy/chờ xác nhận)
+				var totalOnlineCount = await query.CountAsync(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
+				var totalTaiQuayCount = await query.CountAsync(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
+				var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
+
 				// Áp dụng phân trang
 				var hoaDons = await query
 					.OrderByDescending(h => h.NgayTao)
@@ -153,6 +159,12 @@ namespace QuanApi.Controllers
 						PageSize = pageSize,
 						HasPreviousPage = page > 1,
 						HasNextPage = page < totalPages
+					},
+					Statistics = new
+					{
+						TotalOnlineCount = totalOnlineCount,
+						TotalTaiQuayCount = totalTaiQuayCount,
+						TotalPendingCount = totalPendingCount
 					}
 				});
 			}
@@ -239,6 +251,21 @@ namespace QuanApi.Controllers
 										IDSanPhamChiTiet = ct.SanPhamChiTiet!.IDSanPhamChiTiet,
 										MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
 										GiaBan = ct.SanPhamChiTiet.GiaBan,
+										SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong,
+										SoLuongDatMua = ct.SoLuong,
+										SoLuongTonTruocXacNhan = h.TrangThai != "Chờ xác nhận"
+											? ct.SanPhamChiTiet.SoLuong + ct.SoLuong
+											: ct.SanPhamChiTiet.SoLuong,
+										SoLuongTonDuKienSauHuy =
+											h.TrangThai == "Đã xác nhận" ||
+											h.TrangThai == "Chờ lấy hàng" ||
+											h.TrangThai == "Đã lấy hàng" ||
+											h.TrangThai == "Chờ giao hàng" ||
+											h.TrangThai == "Đang giao hàng" ||
+											h.TrangThai == "Đã giao" ||
+											h.TrangThai == "Giao hàng thành công"
+												? ct.SanPhamChiTiet.SoLuong + ct.SoLuong
+												: ct.SanPhamChiTiet.SoLuong,
 										KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
 										MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
 										HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
@@ -427,12 +454,22 @@ namespace QuanApi.Controllers
 				}
 
 				var oldStatus = hoaDon.TrangThai;
+				var statusesDaTruTon = new HashSet<string>
+				{
+					"Đã xác nhận",
+					"Chờ lấy hàng",
+					"Đã lấy hàng",
+					"Chờ giao hàng",
+					"Đang giao hàng",
+					"Đã giao",
+					"Giao hàng thành công"
+				};
 
 				// Nếu đơn hàng đang chuyển sang trạng thái "Đã hủy", hoàn trả số lượng sản phẩm
-				// Ngoại lệ: đơn đang ở "Chờ xác nhận" thì chưa trừ tồn, không cần hoàn kho
-				if (dto.TrangThai == "Đã hủy" && hoaDon.TrangThai != "Đã hủy" && hoaDon.TrangThai != "Chờ xác nhận")
+				// Chỉ hoàn kho khi trạng thái cũ thuộc nhóm đã từng trừ tồn.
+				if (dto.TrangThai == "Đã hủy" && oldStatus != "Đã hủy" && statusesDaTruTon.Contains(oldStatus))
 				{
-					_logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id}");
+					_logger.LogInformation($"Bắt đầu hoàn trả số lượng sản phẩm cho đơn hàng {id} khi hủy từ trạng thái '{oldStatus}'");
 
 					foreach (var chiTiet in hoaDon.ChiTietHoaDons)
 					{
@@ -448,9 +485,9 @@ namespace QuanApi.Controllers
 
 					_logger.LogInformation($"Hoàn thành hoàn trả số lượng sản phẩm cho đơn hàng {id}");
 				}
-				else if (dto.TrangThai == "Đã hủy" && hoaDon.TrangThai == "Chờ xác nhận")
+				else if (dto.TrangThai == "Đã hủy")
 				{
-					_logger.LogInformation($"Đơn hàng {id} đang ở trạng thái 'Chờ xác nhận', bỏ qua hoàn kho khi hủy.");
+					_logger.LogInformation($"Hủy đơn hàng {id} từ trạng thái '{oldStatus}' - bỏ qua hoàn kho vì trạng thái này chưa trừ tồn hoặc đã hủy trước đó.");
 				}
 				// Nếu admin xác nhận đơn hàng thì mới trừ tồn
 				if (dto.TrangThai == "Đã xác nhận" && hoaDon.TrangThai == "Chờ xác nhận")
