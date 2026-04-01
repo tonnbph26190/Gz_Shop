@@ -610,6 +610,7 @@
                                 <th>Email</th>
                                 <th>SĐT</th>
                                 <th>Điểm</th>
+                                <th>Tên hạng</th>
                                 <th>Chọn</th>
                             </tr>
                         </thead>
@@ -2068,7 +2069,8 @@
                         <td>${(c.email || '—')}</td>
                         <td>${(c.phone || '—')}</td>
                         <td>${(c.point != null ? c.point : 0)}</td>
-                        <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
+                               <td>${(c.rankName || '—')}</td>
+                            <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
                     </tr>
                 `).join('');
         if (!html) html = '<tr><td colspan="7" class="text-center text-muted">Không có khách hàng nào. Thêm mới hoặc chọn Khách vãng lai.</td></tr>';
