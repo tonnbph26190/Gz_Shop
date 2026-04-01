@@ -382,6 +382,7 @@ namespace QuanApi.Controllers
         [HttpGet("danh-sach-khach-hang")]
         public async Task<IActionResult> GetCustomers()
         {
+
             var customers = await _context.KhachHang
 				 //.Where(x => x.TrangThai)
 				 .OrderByDescending(x => x.SoDiemHienTai)
