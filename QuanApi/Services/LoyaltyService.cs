@@ -9,6 +9,7 @@ namespace QuanApi.Services
         public int AvailablePoints { get; set; }
         public int UsedPoints { get; set; }
         public decimal DiscountFromPoints { get; set; }
+        public decimal PointConversionRate { get; set; }
         public int EarnedPoints { get; set; }
         public decimal NetAmountForEarning { get; set; }
     }
@@ -43,6 +44,7 @@ namespace QuanApi.Services
         {
             var config = await GetActiveConfigAsync();
             var result = new LoyaltyCheckoutResult();
+            result.PointConversionRate = config.SoTienGiamTrenMotDiem;
 
             if (!customerId.HasValue)
             {

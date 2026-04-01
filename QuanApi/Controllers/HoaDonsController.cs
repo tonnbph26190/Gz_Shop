@@ -206,6 +206,11 @@ namespace QuanApi.Controllers
 							BanTaiQuay = h.BanTaiQuay,
 							TongTien = h.TongTien,
 							TienGiam = h.TienGiam,
+							SoTienGiamTuDiem = h.SoTienGiamTuDiem,
+							DiemDaDung = h.LichSuDiemKhachHangs
+								.Where(ls => ls.TrangThai && ls.LoaiBienDong == "Tru")
+								.Sum(ls => (int?)(ls.SoDiemBienDong < 0 ? -ls.SoDiemBienDong : ls.SoDiemBienDong)) ?? 0,
+							TyLeQuyDoiDiem = h.TyLeQuyDoiDiem,
 							PhiVanChuyen = h.PhiVanChuyen,
 							TrangThai = h.TrangThai,
 							NgayTao = h.NgayTao,
@@ -403,6 +408,7 @@ namespace QuanApi.Controllers
 				{
 					hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
 					hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+					hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
 					hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
 				}
 

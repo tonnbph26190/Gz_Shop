@@ -624,6 +624,7 @@ namespace QuanApi.Controllers
             {
                 hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
                 hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 
@@ -1454,6 +1455,7 @@ namespace QuanApi.Controllers
             {
                 hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
                 hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 

@@ -134,6 +134,9 @@
     var orderCompleted = currentStatus == "Giao hàng thành công" || currentStatus == "Đã hoàn tiền";
     var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
     var tongCong = Math.Max(0, tamTinh - (Model.TienGiam ?? 0) + (Model.PhiVanChuyen ?? 0));
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem > 0
+        ? Model.SoTienGiamTuDiem
+        : (Model.DiemDaDung * Model.TyLeQuyDoiDiem);
 }
 
 <style>
@@ -591,6 +594,17 @@
                         <span class="info-label">Giảm giá:</span>
                         <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
                     </div>
+                    @if (Model.DiemDaDung > 0)
+                    {
+                        <div class="info-row">
+                            <span class="info-label">Điểm đã dùng:</span>
+                            <span class="info-value">@Model.DiemDaDung.ToString("N0") điểm</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Quy đổi từ điểm:</span>
+                            <span class="info-value text-success">-@soTienGiamTuDiem.ToString("N0") VNĐ (1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") VNĐ)</span>
+                        </div>
+                    }
                     <div class="info-row">
                         <span class="info-label">Phí vận chuyển:</span>
                         <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>

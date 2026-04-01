@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     var tamTinh = Math.Max(0, (Model.TongTien + (Model.TienGiam ?? 0) - (Model.PhiVanChuyen ?? 0)));
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem > 0
+        ? Model.SoTienGiamTuDiem
+        : (Model.DiemDaDung * Model.TyLeQuyDoiDiem);
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -222,6 +225,17 @@
                                 <div class="summary-row text-success">
                                     <span>Giảm giá</span>
                                     <span>-@Model.TienGiam?.ToString("N0") ₫</span>
+                                </div>
+                            }
+                            @if (Model.DiemDaDung > 0)
+                            {
+                                <div class="summary-row text-muted">
+                                    <span>Điểm đã dùng</span>
+                                    <span>@Model.DiemDaDung.ToString("N0") điểm</span>
+                                </div>
+                                <div class="summary-row text-success">
+                                    <span>Quy đổi từ điểm</span>
+                                    <span>-@soTienGiamTuDiem.ToString("N0") ₫ (1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") ₫)</span>
                                 </div>
                             }
                             <div class="summary-row text-muted">
