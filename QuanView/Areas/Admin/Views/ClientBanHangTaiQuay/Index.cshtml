@@ -489,10 +489,17 @@
                         <span>Giảm giá:</span>
                         <span class="float-end text-success" id="discountAmount">0 VND</span>
                     </div>
-                    @*   <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
-                    <label class="form-check-label" for="pointSwitch">Điểm hiện tại là <span id="customerPoint">0</span>:</label>
-                    </div> *@
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                        <label class="form-check-label" for="pointSwitch">
+                            Dùng điểm (<span id="customerPoint">0</span> điểm)
+                        </label>
+                        <div class="small text-muted" id="pointRateLabel">1 điểm = 1,000 VND</div>
+                    </div>
+                    <div class="mb-2">
+                        <label for="requestedUsedPoints" class="form-label mb-1">Số điểm muốn dùng</label>
+                        <input type="number" class="form-control form-control-sm" id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
+                    </div>
                     <div class="mb-2 d-flex align-items-center">
                         <span>Hình thức thanh toán:</span>
                         <span class="ms-auto d-flex align-items-center">
@@ -818,6 +825,7 @@
     let useShipping = false; // Có sử dụng giao hàng không
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
     let usePoint = false;
+    let moneyPerPoint = 1000;
     let selectedPaymentCode;
     let shippingFee = 0;
     let isHandlingQrScan = false;
@@ -1126,6 +1134,9 @@
         $('#customerPhone').text('—');
         $('#customerEmail').text('—');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
         $('#btnShowAddress').hide();
         $('#btnAddAddress').hide();
@@ -2086,7 +2097,11 @@
         $('#customerDetails').show();
         $('#customerPhone').text(selectedCustomer.phone || '—');
         $('#customerEmail').text(selectedCustomer.email || '—');
-        $('#customerPoint').text(selectedCustomer.point != null ? selectedCustomer.point : 0);
+        const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
+        $('#customerPoint').text(currentPoint);
+        $('#requestedUsedPoints').val(0).attr('max', currentPoint);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
         @* $('#btnShowAddress').show();
         $('#btnAddAddress').show(); *@
@@ -2119,6 +2134,9 @@
         $('#customerPhone').text('');
         $('#customerEmail').text('');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
 
         // Ẩn nút hủy chọn và các nút địa chỉ
         $('#btnClearCustomer').hide();
@@ -2240,12 +2258,64 @@
         updatePaymentInfo();
     }
 
+    function getRequestedPointForUse() {
+        if (!selectedCustomer || selectedCustomer.isGuest || !usePoint) {
+            return 0;
+        }
+
+        const available = Number(selectedCustomer.point || 0);
+        const requested = Math.max(0, parseInt($('#requestedUsedPoints').val(), 10) || 0);
+        if (requested > available) {
+            $('#requestedUsedPoints').val(available);
+            return available;
+        }
+
+        return requested;
+    }
+
+    async function loadPointRate() {
+        try {
+            const response = await fetch('/Admin/ClientBanHangTaiQuay/cau-hinh-ban-hang');
+            if (!response.ok) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Không lấy được cấu hình điểm';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+
+            const data = await response.json();
+            const config = data?.config || {};
+            const rate = Number(config.soTienGiamTrenMotDiem ?? config.SoTienGiamTrenMotDiem);
+            if (!Number.isFinite(rate) || rate <= 0) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Cấu hình quy đổi điểm chưa hợp lệ';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+            moneyPerPoint = rate;
+
+            const rateLabel = document.getElementById('pointRateLabel');
+            if (rateLabel) {
+                rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND`;
+            }
+            updatePaymentInfoWithoutRecalculation();
+        } catch (error) {
+            console.error('Không tải được cấu hình quy đổi điểm:', error);
+        }
+    }
+
     // Cập nhật thông tin thanh toán (có tính lại phí vận chuyển)
     function updatePaymentInfo() {
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let point = getRequestedPointForUse() * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
@@ -2267,7 +2337,7 @@
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let point = getRequestedPointForUse() * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
@@ -2352,7 +2422,8 @@
             customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
             address: $('#shipAddress').val(),
             discountCode: $('#discountCode').val(),
-            usePoint: usePoint,
+            usePoint: usePoint && getRequestedPointForUse() > 0,
+            requestedUsedPoints: getRequestedPointForUse(),
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,
@@ -2522,6 +2593,7 @@
         loadProducts();
         loadCustomers();
         loadPaymentMethods();
+        loadPointRate();
 
         $('#btnAddInvoice').click(taoGioHang);
         // Khi mở modal chọn sản phẩm, luôn reload sản phẩm mới nhất

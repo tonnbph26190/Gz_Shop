@@ -147,7 +147,11 @@ namespace QuanApi.Controllers
         [HttpPost("preview")]
         public async Task<IActionResult> Preview([FromBody] PreviewTinhToanDto dto)
         {
-            var loyalty = await _loyaltyService.BuildCheckoutResultAsync(dto.CustomerId, dto.TienHang, dto.UsePoint);
+            var loyalty = await _loyaltyService.BuildCheckoutResultAsync(
+                dto.CustomerId,
+                dto.TienHang,
+                dto.UsePoint,
+                dto.RequestedUsedPoints);
             var policy = await _shippingPolicyService.ResolveCustomerDiscountAsync(dto.CustomerId);
 
             var shippingOriginal = dto.PhiShip;
@@ -195,6 +199,7 @@ namespace QuanApi.Controllers
         public decimal TienHang { get; set; }
         public decimal PhiShip { get; set; }
         public bool UsePoint { get; set; }
+        public int? RequestedUsedPoints { get; set; }
         public bool UseDefaultShipping { get; set; } = true;
     }
 }

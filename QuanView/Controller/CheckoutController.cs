@@ -286,6 +286,8 @@ namespace QuanView.Controllers
                             PhuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                             TongTien = checkoutData.TongTien,
                             TienGiam = checkoutData.TienGiam ?? 0,
+                            UsePoint = checkoutData.UsePoint,
+                            RequestedUsedPoints = checkoutData.RequestedUsedPoints,
                             PhiVanChuyen = checkoutData.PhiVanChuyen,
                             PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
@@ -334,6 +336,8 @@ namespace QuanView.Controllers
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
+                    usePoint = checkoutData.UsePoint,
+                    requestedUsedPoints = checkoutData.RequestedUsedPoints,
                     phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
                     phiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
@@ -405,7 +409,8 @@ namespace QuanView.Controllers
                             customerName = checkoutData.TenNguoiNhan,
                             customerPhone = checkoutData.SoDienThoaiNguoiNhan,
                             customerAddress = checkoutData.DiaChiGiaoHang,
-                            shippingFee = checkoutData.PhiVanChuyen
+                            shippingFee = checkoutData.PhiVanChuyen,
+                            usedPoints = checkoutData.RequestedUsedPoints ?? 0
                         }),
                         message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {maHoaDon}"
                     });
@@ -506,7 +511,7 @@ namespace QuanView.Controllers
         // GET: Trang thành công
         public IActionResult Success(string orderCode, decimal? total = null, string paymentMethod = null,
             string customerName = null, string customerPhone = null, string customerAddress = null,
-            decimal? shippingFee = null)
+            decimal? shippingFee = null, int? usedPoints = null)
         {
             ViewBag.OrderCode = orderCode;
             ViewBag.OrderTotal = total ?? 0;
@@ -516,6 +521,7 @@ namespace QuanView.Controllers
             ViewBag.CustomerPhone = customerPhone;
             ViewBag.CustomerAddress = customerAddress;
             ViewBag.ShippingFee = shippingFee ?? 0;
+            ViewBag.UsedPoints = usedPoints ?? 0;
             return View();
         }
 
@@ -564,6 +570,69 @@ namespace QuanView.Controllers
                 {
                     return Json(new { success = false, message = "Không thể lấy thông tin khách hàng" });
                 }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPointInfo()
+        {
+            try
+            {
+                var customerId = ResolveCurrentCustomerId();
+                if (!customerId.HasValue)
+                {
+                    return Json(new { success = true, isLoggedIn = false, availablePoints = 0, moneyPerPoint = 0m });
+                }
+
+                var customerResponse = await _httpClient.GetAsync($"KhachHang/{customerId.Value}");
+                var configResponse = await _httpClient.GetAsync("CauHinhBanHang");
+                if (!customerResponse.IsSuccessStatusCode || !configResponse.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Không thể lấy thông tin điểm khách hàng" });
+                }
+
+                using var customerDoc = JsonDocument.Parse(await customerResponse.Content.ReadAsStringAsync());
+                using var configDoc = JsonDocument.Parse(await configResponse.Content.ReadAsStringAsync());
+
+                var availablePoints = 0;
+                if (customerDoc.RootElement.TryGetProperty("soDiemHienTai", out var soDiemCamel))
+                {
+                    availablePoints = soDiemCamel.GetInt32();
+                }
+                else if (customerDoc.RootElement.TryGetProperty("SoDiemHienTai", out var soDiemPascal))
+                {
+                    availablePoints = soDiemPascal.GetInt32();
+                }
+
+                decimal? moneyPerPoint = null;
+                if (configDoc.RootElement.TryGetProperty("config", out var config))
+                {
+                    if (config.TryGetProperty("soTienGiamTrenMotDiem", out var giamCamel))
+                    {
+                        moneyPerPoint = giamCamel.GetDecimal();
+                    }
+                    else if (config.TryGetProperty("SoTienGiamTrenMotDiem", out var giamPascal))
+                    {
+                        moneyPerPoint = giamPascal.GetDecimal();
+                    }
+                }
+
+                if (!moneyPerPoint.HasValue || moneyPerPoint.Value <= 0)
+                {
+                    return Json(new { success = false, message = "Cấu hình quy đổi điểm chưa hợp lệ" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    isLoggedIn = true,
+                    availablePoints = Math.Max(availablePoints, 0),
+                    moneyPerPoint = moneyPerPoint.Value
+                });
             }
             catch (Exception ex)
             {
@@ -903,6 +972,8 @@ namespace QuanView.Controllers
                             phuongThucThanhToanId = checkoutInfo.PhuongThucThanhToanId,
                             tongTien = checkoutInfo.TongTien,
                             tienGiam = checkoutInfo.TienGiam,
+                            usePoint = checkoutInfo.UsePoint,
+                            requestedUsedPoints = checkoutInfo.RequestedUsedPoints,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
                             phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
@@ -934,6 +1005,7 @@ namespace QuanView.Controllers
                                 ViewBag.CustomerPhone = checkoutInfo.SoDienThoaiNguoiNhan;
                                 ViewBag.CustomerAddress = checkoutInfo.DiaChiGiaoHang;
                                 ViewBag.ShippingFee = checkoutInfo.PhiVanChuyen;
+                                ViewBag.UsedPoints = checkoutInfo.RequestedUsedPoints ?? 0;
 
                                 // Xóa giỏ hàng và thông tin đơn hàng tạm
                                 HttpContext.Session.Remove("Cart");
@@ -1022,6 +1094,8 @@ namespace QuanView.Controllers
         public Guid? PhieuGiamGiaId { get; set; }
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
+        public bool UsePoint { get; set; }
+        public int? RequestedUsedPoints { get; set; }
         public string GhiChu { get; set; }
         public string MaGiamGia { get; set; }
         public decimal PhiVanChuyen { get; set; } = 50000;

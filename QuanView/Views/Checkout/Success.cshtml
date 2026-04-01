@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Đặt hàng thành công";
     var orderCode = ViewBag.OrderCode as string;
     var orderTotal = ViewBag.OrderTotal as decimal? ?? 0;
@@ -8,6 +8,7 @@
     var customerPhone = ViewBag.CustomerPhone as string;
     var customerAddress = ViewBag.CustomerAddress as string;
     var shippingFee = ViewBag.ShippingFee as decimal? ?? 0;
+    var usedPoints = ViewBag.UsedPoints as int? ?? 0;
 }
 
 <style>
@@ -174,6 +175,13 @@
                 <div class="info-item">
                     <span class="info-label">Tổng tiền:</span>
                     <span class="info-value" style="font-weight: bold; color: #28a745;">@orderTotal.ToString("N0") VNĐ</span>
+                </div>
+            }
+            @if (usedPoints > 0)
+            {
+                <div class="info-item">
+                    <span class="info-label">Điểm đã sử dụng:</span>
+                    <span class="info-value">@usedPoints.ToString("N0") điểm</span>
                 </div>
             }
         </div>

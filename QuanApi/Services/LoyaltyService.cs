@@ -16,7 +16,7 @@ namespace QuanApi.Services
     public interface ILoyaltyService
     {
         Task<CauHinhBanHang> GetActiveConfigAsync();
-        Task<LoyaltyCheckoutResult> BuildCheckoutResultAsync(Guid? customerId, decimal merchandiseAmount, bool usePoint);
+        Task<LoyaltyCheckoutResult> BuildCheckoutResultAsync(Guid? customerId, decimal merchandiseAmount, bool usePoint, int? requestedUsedPoints = null);
         Task<int> ApplyCheckoutPointChangesAsync(Guid customerId, Guid? orderId, LoyaltyCheckoutResult result, string actor);
         Task<int> ResolveAndPersistTierAsync(Guid customerId);
     }
@@ -39,7 +39,7 @@ namespace QuanApi.Services
             return config ?? new CauHinhBanHang();
         }
 
-        public async Task<LoyaltyCheckoutResult> BuildCheckoutResultAsync(Guid? customerId, decimal merchandiseAmount, bool usePoint)
+        public async Task<LoyaltyCheckoutResult> BuildCheckoutResultAsync(Guid? customerId, decimal merchandiseAmount, bool usePoint, int? requestedUsedPoints = null)
         {
             var config = await GetActiveConfigAsync();
             var result = new LoyaltyCheckoutResult();
@@ -64,7 +64,10 @@ namespace QuanApi.Services
                     : result.AvailablePoints;
 
                 var maxRedeemByAmount = (int)Math.Floor(merchandiseAmount / config.SoTienGiamTrenMotDiem);
-                var usedPoints = Math.Min(result.AvailablePoints, Math.Min(maxRedeemByConfig, maxRedeemByAmount));
+                var maxAllowedPoints = Math.Min(result.AvailablePoints, Math.Min(maxRedeemByConfig, maxRedeemByAmount));
+                var usedPoints = requestedUsedPoints.HasValue
+                    ? Math.Min(Math.Max(requestedUsedPoints.Value, 0), maxAllowedPoints)
+                    : maxAllowedPoints;
 
                 result.UsedPoints = Math.Max(usedPoints, 0);
                 result.DiscountFromPoints = result.UsedPoints * config.SoTienGiamTrenMotDiem;

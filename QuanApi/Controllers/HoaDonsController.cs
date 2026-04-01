@@ -394,7 +394,11 @@ namespace QuanApi.Controllers
 
 				hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);
 
-				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(dto.KhachHangId, hoaDon.TongTien, dto.UsePoint);
+				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+					dto.KhachHangId,
+					hoaDon.TongTien,
+					dto.UsePoint,
+					dto.RequestedUsedPoints);
 				if (loyaltyResult.DiscountFromPoints > 0)
 				{
 					hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
@@ -898,6 +902,7 @@ namespace QuanApi.Controllers
 		public decimal? PhiVanChuyen { get; set; }
 		public bool PhiVanChuyenDaGiam { get; set; }
 		public bool UsePoint { get; set; }
+		public int? RequestedUsedPoints { get; set; }
 		public bool BanTaiQuay { get; set; } = false;
 		public string TenNguoiNhan { get; set; }
 		public string SoDienThoaiNguoiNhan { get; set; }
