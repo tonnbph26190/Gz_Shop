@@ -72,7 +72,14 @@
 							<th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
 							<th>@Html.DisplayNameFor(model => model.SoDiemHienTai)</th>
 							<th>@Html.DisplayNameFor(model => model.TongDiemTichLuy)</th>
-							<th>Hạng</th>
+							<th>
+    <a href="@Url.Action("Index", new { 
+        sortBy = "rank", 
+        sortAscending = ViewBag.SortBy == "rank" ? !ViewBag.SortAscending : false 
+    })">
+        Hạng
+    </a>
+</th>
 							<th>@Html.DisplayNameFor(model => model.NgayTao)</th>
 							<th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
 							<th>@Html.DisplayNameFor(model => model.TrangThai)</th>
@@ -96,7 +103,7 @@
 										var icon = item.Rank == "Kim cương" ? "💎" :
 										item.Rank == "Vàng" ? "🥇" :
 										item.Rank == "Bạc" ? "🥈" :
-										item.Rank == "Đồng" ? "🥉" : "👤";
+										item.Rank == "Đồng" ? "🥉" : "";
 									
 
 
