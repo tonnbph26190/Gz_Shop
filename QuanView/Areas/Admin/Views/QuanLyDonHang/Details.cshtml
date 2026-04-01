@@ -133,6 +133,7 @@
     var canShowRefundButton = !Model.BanTaiQuay && currentStatus == "Đã hủy" && isBankTransferOrder;
     var orderCompleted = currentStatus == "Giao hàng thành công" || currentStatus == "Đã hoàn tiền";
     var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
+    var tongCong = Math.Max(0, tamTinh - (Model.TienGiam ?? 0) + (Model.PhiVanChuyen ?? 0));
 }
 
 <style>
@@ -596,7 +597,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label font-weight-bold">Tổng cộng:</span>
-                        <span class="info-value font-weight-bold text-primary">@Model.TongTien.ToString("N0") VNĐ</span>
+                        <span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
                     </div>
                     <hr>
                     <div class="info-row">
