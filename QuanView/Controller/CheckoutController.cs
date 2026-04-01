@@ -609,6 +609,7 @@ namespace QuanView.Controllers
                 }
 
                 decimal? moneyPerPoint = null;
+                int maxPointsPerOrder = 0;
                 if (configDoc.RootElement.TryGetProperty("config", out var config))
                 {
                     if (config.TryGetProperty("soTienGiamTrenMotDiem", out var giamCamel))
@@ -618,6 +619,15 @@ namespace QuanView.Controllers
                     else if (config.TryGetProperty("SoTienGiamTrenMotDiem", out var giamPascal))
                     {
                         moneyPerPoint = giamPascal.GetDecimal();
+                    }
+
+                    if (config.TryGetProperty("diemToiDaSuDungMoiDon", out var maxCamel))
+                    {
+                        maxPointsPerOrder = maxCamel.GetInt32();
+                    }
+                    else if (config.TryGetProperty("DiemToiDaSuDungMoiDon", out var maxPascal))
+                    {
+                        maxPointsPerOrder = maxPascal.GetInt32();
                     }
                 }
 
@@ -631,7 +641,8 @@ namespace QuanView.Controllers
                     success = true,
                     isLoggedIn = true,
                     availablePoints = Math.Max(availablePoints, 0),
-                    moneyPerPoint = moneyPerPoint.Value
+                    moneyPerPoint = moneyPerPoint.Value,
+                    maxPointsPerOrder = Math.Max(maxPointsPerOrder, 0)
                 });
             }
             catch (Exception ex)

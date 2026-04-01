@@ -645,6 +645,41 @@
 			let discountValue = 0;
 			let availablePoints = 0;
 			let moneyPerPoint = 0;
+			let maxPointsPerOrder = 0;
+
+			function getPointLimitByConfig() {
+				if (maxPointsPerOrder > 0) {
+					return Math.min(availablePoints, maxPointsPerOrder);
+				}
+
+				return availablePoints;
+			}
+
+			function getPointLimitByAmount(subtotal, discount) {
+				if (!moneyPerPoint || moneyPerPoint <= 0) {
+					return 0;
+				}
+
+				const baseAmount = Math.max(0, (parseFloat(subtotal) || 0) - (parseFloat(discount) || 0));
+				return Math.floor(baseAmount / moneyPerPoint);
+			}
+
+			function getMaxUsablePoints(subtotal, discount) {
+				return Math.max(0, Math.min(getPointLimitByConfig(), getPointLimitByAmount(subtotal, discount)));
+			}
+
+			function getClampedRequestedUsedPoints(subtotal, discount) {
+				const inputEl = document.getElementById('requestedUsedPoints');
+				const requested = Math.max(0, parseInt(inputEl?.value) || 0);
+				const maxUsable = getMaxUsablePoints(subtotal, discount);
+				const clamped = Math.min(requested, maxUsable);
+
+				if (inputEl && requested !== clamped) {
+					inputEl.value = clamped.toString();
+				}
+
+				return clamped;
+			}
 
 			// Load dữ liệu khi trang được tải
 			document.addEventListener('DOMContentLoaded', async function() {
@@ -912,6 +947,7 @@
 				}
 
 				// Tạo dữ liệu đặt hàng
+				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
 				const checkoutData = {
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
@@ -919,9 +955,9 @@
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
-				usePoint: (parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) > 0,
-				requestedUsedPoints: parseInt(document.getElementById('requestedUsedPoints')?.value) || 0,
-				tongTien: Math.max(0, tongTien - discountValue - ((parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
+				usePoint: requestedUsedPoints > 0,
+				requestedUsedPoints: requestedUsedPoints,
+				tongTien: Math.max(0, tongTien - discountValue - (requestedUsedPoints * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
@@ -1040,6 +1076,7 @@
 
 					availablePoints = parseInt(result.availablePoints) || 0;
 					moneyPerPoint = parseFloat(result.moneyPerPoint) || 0;
+					maxPointsPerOrder = Math.max(0, parseInt(result.maxPointsPerOrder) || 0);
 					if (moneyPerPoint <= 0) {
 						const section = document.getElementById('pointInfoSection');
 						if (section) section.style.display = 'none';
@@ -1063,17 +1100,21 @@
 					}
 
 					if (hintEl) {
-						hintEl.textContent = `Bạn có thể dùng tối đa ${availablePoints.toLocaleString('vi-VN')} điểm.`;
+						const configText = maxPointsPerOrder > 0
+							? `${Math.min(availablePoints, maxPointsPerOrder).toLocaleString('vi-VN')} điểm (theo cấu hình)`
+							: `${availablePoints.toLocaleString('vi-VN')} điểm`;
+						hintEl.textContent = `Bạn có thể dùng tối đa ${configText}.`;
 					}
 
 					if (inputEl) {
-						inputEl.max = availablePoints;
+						inputEl.max = getPointLimitByConfig();
 						inputEl.addEventListener('input', () => {
 							const value = parseInt(inputEl.value) || 0;
 							if (value < 0) inputEl.value = '0';
-							if (availablePoints > 0 && value > availablePoints) {
-								inputEl.value = availablePoints.toString();
-							}
+							getClampedRequestedUsedPoints(
+								parseFloat(document.getElementById('tamTinh')?.textContent?.replace(/[^\d]/g, '')) || 0,
+								discountValue || 0
+							);
 							updatePaymentInfo();
 						});
 					}
@@ -3094,7 +3135,7 @@
 				// Cập nhật UI trực tiếp (bao gồm phí vận chuyển)
 				const phiVanChuyen = window.currentShippingFee || 0;
 				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
-				const usedPoints = Math.max(0, Math.min(requestedPoints, availablePoints));
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(total, discountAmount)));
 				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 				const tongCong = Math.max(0, total - discountAmount - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = discountAmount.toLocaleString() + ' VND';
@@ -3134,7 +3175,7 @@
 
 				const phiVanChuyen = window.currentShippingFee || 0;
 				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
-				const usedPoints = Math.max(0, Math.min(requestedPoints, availablePoints));
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
 				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 				const tongCongCleared = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = '0 VND';
@@ -3332,7 +3373,7 @@
 				// Phí vận chuyển động
 				const phiVanChuyen = window.currentShippingFee || 0;
 				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
-				const usedPoints = Math.max(0, Math.min(requestedPoints, availablePoints));
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, discountValue)));
 				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 
 				// Kiểm tra phiếu giảm giá hiện tại có hợp lệ không
@@ -3359,7 +3400,7 @@
 
 							// Cập nhật UI với discount = 0
 							const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
-							const usedPoints = Math.max(0, Math.min(requestedPoints, availablePoints));
+							const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
 							const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 							const tongCong = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 							document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';

@@ -826,11 +826,32 @@
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
     let usePoint = false;
     let moneyPerPoint = 1000;
+    let maxPointsPerOrder = 0;
     let selectedPaymentCode;
     let shippingFee = 0;
     let isHandlingQrScan = false;
     let html5QrCodeInstance = null;
     let qrDecodeHandled = false;
+
+    function getPointLimitByConfig(available) {
+        if (maxPointsPerOrder > 0) {
+            return Math.min(available, maxPointsPerOrder);
+        }
+        return available;
+    }
+
+    function getPointLimitByAmount(total, discount) {
+        if (!moneyPerPoint || moneyPerPoint <= 0) {
+            return 0;
+        }
+        const baseAmount = Math.max(0, (Number(total) || 0) - (Number(discount) || 0));
+        return Math.floor(baseAmount / moneyPerPoint);
+    }
+
+    function getMaxUsablePoint(total, discount) {
+        const available = Number(selectedCustomer?.point || 0);
+        return Math.max(0, Math.min(getPointLimitByConfig(available), getPointLimitByAmount(total, discount)));
+    }
 
 
     function resetKhachHangForm() {
@@ -2099,7 +2120,7 @@
         $('#customerEmail').text(selectedCustomer.email || '—');
         const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
         $('#customerPoint').text(currentPoint);
-        $('#requestedUsedPoints').val(0).attr('max', currentPoint);
+        $('#requestedUsedPoints').val(0).attr('max', getPointLimitByConfig(currentPoint));
         $('#pointSwitch').prop('checked', false);
         usePoint = false;
         $('#btnClearCustomer').show();
@@ -2263,11 +2284,14 @@
             return 0;
         }
 
-        const available = Number(selectedCustomer.point || 0);
+        let gh = gioHangs[currentGioHang];
+        const total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
+        const discount = discountValue || 0;
+        const maxUsable = getMaxUsablePoint(total, discount);
         const requested = Math.max(0, parseInt($('#requestedUsedPoints').val(), 10) || 0);
-        if (requested > available) {
-            $('#requestedUsedPoints').val(available);
-            return available;
+        if (requested > maxUsable) {
+            $('#requestedUsedPoints').val(maxUsable);
+            return maxUsable;
         }
 
         return requested;
@@ -2289,6 +2313,7 @@
             const data = await response.json();
             const config = data?.config || {};
             const rate = Number(config.soTienGiamTrenMotDiem ?? config.SoTienGiamTrenMotDiem);
+            maxPointsPerOrder = Math.max(0, Number(config.diemToiDaSuDungMoiDon ?? config.DiemToiDaSuDungMoiDon) || 0);
             if (!Number.isFinite(rate) || rate <= 0) {
                 moneyPerPoint = 0;
                 const rateLabel = document.getElementById('pointRateLabel');
@@ -2302,8 +2327,11 @@
 
             const rateLabel = document.getElementById('pointRateLabel');
             if (rateLabel) {
-                rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND`;
+                const maxText = maxPointsPerOrder > 0 ? ` | Tối đa ${maxPointsPerOrder.toLocaleString('vi-VN')} điểm/đơn` : '';
+                rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND${maxText}`;
             }
+            const currentPoint = Number(selectedCustomer?.point || 0);
+            $('#requestedUsedPoints').attr('max', getPointLimitByConfig(currentPoint));
             updatePaymentInfoWithoutRecalculation();
         } catch (error) {
             console.error('Không tải được cấu hình quy đổi điểm:', error);
