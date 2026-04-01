@@ -382,16 +382,24 @@ namespace QuanApi.Controllers
         [HttpGet("danh-sach-khach-hang")]
         public async Task<IActionResult> GetCustomers()
         {
+
             var customers = await _context.KhachHang
-                .Where(x => x.TrangThai)
-                .Select(x => new
+				 //.Where(x => x.TrangThai)
+				 .OrderByDescending(x => x.SoDiemHienTai)
+				.Select(x => new
                 {
                     id = x.IDKhachHang,
                     name = x.TenKhachHang,
                     email = x.Email,
                     phone = x.SoDienThoai,
                     point = x.SoDiemHienTai,
-                    img = "/img/default-user.png" // Nếu có trường ảnh thì thay thế
+					rankName = _context.HangKhachHangs
+			.Where(h => h.TrangThai == true
+				&& x.SoDiemHienTai >= h.DiemTu   // ✅ QUAN TRỌNG
+				&& x.SoDiemHienTai <= h.DiemDen)
+			.Select(h => h.TenHang)
+			.FirstOrDefault(),
+					img = "/img/default-user.png" // Nếu có trường ảnh thì thay thế
                 }).ToListAsync();
             return Ok(customers);
         }
