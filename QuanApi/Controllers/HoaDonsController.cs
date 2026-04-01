@@ -309,9 +309,10 @@ namespace QuanApi.Controllers
 					return BadRequest("Không có sản phẩm nào trong đơn hàng");
 				}
 
-				if (dto.TongTien <= 0)
+				var merchandiseSubtotal = dto.ChiTietHoaDons.Sum(x => x.ThanhTien);
+				if (merchandiseSubtotal <= 0)
 				{
-					return BadRequest("Tổng tiền phải lớn hơn 0");
+					return BadRequest("Tổng tiền sản phẩm phải lớn hơn 0");
 				}
 
 				// Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
@@ -335,7 +336,8 @@ namespace QuanApi.Controllers
 					IDNhanVien = dto.NhanVienId,
 					IDPhieuGiamGia = dto.PhieuGiamGiaId,
 					IDPhuongThucThanhToan = dto.PhuongThucThanhToanId,
-					TongTien = dto.TongTien,
+					// Luôn lấy tổng tiền hàng từ chi tiết đơn để tránh sai lệch khi client gửi tổng đã trừ giảm giá.
+					TongTien = merchandiseSubtotal,
 					TienGiam = dto.TienGiam ?? 0,
 					PhiVanChuyen = 0,
 					BanTaiQuay = dto.BanTaiQuay,
@@ -379,6 +381,15 @@ namespace QuanApi.Controllers
 					//        return BadRequest($"Sản phẩm {sanPhamChiTiet.MaSPChiTiet} không đủ số lượng");
 					//    }
 					//}
+				}
+
+				if (dto.TongTien > 0 && dto.TongTien != merchandiseSubtotal)
+				{
+					_logger.LogWarning(
+						"CreateHoaDon mismatch tongTien from client. Client={ClientTongTien}, SubtotalFromDetails={SubtotalFromDetails}",
+						dto.TongTien,
+						merchandiseSubtotal
+					);
 				}
 
 				hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);

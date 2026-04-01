@@ -132,6 +132,7 @@
         .Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
     var canShowRefundButton = !Model.BanTaiQuay && currentStatus == "Đã hủy" && isBankTransferOrder;
     var orderCompleted = currentStatus == "Giao hàng thành công" || currentStatus == "Đã hoàn tiền";
+    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
 }
 
 <style>
@@ -583,7 +584,7 @@
                 <div class="card-body">
                     <div class="info-row">
                         <span class="info-label">Tạm tính:</span>
-                        <span class="info-value">@Model.TongTien.ToString("N0") VNĐ</span>
+                        <span class="info-value">@tamTinh.ToString("N0") VNĐ</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Giảm giá:</span>
