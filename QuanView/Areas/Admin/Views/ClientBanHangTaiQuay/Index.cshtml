@@ -453,70 +453,96 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header fw-bold"><i class="bi bi-bag"></i> Thông tin thanh toán</div>
-                <div class="card-body">
+<div class="col-md-5">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-bold py-3">
+            <i class="bi bi-bag-check-fill me-2"></i>Thông tin thanh toán
+        </div>
+        <div class="card-body">
 
-                    <div class="mb-2">
-                        <label class="form-label">Mã giảm giá:</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="discountCode" value="" placeholder="Chọn phiếu giảm giá" readonly>
-                            <button class="btn btn-outline-secondary" type="button" onclick="applyDiscount()">Chọn mã</button>
-                            <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()" title="Xóa phiếu giảm giá">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
-                        <label class="form-check-label" for="shippingSwitch">Giao Hàng</label>
-                    </div>
-                    <hr>
-                    <div class="mb-2">
-                        <span>Tiền hàng:</span>
-                        <span class="float-end" id="goodsAmount" id="shippingFee">0 VND</span>
-                        <span class="float-end" id="shippingFee"></span>
-                        @* <label class="form-label" ></label> *@
-                    </div>
-                    <div class="mb-2">
-                    </div>
-                    <div class="mb-2">
-                        <span>Tiền thối lại:</span>
-                        <span class="float-end fw-bold text-success" id="changeAmount">0 VND</span>
-                    </div>
-                    <div class="mb-2">
-                        <span>Giảm giá:</span>
-                        <span class="float-end text-success" id="discountAmount">0 VND</span>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
-                        <label class="form-check-label" for="pointSwitch">
-                            Dùng điểm (<span id="customerPoint">0</span> điểm)
-                        </label>
-                        <div class="small text-muted" id="pointRateLabel">1 điểm = 1,000 VND</div>
-                    </div>
-                    <div class="mb-2">
-                        <label for="requestedUsedPoints" class="form-label mb-1">Số điểm muốn dùng</label>
-                        <input type="number" class="form-control form-control-sm" id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
-                    </div>
-                    <div class="mb-2 d-flex align-items-center">
-                        <span>Hình thức thanh toán:</span>
-                        <span class="ms-auto d-flex align-items-center">
-                            <span id="selectedPaymentMethod">Tiền mặt</span>
-                            <a href="javascript:void(0)" onclick="openPaymentModal()" class="ms-2" title="Chỉnh sửa">
-                                <i class="bi bi-pencil-square" style="font-size: 1.2em; cursor: pointer;"></i>
-                            </a>
-                        </span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="fw-bold">Tổng tiền:</span>
-                        <span class="float-end fw-bold text-danger" id="totalAmount">0 VND</span>
-                    </div>
-                    <button class="btn btn-primary w-100" onclick="payInvoice()">Thanh toán</button>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Mã giảm giá:</label>
+                <div class="input-group">
+                    <input type="text" class="form-control border-end-0" id="discountCode" placeholder="Chọn phiếu giảm giá" readonly>
+                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="applyDiscount()">Chọn mã</button>
+                    <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
+
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
+                <label class="form-check-label fw-medium" for="shippingSwitch">Giao Hàng</label>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background-color: #f0f7ff; border: 1px solid #d0e3ff;">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                    <label class="form-check-label fw-bold text-primary" for="pointSwitch">
+                        Dùng điểm (<span id="customerPoint">0</span> điểm)
+                    </label>
+                </div>
+                <div class="small text-muted mb-2" id="pointRateLabel">
+                    1 điểm = 1,000 VND | Tối đa 200 điểm/đơn
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Số điểm muốn dùng:</label>
+                    <input type="number" class="form-control form-control-lg border-primary-subtle" id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="small fw-bold text-uppercase">Điểm quy đổi:</span>
+                    <span class="fw-bold text-primary" id="pointDiscountLabel">- 0 VND</span>
+                </div>
+            </div>
+
+            <hr class="my-4 opacity-10">
+
+            <div class="payment-summary">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Tạm tính (tiền hàng):</span>
+                    <span class="fw-medium" id="goodsAmount">0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Phí vận chuyển:</span>
+                    <span class="fw-medium text-dark" id="shippingFee">+ 0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Giảm từ phiếu giảm giá:</span>
+                    <span class="text-success" id="discountAmount">- 0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Tổng điểm giảm:</span>
+                    <span class="text-success" id="totalPointDiscount">- 0 VND</span>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                    <span class="text-secondary">Tiền thối lại:</span>
+                    <span class="fw-bold text-success" id="changeAmount">0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center py-3">
+                    <span class="h5 mb-0 fw-bold">Tổng tiền:</span>
+                    <span class="h4 mb-0 fw-bold text-danger" id="totalAmount">0 VND</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
+                <span class="small text-muted">Hình thức: <span id="selectedPaymentMethod" class="text-dark fw-bold">Tiền mặt</span></span>
+                <a href="javascript:void(0)" onclick="openPaymentModal()" class="text-decoration-none">
+                    <i class="bi bi-pencil-square"></i> Sửa
+                </a>
+            </div>
+
+            <button class="btn btn-dark btn-lg w-100 fw-bold shadow-sm" onclick="payInvoice()">
+                THANH TOÁN
+            </button>
         </div>
+    </div>
+</div>
     </div>
 </div>
 
@@ -2276,6 +2302,15 @@
     // Toggle sử dụng điểm
     function togglePoint() {
         usePoint = $('#pointSwitch').is(':checked');
+        
+        if (usePoint) {
+            $('#requestedUsedPoints').closest('.mb-2').show();
+            $('#requestedUsedPoints').val(0);
+        } else {
+            $('#requestedUsedPoints').closest('.mb-2').hide();
+            $('#requestedUsedPoints').val(0);
+        }
+        
         updatePaymentInfo();
     }
 
@@ -2613,6 +2648,7 @@
 
     // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function () {
+        $('#requestedUsedPoints').closest('.mb-2').hide();
         // Thử khôi phục giỏ hàng từ localStorage trước
         if (!restoreGioHangsFromStorage()) {
             taoGioHang();
