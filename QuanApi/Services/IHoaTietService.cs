@@ -4,114 +4,126 @@ using QuanApi.Data;
 
 namespace QuanApi.Services
 {
-    public interface IHoaTietService
-    {
-        Task<IEnumerable<HoaTiet>> GetAllAsync(string? keyword);
-        Task<HoaTiet?> GetByIdAsync(Guid id);
-        Task<bool> CreateAsync(HoaTiet ht);
-        Task<bool> UpdateAsync(Guid id, HoaTiet ht);
-        Task<bool> DeleteAsync(Guid id);
-        Task<bool> ToggleStatusAsync(Guid id);
-        Task<(int total, List<HoaTiet> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
-    }
+	public interface IHoaTietService
+	{
+		Task<IEnumerable<HoaTiet>> GetAllAsync(string? keyword);
+		Task<HoaTiet?> GetByIdAsync(Guid id);
+		Task<bool> CreateAsync(HoaTiet ht);
+		Task<bool> UpdateAsync(Guid id, HoaTiet ht);
+		Task<bool> DeleteAsync(Guid id);
+		Task<bool> ToggleStatusAsync(Guid id);
+		Task<(int total, List<HoaTiet> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai);
+	}
 
-    public class HoaTietService : IHoaTietService
-    {
-        private readonly BanQuanAu1DbContext _context;
+	public class HoaTietService : IHoaTietService
+	{
+		private readonly BanQuanAu1DbContext _context;
 
-        public HoaTietService(BanQuanAu1DbContext context)
-        {
-            _context = context;
-        }
+		public HoaTietService(BanQuanAu1DbContext context)
+		{
+			_context = context;
+		}
 
-        public async Task<IEnumerable<HoaTiet>> GetAllAsync(string? keyword)
-        {
-            var query = _context.HoaTiet.AsQueryable();
+		public async Task<IEnumerable<HoaTiet>> GetAllAsync(string? keyword)
+		{
+			var query = _context.HoaTiet.AsQueryable();
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x => x.TenHoaTiet.ToLower().Contains(keywordLower) || x.MaHoaTiet.ToLower().Contains(keywordLower));
-            }
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x => x.TenHoaTiet.ToLower().Contains(keywordLower) || x.MaHoaTiet.ToLower().Contains(keywordLower));
+			}
 
-            return await query.ToListAsync();
-        }
+			// Order by newest first: prefer last update, otherwise creation date
+			query = query.OrderByDescending(x => x.LanCapNhatCuoi ?? x.NgayTao);
 
-        public async Task<HoaTiet?> GetByIdAsync(Guid id)
-        {
-            return await _context.HoaTiet.FindAsync(id);
-        }
+			return await query.ToListAsync();
+		}
 
-        public async Task<bool> CreateAsync(HoaTiet ht)
-        {
-            ht.IDHoaTiet = Guid.NewGuid();
-            ht.NgayTao = DateTime.UtcNow;
-            ht.NguoiTao = string.IsNullOrEmpty(ht.NguoiTao) ? "unknown" : ht.NguoiTao;
+		public async Task<HoaTiet?> GetByIdAsync(Guid id)
+		{
+			return await _context.HoaTiet.FindAsync(id);
+		}
 
-            _context.HoaTiet.Add(ht);
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> CreateAsync(HoaTiet ht)
+		{
+			if (ht == null)
+				throw new ArgumentNullException(nameof(ht));
 
-        public async Task<bool> UpdateAsync(Guid id, HoaTiet ht)
-        {
-            var entity = await _context.HoaTiet.FindAsync(id);
-            if (entity == null) return false;
+			ht.IDHoaTiet = Guid.NewGuid();
+			ht.NgayTao = DateTime.UtcNow; // chuẩn nhất
+			ht.NguoiTao ??= "unknown";
 
-            entity.TenHoaTiet = ht.TenHoaTiet;
-            entity.MaHoaTiet = ht.MaHoaTiet;
-            entity.TrangThai = ht.TrangThai;
-            entity.LanCapNhatCuoi = DateTime.UtcNow;
-            entity.NguoiCapNhat = string.IsNullOrEmpty(ht.NguoiCapNhat) ? "unknown" : ht.NguoiCapNhat;
+			_context.HoaTiet.Add(ht);
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            var entity = await _context.HoaTiet.FindAsync(id);
-            if (entity == null) return false;
+		public async Task<bool> UpdateAsync(Guid id, HoaTiet ht)
+		{
+			var entity = await _context.HoaTiet.FindAsync(id);
+			if (entity == null) return false;
 
-            _context.HoaTiet.Remove(entity);
-            return await _context.SaveChangesAsync() > 0;
-        }
+			entity.TenHoaTiet = ht.TenHoaTiet;
+			entity.MaHoaTiet = ht.MaHoaTiet;
+			entity.TrangThai = ht.TrangThai;
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = string.IsNullOrEmpty(ht.NguoiCapNhat) ? "unknown" : ht.NguoiCapNhat;
 
-        public async Task<bool> ToggleStatusAsync(Guid id)
-        {
-            var ht = await _context.HoaTiet.FindAsync(id);
-            if (ht == null) return false;
+			// Do not change NgayTao so creation timestamp remains intact.
 
-            ht.TrangThai = !ht.TrangThai;
-            ht.LanCapNhatCuoi = DateTime.UtcNow;
-            ht.NguoiCapNhat = "auto-toggle";
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            return await _context.SaveChangesAsync() > 0;
-        }
+		public async Task<bool> DeleteAsync(Guid id)
+		{
+			var entity = await _context.HoaTiet.FindAsync(id);
+			if (entity == null) return false;
 
-        public async Task<(int total, List<HoaTiet> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
-        {
-            var query = _context.HoaTiet.AsQueryable();
+			_context.HoaTiet.Remove(entity);
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                var keywordLower = keyword.ToLower();
-                query = query.Where(x => x.TenHoaTiet.ToLower().Contains(keywordLower) || x.MaHoaTiet.ToLower().Contains(keywordLower));
-            }
+		public async Task<bool> ToggleStatusAsync(Guid id)
+		{
+			var ht = await _context.HoaTiet.FindAsync(id);
+			if (ht == null) return false;
 
-            if (trangThai == "active")
-                query = query.Where(x => x.TrangThai);
-            else if (trangThai == "inactive")
-                query = query.Where(x => !x.TrangThai);
+			ht.TrangThai = !ht.TrangThai;
+			ht.LanCapNhatCuoi = DateTime.UtcNow;
+			ht.NguoiCapNhat = "auto-toggle";
 
-            var total = await query.CountAsync();
+			return await _context.SaveChangesAsync() > 0;
+		}
 
-            var data = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+		public async Task<(int total, List<HoaTiet> data)> GetPagedAsync(int page, int pageSize, string? keyword, string? trangThai)
+		{
+			var query = _context.HoaTiet.AsQueryable();
 
-            return (total, data);
-        }
-    }
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var keywordLower = keyword.ToLower();
+				query = query.Where(x => x.TenHoaTiet.ToLower().Contains(keywordLower) || x.MaHoaTiet.ToLower().Contains(keywordLower));
+			}
+
+			if (trangThai == "active")
+				query = query.Where(x => x.TrangThai);
+			else if (trangThai == "inactive")
+				query = query.Where(x => !x.TrangThai);
+
+			var total = await query.CountAsync();
+
+			// Order by newest first: prefer last update, otherwise creation date
+			var orderedQuery = query.OrderByDescending(x => x.LanCapNhatCuoi ?? x.NgayTao);
+
+			var data = await orderedQuery
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			return (total, data);
+		}
+	}
 }
 
 
