@@ -3,7 +3,8 @@
 	var cartItems = ViewBag.CartItems as List<QuanApi.Data.ChiTietGioHang> ?? new List<QuanApi.Data.ChiTietGioHang>();
 	var tongTien = cartItems.Sum(x => x.GiaBan * x.SoLuong);
 }
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <style>
 	.checkout-section {
 		padding: 60px 0;
@@ -369,6 +370,48 @@
 	}
 
 	}
+	    .voucher-ticket {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 1px solid rgba(0,0,0,0.05) !important;
+        background: #fff;
+    }
+    
+    .voucher-ticket:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important;
+        border-color: rgba(0,0,0,0.1) !important;
+    }
+
+    /* Reactive Badge Color Shifts */
+    .badge-reactive {
+        transition: all 0.3s ease !important;
+        transform: scale(1);
+    }
+
+    /* When the WHOLE card is hovered, change the badge colors */
+    .voucher-ticket:hover .badge-reactive.bg-success {
+        background-color: #198754 !important; /* Deeper Green */
+        box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-secondary {
+        background-color: #495057 !important; /* Darker Gray */
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-danger {
+        background-color: #bb2d3b !important; /* Deeper Red */
+        box-shadow: 0 0 10px rgba(187, 45, 59, 0.4);
+        transform: scale(1.1);
+    }
+
+    /* Button Hover */
+    .btn-voucher-active:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        transform: translateY(-1px);
+    }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <div class="checkout-section">
@@ -576,8 +619,8 @@
 
 <!-- jQuery cho esgoo.net API -->
 <script src="https://esgoo.net/scripts/jquery.js"></script>
-
-<script>
+@section Scripts {
+	<script>
 			let gioHangData = null;
 			let phuongThucThanhToan = null;
 			let discountValue = 0;
@@ -727,6 +770,7 @@
 			orderItemsContainer.innerHTML = html;
 			document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
 			document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+			recalcShipping();
 		}
 
 			// Load phương thức thanh toán
@@ -856,8 +900,12 @@
 				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
+				phiVanChuyenDaGiam: true,
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
+				toDistrictId: getSelectedToDistrictId(),
+				toWardCode: getSelectedToWardCode(),
+				weight: calculateShippingWeight(),
 				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
 				};
 
@@ -1334,7 +1382,7 @@
 						});
 
 						// Xử lý khi chọn phường xã - Modal
-						$("#saveAddressPhuong").change(function() {
+						$(document).on('change', '#saveAddressPhuong', function() {
 							updateSaveAddressFullAddress();
 						});
 
@@ -1481,6 +1529,23 @@
 						if (data_quan.error == 0) {
 							$("#quan").html('<option value="0">Quận Huyện</option>');
 							$("#phuong").html('<option value="0">Phường Xã</option>');
+							$("#quan").off('change').on('change', function(e) {
+								var idquan = $(this).val();
+								if (idquan != '0') {
+									$.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
+										if (data_phuong.error == 0) {
+											$("#phuong").html('<option value="0">Phường Xã</option>');
+											$.each(data_phuong.data, function(key_phuong, val_phuong) {
+												$("#phuong").append('<option value="' + val_phuong.id + '">' + val_phuong.full_name + '</option>');
+											});
+										}
+									});
+								} else {
+									$("#phuong").html('<option value="0">Phường Xã</option>');
+								}
+								updateFullAddress();
+								recalcShipping();
+							});
 
 							let selectedQuanId = null;
 							$.each(data_quan.data, function(key_quan, val_quan) {
@@ -1516,6 +1581,7 @@
 					// Cập nhật địa chỉ đầy đủ
 					setTimeout(() => {
 						updateFullAddress();
+						recalcShipping();
 					}, 500);
 
 				} catch (error) {
@@ -1745,6 +1811,7 @@
 			orderItemsContainer.innerHTML = html;
 			document.getElementById('tamTinh').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
 			document.getElementById('tongCong').textContent = tamTinh.toLocaleString('vi-VN') + ' VNĐ';
+			recalcShipping();
 		}
 
 			// Load phương thức thanh toán
@@ -1874,8 +1941,12 @@
 				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
+				phiVanChuyenDaGiam: true,
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
+				toDistrictId: getSelectedToDistrictId(),
+				toWardCode: getSelectedToWardCode(),
+				weight: calculateShippingWeight(),
 				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
 				};
 
@@ -2499,6 +2570,23 @@
 						if (data_quan.error == 0) {
 							$("#quan").html('<option value="0">Quận Huyện</option>');
 							$("#phuong").html('<option value="0">Phường Xã</option>');
+							$("#quan").off('change').on('change', function(e) {
+								var idquan = $(this).val();
+								if (idquan != '0') {
+									$.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
+										if (data_phuong.error == 0) {
+											$("#phuong").html('<option value="0">Phường Xã</option>');
+											$.each(data_phuong.data, function(key_phuong, val_phuong) {
+												$("#phuong").append('<option value="' + val_phuong.id + '">' + val_phuong.full_name + '</option>');
+											});
+										}
+									});
+								} else {
+									$("#phuong").html('<option value="0">Phường Xã</option>');
+								}
+								updateFullAddress();
+								recalcShipping();
+							});
 
 							let selectedQuanId = null;
 							$.each(data_quan.data, function(key_quan, val_quan) {
@@ -2534,6 +2622,7 @@
 					// Cập nhật địa chỉ đầy đủ
 					setTimeout(() => {
 						updateFullAddress();
+						recalcShipping();
 					}, 500);
 
 				} catch (error) {
@@ -2717,8 +2806,8 @@
 						});
 				}
 
-				// Render danh sách phiếu giảm giá
-					function renderVoucherList(vouchers, currentTotal = 0) {
+		// Render danh sách phiếu giảm giá
+		function renderVoucherList(vouchers, currentTotal = 0) {
 			let now = new Date();
 
 			// ✅ Map + tính toán trước
@@ -2764,67 +2853,61 @@
 
 				html += `
 					<div class="col-md-6 mb-3">
-						<div class="card voucher-card
-							${voucher.isExpired ? 'border-danger' : voucher.isUsable ? 'border-success' : 'border-secondary'}
-							h-100 ${!voucher.isUsable ? 'opacity-50' : ''}
-							${isBest ? 'shadow-lg border-warning' : ''}">
+						<div class="card voucher-ticket h-100 border-0 ${!voucher.isUsable ? 'opacity-75' : ''}" 
+							style="border-radius: 12px; overflow: hidden; position: relative; min-height: 130px; background: #fff;">
+							
+							<div class="row g-0 h-100">
+								<div class="${voucher.isExpired ? 'bg-danger' : (voucher.isUsable ? 'bg-success' : 'bg-secondary')} ${isBest ? 'bg-warning' : ''}" 
+									style="width: 7px;"></div>
 
-							<div class="card-header d-flex justify-content-between align-items-center">
-								<h6 class="mb-0">
-									${voucher.tenPhieu}
-									${isBest ? '<span class="badge bg-warning text-dark ms-2">🔥 Tốt nhất</span>' : ''}
-								</h6>
+								<div class="col px-3 py-2 d-flex flex-column justify-content-between">
+									<div class="d-flex justify-content-between align-items-center">
+										<div class="text-truncate" style="max-width: 65%;">
+											<h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">${voucher.tenPhieu}</h6>
+											${isBest ? '<span class="badge badge-best mt-1 text-dark" style="font-size: 0.6rem;">🔥 TỐT NHẤT</span>' : ''}
+										</div>
+										<span class="badge badge-reactive ${voucher.isExpired ? 'bg-danger' : (voucher.isUsable ? 'bg-success' : 'bg-secondary')}" 
+											style="font-size: 0.65rem; padding: 5px 10px; border-radius: 50px;">
+											${voucher.isExpired ? 'Hết hạn' : !voucher.isEnoughCondition ? 'Chưa đủ đ/k' : voucher.isAvailable ? 'Có hiệu lực' : 'Hết lượt'}
+										</span>
+									</div>
 
-								<span class="badge
-									${voucher.isExpired ? 'bg-danger' : voucher.isUsable ? 'bg-success' : 'bg-secondary'}">
+									<div class="d-flex align-items-center justify-content-between my-2">
+										<div class="bg-light px-2 py-1 rounded border">
+											<code class="fw-bold text-primary" style="font-size: 1.1rem; background: transparent;">${voucher.maCode}</code>
+										</div>
+										<div class="text-end">
+											<span class="fw-bold text-dark" style="font-size: 1.1rem;">-${voucher.giaTriGiam}%</span>
+											<small class="text-muted d-block" style="font-size: 0.65rem;">Tối đa ${voucher.giaTriGiamToiDa.toLocaleString()}đ</small>
+										</div>
+									</div>
 
-									${
-										voucher.isExpired ? 'Hết hạn' :
-										!voucher.isEnoughCondition ? 'Chưa đủ điều kiện' :
-										voucher.isAvailable ? 'Có hiệu lực' : 'Hết lượt'
-									}
-								</span>
+									<div class="d-flex justify-content-between align-items-end pt-1" style="border-top: 1px dashed #ddd !important;">
+										<div style="line-height: 1.3;">
+											<div class="${!voucher.isEnoughCondition && voucher.isUsable ? 'text-danger fw-bold' : 'text-muted'}" style="font-size: 0.75rem;">
+												Đơn từ ${voucher.donToiThieu.toLocaleString()}đ
+											</div>
+											
+											${!voucher.isEnoughCondition ? `
+												<div class="text-danger" style="font-size: 0.65rem;">
+													Thiếu ${(voucher.donToiThieu - currentTotal).toLocaleString()}đ
+												</div>` : `
+												<div class="text-success fw-bold" style="font-size: 0.75rem;">
+													Tiết kiệm: ${voucher.realDiscount.toLocaleString()}đ
+												</div>`}
+										</div>
+										
+										<button class="btn btn-sm py-0 px-3 rounded-pill btn-voucher-apply ${voucher.isUsable ? 'btn-outline-primary btn-voucher-active' : 'btn-outline-secondary btn-voucher-disabled'}"
+												style="font-size: 0.75rem; height: 28px; border-width: 1.5px;"
+												onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
+												${!voucher.isUsable ? 'disabled' : ''}>
+											${voucher.isUsable ? 'Chọn ngay' : 'Không khả dụng'}
+										</button>
+									</div>
+								</div>
 							</div>
 
-							<div class="card-body">
-
-								<div class="mb-2">
-									<strong>Mã:</strong> <code>${voucher.maCode}</code>
-								</div>
-
-								<div class="mb-2">
-									<strong>Giảm giá:</strong> ${voucher.giaTriGiam}%
-									(tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
-								</div>
-
-								<div class="mb-2 text-success">
-									<strong>💰 Tiết kiệm:</strong> ${voucher.realDiscount.toLocaleString()} VND
-								</div>
-
-								<div class="mb-2">
-									<strong>Đơn tối thiểu:</strong> ${voucher.donToiThieu.toLocaleString()} VND
-								</div>
-
-								${
-									!voucher.isEnoughCondition
-									? `<div class="text-danger small">⚠ Cần thêm ${(voucher.donToiThieu - currentTotal).toLocaleString()} VND</div>`
-									: ''
-								}
-
-								<div class="mb-2">
-									<strong>Hiệu lực:</strong>
-									${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} -
-									${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
-								</div>
-							</div>
-
-							<div class="card-footer">
-								<button class="btn btn-primary btn-sm w-100"
-										onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
-										${!voucher.isUsable ? 'disabled' : ''}>
-									${voucher.isUsable ? 'Chọn phiếu này' : 'Không đủ điều kiện'}
-								</button>
-							</div>
+							<div style="position: absolute; width: 16px; height: 16px; background: #f8f9fa; border-radius: 50%; left: -8px; top: 50%; transform: translateY(-50%); border: 1px solid rgba(0,0,0,0.05);"></div>
 						</div>
 					</div>
 				`;
@@ -2973,6 +3056,51 @@
 
 
 
+			function getCheckoutCustomerId() {
+				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
+				return customerIdClaim && customerIdClaim !== '' ? customerIdClaim : null;
+			}
+
+			function getSelectedToDistrictId() {
+				const districtValue = $('#quan').val();
+				if (!districtValue || districtValue === '0') {
+					return null;
+				}
+
+				const districtId = parseInt(districtValue, 10);
+				return Number.isNaN(districtId) ? null : districtId;
+			}
+
+			function getSelectedToWardCode() {
+				const wardValue = $('#phuong').val();
+				if (!wardValue || wardValue === '0') {
+					return null;
+				}
+
+				return String(wardValue);
+			}
+
+			function calculateShippingWeight() {
+				let totalQuantity = 0;
+				if (gioHangData && gioHangData.chiTietGioHangs) {
+					gioHangData.chiTietGioHangs.forEach(item => {
+						const quantity = parseInt(item.SoLuong ?? item.soLuong ?? 0, 10) || 0;
+						totalQuantity += quantity;
+					});
+				}
+
+				if (totalQuantity <= 0) {
+					const serverCartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
+					if (serverCartItems && serverCartItems.length) {
+						serverCartItems.forEach(item => {
+							totalQuantity += parseInt(item.SoLuong ?? item.soLuong ?? 0, 10) || 0;
+						});
+					}
+				}
+
+				return Math.max(500, totalQuantity * 500);
+			}
+
 			// Cập nhật thông tin thanh toán
 			async function recalcShipping() {
 				try {
@@ -2996,10 +3124,22 @@
 					// Kiểm tra xem có địa chỉ từ dropdown hay từ textarea
 					let hasValidAddress = false;
 					let payload = {};
+					const customerId = getCheckoutCustomerId();
+					const toDistrictId = getSelectedToDistrictId();
+					const toWardCode = getSelectedToWardCode();
+					const weight = calculateShippingWeight();
 
 					if (provinceText && provinceText !== 'Tỉnh Thành') {
 						// Sử dụng địa chỉ từ dropdown
-						payload = { province: provinceText, district: (districtText !== 'Quận Huyện' ? districtText : ''), orderValue: subtotal };
+						payload = {
+							province: provinceText,
+							district: (districtText !== 'Quận Huyện' ? districtText : ''),
+							orderValue: subtotal,
+							customerId: customerId,
+							toDistrictId: toDistrictId,
+							toWardCode: toWardCode,
+							weight: weight
+						};
 						hasValidAddress = true;
 					} else if (fullAddress && fullAddress.trim() !== '') {
 						// Sử dụng địa chỉ từ textarea - parse để lấy tỉnh/thành
@@ -3007,7 +3147,15 @@
 						if (addressParts.length >= 2) {
 							const province = addressParts[addressParts.length - 1]; // Tỉnh thường ở cuối
 							const district = addressParts.length >= 3 ? addressParts[addressParts.length - 2] : ''; // Quận/huyện
-							payload = { province: province, district: district, orderValue: subtotal };
+							payload = {
+								province: province,
+								district: district,
+								orderValue: subtotal,
+								customerId: customerId,
+								toDistrictId: toDistrictId,
+								toWardCode: toWardCode,
+								weight: weight
+							};
 							hasValidAddress = true;
 						}
 					}
@@ -3272,6 +3420,9 @@
 				const soDienThoai = $('#soDienThoaiNguoiNhan').val();
 				const diaChiChiTiet = $('#diaChiChiTiet').val();
 				const fullAddress = $('#diaChiGiaoHang').val();
+				const tinhId = $('#tinh').val(); 
+				const quanId = $('#quan').val();
+				const phuongId = $('#phuong').val();
 
 				// Reset modal dropdowns trước
 				resetSaveAddressDropdowns();
@@ -3281,7 +3432,17 @@
 				$('#saveAddressPhone').val(soDienThoai);
 				$('#saveAddressChiTiet').val(diaChiChiTiet);
 
-				// Nếu có địa chỉ đầy đủ từ form chính, điền vào modal
+				if (tinhId && tinhId !== '0') {
+						$('#saveAddressTinh').val(tinhId).change();
+						setTimeout(() => {
+							$('#saveAddressQuan').val(quanId).change();
+							setTimeout(() => {
+								$('#saveAddressPhuong').val(phuongId);
+								updateSaveAddressFullAddress(); // ← add this line
+							}, 300);
+						}, 300);
+					}
+
 				if (fullAddress && fullAddress.trim() !== '') {
 					$('#saveAddressDetail').val(fullAddress);
 				}
@@ -3292,43 +3453,46 @@
 
 			// Lưu địa chỉ mới
 			function saveNewAddress() {
+				// 1. Get the values from the dropdowns (optional but recommended for better data)
+				const tinh = $("#saveAddressTinh option:selected").text();
+				const quan = $("#saveAddressQuan option:selected").text();
+				const phuong = $("#saveAddressPhuong option:selected").text();
+				const chiTiet = $('#saveAddressChiTiet').val();
+
+				// 2. Build the full address string from dropdowns if they are selected
+				// This ensures that even if the textarea hasn't updated yet, the data is fresh.
+				let finalAddress = $('#saveAddressDetail').val(); 
+				
+				// 3. Construct the Data Object (Matches your naming convention)
 				const addressData = {
 					idKhachHang: '@User.FindFirst("custom:id_khachhang")?.Value',
 					tenNguoiNhan: $('#saveAddressName').val(),
 					sdtNguoiNhan: $('#saveAddressPhone').val(),
-					diaChiChiTiet: $('#saveAddressDetail').val(),
+					diaChiChiTiet: finalAddress, // Sending the full string to your Backend
 					laMacDinh: $('#saveAddressDefault').is(':checked')
 				};
 
-				// Lấy địa chỉ đầy đủ từ textarea readonly
-				const fullAddressFromModal = $('#saveAddressDetail').val();
-				if (fullAddressFromModal && fullAddressFromModal.trim() !== '') {
-					addressData.diaChiChiTiet = fullAddressFromModal;
-				}
-
-				// Validation
-				if (!addressData.diaChiChiTiet || addressData.diaChiChiTiet.trim() === '') {
-					alert('Vui lòng chọn địa chỉ từ dropdown hoặc nhập địa chỉ chi tiết!');
-					$('#saveAddressChiTiet').focus();
-					return;
-				}
-
-				if (!addressData.tenNguoiNhan) {
+				// --- Validation ---
+				if (!addressData.tenNguoiNhan || addressData.tenNguoiNhan.trim() === '') {
 					alert('Vui lòng nhập tên người nhận!');
 					$('#saveAddressName').focus();
 					return;
 				}
 
-				// Validate số điện thoại nếu có nhập
+				if (!addressData.diaChiChiTiet || addressData.diaChiChiTiet.trim() === '' || $("#saveAddressTinh").val() === '0') {
+					alert('Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã!');
+					return;
+				}
+
 				if (addressData.sdtNguoiNhan && addressData.sdtNguoiNhan.trim() !== '') {
-					if (!validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
-						alert('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.');
+					if (typeof validateVietnamesePhoneNumber === "function" && !validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
+						alert('Số điện thoại không hợp lệ.');
 						$('#saveAddressPhone').focus();
 						return;
 					}
 				}
 
-				// Gọi API tạo địa chỉ
+				// --- API Call ---
 				$.ajax({
 					url: '/Checkout/TaoDiaChi',
 					method: 'POST',
@@ -3338,22 +3502,23 @@
 						alert('Lưu địa chỉ thành công!');
 						$('#saveAddressModal').modal('hide');
 
-						// Cập nhật form checkout nếu là địa chỉ mặc định
+						// Update main checkout form if checked as default
 						if (addressData.laMacDinh) {
 							$('#tenNguoiNhan').val(addressData.tenNguoiNhan);
 							$('#soDienThoaiNguoiNhan').val(addressData.sdtNguoiNhan);
 							$('#diaChiGiaoHang').val(addressData.diaChiChiTiet);
+							
+							// Also update the main page dropdowns if you have them
+							// Note: This requires your main page to have the same logic/IDs
 						}
 					},
 					error: function(xhr) {
 						let errorMessage = 'Lỗi khi lưu địa chỉ!';
-						if (xhr.responseText) {
-							try {
-								const error = JSON.parse(xhr.responseText);
-								errorMessage = error.message || errorMessage;
-							} catch (e) {
-								errorMessage = xhr.responseText;
-							}
+						try {
+							const error = JSON.parse(xhr.responseText);
+							errorMessage = error.message || errorMessage;
+						} catch (e) {
+							errorMessage = xhr.responseText || errorMessage;
 						}
 						alert(errorMessage);
 					}
@@ -3415,7 +3580,8 @@
 					resetSaveAddressDropdowns();
 				});
 			});
-</script>
+	</script>
+} 
 
 <!-- Modal Lưu Địa Chỉ -->
 <div class="modal fade" id="saveAddressModal" tabindex="-1" aria-labelledby="saveAddressModalLabel" aria-hidden="true">

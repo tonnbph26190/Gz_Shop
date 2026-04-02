@@ -67,6 +67,14 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public List<T> Data { get; set; }
             public PaginationInfo Pagination { get; set; }
+            public OrderStatistics Statistics { get; set; }
+        }
+
+        public class OrderStatistics
+        {
+            public int TotalOnlineCount { get; set; }
+            public int TotalTaiQuayCount { get; set; }
+            public int TotalPendingCount { get; set; }
         }
 
         // DTO classes for detailed invoice
@@ -135,6 +143,10 @@ namespace QuanView.Areas.Admin.Controllers
             public Guid IDSanPhamChiTiet { get; set; }
             public string MaSPChiTiet { get; set; }
             public decimal GiaBan { get; set; }
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongDatMua { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
             public KichCoDto KichCo { get; set; }
             public MauSacDto MauSac { get; set; }
             public HoaTietDto HoaTiet { get; set; }
@@ -245,6 +257,9 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalCount = pagination.TotalCount;
                         ViewBag.HasPreviousPage = pagination.HasPreviousPage;
                         ViewBag.HasNextPage = pagination.HasNextPage;
+                        ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
+                        ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
+                        ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
 
                         return View(hoaDons);
                     }
@@ -348,6 +363,7 @@ namespace QuanView.Areas.Admin.Controllers
                                         IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                         MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
                                         GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        SoLuong = ct.SanPhamChiTiet.SoLuongTonHienTai,
                                         KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
                                         {
                                             TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo
@@ -371,6 +387,7 @@ namespace QuanView.Areas.Admin.Controllers
                                             MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
                                         };
                                     }
+
                                 }
 
                                 hoaDon.ChiTietHoaDons.Add(chiTiet);
@@ -554,6 +571,77 @@ namespace QuanView.Areas.Admin.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Lỗi khi hủy đơn hàng: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Admin/QuanLyDonHang/HoanTien/{id}
+        [HttpPost]
+        public async Task<IActionResult> HoanTien(Guid id)
+        {
+            try
+            {
+                var detailResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!detailResponse.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = await detailResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
+                if (hoaDon == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.BanTaiQuay)
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn online.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai == "Đã hoàn tiền")
+                {
+                    TempData["ErrorMessage"] = "Đơn hàng đã được hoàn tiền trước đó.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai != "Đã hủy")
+                {
+                    TempData["ErrorMessage"] = "Chỉ hoàn tiền cho đơn hàng đã hủy.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var tenPhuongThucThanhToan = hoaDon.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty;
+                if (!tenPhuongThucThanhToan.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn thanh toán chuyển khoản.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var payload = new
+                {
+                    TrangThai = "Đã hoàn tiền",
+                    NguoiCapNhat = User.Identity?.Name ?? "Admin",
+                    LanCapNhatCuoi = DateTime.UtcNow
+                };
+
+                var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
+                if (updateResponse.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Đã hoàn tiền cho đơn hàng thành công.";
+                }
+                else
+                {
+                    var error = await updateResponse.Content.ReadAsStringAsync();
+                    TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {ex.Message}";
             }
 
             return RedirectToAction(nameof(Details), new { id });

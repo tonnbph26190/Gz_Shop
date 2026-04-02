@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using System.Security.Claims;
@@ -97,28 +97,28 @@ namespace QuanView.Controllers
                     }
                 }
 
-                if (string.IsNullOrEmpty(search))
-                {
-                    ViewBag.Search = search;
-                    ViewBag.FromDate = fromDate;
-                    ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = isAuthenticated;
+                //if (string.IsNullOrEmpty(search))
+                //{
+                //    ViewBag.Search = search;
+                //    ViewBag.FromDate = fromDate;
+                //    ViewBag.ToDate = toDate;
+                //    ViewBag.IsAuthenticated = isAuthenticated;
 
-                    var emptyViewModel = new
-                    {
-                        HoaDons = new List<HoaDon>(),
-                        Pagination = new
-                        {
-                            CurrentPage = page,
-                            TotalPages = 0,
-                            TotalCount = 0,
-                            PageSize = 10,
-                            HasPreviousPage = false,
-                            HasNextPage = false
-                        }
-                    };
-                    return View(emptyViewModel);
-                }
+                //    var emptyViewModel = new
+                //    {
+                //        HoaDons = new List<HoaDon>(),
+                //        Pagination = new
+                //        {
+                //            CurrentPage = page,
+                //            TotalPages = 0,
+                //            TotalCount = 0,
+                //            PageSize = 10,
+                //            HasPreviousPage = false,
+                //            HasNextPage = false
+                //        }
+                //    };
+                //    return View(emptyViewModel);
+                //}
 
                 var apiUrl = $"{baseUrl}/HoaDons/guest";
                 var parameters = new List<string>();

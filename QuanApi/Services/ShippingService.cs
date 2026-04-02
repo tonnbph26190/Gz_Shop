@@ -1,12 +1,24 @@
-﻿using QuanApi.Dtos;
+using System.Globalization;
+using System.Text;
+using QuanApi.Data;
+using QuanApi.Dtos;
 
 namespace QuanApi.Services
 {
     public interface IShippingService
     {
-        decimal CalculateShippingFee(string province, string district, decimal orderValue, decimal weight = 0);
-        decimal ApplyShippingDiscount(decimal shippingFee, decimal orderValue);
-        ShippingInfoDto GetShippingInfo(string province, string district, decimal orderValue, decimal weight = 0);
+        decimal CalculateShippingFee(string province, string district, decimal orderValue, decimal weight = 0, CauHinhBanHang? config = null);
+        decimal ApplyShippingDiscount(decimal shippingFee, decimal discountPercent);
+        ShippingInfoDto GetShippingInfo(
+            string province,
+            string district,
+            decimal orderValue,
+            decimal weight = 0,
+            decimal discountPercent = 0,
+            string discountMessage = "",
+            CauHinhBanHang? config = null,
+            string appliedFeeSource = ShippingFeeSources.Config);
+        string ResolveConfiguredShippingZone(string province, string district, CauHinhBanHang? config = null);
     }
 
     public class ShippingService : IShippingService
@@ -15,73 +27,73 @@ namespace QuanApi.Services
         private readonly Dictionary<string, decimal> _regionBaseFees = new()
         {
            // Miền Bắc - Gần Hà Nội nên phí thấp
-{ "Bắc Giang", 25000 },
-{ "Bắc Kạn", 27000 },
-{ "Bắc Ninh", 22000 },
-{ "Cao Bằng", 30000 },
-{ "Điện Biên", 30000 },
-{ "Hà Giang", 30000 },
-{ "Hà Nam", 25000 },
-{ "Hà Nội", 20000 },
-{ "Hải Phòng", 25000 },
-{ "Hòa Bình", 25000 },
-{ "Hưng Yên", 25000 },
-{ "Lai Châu", 30000 },
-{ "Lạng Sơn", 27000 },
-{ "Lào Cai", 30000 },
-{ "Nam Định", 30000 },
-{ "Ninh Bình", 30000 },
-{ "Phú Thọ", 25000 },
-{ "Quảng Ninh", 30000 },
-{ "Sơn La", 30000 },
-{ "Thái Bình", 30000 },
-{ "Thái Nguyên", 25000 },
-{ "Tuyên Quang", 30000 },
-{ "Vĩnh Phúc", 25000 },
-{ "Yên Bái", 27000 },
+			{ "Bắc Giang", 25000 },
+			{ "Bắc Kạn", 27000 },
+			{ "Bắc Ninh", 22000 },
+			{ "Cao Bằng", 30000 },
+			{ "Điện Biên", 30000 },
+			{ "Hà Giang", 30000 },
+			{ "Hà Nam", 25000 },
+			{ "Hà Nội", 20000 },
+			{ "Hải Phòng", 25000 },
+			{ "Hòa Bình", 25000 },
+			{ "Hưng Yên", 25000 },
+			{ "Lai Châu", 30000 },
+			{ "Lạng Sơn", 27000 },
+			{ "Lào Cai", 30000 },
+			{ "Nam Định", 30000 },
+			{ "Ninh Bình", 30000 },
+			{ "Phú Thọ", 25000 },
+			{ "Quảng Ninh", 30000 },
+			{ "Sơn La", 30000 },
+			{ "Thái Bình", 30000 },
+			{ "Thái Nguyên", 25000 },
+			{ "Tuyên Quang", 30000 },
+			{ "Vĩnh Phúc", 25000 },
+			{ "Yên Bái", 27000 },
 
-// Miền Trung - Khoảng cách trung bình
-{ "Thanh Hóa", 40000 },
-{ "Nghệ An", 45000 },
-{ "Hà Tĩnh", 45000 },
-{ "Quảng Bình", 50000 },
-{ "Quảng Trị", 50000 },
-{ "Thừa Thiên Huế", 50000 },
-{ "Đà Nẵng", 55000 },
-{ "Quảng Nam", 55000 },
-{ "Quảng Ngãi", 60000 },
-{ "Bình Định", 60000 },
-{ "Phú Yên", 65000 },
-{ "Khánh Hòa", 65000 },
-{ "Ninh Thuận", 70000 },
-{ "Bình Thuận", 70000 },
+			// Miền Trung - Khoảng cách trung bình
+			{ "Thanh Hóa", 40000 },
+			{ "Nghệ An", 45000 },
+			{ "Hà Tĩnh", 45000 },
+			{ "Quảng Bình", 50000 },
+			{ "Quảng Trị", 50000 },
+			{ "Thừa Thiên Huế", 50000 },
+			{ "Đà Nẵng", 55000 },
+			{ "Quảng Nam", 55000 },
+			{ "Quảng Ngãi", 60000 },
+			{ "Bình Định", 60000 },
+			{ "Phú Yên", 65000 },
+			{ "Khánh Hòa", 65000 },
+			{ "Ninh Thuận", 70000 },
+			{ "Bình Thuận", 70000 },
 
-// Miền Nam - Xa nhất nên phí cao nhất
-{ "Hồ Chí Minh", 75000 },
-{ "Bình Dương", 75000 },
-{ "Đồng Nai", 80000 },
-{ "Bà Rịa - Vũng Tàu", 85000 },
-{ "Long An", 80000 },
-{ "Tiền Giang", 85000 },
-{ "Bến Tre", 90000 },
-{ "Vĩnh Long", 90000 },
-{ "Trà Vinh", 95000 },
-{ "Cần Thơ", 90000 },
-{ "Đồng Tháp", 90000 },
-{ "An Giang", 95000 },
-{ "Kiên Giang", 100000 },
-{ "Cà Mau", 110000 },
-{ "Bạc Liêu", 105000 },
-{ "Sóc Trăng", 95000 },
-{ "Hậu Giang", 95000 },
-{ "Tây Ninh", 85000 },
-{ "Bình Phước", 85000 },
-{ "Đắk Lắk", 90000 },
-{ "Đắk Nông", 95000 },
-{ "Lâm Đồng", 85000 },
-{ "Gia Lai", 95000 },
-{ "Kon Tum", 100000 },
-        };
+			// Miền Nam - Xa nhất nên phí cao nhất
+			{ "Hồ Chí Minh", 75000 },
+			{ "Bình Dương", 75000 },
+			{ "Đồng Nai", 80000 },
+			{ "Bà Rịa - Vũng Tàu", 85000 },
+			{ "Long An", 80000 },
+			{ "Tiền Giang", 85000 },
+			{ "Bến Tre", 90000 },
+			{ "Vĩnh Long", 90000 },
+			{ "Trà Vinh", 95000 },
+			{ "Cần Thơ", 90000 },
+			{ "Đồng Tháp", 90000 },
+			{ "An Giang", 95000 },
+			{ "Kiên Giang", 100000 },
+			{ "Cà Mau", 110000 },
+			{ "Bạc Liêu", 105000 },
+			{ "Sóc Trăng", 95000 },
+			{ "Hậu Giang", 95000 },
+			{ "Tây Ninh", 85000 },
+			{ "Bình Phước", 85000 },
+			{ "Đắk Lắk", 90000 },
+			{ "Đắk Nông", 95000 },
+			{ "Lâm Đồng", 85000 },
+			{ "Gia Lai", 95000 },
+			{ "Kon Tum", 100000 },
+					};
 
         // Phí phụ trội theo quận/huyện đặc biệt
         private readonly Dictionary<string, decimal> _districtSurcharge = new()
@@ -100,8 +112,13 @@ namespace QuanApi.Services
             { "Huyện Bình Chánh", 8000 }
         };
 
-        public decimal CalculateShippingFee(string province, string district, decimal orderValue, decimal weight = 0)
+        public decimal CalculateShippingFee(string province, string district, decimal orderValue, decimal weight = 0, CauHinhBanHang? config = null)
         {
+            if (config != null)
+            {
+                return CalculateConfiguredShippingFee(province, district, config);
+            }
+
             // Chuẩn hóa tên tỉnh để tìm kiếm chính xác hơn
             string normalizedProvince = NormalizeProvinceName(province);
 
@@ -127,48 +144,29 @@ namespace QuanApi.Services
             return Math.Max(totalFee, 0);
         }
 
-        public decimal ApplyShippingDiscount(decimal shippingFee, decimal orderValue)
+        public decimal ApplyShippingDiscount(decimal shippingFee, decimal discountPercent)
         {
-            // Miễn phí vận chuyển cho đơn hàng trên 500k
-            if (orderValue >= 500000)
-            {
-                return 0;
-            }
-
-            // Giảm 50% phí vận chuyển cho đơn hàng từ 300k
-            if (orderValue >= 300000)
-            {
-                return shippingFee * 0.5m;
-            }
-
-            // Giảm 20% phí vận chuyển cho đơn hàng từ 200k
-            if (orderValue >= 200000)
-            {
-                return shippingFee * 0.8m;
-            }
-
-            return shippingFee;
+            var normalizedPercent = Math.Clamp(discountPercent, 0, 100);
+            var finalFee = shippingFee * (1 - normalizedPercent / 100m);
+            return Math.Max(finalFee, 0);
         }
 
-        public ShippingInfoDto GetShippingInfo(string province, string district, decimal orderValue, decimal weight = 0)
+        public ShippingInfoDto GetShippingInfo(
+            string province,
+            string district,
+            decimal orderValue,
+            decimal weight = 0,
+            decimal discountPercent = 0,
+            string discountMessage = "",
+            CauHinhBanHang? config = null,
+            string appliedFeeSource = ShippingFeeSources.Config)
         {
-            decimal originalFee = CalculateShippingFee(province, district, orderValue, weight);
-            decimal finalFee = ApplyShippingDiscount(originalFee, orderValue);
+            decimal originalFee = CalculateShippingFee(province, district, orderValue, weight, config);
+            decimal finalFee = ApplyShippingDiscount(originalFee, discountPercent);
             decimal discount = originalFee - finalFee;
-
-            string discountMessage = "";
-            if (orderValue >= 500000)
-            {
-                discountMessage = "Miễn phí vận chuyển cho đơn hàng từ 500.000đ";
-            }
-            else if (orderValue >= 300000)
-            {
-                discountMessage = "Giảm 50% phí vận chuyển cho đơn hàng từ 300.000đ";
-            }
-            else if (orderValue >= 200000)
-            {
-                discountMessage = "Giảm 20% phí vận chuyển cho đơn hàng từ 200.000đ";
-            }
+            var appliedZone = config != null
+                ? ResolveConfiguredShippingZone(province, district, config)
+                : ShippingFeeZones.Legacy;
 
             return new ShippingInfoDto
             {
@@ -178,12 +176,63 @@ namespace QuanApi.Services
                 DiscountAmount = discount,
                 FinalFee = finalFee,
                 DiscountMessage = discountMessage,
-                EstimatedDeliveryDays = GetEstimatedDeliveryDays(province)
+                DiscountPercent = Math.Clamp(discountPercent, 0, 100),
+                EstimatedDeliveryDays = GetEstimatedDeliveryDays(province, appliedZone, config),
+                AppliedFeeSource = appliedFeeSource,
+                AppliedFeeZone = appliedZone
             };
         }
 
-        private int GetEstimatedDeliveryDays(string province)
+        public string ResolveConfiguredShippingZone(string province, string district, CauHinhBanHang? config = null)
         {
+            if (config == null)
+            {
+                return ShippingFeeZones.ToanQuoc;
+            }
+
+            var provinceKey = NormalizeAreaName(province);
+            var localProvinceKey = NormalizeAreaName(config.TinhApDungPhiShip);
+
+            if (string.IsNullOrWhiteSpace(provinceKey) || provinceKey != localProvinceKey)
+            {
+                return ShippingFeeZones.ToanQuoc;
+            }
+
+            var districtKey = NormalizeAreaName(district);
+            if (!string.IsNullOrWhiteSpace(districtKey))
+            {
+                var innerDistricts = ParseInnerDistricts(config.DanhSachQuanHuyenNoiThanh);
+                if (innerDistricts.Contains(districtKey))
+                {
+                    return ShippingFeeZones.NoiThanh;
+                }
+            }
+
+            return ShippingFeeZones.NgoaiThanh;
+        }
+
+        private decimal CalculateConfiguredShippingFee(string province, string district, CauHinhBanHang config)
+        {
+            return ResolveConfiguredShippingZone(province, district, config) switch
+            {
+                ShippingFeeZones.NoiThanh => Math.Max(config.PhiShipNoiThanh, 0),
+                ShippingFeeZones.NgoaiThanh => Math.Max(config.PhiShipNgoaiThanh, 0),
+                _ => Math.Max(config.PhiShipToanQuoc > 0 ? config.PhiShipToanQuoc : config.PhiShipMacDinh, 0)
+            };
+        }
+
+        private int GetEstimatedDeliveryDays(string province, string appliedZone, CauHinhBanHang? config)
+        {
+            if (config != null)
+            {
+                return appliedZone switch
+                {
+                    ShippingFeeZones.NoiThanh => 1,
+                    ShippingFeeZones.NgoaiThanh => 2,
+                    _ => 4
+                };
+            }
+
             // Thời gian giao hàng ước tính theo vùng
             var majorCities = new[] { "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng" };
 
@@ -311,6 +360,76 @@ namespace QuanApi.Services
 
             // Trả về tên gốc nếu không tìm thấy
             return normalized;
+        }
+
+        private static HashSet<string> ParseInnerDistricts(string? raw)
+        {
+            return (raw ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(NormalizeAreaName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeAreaName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var normalized = value.Trim().ToLowerInvariant();
+            var prefixes = new[]
+            {
+                "thanh pho ",
+                "thanh pho.",
+                "tp ",
+                "tp.",
+                "tinh ",
+                "quan ",
+                "huyen ",
+                "thi xa ",
+                "thi tran ",
+                "xa "
+            };
+
+            normalized = RemoveDiacritics(normalized);
+            foreach (var prefix in prefixes)
+            {
+                if (normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized[prefix.Length..];
+                    break;
+                }
+            }
+
+            var builder = new StringBuilder(normalized.Length);
+            foreach (var ch in normalized)
+            {
+                if (char.IsLetterOrDigit(ch))
+                {
+                    builder.Append(ch);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string RemoveDiacritics(string value)
+        {
+            var normalized = value.Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder(normalized.Length);
+
+            foreach (var ch in normalized)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    builder.Append(ch == 'đ' ? 'd' : ch);
+                }
+            }
+
+            return builder.ToString().Normalize(NormalizationForm.FormC);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model QuanApi.Dtos.KhachHangDto
+@model QuanApi.Dtos.KhachHangDto
 
 @{
     ViewData["Title"] = "Chi tiết Khách Hàng";
@@ -37,6 +37,12 @@
 
                 <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.SoDienThoai)</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.SoDienThoai)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.SoDiemHienTai)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.SoDiemHienTai)</dd>
+
+                <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.TongDiemTichLuy)</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Html.DisplayFor(model => model.TongDiemTichLuy)</dd>
 
                 <dt class="text-sm font-medium text-gray-500">@Html.DisplayNameFor(model => model.NgayTao)</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-1">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</dd>

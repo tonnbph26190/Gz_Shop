@@ -31,6 +31,21 @@ namespace QuanApi.Data
         [Range(0, double.MaxValue, ErrorMessage = "Phí vận chuyển phải lớn hơn hoặc bằng 0.")]
         public decimal? PhiVanChuyen { get; set; }
 
+        [Range(0, double.MaxValue, ErrorMessage = "Phí vận chuyển gốc phải lớn hơn hoặc bằng 0.")]
+        public decimal? PhiVanChuyenGoc { get; set; }
+
+        [Range(0, double.MaxValue, ErrorMessage = "Giảm phí vận chuyển phải lớn hơn hoặc bằng 0.")]
+        public decimal? SoTienGiamPhiVanChuyen { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Điểm đã dùng phải lớn hơn hoặc bằng 0.")]
+        public int DiemDaDung { get; set; } = 0;
+
+        [Range(0, double.MaxValue, ErrorMessage = "Tiền giảm từ điểm phải lớn hơn hoặc bằng 0.")]
+        public decimal SoTienGiamTuDiem { get; set; } = 0;
+
+        [Range(0, int.MaxValue, ErrorMessage = "Điểm cộng phải lớn hơn hoặc bằng 0.")]
+        public int DiemCong { get; set; } = 0;
+
         [Required]
         [MaxLength(50)]
         public string TrangThai { get; set; }
@@ -68,6 +83,7 @@ namespace QuanApi.Data
         public virtual PhieuGiamGia? PhieuGiamGia { get; set; }
         [ForeignKey("IDPhuongThucThanhToan")]
         public virtual PhuongThucThanhToan? PhuongThucThanhToan { get; set; }
+        public virtual ICollection<LichSuDiemKhachHang>? LichSuDiemKhachHangs { get; set; }
         public virtual ICollection<ChiTietHoaDon>? ChiTietHoaDons { get; set; }
         public virtual ICollection<LichSuHoaDon>? LichSuHoaDons { get; set; }
     }

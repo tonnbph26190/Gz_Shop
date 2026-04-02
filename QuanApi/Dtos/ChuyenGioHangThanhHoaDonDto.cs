@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace QuanApi.Dtos
 {
@@ -15,5 +15,11 @@ namespace QuanApi.Dtos
         public string? PaymentMethod { get; set; }
         public decimal? CustomerPaid { get; set; }
         public decimal? ShippingFee { get; set; }
+        public string? Province { get; set; }
+        public string? District { get; set; }
+        public int? ToDistrictId { get; set; }
+        public string? ToWardCode { get; set; }
+        public int? Weight { get; set; }
+        public string? ShippingFeeSource { get; set; }
     }
 }

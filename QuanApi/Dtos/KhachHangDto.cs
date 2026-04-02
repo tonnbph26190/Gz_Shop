@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -21,6 +21,12 @@ namespace QuanApi.Dtos
         [DisplayName("Số điện thoại")]
         public string SoDienThoai { get; set; } = string.Empty;
 
+        [DisplayName("Điểm hiện tại")]
+        public int SoDiemHienTai { get; set; }
+
+        [DisplayName("Tổng điểm tích lũy")]
+        public int TongDiemTichLuy { get; set; }
+
         [DisplayName("Ngày tạo")]
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy HH:mm}")]
         public DateTime NgayTao { get; set; }
@@ -38,6 +44,9 @@ namespace QuanApi.Dtos
         [DisplayName("Trạng thái")]
         public bool TrangThai { get; set; }
 
-        public List<DiaChiDto>? DiaChis { get; set; }
+        [DisplayName("Hạng")]
+        public string? Rank { get; set; }
+
+		public List<DiaChiDto>? DiaChis { get; set; }
     }
 }

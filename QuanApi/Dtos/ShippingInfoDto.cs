@@ -8,7 +8,10 @@ namespace QuanApi.Dtos
         public decimal DiscountAmount { get; set; }
         public decimal FinalFee { get; set; }
         public string DiscountMessage { get; set; } = string.Empty;
+        public decimal DiscountPercent { get; set; }
         public int EstimatedDeliveryDays { get; set; }
+        public string AppliedFeeSource { get; set; } = string.Empty;
+        public string AppliedFeeZone { get; set; } = string.Empty;
     }
 
     public class CalculateShippingRequest
@@ -16,11 +19,10 @@ namespace QuanApi.Dtos
         public string Province { get; set; } = string.Empty;
         public string District { get; set; } = string.Empty;
         public decimal OrderValue { get; set; }
-        /// <summary>GHN: ID quận/huyện đích. Nếu gửi kèm ToWardCode sẽ gọi API GHN tính phí.</summary>
         public int? ToDistrictId { get; set; }
-        /// <summary>GHN: Mã phường/xã đích.</summary>
         public string? ToWardCode { get; set; }
-        /// <summary>Trọng lượng (gram). Mặc định 500 nếu không gửi.</summary>
         public int? Weight { get; set; }
+        public Guid? CustomerId { get; set; }
+        public string? ShippingFeeSource { get; set; }
     }
 }

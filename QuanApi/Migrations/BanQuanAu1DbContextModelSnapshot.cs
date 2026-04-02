@@ -32,6 +32,9 @@ namespace QuanApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("IDHangKhachHang")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("LanCapNhatCuoi")
                         .HasColumnType("timestamp with time zone");
 
@@ -55,6 +58,9 @@ namespace QuanApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int>("SoDiemHienTai")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SoDienThoai")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -65,10 +71,15 @@ namespace QuanApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int>("TongDiemTichLuy")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("TrangThai")
                         .HasColumnType("boolean");
 
                     b.HasKey("IDKhachHang");
+
+                    b.HasIndex("IDHangKhachHang");
 
                     b.ToTable("KhachHang");
                 });
@@ -139,6 +150,110 @@ namespace QuanApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Banners");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.BannerSanPham", b =>
+                {
+                    b.Property<Guid>("IDBannerSanPham")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BannerId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("IDSanPham")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("IDBannerSanPham");
+
+                    b.HasIndex("IDSanPham");
+
+                    b.HasIndex("BannerId", "IDSanPham")
+                        .IsUnique();
+
+                    b.ToTable("BannerSanPhams");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.CauHinhBanHang", b =>
+                {
+                    b.Property<Guid>("IDCauHinhBanHang")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DanhSachQuanHuyenNoiThanh")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("DiemToiDaSuDungMoiDon")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LanCapNhatCuoi")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NguoiCapNhat")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NguonTinhPhiShipMacDinh")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("PhiShipMacDinh")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("PhiShipNgoaiThanh")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("PhiShipNoiThanh")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("PhiShipToanQuoc")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("SoTienGiamTrenMotDiem")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("SoTienTrenMotDiemTich")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("TinhApDungPhiShip")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("TrangThai")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("IDCauHinhBanHang");
+
+                    b.ToTable("CauHinhBanHangs");
+
+                    b.HasData(
+                        new
+                        {
+                            IDCauHinhBanHang = new Guid("8f3aa6f2-0608-4f47-a406-5de9ef3366d2"),
+                            DanhSachQuanHuyenNoiThanh = "Ba Đình,Hoàn Kiếm,Tây Hồ,Long Biên,Cầu Giấy,Đống Đa,Hai Bà Trưng,Hoàng Mai,Thanh Xuân,Nam Từ Liêm,Bắc Từ Liêm,Hà Đông",
+                            DiemToiDaSuDungMoiDon = 0,
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(757),
+                            NguoiTao = "System",
+                            NguonTinhPhiShipMacDinh = "Config",
+                            PhiShipMacDinh = 50000m,
+                            PhiShipNgoaiThanh = 35000m,
+                            PhiShipNoiThanh = 20000m,
+                            PhiShipToanQuoc = 50000m,
+                            SoTienGiamTrenMotDiem = 1000m,
+                            SoTienTrenMotDiemTich = 10000m,
+                            TinhApDungPhiShip = "Hà Nội",
+                            TrangThai = true
+                        });
                 });
 
             modelBuilder.Entity("QuanApi.Data.ChatLieu", b =>
@@ -457,6 +572,102 @@ namespace QuanApi.Migrations
                     b.ToTable("GioHangs");
                 });
 
+            modelBuilder.Entity("QuanApi.Data.HangKhachHang", b =>
+                {
+                    b.Property<Guid>("IDHangKhachHang")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("DiemDen")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DiemTu")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LanCapNhatCuoi")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MaHang")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NguoiCapNhat")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("PhanTramGiamPhiShip")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("TenHang")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("TrangThai")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("IDHangKhachHang");
+
+                    b.ToTable("HangKhachHangs");
+
+                    b.HasData(
+                        new
+                        {
+                            IDHangKhachHang = new Guid("d58c8c83-0f0a-48a8-a2dd-c7ac8f668f69"),
+                            DiemDen = 499,
+                            DiemTu = 0,
+                            MaHang = "BRONZE",
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(778),
+                            NguoiTao = "System",
+                            PhanTramGiamPhiShip = 0m,
+                            TenHang = "Đồng",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDHangKhachHang = new Guid("49cb8a18-d15d-4df5-97be-f98f6ef88ca4"),
+                            DiemDen = 1499,
+                            DiemTu = 500,
+                            MaHang = "SILVER",
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(781),
+                            NguoiTao = "System",
+                            PhanTramGiamPhiShip = 10m,
+                            TenHang = "Bạc",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDHangKhachHang = new Guid("b72f6741-bfd9-4c29-8aeb-6f4f2b8cbf3d"),
+                            DiemDen = 2999,
+                            DiemTu = 1500,
+                            MaHang = "GOLD",
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(784),
+                            NguoiTao = "System",
+                            PhanTramGiamPhiShip = 20m,
+                            TenHang = "Vàng",
+                            TrangThai = true
+                        },
+                        new
+                        {
+                            IDHangKhachHang = new Guid("38fbce12-fc6f-4d1f-badf-fc2b70f6c396"),
+                            DiemTu = 3000,
+                            MaHang = "PLATINUM",
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(787),
+                            NguoiTao = "System",
+                            PhanTramGiamPhiShip = 30m,
+                            TenHang = "Bạch kim",
+                            TrangThai = true
+                        });
+                });
+
             modelBuilder.Entity("QuanApi.Data.HoaDon", b =>
                 {
                     b.Property<Guid>("IDHoaDon")
@@ -469,6 +680,12 @@ namespace QuanApi.Migrations
                     b.Property<string>("DiaChiGiaoHang")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<int>("DiemCong")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DiemDaDung")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("IDKhachHang")
                         .HasColumnType("uuid");
@@ -508,9 +725,18 @@ namespace QuanApi.Migrations
                     b.Property<decimal?>("PhiVanChuyen")
                         .HasColumnType("numeric");
 
+                    b.Property<decimal?>("PhiVanChuyenGoc")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("SoDienThoaiNguoiNhan")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<decimal?>("SoTienGiamPhiVanChuyen")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("SoTienGiamTuDiem")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("TenNguoiNhan")
                         .HasMaxLength(100)
@@ -704,6 +930,55 @@ namespace QuanApi.Migrations
                     b.HasKey("IDKieuDang");
 
                     b.ToTable("KieuDangs");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.LichSuDiemKhachHang", b =>
+                {
+                    b.Property<Guid>("IDLichSuDiemKhachHang")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("IDHoaDon")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IDKhachHang")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LoaiBienDong")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NguoiTao")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SoDiemBienDong")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SoDiemSau")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SoDiemTruoc")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("TrangThai")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("IDLichSuDiemKhachHang");
+
+                    b.HasIndex("IDHoaDon");
+
+                    b.HasIndex("IDKhachHang");
+
+                    b.ToTable("LichSuDiemKhachHangs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LichSuHoaDon", b =>
@@ -1389,7 +1664,7 @@ namespace QuanApi.Migrations
                         {
                             IDVaiTro = new Guid("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"),
                             MaVaiTro = "ADMIN",
-                            NgayTao = new DateTime(2026, 3, 18, 10, 10, 20, 10, DateTimeKind.Utc).AddTicks(4224),
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(648),
                             NguoiTao = "System",
                             TenVaiTro = "Quản trị viên",
                             TrangThai = true
@@ -1398,7 +1673,7 @@ namespace QuanApi.Migrations
                         {
                             IDVaiTro = new Guid("b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e"),
                             MaVaiTro = "NHANVIEN",
-                            NgayTao = new DateTime(2026, 3, 18, 10, 10, 20, 10, DateTimeKind.Utc).AddTicks(4229),
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(651),
                             NguoiTao = "System",
                             TenVaiTro = "Nhân viên",
                             TrangThai = true
@@ -1407,11 +1682,21 @@ namespace QuanApi.Migrations
                         {
                             IDVaiTro = new Guid("c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f"),
                             MaVaiTro = "KHACHHANG",
-                            NgayTao = new DateTime(2026, 3, 18, 10, 10, 20, 10, DateTimeKind.Utc).AddTicks(4232),
+                            NgayTao = new DateTime(2026, 3, 28, 5, 48, 31, 464, DateTimeKind.Utc).AddTicks(653),
                             NguoiTao = "System",
                             TenVaiTro = "Khách hàng",
                             TrangThai = true
                         });
+                });
+
+            modelBuilder.Entity("KhachHang", b =>
+                {
+                    b.HasOne("QuanApi.Data.HangKhachHang", "HangKhachHang")
+                        .WithMany("KhachHangs")
+                        .HasForeignKey("IDHangKhachHang")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("HangKhachHang");
                 });
 
             modelBuilder.Entity("QuanApi.Data.AnhSanPham", b =>
@@ -1423,6 +1708,25 @@ namespace QuanApi.Migrations
                         .IsRequired();
 
                     b.Navigation("SanPhamChiTiet");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.BannerSanPham", b =>
+                {
+                    b.HasOne("QuanApi.Data.Banner", "Banner")
+                        .WithMany("BannerSanPhams")
+                        .HasForeignKey("BannerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuanApi.Data.SanPham", "SanPham")
+                        .WithMany("BannerSanPhams")
+                        .HasForeignKey("IDSanPham")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Banner");
+
+                    b.Navigation("SanPham");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ChiTietGioHang", b =>
@@ -1529,6 +1833,24 @@ namespace QuanApi.Migrations
                     b.Navigation("KhachHang");
 
                     b.Navigation("PhieuGiamGia");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.LichSuDiemKhachHang", b =>
+                {
+                    b.HasOne("QuanApi.Data.HoaDon", "HoaDon")
+                        .WithMany("LichSuDiemKhachHangs")
+                        .HasForeignKey("IDHoaDon")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("KhachHang", "KhachHang")
+                        .WithMany("LichSuDiemKhachHangs")
+                        .HasForeignKey("IDKhachHang")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HoaDon");
+
+                    b.Navigation("KhachHang");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LichSuHoaDon", b =>
@@ -1712,9 +2034,16 @@ namespace QuanApi.Migrations
 
                     b.Navigation("KhachHangPhieuGiams");
 
+                    b.Navigation("LichSuDiemKhachHangs");
+
                     b.Navigation("PhongTroChuyens");
 
                     b.Navigation("TinNhans");
+                });
+
+            modelBuilder.Entity("QuanApi.Data.Banner", b =>
+                {
+                    b.Navigation("BannerSanPhams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ChatLieu", b =>
@@ -1739,9 +2068,16 @@ namespace QuanApi.Migrations
                     b.Navigation("ChiTietGioHangs");
                 });
 
+            modelBuilder.Entity("QuanApi.Data.HangKhachHang", b =>
+                {
+                    b.Navigation("KhachHangs");
+                });
+
             modelBuilder.Entity("QuanApi.Data.HoaDon", b =>
                 {
                     b.Navigation("ChiTietHoaDons");
+
+                    b.Navigation("LichSuDiemKhachHangs");
 
                     b.Navigation("LichSuHoaDons");
                 });
@@ -1804,6 +2140,8 @@ namespace QuanApi.Migrations
 
             modelBuilder.Entity("QuanApi.Data.SanPham", b =>
                 {
+                    b.Navigation("BannerSanPhams");
+
                     b.Navigation("SanPhamChiTiets");
                 });
 
