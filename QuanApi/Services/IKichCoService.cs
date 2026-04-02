@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -36,9 +32,6 @@ namespace QuanApi.Services
                 query = query.Where(x => x.TenKichCo.ToLower().Contains(keywordLower) || x.MaKichCo.ToLower().Contains(keywordLower));
             }
 
-            // Ensure newest items (by NgayTao) come first
-            query = query.OrderByDescending(x => x.NgayTao);
-
             return await query.ToListAsync();
         }
 
@@ -59,14 +52,8 @@ namespace QuanApi.Services
             var entity = await _context.KichCos.FindAsync(id);
             if (entity == null) return false;
 
-            // Update main fields
             entity.TenKichCo = kc.TenKichCo;
             entity.MaKichCo = kc.MaKichCo;
-
-            // Move the item to top by updating its creation timestamp used for sorting
-            entity.NgayTao = DateTime.UtcNow;
-
-            // Update metadata
             entity.LanCapNhatCuoi = DateTime.UtcNow;
             entity.NguoiCapNhat = string.IsNullOrEmpty(kc.NguoiCapNhat) ? "unknown" : kc.NguoiCapNhat;
             entity.TrangThai = kc.TrangThai;
@@ -108,9 +95,6 @@ namespace QuanApi.Services
 
             if (trangThai == "active") query = query.Where(x => x.TrangThai == true);
             else if (trangThai == "inactive") query = query.Where(x => x.TrangThai == false);
-
-            // Ensure newest items appear first in paged results
-            query = query.OrderByDescending(x => x.NgayTao);
 
             var total = await query.CountAsync();
             var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();

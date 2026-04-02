@@ -3,6 +3,7 @@
 @model IEnumerable<QuanApi.Data.HoaTiet>
 
 @{
+    ViewData["Title"] = "Danh Sách họa tiết";
     var currentKeyword = ViewBag.Keyword as string ?? "";
     var currentStatus = ViewBag.Status as string ?? "";
 }
@@ -89,11 +90,6 @@
         background: #e6f4ea;
         color: #218838;
     }
-    h6 {
-        font-size: 200%;
-        font-weight: 600;
-        color: #333;
-    }
 </style>
 
 <div class="card shadow mb-4">
@@ -130,8 +126,8 @@
             <table class="table table-hover hoatiet-table">
                 <thead>
                     <tr>
-                        <th>Mã Họa Tiết</th>
-                        <th>Tên Họa Tiết</th>
+                        <th>@Html.DisplayNameFor(model => model.First().MaHoaTiet)</th>
+                        <th>@Html.DisplayNameFor(model => model.First().TenHoaTiet)</th>
                         <th>Ngày tạo</th>
                         <th>Người tạo</th>
                         <th>Cập nhật</th>
