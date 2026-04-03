@@ -269,8 +269,16 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
                         ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
                         ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
-
-                        return View(hoaDons);
+						// ✅ SORT LOCAL (nếu API không xử lý)
+						if (sapXep == "asc")
+						{
+							hoaDons = hoaDons.OrderBy(h => h.NgayTao).ToList();
+						}
+						else
+						{
+							hoaDons = hoaDons.OrderByDescending(h => h.NgayTao).ToList();
+						}
+						return View(hoaDons);
                     }
                     catch (System.Text.Json.JsonException jsonEx)
                     {

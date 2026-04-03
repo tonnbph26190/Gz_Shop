@@ -268,29 +268,8 @@
                             <input type="date" class="form-control" id="denNgay" name="denNgay" value="@qDenNgay">
                                     </div>
                                 </div>
-                    <div class="row mt-3">
-                        <!-- ✅ tạo row mới -->
-                        <div class="col-md-3">
-                            <label>Sắp xếp:</label>
 
-                            @{
-                                var qSapXep = Context.Request.Query["sapXep"].ToString();
-                                if (string.IsNullOrEmpty(qSapXep))
-                                {
-                                    qSapXep = "desc";
-                                }
-                            }
 
-                            <select class="form-control" name="sapXep">
-                                <option value="desc" selected="@(qSapXep == "desc" ? "selected" : null)">
-                                    Mới nhất → cũ nhất
-                                </option>
-                                <option value="asc" selected="@(qSapXep == "asc" ? "selected" : null)">
-                                    Cũ → mới
-                                </option>
-                            </select>
-                        </div>
-                    </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="loaiDonHang">Loại đơn hàng:</label>
@@ -393,14 +372,35 @@
                                                     <th>Khách hàng</th>
                                                     <th>Tổng tiền</th>
                                                     <th>Trạng thái</th>
-                                                    <th>Ngày tạo</th>
+                                @{
+                                    var currentSort = Context.Request.Query["sapXep"].ToString();
+                                    if (string.IsNullOrEmpty(currentSort))
+                                    {
+                                        currentSort = "desc"; // 👈 mặc định
+                                    }
+                                    var nextSort = currentSort == "asc" ? "desc" : "asc";
+                                }
+                                <th>
+                                    <a href="@Url.Action("Index", new {
+        page = 1,
+        pageSize,
+        trangThai = Context.Request.Query["trangThai"],
+        tuNgay = Context.Request.Query["tuNgay"],
+        denNgay = Context.Request.Query["denNgay"],
+        loaiDonHang = Context.Request.Query["loaiDonHang"],
+        khachHang = Context.Request.Query["khachHang"],
+        maDonHang = Context.Request.Query["maDonHang"],
+        sapXep = nextSort
+    })" style="text-decoration:none; color:inherit;">
+                                        Ngày tạo
+                                       @(currentSort == "asc" ? "↑" : currentSort == "desc" ? "↓" : "")
+                                    </a>
+                                </th>
                                                     <th>Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                            @foreach (var hoaDon in (qSapXep == "asc"
-                           ? Model.OrderBy(h => h.NgayTao)
-                           : Model.OrderByDescending(h => h.NgayTao)))
+                            @foreach (var hoaDon in Model)
                                                 {
                                                     <tr>
                                                         <td>
