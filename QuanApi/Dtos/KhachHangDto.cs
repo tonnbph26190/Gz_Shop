@@ -43,7 +43,8 @@ namespace QuanApi.Dtos
 
         [DisplayName("Trạng thái")]
         public bool TrangThai { get; set; }
+		public string? Rank { get; set; }
 
-        public List<DiaChiDto>? DiaChis { get; set; }
+		public List<DiaChiDto>? DiaChis { get; set; }
     }
 }
