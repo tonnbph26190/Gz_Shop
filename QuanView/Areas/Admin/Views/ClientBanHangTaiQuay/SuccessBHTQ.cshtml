@@ -3,26 +3,95 @@
     var orderJson = TempData["OrderJson"] as string;
 }
 
+<style>
+    /* Custom Receipt Styling */
+    .receipt-card {
+        border: none;
+        border-radius: 15px;
+        background-color: #fff;
+    }
+    .receipt-header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px dashed #eee;
+    }
+    .item-list {
+        list-style: none;
+        padding: 0;
+        margin: 20px 0;
+    }
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: #444;
+    }
+    .item-name {
+        flex: 1;
+        padding-right: 10px;
+        font-size: 0.95rem;
+    }
+    .item-price {
+        font-weight: 500;
+    }
+    .summary-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #ddd;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0d6efd;
+    }
+    .info-label { color: #888; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-value { font-weight: 600; color: #333; }
+
+    @@media print {
+        .btn, .navbar, .sidebar { display: none !important; }
+        .card { border: none !important; shadow: none !important; }
+    }
+</style>
+
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
-                            <i class="bi bi-check-lg" style="font-size:28px;"></i>
+        <div class="col-lg-6">
+            <div class="card shadow-sm receipt-card">
+                <div class="card-body p-5">
+                    <div class="receipt-header mb-4">
+                        <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center mb-3" style="width:60px;height:60px;">
+                            <i class="bi bi-check2-all" style="font-size:30px;"></i>
                         </div>
-                        <div class="ms-3">
-                            <h4 class="mb-0">Thanh toán thành công</h4>
-                            <small class="text-muted">Đơn hàng của bạn đã được ghi nhận</small>
+                        <h3 class="fw-bold">Thanh toán thành công</h3>
+                        <p class="text-muted small">Cảm ơn bạn đã mua sắm tại GZ Shop</p>
+                    </div>
+
+                    <div id="order-detail">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
                         </div>
                     </div>
 
-                    <div id="order-detail" class="mb-3"></div>
-
-                    <div class="d-flex gap-2">
-                        <a class="btn btn-primary" href="@Url.Action("Index", "ClientBanHangTaiQuay", new { area = "Admin" })">Quay về bán hàng</a>
-                        <a class="btn btn-outline-secondary" href="javascript:window.print()">In hóa đơn</a>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4 no-print">
+                        <a class="btn btn-primary px-4" href="@Url.Action("Index", "ClientBanHangTaiQuay", new { area = "Admin" })">
+                            <i class="bi bi-cart-plus me-2"></i>&nbsp;&nbsp;Bán tiếp
+                        </a>
+                        &nbsp;&nbsp;
+                        <button class="btn btn-outline-dark px-4" onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>&nbsp;&nbsp;In hóa đơn
+                        </button>
                     </div>
                 </div>
             </div>
@@ -31,46 +100,81 @@
 </div>
 
 <script>
-    (async function(){
+    async function renderOrder(data) {
         const container = document.getElementById('order-detail');
-        const raw = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(orderJson));
+        
+        const tamTinh = (data.chiTietHoaDons || []).reduce((sum, ct) => sum + (ct.thanhTien || 0), 0);
+        const phiShip = data.phiVanChuyen || 0;
+        const giamGia = (data.tienGiam || 0) + (data.soTienGiamTuDiem || 0);
+        const tongCong = data.tongTien || 0;
 
-        async function renderOrder(data){
-            const amount = (data.tongTien || 0).toLocaleString('vi-VN') + ' đ';
-            const code = data.maHoaDon || '';
-            const customer = (data.khachHang && data.khachHang.tenKhachHang) || data.tenNguoiNhan || '';
-            const phone = data.soDienThoaiNguoiNhan || '';
-            const address = data.diaChiGiaoHang || '';
+        const formatVN = (v) => v.toLocaleString('vi-VN') + ' đ';
 
-            let items = '';
-            (data.chiTietHoaDons || []).forEach(ct => {
-                const name = (ct.sanPhamChiTiet && ct.sanPhamChiTiet.sanPham && ct.sanPhamChiTiet.sanPham.tenSanPham) || 'Sản phẩm';
-                const size = (ct.sanPhamChiTiet && ct.sanPhamChiTiet.kichCo && ct.sanPhamChiTiet.kichCo.tenKichCo) ? ' - Size ' + ct.sanPhamChiTiet.kichCo.tenKichCo : '';
-                const color = (ct.sanPhamChiTiet && ct.sanPhamChiTiet.mauSac && ct.sanPhamChiTiet.mauSac.tenMauSac) ? ' - Màu ' + ct.sanPhamChiTiet.mauSac.tenMauSac : '';
-                items += `<li class="list-group-item d-flex justify-content-between align-items-center">${name}${size}${color}<span>${(ct.thanhTien || 0).toLocaleString('vi-VN')} đ</span></li>`;
-            });
+        let itemHtml = '';
+        (data.chiTietHoaDons || []).forEach(ct => {
+            const name = ct.sanPhamChiTiet?.sanPham?.tenSanPham || 'Sản phẩm';
+            const attr = `${ct.sanPhamChiTiet?.kichCo?.tenKichCo ? 'Size ' + ct.sanPhamChiTiet.kichCo.tenKichCo : ''} ${ct.sanPhamChiTiet?.mauSac?.tenMauSac ? '| ' + ct.sanPhamChiTiet.mauSac.tenMauSac : ''}`;
+            
+            itemHtml += `
+                <div class="item-row">
+                    <div class="item-name">
+                        <div class="fw-bold">${name}</div>
+                        <small class="text-muted">${attr}</small>
+                    </div>
+                    <div class="item-price">${formatVN(ct.thanhTien)}</div>
+                </div>`;
+        });
 
-            container.innerHTML = `
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between"><span class="text-muted">Mã đơn:</span><strong>${code}</strong></div>
-                    <div class="d-flex justify-content-between"><span class="text-muted">Khách hàng:</span><strong>${customer}</strong></div>
-                    <div class="d-flex justify-content-between"><span class="text-muted">SĐT:</span><strong>${phone}</strong></div>
-                    <div class="d-flex justify-content-between"><span class="text-muted">Địa chỉ:</span><strong>${address}</strong></div>
+        container.innerHTML = `
+            <div class="row mb-4">
+                <div class="col-6 mb-2">
+                    <div class="info-label">Mã hóa đơn</div>
+                    <div class="info-value">#${data.maHoaDon || '---'}</div>
                 </div>
-                <ul class="list-group mb-3">${items}</ul>
-                <div class="d-flex justify-content-between fs-5"><span>Tổng thanh toán</span><strong>${amount}</strong></div>
-            `;
-        }
+                <div class="col-6 mb-2 text-end">
+                    <div class="info-label">Ngày tạo</div>
+                    <div class="info-value">${new Date().toLocaleDateString('vi-VN')}</div>
+                </div>
+                <div class="col-12">
+                    <div class="info-label">Khách hàng</div>
+                    <div class="info-value">${data.khachHang?.tenKhachHang || data.tenNguoiNhan || 'Khách lẻ'}</div>
+                </div>
+            </div>
 
-        // 1) Nếu server đã có dữ liệu temp (hiếm khi ở POS), render ngay
+            <div class="item-list border-top pt-3">
+                ${itemHtml}
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-row">
+                    <span>Tạm tính</span>
+                    <span>${formatVN(tamTinh)}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Phí vận chuyển</span>
+                    <span>${formatVN(phiShip)}</span>
+                </div>
+                <div class="summary-row text-danger">
+                    <span>Giảm giá</span>
+                    <span>-${formatVN(giamGia)}</span>
+                </div>
+                <div class="total-row">
+                    <span>Tổng cộng</span>
+                    <span>${formatVN(tongCong)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    (async function(){
+        const raw = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(orderJson));
         if (raw) {
-            try { await renderOrder(JSON.parse(raw)); return; } catch {}
+            try { await renderOrder(JSON.parse(raw)); return; } catch(e) {}
         }
 
-        // 2) POS flow: đọc payload tạm, tạo hóa đơn rồi hiển thị
         const pending = sessionStorage.getItem('POS_PendingDTO');
         if (!pending) {
-            container.innerHTML = '<div class="alert alert-info">Không tìm thấy dữ liệu đơn hàng POS. Vui lòng quay lại bán hàng.</div>';
+            document.getElementById('order-detail').innerHTML = '<div class="alert alert-info">Dữ liệu trống.</div>';
             return;
         }
 
@@ -79,16 +183,13 @@
             const res = await fetch('/Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dto)
             });
-            if (!res.ok) throw new Error('Tạo hóa đơn thất bại');
             const created = await res.json();
-            // created: { idHoaDon, maHoaDon, message }
             const detailRes = await fetch(`/Admin/ClientBanHangTaiQuay/hoa-don/${created.idHoaDon}`);
-            if (!detailRes.ok) throw new Error('Không lấy được chi tiết hóa đơn');
             const detail = await detailRes.json();
             await renderOrder(detail);
             sessionStorage.removeItem('POS_PendingDTO');
         } catch (e) {
-            container.innerHTML = '<div class="alert alert-warning">Có lỗi khi hoàn tất đơn hàng POS sau thanh toán.</div>';
+            document.getElementById('order-detail').innerHTML = '<div class="alert alert-danger">Lỗi xử lý hóa đơn.</div>';
         }
     })();
 </script>

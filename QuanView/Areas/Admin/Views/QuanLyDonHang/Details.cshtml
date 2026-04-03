@@ -591,6 +591,10 @@
                         <span class="info-value">@tamTinh.ToString("N0") VNĐ</span>
                     </div>
                     <div class="info-row">
+                        <span class="info-label">Phí vận chuyển:</span>
+                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label">Giảm giá:</span>
                         <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
                     </div>
@@ -601,14 +605,15 @@
                             <span class="info-value">@Model.DiemDaDung.ToString("N0") điểm</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Quy đổi từ điểm:</span>
-                            <span class="info-value text-success">-@soTienGiamTuDiem.ToString("N0") VNĐ (1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") VNĐ)</span>
+                            <div>
+                                <span class="info-label">Quy đổi từ điểm:</span><br>&nbsp;&nbsp;&nbsp;
+                                <span style="color: #8b8b8b;">(1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") VNĐ) </span>
+                            </div>
+                            <div>
+                                <span class="info-value text-success">-@soTienGiamTuDiem.ToString("N0") VNĐ</span>
+                            </div>
                         </div>
                     }
-                    <div class="info-row">
-                        <span class="info-label">Phí vận chuyển:</span>
-                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
-                    </div>
                     <div class="info-row">
                         <span class="info-label font-weight-bold">Tổng cộng:</span>
                         <span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
