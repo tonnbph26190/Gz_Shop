@@ -2444,16 +2444,28 @@
         const hasValidDistrictId = Number.isFinite(parsedDistrictId) && parsedDistrictId > 0;
         const hasValidWardCode = !!(shipPhuongVal && shipPhuongVal !== '0');
 
+        const pointSwitchOn = $('#pointSwitch').is(':checked') && selectedCustomer && !selectedCustomer.isGuest;
+        const rawPointReq = parseInt($('#requestedUsedPoints').val(), 10);
+        let requestedPtsForApi = 0;
+        let usePointForApi = false;
+        if (pointSwitchOn) {
+            usePointForApi = true;
+            requestedPtsForApi = (Number.isFinite(rawPointReq) && rawPointReq > 0)
+                ? getRequestedPointForUse()
+                : null;
+        }
+
         // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
         let dto = {
             idGioHang: gh.id,
+            customerId: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             customerName: selectedCustomer ? (selectedCustomer.isGuest ? ($('#shipName').val() || 'Khách vãng lai') : selectedCustomer.name) : ($('#shipName').val() || ''),
             customerPhone: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipPhone').val() : selectedCustomer.phone) : $('#shipPhone').val(),
             customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
             address: $('#shipAddress').val(),
             discountCode: $('#discountCode').val(),
-            usePoint: usePoint && getRequestedPointForUse() > 0,
-            requestedUsedPoints: getRequestedPointForUse(),
+            usePoint: usePointForApi,
+            requestedUsedPoints: requestedPtsForApi,
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,

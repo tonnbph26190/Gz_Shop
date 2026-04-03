@@ -280,7 +280,7 @@ namespace QuanView.Controllers
                                     <tr><td><strong>Tổng tiền:</strong></td><td>{hoaDon.TongTien:N0} ₫</td></tr>
                                     <tr><td><strong>Tiền giảm:</strong></td><td>{(hoaDon.TienGiam?.ToString("N0") ?? "0")} ₫</td></tr>
                                     {(hoaDon.DiemDaDung > 0 ? $"<tr><td><strong>Điểm đã dùng:</strong></td><td>{hoaDon.DiemDaDung:N0} điểm</td></tr>" : "")}
-                                    {(hoaDon.DiemDaDung > 0 ? $"<tr><td><strong>Quy đổi từ điểm:</strong></td><td>-{(hoaDon.SoTienGiamTuDiem > 0 ? hoaDon.SoTienGiamTuDiem : (hoaDon.DiemDaDung * hoaDon.TyLeQuyDoiDiem)):N0} ₫ (1 điểm = {hoaDon.TyLeQuyDoiDiem:N0} ₫)</td></tr>" : "")}
+                                    {(hoaDon.DiemDaDung > 0 ? $"<tr><td><strong>Quy đổi từ điểm:</strong></td><td>-{hoaDon.SoTienGiamTuDiem:N0} ₫ (1 điểm = {hoaDon.TyLeQuyDoiDiem:N0} ₫)</td></tr>" : "")}
                                 </table>
                             </div>
                             <div class='col-md-6'>

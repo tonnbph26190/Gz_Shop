@@ -85,6 +85,10 @@ namespace QuanView.Areas.Admin.Controllers
             public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
+            public decimal SoTienGiamTuDiem { get; set; }
+            public int DiemDaDung { get; set; }
+            public int DiemCong { get; set; }
+            public decimal TyLeQuyDoiDiem { get; set; }
             public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayTao { get; set; }
@@ -151,6 +155,13 @@ namespace QuanView.Areas.Admin.Controllers
             public MauSacDto MauSac { get; set; }
             public HoaTietDto HoaTiet { get; set; }
             public SanPhamDetailDto SanPham { get; set; }
+        }
+
+        public class StockSnapshotDto
+        {
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
         }
 
         public class KichCoDto { public string TenKichCo { get; set; } }
@@ -301,6 +312,10 @@ namespace QuanView.Areas.Admin.Controllers
                             BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
+                            SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                            DiemDaDung = hoaDonData.DiemDaDung,
+                            DiemCong = hoaDonData.DiemCong,
+                            TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
                             NgayTao = hoaDonData.NgayTao,
@@ -344,6 +359,7 @@ namespace QuanView.Areas.Admin.Controllers
                         // Add ChiTietHoaDons if exists
                         if (hoaDonData.ChiTietHoaDons != null)
                         {
+                            var stockSnapshots = new Dictionary<Guid, StockSnapshotDto>();
                             hoaDon.ChiTietHoaDons = new List<ChiTietHoaDon>();
                             foreach (var ct in hoaDonData.ChiTietHoaDons)
                             {
@@ -378,6 +394,13 @@ namespace QuanView.Areas.Admin.Controllers
                                         } : null
                                     };
 
+                                    stockSnapshots[chiTiet.IDChiTietHoaDon] = new StockSnapshotDto
+                                    {
+                                        SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuongTonHienTai,
+                                        SoLuongTonTruocXacNhan = ct.SanPhamChiTiet.SoLuongTonTruocXacNhan,
+                                        SoLuongTonDuKienSauHuy = ct.SanPhamChiTiet.SoLuongTonDuKienSauHuy
+                                    };
+
                                     if (ct.SanPhamChiTiet.SanPham != null)
                                     {
                                         chiTiet.SanPhamChiTiet.SanPham = new SanPham
@@ -392,6 +415,8 @@ namespace QuanView.Areas.Admin.Controllers
 
                                 hoaDon.ChiTietHoaDons.Add(chiTiet);
                             }
+
+                            ViewBag.StockSnapshots = stockSnapshots;
                         }
 
                         return View(hoaDon);
@@ -766,6 +791,10 @@ namespace QuanView.Areas.Admin.Controllers
                     MaHoaDon = hoaDonData.MaHoaDon ?? "",
                     TongTien = hoaDonData.TongTien,
                     TienGiam = hoaDonData.TienGiam ?? 0,
+                    SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                    DiemDaDung = hoaDonData.DiemDaDung,
+                    DiemCong = hoaDonData.DiemCong,
+                    TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                     PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                     TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                     NgayTao = hoaDonData.NgayTao,

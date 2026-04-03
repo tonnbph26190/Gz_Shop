@@ -638,11 +638,12 @@ namespace QuanApi.Controllers
                 hoaDon.TongTien,
                 dto.UsePoint,
                 dto.RequestedUsedPoints);
+            // Luôn lưu snapshot điểm / tỷ lệ quy đổi (khớp dữ liệu hiển thị khi tạo đơn); chỉ trừ TongTien khi có giảm từ điểm
+            hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+            hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+            hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
             if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
-                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
-                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 
@@ -1406,9 +1407,10 @@ namespace QuanApi.Controllers
                 trangThaiHoaDon = "DaThanhToan";
             }
 
-            // Khách vãng lai (giỏ hàng không có IDKhachHang) chọn giao hàng: tạo KhachHang + địa chỉ trong DB
-            Guid? customerIdForInvoice = gioHang.IDKhachHang;
-            if (!gioHang.IDKhachHang.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+            // Khách có tài khoản: ưu tiên CustomerId từ POS (chọn khách sau khi tạo giỏ thì GioHang.IDKhachHang thường vẫn null)
+            var registeredCustomerId = dto.CustomerId ?? gioHang.IDKhachHang;
+            Guid? customerIdForInvoice = registeredCustomerId;
+            if (!customerIdForInvoice.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
             {
                 var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
                 customerIdForInvoice = guest.IDKhachHang;
@@ -1465,12 +1467,12 @@ namespace QuanApi.Controllers
                 var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
                 if (discount != null)
                 {
-                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
-                    if (gioHang.IDKhachHang.HasValue)
+                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không (dùng registeredCustomerId: khớp khách đang chọn trên POS)
+                    if (registeredCustomerId.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == gioHang.IDKhachHang.Value &&
+                                                     x.IDKhachHang == registeredCustomerId.Value &&
                                                      x.TrangThai &&
                                                      x.SoLuongDaSuDung < x.SoLuong);
 
@@ -1509,17 +1511,17 @@ namespace QuanApi.Controllers
                 }
             }
 
-            // Áp dụng điểm khách hàng nếu có
+            // Loyalty: tính điểm / giảm điểm theo khách trên hóa đơn (đã gồm CustomerId từ POS)
             var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
                 customerIdForInvoice,
                 hoaDon.TongTien,
                 dto.UsePoint,
                 dto.RequestedUsedPoints);
+            hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+            hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+            hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
             if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
-                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
-                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 

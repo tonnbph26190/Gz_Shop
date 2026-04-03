@@ -5,6 +5,7 @@ namespace QuanView.Areas.Admin.Models
     public class ChuyenGioHangThanhHoaDonDto
     {
         public Guid IDGioHang { get; set; }
+        public Guid? CustomerId { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerPhone { get; set; }
         public string? CustomerEmail { get; set; }

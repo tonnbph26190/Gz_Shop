@@ -209,6 +209,10 @@ namespace QuanApi.Controllers
 							BanTaiQuay = h.BanTaiQuay,
 							TongTien = h.TongTien,
 							TienGiam = h.TienGiam,
+							SoTienGiamTuDiem = h.SoTienGiamTuDiem,
+							DiemDaDung = h.DiemDaDung,
+							DiemCong = h.DiemCong,
+							TyLeQuyDoiDiem = h.TyLeQuyDoiDiem,
 							PhiVanChuyen = h.PhiVanChuyen,
 							TrangThai = h.TrangThai,
 							NgayTao = h.NgayTao,
@@ -254,6 +258,14 @@ namespace QuanApi.Controllers
 										IDSanPhamChiTiet = ct.SanPhamChiTiet!.IDSanPhamChiTiet,
 										MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
 										GiaBan = ct.SanPhamChiTiet.GiaBan,
+										SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho,
+										SoLuongDatMua = ct.SoLuong,
+										SoLuongTonTruocXacNhan = h.DaTruTonKho
+											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
+											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
+										SoLuongTonDuKienSauHuy = (h.TrangThai == "Đã hủy" || h.TrangThai == "Đã hoàn tiền")
+											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho)
+											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong,
 										KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
 										MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
 										HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
@@ -378,11 +390,11 @@ namespace QuanApi.Controllers
 				hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);
 
 				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(dto.KhachHangId, hoaDon.TongTien, dto.UsePoint);
+				hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+				hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+				hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
 				if (loyaltyResult.DiscountFromPoints > 0)
 				{
-					hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
-					hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
-					hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
 					hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
 				}
 
