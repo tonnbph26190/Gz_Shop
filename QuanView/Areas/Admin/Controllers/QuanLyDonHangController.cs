@@ -165,14 +165,23 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string sapXep, string maDonHang, int page = 1, int pageSize = 10)
         {
             try
             {
-                // Xây dựng URL với các tham số phân trang và lọc
-                var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                if (!string.IsNullOrEmpty(trangThai))
+				trangThai ??= "Chờ xác nhận";
+				tuNgay ??= today;
+				denNgay ??= today;
+				loaiDonHang ??= "Tất cả";
+				sapXep ??= "desc"; // mặc định mới nhất
+								   // Xây dựng URL với các tham số phân trang và lọc
+				var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				if (!string.IsNullOrEmpty(sapXep))
+					url += $"&sapXep={sapXep}";
+
+				if (!string.IsNullOrEmpty(trangThai))
                     url += $"&trangThai={Uri.EscapeDataString(trangThai)}";
                 if (!string.IsNullOrEmpty(tuNgay))
                     url += $"&tuNgay={Uri.EscapeDataString(tuNgay)}";

@@ -209,11 +209,13 @@
                             <label for="trangThai">Trạng thái:</label>
                             @{
                                 var qTrangThai = Context.Request.Query["trangThai"].ToString();
+                                if (string.IsNullOrEmpty(qTrangThai))
+                                {
+                                    qTrangThai = "Chờ xác nhận";
+                                }
                             }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="" selected="@(string.IsNullOrEmpty(qTrangThai) ? "selected" : null)">Tất
-                                    cả trạng thái
-                                </option>
+                                <option value="">Tất cả trạng thái</option>
                                 <option value="Chờ xác nhận"
                                         selected="@(qTrangThai == "Chờ xác nhận" ? "selected" : null)">Chờ xác nhận
                                 </option>
@@ -248,22 +250,33 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tuNgay">Từ ngày:</label>
-                                        <input type="date" class="form-control" id="tuNgay" name="tuNgay"
-                                               value="@Context.Request.Query["tuNgay"]">
+                            @{
+                                var qTuNgay = Context.Request.Query["tuNgay"].ToString();
+                                var qDenNgay = Context.Request.Query["denNgay"].ToString();
+
+                                var today = DateTime.Now.ToString("yyyy-MM-dd");
+
+                                if (string.IsNullOrEmpty(qTuNgay)) qTuNgay = today;
+                                if (string.IsNullOrEmpty(qDenNgay)) qDenNgay = today;
+                            }
+                            <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@qTuNgay">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="denNgay">Đến ngày:</label>
-                                        <input type="date" class="form-control" id="denNgay" name="denNgay"
-                                               value="@Context.Request.Query["denNgay"]">
+                            <input type="date" class="form-control" id="denNgay" name="denNgay" value="@qDenNgay">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="loaiDonHang">Loại đơn hàng:</label>
                                         @{
-                                            var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                                var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                                if (string.IsNullOrEmpty(qLoaiDon))
+                                {
+                                    qLoaiDon = "";
+                                }
                                         }
                                         <select class="form-control" id="loaiDonHang" name="loaiDonHang">
                                             <option value="" selected="@(string.IsNullOrEmpty(qLoaiDon) ? "selected" : null)">Tất cả
@@ -276,6 +289,28 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="row mt-3"> <!-- ✅ tạo row mới -->
+    <div class="col-md-3">
+        <label>Sắp xếp:</label>
+
+        @{
+            var qSapXep = Context.Request.Query["sapXep"].ToString();
+            if (string.IsNullOrEmpty(qSapXep))
+            {
+                qSapXep = "desc";
+            }
+        }
+
+        <select class="form-control" name="sapXep">
+            <option value="desc" selected="@(qSapXep == "desc" ? "selected" : null)">
+                Mới nhất → cũ nhất
+            </option>
+            <option value="asc" selected="@(qSapXep == "asc" ? "selected" : null)">
+                Cũ → mới
+            </option>
+        </select>
+    </div>
+</div>
                                     <div class="row mt-3">
                                         <div class="col-md-3">
                                             <div class="form-group">
@@ -291,6 +326,7 @@
                                                        placeholder="Nhập mã đơn hàng" value="@Context.Request.Query["maDonHang"]">
                                             </div>
                                         </div>
+                                       
                                         <div class="col-md-6 pt-4 mt-2">
                                             <button type="submit" class="btn btn-primary">
                                                 <i class="fas fa-search"></i> Lọc
@@ -360,7 +396,9 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var hoaDon in Model.OrderByDescending(h => h.NgayTao))
+                            @foreach (var hoaDon in (qSapXep == "asc"
+                           ? Model.OrderBy(h => h.NgayTao)
+                           : Model.OrderByDescending(h => h.NgayTao)))
                                                 {
                                                     <tr>
                                                         <td>
@@ -433,7 +471,7 @@
                                                 <!-- Nút Trang đầu -->
                                                 <li class="page-item @(currentPage == 1 ? "disabled" : "")">
                                                     <a class="page-link"
-                                                           href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                   href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"], sapXep = Context.Request.Query["sapXep"] })">
                                                         <i class="fas fa-angle-double-left"></i>
                                                     </a>
                                                 </li>
@@ -503,8 +541,7 @@
 
                                     var elTrangThai = document.getElementById('trangThai');
                                     if (elTrangThai) {
-                                        var trangThai = urlParams.get('trangThai');
-                                        if (trangThai) elTrangThai.value = trangThai;
+                                       
                                     }
 
                                     var elLoaiDonHang = document.getElementById('loaiDonHang');
