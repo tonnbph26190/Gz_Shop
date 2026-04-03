@@ -63,65 +63,93 @@
                         <option value="50" selected="@(ViewBag.PageSize == 50)">50</option>
                     </select>
                 </div>
-                <table id="khachHangTable" class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>@Html.DisplayNameFor(model => model.MaKhachHang)</th>
-                            <th>@Html.DisplayNameFor(model => model.TenKhachHang)</th>
-                            <th>@Html.DisplayNameFor(model => model.Email)</th>
-                            <th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
-                            <th>@Html.DisplayNameFor(model => model.SoDiemHienTai)</th>
-                            <th>@Html.DisplayNameFor(model => model.TongDiemTichLuy)</th>
-                            <th>@Html.DisplayNameFor(model => model.NgayTao)</th>
-                            <th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
-                            @*                             <th>@Html.DisplayNameFor(model => model.LanCapNhatCuoi)</th>
-                            <th>@Html.DisplayNameFor(model => model.NguoiCapNhat)</th> *@
-                            <th>@Html.DisplayNameFor(model => model.TrangThai)</th>
-                            <th class="text-end">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@Html.DisplayFor(modelItem => item.MaKhachHang)</td>
-                                <td>@Html.DisplayFor(modelItem => item.TenKhachHang)</td>
-                                <td>@Html.DisplayFor(modelItem => item.Email)</td>
-                                <td>@Html.DisplayFor(modelItem => item.SoDienThoai)</td>
-                                <td>@Html.DisplayFor(modelItem => item.SoDiemHienTai)</td>
-                                <td>@Html.DisplayFor(modelItem => item.TongDiemTichLuy)</td>
-                                <td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@Html.DisplayFor(modelItem => item.NguoiTao)</td>
-                                @*                                 <td>@item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@Html.DisplayFor(modelItem => item.NguoiCapNhat)</td> *@
-                                <td>
-                                    @if (item.TrangThai)
-                                    {
-                                        <span class="badge bg-success rounded-pill text-light">Kích hoạt</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary rounded-pill text-light">Ẩn</span>
-                                    }
-                                </td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-info me-1"
-                                       asp-area="Admin" asp-controller="KhachHang" asp-action="Delete"
-                                       asp-route-id="@item.IDKhachHang">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus"
-                                          asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
-                                        @*   <button type="submit" class="btn btn-sm btn-outline-warning">
-                                            <i class="bi bi-toggle-on"></i>
-                                        </button> *@
-                                        @Html.AntiForgeryToken()
-                                    </form>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+				<table id="khachHangTable" class="table table-hover align-middle">
+					<thead class="table-light">
+						<tr>
+							<th>@Html.DisplayNameFor(model => model.MaKhachHang)</th>
+							<th>@Html.DisplayNameFor(model => model.TenKhachHang)</th>
+							<th>@Html.DisplayNameFor(model => model.Email)</th>
+							<th>@Html.DisplayNameFor(model => model.SoDienThoai)</th>
+							<th>@Html.DisplayNameFor(model => model.SoDiemHienTai)</th>
+							<th>@Html.DisplayNameFor(model => model.TongDiemTichLuy)</th>
+							<th>
+    <a href="@Url.Action("Index", new { 
+        sortBy = "rank", 
+        sortAscending = ViewBag.SortBy == "rank" ? !ViewBag.SortAscending : false 
+    })">
+        Hạng
+    </a>
+</th>
+							<th>@Html.DisplayNameFor(model => model.NgayTao)</th>
+							<th>@Html.DisplayNameFor(model => model.NguoiTao)</th>
+							<th>@Html.DisplayNameFor(model => model.TrangThai)</th>
+							<th class="text-end">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var item in Model)
+						{
+							<tr>
+								<td>@item.MaKhachHang</td>
+								<td>@item.TenKhachHang</td>
+								<td>@item.Email</td>
+								<td>@item.SoDienThoai</td>
+								<td>@item.SoDiemHienTai</td>
+								<td>@item.TongDiemTichLuy</td>
+
+								<!-- 🔥 RANK -->
+								<td>
+									@{
+										var icon = item.Rank == "Kim cương" ? "💎" :
+										item.Rank == "Vàng" ? "🥇" :
+										item.Rank == "Bạc" ? "🥈" :
+										item.Rank == "Đồng" ? "🥉" : "";
+									
+
+
+										var color = item.Rank == "Kim cương" ? "" :
+										item.Rank == "Vàng" ? "" :
+										item.Rank == "Bạc" ? "" :
+										item.Rank == "Đồng" ? "" :
+									
+										"";
+									}
+
+									<span class="badge @color">
+										@icon @item.Rank
+									</span>
+								</td>
+
+								<td>@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+								<td>@item.NguoiTao</td>
+
+								<td>
+									@if (item.TrangThai)
+									{
+										<span class="badge bg-success rounded-pill">Kích hoạt</span>
+									}
+									else
+									{
+										<span class="badge bg-secondary rounded-pill">Ẩn</span>
+									}
+								</td>
+
+								<td class="text-end">
+									<a class="btn btn-sm btn-outline-info me-1"
+									   asp-area="Admin" asp-controller="KhachHang" asp-action="Delete"
+									   asp-route-id="@item.IDKhachHang">
+										<i class="bi bi-eye"></i>
+									</a>
+
+									<form asp-area="Admin" asp-controller="KhachHang" asp-action="ToggleStatus"
+										  asp-route-id="@item.IDKhachHang" method="post" style="display:inline;">
+										@Html.AntiForgeryToken()
+									</form>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
                 <div class="pagination-controls d-flex justify-content-center align-items-center gap-3 ">
                        <nav aria-label="Phân trang">
                             <ul class="pagination mb-0">

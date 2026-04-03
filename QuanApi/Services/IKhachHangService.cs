@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
@@ -13,7 +13,7 @@ namespace QuanApi.Services
 {
     public interface IKhachHangService
     {
-        Task<(IEnumerable<KhachHang> Data, int TotalCount)> GetKhachHangAsync(
+        Task<(IEnumerable<KhachHangDto> Data, int TotalCount)> GetKhachHangAsync(
            string? search,
            int pageNumber,
            int pageSize,
@@ -44,64 +44,94 @@ namespace QuanApi.Services
             _emailService = emailService;
         }
 
-        public async Task<(IEnumerable<KhachHang> Data, int TotalCount)> GetKhachHangAsync(
-            string? search,
-            int pageNumber,
-            int pageSize,
-            string? sortBy,
-            bool sortAscending)
-        {
-            _logger.LogInformation("Đang lấy danh sách khách hàng với tìm kiếm: {Search}, trang: {PageNumber}, kích thước trang: {PageSize}",
-                search, pageNumber, pageSize);
+		public async Task<(IEnumerable<KhachHangDto> Data, int TotalCount)> GetKhachHangAsync(
+	string? search,
+	int pageNumber,
+	int pageSize,
+	string? sortBy,
+	bool sortAscending)
+		{
+			_logger.LogInformation("Đang lấy danh sách khách hàng...");
 
-            var query = _context.KhachHang
-                .Include(kh => kh.DiaChis)
-                .AsQueryable();
+			var query = _context.KhachHang
+				.Include(kh => kh.DiaChis)
+				.AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(kh =>
-                    kh.MaKhachHang.Contains(search) ||
-                    kh.TenKhachHang.Contains(search) ||
-                    (kh.Email != null && kh.Email.Contains(search)) ||
-                    kh.SoDienThoai.Contains(search));
-            }
+			// 🔍 Search
+			if (!string.IsNullOrEmpty(search))
+			{
+				query = query.Where(kh =>
+					kh.MaKhachHang.Contains(search) ||
+					kh.TenKhachHang.Contains(search) ||
+					(kh.Email != null && kh.Email.Contains(search)) ||
+					kh.SoDienThoai.Contains(search));
+			}
 
-            switch (sortBy?.ToLower())
-            {
-                case "makhachhang":
-                    query = sortAscending
-                        ? query.OrderBy(kh => kh.MaKhachHang)
-                        : query.OrderByDescending(kh => kh.MaKhachHang);
-                    break;
+			// 🔽 Sort (🔥 mặc định = điểm cao → thấp)
+			switch (sortBy?.ToLower())
+			{
+				case "makhachhang":
+					query = sortAscending
+						? query.OrderBy(kh => kh.MaKhachHang)
+						: query.OrderByDescending(kh => kh.MaKhachHang);
+					break;
 
-                case "tenkhachhang":
-                    query = sortAscending
-                        ? query.OrderBy(kh => kh.TenKhachHang)
-                        : query.OrderByDescending(kh => kh.TenKhachHang);
-                    break;
+				case "tenkhachhang":
+					query = sortAscending
+						? query.OrderBy(kh => kh.TenKhachHang)
+						: query.OrderByDescending(kh => kh.TenKhachHang);
+					break;
 
-                case "ngaytao":
-                    query = sortAscending
-                        ? query.OrderBy(kh => kh.NgayTao)
-                        : query.OrderByDescending(kh => kh.NgayTao);
-                    break;
+				case "ngaytao":
+					query = sortAscending
+						? query.OrderBy(kh => kh.NgayTao)
+						: query.OrderByDescending(kh => kh.NgayTao);
+					break;
 
-                default:
-                    query = query.OrderByDescending(kh => kh.NgayTao);
-                    break;
-            }
+				case "rank": // 🔥 thực chất là sort theo điểm
+					query = sortAscending
+						? query.OrderBy(kh => kh.TongDiemTichLuy)
+						: query.OrderByDescending(kh => kh.TongDiemTichLuy);
+					break;
 
-            var totalCount = await query.CountAsync();
+				default:
+					// 🔥 AUTO: không bấm vẫn xếp theo điểm
+					query = query.OrderByDescending(kh => kh.TongDiemTichLuy);
+					break;
+			}
 
-            var data = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+			var totalCount = await query.CountAsync();
 
-            return (data, totalCount);
-        }
-        public async Task<KhachHang?> GetKhachHangByIdAsync(Guid id)
+			// 🚀 Data + Rank
+			var data = await query
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.Select(kh => new KhachHangDto
+				{
+					IDKhachHang = kh.IDKhachHang,
+					MaKhachHang = kh.MaKhachHang,
+					TenKhachHang = kh.TenKhachHang,
+					Email = kh.Email,
+					SoDienThoai = kh.SoDienThoai,
+					SoDiemHienTai = kh.SoDiemHienTai,
+					TongDiemTichLuy = kh.TongDiemTichLuy,
+					NgayTao = kh.NgayTao,
+					NguoiTao = kh.NguoiTao,
+					TrangThai = kh.TrangThai,
+
+					// 🔥 TÍNH RANK CHUẨN
+					Rank = _context.HangKhachHangs
+						.Where(h => h.TrangThai == true
+							&& kh.TongDiemTichLuy >= h.DiemTu
+							&& (h.DiemDen == null || kh.TongDiemTichLuy <= h.DiemDen))
+						.Select(h => h.TenHang)
+						.FirstOrDefault()
+				})
+				.ToListAsync();
+
+			return (data, totalCount);
+		}
+		public async Task<KhachHang?> GetKhachHangByIdAsync(Guid id)
         {
             _logger.LogInformation("Đang lấy chi tiết khách hàng với ID: {CustomerId}", id);
 
