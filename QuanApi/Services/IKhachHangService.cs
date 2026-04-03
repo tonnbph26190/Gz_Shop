@@ -205,7 +205,7 @@ namespace QuanApi.Services
             // ===== Gửi email =====
             if (!string.IsNullOrEmpty(khachHang.Email))
             {
-                var subject = "Chào mừng bạn đến với Cửa hàng bán quần âu Dazio!";
+                var subject = "Chào mừng bạn đến với Cửa hàng bán quần âu GZ!";
                 var emailBody = new StringBuilder();
 
                 emailBody.AppendLine($"<p>Xin chào <strong>{khachHang.TenKhachHang}</strong>,</p>");
