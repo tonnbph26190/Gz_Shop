@@ -35,6 +35,10 @@ namespace QuanApi.Data
         [Range(0, int.MaxValue, ErrorMessage = "Số lượng không được là số âm.")]
         public int SoLuong { get; set; }
 
+        [Required]
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng đặt chỗ không được là số âm.")]
+        public int SoLuongDatCho { get; set; } = 0;
+
         public string? MoTa { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;

@@ -85,9 +85,6 @@ namespace QuanView.Areas.Admin.Controllers
             public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
-            public decimal SoTienGiamTuDiem { get; set; }
-            public int DiemDaDung { get; set; }
-            public decimal TyLeQuyDoiDiem { get; set; }
             public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayTao { get; set; }
@@ -304,9 +301,6 @@ namespace QuanView.Areas.Admin.Controllers
                             BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
-                            SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
-                            DiemDaDung = hoaDonData.DiemDaDung,
-                            TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
                             NgayTao = hoaDonData.NgayTao,
@@ -772,9 +766,6 @@ namespace QuanView.Areas.Admin.Controllers
                     MaHoaDon = hoaDonData.MaHoaDon ?? "",
                     TongTien = hoaDonData.TongTien,
                     TienGiam = hoaDonData.TienGiam ?? 0,
-                    SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
-                    DiemDaDung = hoaDonData.DiemDaDung,
-                    TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                     PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                     TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                     NgayTao = hoaDonData.NgayTao,
