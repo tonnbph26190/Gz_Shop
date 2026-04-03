@@ -468,6 +468,7 @@ namespace QuanApi.Controllers
             public List<InvoiceProductDto> Products { get; set; }
             public string? DiscountCode { get; set; }
             public bool UsePoint { get; set; }
+            public int? RequestedUsedPoints { get; set; }
             public bool Shipping { get; set; }
             public string? PaymentMethod { get; set; } // Mã phương thức thanh toán ("cash", "bank", ...)
             public decimal? CustomerPaid { get; set; }
@@ -622,11 +623,16 @@ namespace QuanApi.Controllers
             }
 
             // 4. Áp dụng điểm nếu có
-            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+                customerIdForInvoice,
+                hoaDon.TongTien,
+                dto.UsePoint,
+                dto.RequestedUsedPoints);
             if (loyaltyResult.DiscountFromPoints > 0)
             {
                 hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
                 hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 
@@ -1448,11 +1454,16 @@ namespace QuanApi.Controllers
             }
 
             // Áp dụng điểm khách hàng nếu có
-            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+                customerIdForInvoice,
+                hoaDon.TongTien,
+                dto.UsePoint,
+                dto.RequestedUsedPoints);
             if (loyaltyResult.DiscountFromPoints > 0)
             {
                 hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
                 hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+                hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 

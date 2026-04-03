@@ -259,6 +259,11 @@ namespace QuanApi.Controllers
 							BanTaiQuay = h.BanTaiQuay,
 							TongTien = h.TongTien,
 							TienGiam = h.TienGiam,
+							SoTienGiamTuDiem = h.SoTienGiamTuDiem,
+							DiemDaDung = h.LichSuDiemKhachHangs
+								.Where(ls => ls.TrangThai && ls.LoaiBienDong == "Tru")
+								.Sum(ls => (int?)(ls.SoDiemBienDong < 0 ? -ls.SoDiemBienDong : ls.SoDiemBienDong)) ?? 0,
+							TyLeQuyDoiDiem = h.TyLeQuyDoiDiem,
 							PhiVanChuyen = h.PhiVanChuyen,
 							TrangThai = h.TrangThai,
 							NgayTao = h.NgayTao,
@@ -362,9 +367,10 @@ namespace QuanApi.Controllers
 					return BadRequest("Không có sản phẩm nào trong đơn hàng");
 				}
 
-				if (dto.TongTien <= 0)
+				var merchandiseSubtotal = dto.ChiTietHoaDons.Sum(x => x.ThanhTien);
+				if (merchandiseSubtotal <= 0)
 				{
-					return BadRequest("Tổng tiền phải lớn hơn 0");
+					return BadRequest("Tổng tiền sản phẩm phải lớn hơn 0");
 				}
 
 				// Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
@@ -388,7 +394,8 @@ namespace QuanApi.Controllers
 					IDNhanVien = dto.NhanVienId,
 					IDPhieuGiamGia = dto.PhieuGiamGiaId,
 					IDPhuongThucThanhToan = dto.PhuongThucThanhToanId,
-					TongTien = dto.TongTien,
+					// Luôn lấy tổng tiền hàng từ chi tiết đơn để tránh sai lệch khi client gửi tổng đã trừ giảm giá.
+					TongTien = merchandiseSubtotal,
 					TienGiam = dto.TienGiam ?? 0,
 					PhiVanChuyen = 0,
 					BanTaiQuay = dto.BanTaiQuay,
@@ -434,13 +441,27 @@ namespace QuanApi.Controllers
 					//}
 				}
 
+				if (dto.TongTien > 0 && dto.TongTien != merchandiseSubtotal)
+				{
+					_logger.LogWarning(
+						"CreateHoaDon mismatch tongTien from client. Client={ClientTongTien}, SubtotalFromDetails={SubtotalFromDetails}",
+						dto.TongTien,
+						merchandiseSubtotal
+					);
+				}
+
 				hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);
 
-				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(dto.KhachHangId, hoaDon.TongTien, dto.UsePoint);
+				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+					dto.KhachHangId,
+					hoaDon.TongTien,
+					dto.UsePoint,
+					dto.RequestedUsedPoints);
 				if (loyaltyResult.DiscountFromPoints > 0)
 				{
 					hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
 					hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+					hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
 					hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
 				}
 
@@ -940,6 +961,7 @@ namespace QuanApi.Controllers
 		public decimal? PhiVanChuyen { get; set; }
 		public bool PhiVanChuyenDaGiam { get; set; }
 		public bool UsePoint { get; set; }
+		public int? RequestedUsedPoints { get; set; }
 		public bool BanTaiQuay { get; set; } = false;
 		public string TenNguoiNhan { get; set; }
 		public string SoDienThoaiNguoiNhan { get; set; }
