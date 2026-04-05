@@ -1,523 +1,908 @@
 @{
-    ViewData["Title"] = "Thống kê";
+	ViewData["Title"] = "Thống kê";
 }
 
 <div class="container-fluid">
-    <!-- Page Heading -->
-    <h1 class="h3 mb-4 text-gray-800">Thống kê tổng quan</h1>
+	<!-- Page Heading -->
+	<h1 class="h3 mb-4 text-gray-800">Thống kê tổng quan</h1>
 
-    <!-- Thống kê doanh thu -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh thu hôm nay</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuHomNay">0 đ</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+	<!-- Thống kê doanh thu -->
+	<div class="row mb-4">
+		<div class="col-xl-3 col-md-6 mb-4">
+			<div class="card border-left-primary shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Doanh thu hôm nay</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuHomNay">0 đ</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-calendar fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh thu tháng này</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuThang">0 đ</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="col-xl-3 col-md-6 mb-4">
+			<div class="card border-left-success shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-success text-uppercase mb-1">Doanh thu tháng này</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="doanhThuThang">0 đ</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sản phẩm đã bán</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soLuongDaBan">0 sản phẩm</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="col-xl-3 col-md-6 mb-4 position-relative">
+			<div class="card border-left-info shadow h-100 py-2 hover-card" style="cursor:pointer">
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Đơn vận chuyển tháng</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenThang">0 đơn</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-shipping-fast fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
 
-    <!-- Thống kê phí vận chuyển -->
-    <div class="row mb-4">
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tổng phí vận chuyển tháng này</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongPhiVanChuyenThang">0 đ</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-truck fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+							<div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+								Sản phẩm đã bán
+							</div>
 
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card border-left-secondary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Đơn có phí vận chuyển hôm nay</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenHomNay">0 đơn</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+							<div class="h6 mb-2 font-weight-bold text-gray-800" id="soLuongDaBan">
+								0 sản phẩm
+							</div>
 
-    <!-- Thống kê kho hàng -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Tổng sản phẩm</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoSanPham">0 sản phẩm</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+						</div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Tồn kho</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoLuongTonKho">0</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-warehouse fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+						<div class="col-auto">
+							<i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Sắp hết hàng</div>
-                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="sanPhamSapHetHang">0 sản phẩm</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+				<!-- DROPDOWN GIỐNG Y HỆT -->
+				<div class="dropdown-hover" id="daBanList">
+					<div class="text-muted p-2">Đang tải...</div>
+				</div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Hết hàng</div>
-                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="sanPhamHetHang">0 sản phẩm</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-md-6 mb-4">
+			<div class="card border-left-warning shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Đơn vận chuyển tháng</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenThang">0 đơn</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-shipping-fast fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <!-- Biểu đồ chính -->
-    <div class="row">
-        <!-- Biểu đồ doanh thu -->
-        <div class="col-xl-12 col-lg-12 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Biểu đồ doanh thu theo tháng (VNĐ)</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="myAreaChart" height="120"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- Thống kê phí vận chuyển -->
+	<div class="row mb-4">
+		<div class="col-xl-6 col-md-6 mb-4">
+			<div class="card border-left-info shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tổng phí vận chuyển tháng này</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="tongPhiVanChuyenThang">0 đ</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-truck fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-    <!-- Hàng biểu đồ thứ hai -->
-    <div class="row">
-        <!-- Biểu đồ sản phẩm bán chạy -->
-        <div class="col-xl-8 col-lg-7 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top sản phẩm bán chạy</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-bar">
-                        <canvas id="myBarChart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="col-xl-6 col-md-6 mb-4">
+			<div class="card border-left-secondary shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Đơn có phí vận chuyển hôm nay</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="soDonVanChuyenHomNay">0 đơn</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-        <!-- Biểu đồ doanh thu theo danh mục -->
-        <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Doanh thu theo danh mục</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-2">
-                        <canvas id="myPieChart" height="250"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- Thống kê kho hàng -->
+	<div class="row mb-4">
+		<div class="col-xl-3 col-md-6 mb-4">
+			<div class="card border-left-primary shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Tổng sản phẩm</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoSanPham">0 sản phẩm</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-boxes fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-    <!-- Hàng biểu đồ thứ ba -->
-    <div class="row">
-        <!-- Trạng thái đơn hàng -->
-        <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Trạng thái đơn hàng trong tháng</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-2">
-                        <canvas id="donHangChart" height="250"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<div class="col-xl-3 col-md-6 mb-4">
+			<div class="card border-left-success shadow h-100 py-2">
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+							<div class="text-xs font-weight-bold text-success text-uppercase mb-1">Tồn kho</div>
+							<div class="h5 mb-0 font-weight-bold text-gray-800" id="tongSoLuongTonKho">0</div>
+						</div>
+						<div class="col-auto">
+							<i class="fas fa-warehouse fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <!-- Thống kê kho hàng theo danh mục -->
-        <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Kho hàng theo danh mục</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-2">
-                        <canvas id="inventoryChart" height="200"></canvas>
-                    </div>
-                    <div class="mt-3">
-                        <div class="small text-gray-500 mb-2"><strong>Chi tiết thống kê:</strong></div>
-                        <div id="inventoryDetails" class="inventory-details">
-                            <!-- Chi tiết sẽ được load bằng JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+		<!-- Sắp hết hàng -->
+		<div class="col-xl-3 col-md-6 mb-4 position-relative">
+			<div class="card border-left-warning shadow h-100 py-2 hover-card" style="cursor:pointer">
+
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+
+							<div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+								Sắp hết hàng
+							</div>
+
+							<div class="h6 mb-2 font-weight-bold text-gray-800" id="sanPhamSapHetHang">
+								0 sản phẩm
+							</div>
+
+						</div>
+
+						<div class="col-auto">
+							<i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+
+				<!-- DROPDOWN KHÔNG ẢNH HƯỞNG LAYOUT -->
+				<div class="dropdown-hover" id="sapHetHangList">
+					<div class="text-muted p-2">Đang tải...</div>
+				</div>
+
+			</div>
+		</div>
+		<div class="col-xl-3 col-md-6 mb-4 position-relative">
+			<div class="card border-left-danger shadow h-100 py-2 hover-card" style="cursor:pointer">
+
+				<div class="card-body">
+					<div class="row no-gutters align-items-center">
+						<div class="col mr-2">
+
+							<div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+								Hết hàng
+							</div>
+
+							<div class="h6 mb-2 font-weight-bold text-gray-800" id="sanPhamHetHang">
+								0 sản phẩm
+							</div>
+
+						</div>
+
+						<div class="col-auto">
+							<i class="fas fa-times-circle fa-2x text-gray-300"></i>
+						</div>
+					</div>
+				</div>
+
+				<!-- DROPDOWN GIỐNG Y HỆT -->
+				<div class="dropdown-hover" id="hetHangList">
+					<div class="text-muted p-2">Đang tải...</div>
+				</div>
+
+			</div>
+		</div>
+
+
+	</div>
+
+	<!-- Biểu đồ chính -->
+	<div class="row">
+		<!-- Biểu đồ doanh thu -->
+		<div class="col-xl-12 col-lg-12 mb-4">
+			<div class="card shadow">
+				<div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+					<h6 class="m-0 font-weight-bold text-primary">Biểu đồ doanh thu theo tháng (VNĐ)</h6>
+				</div>
+				<div class="card-body">
+					<div class="chart-area">
+						<canvas id="myAreaChart" height="120"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Hàng biểu đồ thứ hai -->
+	<div class="row">
+		<!-- Biểu đồ sản phẩm bán chạy -->
+		<div class="col-xl-8 col-lg-7 mb-4">
+			<div class="card shadow">
+				<div class="card-header py-3">
+					<h6 class="m-0 font-weight-bold text-primary">Top sản phẩm bán chạy</h6>
+				</div>
+				<div class="card-body">
+					<div class="chart-bar">
+						<canvas id="myBarChart" height="200"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Biểu đồ doanh thu theo danh mục -->
+		<div class="col-xl-4 col-lg-5 mb-4">
+			<div class="card shadow">
+				<div class="card-header py-3">
+					<h6 class="m-0 font-weight-bold text-primary">Doanh thu theo danh mục</h6>
+				</div>
+				<div class="card-body">
+					<div class="chart-pie pt-2">
+						<canvas id="myPieChart" height="250"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Hàng biểu đồ thứ ba -->
+	<div class="row">
+		<!-- Trạng thái đơn hàng -->
+		<div class="col-xl-6 col-lg-6 mb-4">
+			<div class="card shadow">
+				<div class="card-header py-3">
+					<h6 class="m-0 font-weight-bold text-primary">Trạng thái đơn hàng trong tháng</h6>
+				</div>
+				<div class="card-body">
+					<div class="chart-pie pt-2">
+						<canvas id="donHangChart" height="250"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Thống kê kho hàng theo danh mục -->
+		<div class="col-xl-6 col-lg-6 mb-4">
+			<div class="card shadow">
+				<div class="card-header py-3">
+					<h6 class="m-0 font-weight-bold text-primary">Kho hàng theo danh mục</h6>
+				</div>
+				<div class="card-body">
+					<div class="chart-pie pt-2">
+						<canvas id="inventoryChart" height="200"></canvas>
+					</div>
+					<div class="mt-3">
+						<div class="small text-gray-500 mb-2"><strong>Chi tiết thống kê:</strong></div>
+						<div id="inventoryDetails" class="inventory-details">
+							<!-- Chi tiết sẽ được load bằng JavaScript -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <style>
-    /* Cải thiện layout tổng thể */
-    .container-fluid {
-        padding: 0 1.5rem;
-    }
+	/* Cải thiện layout tổng thể */
+	.container-fluid {
+		padding: 0 1.5rem;
+	}
 
-    /* Styling cho các card thống kê */
-    .card {
-        border: none;
-        border-radius: 0.5rem;
-        transition: all 0.3s ease;
-    }
+	/* Styling cho các card thống kê */
+	.card {
+		border: none;
+		border-radius: 0.5rem;
+		transition: all 0.3s ease;
+	}
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        }
+		.card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+		}
 
-    .card-body {
-        padding: 1.5rem;
-    }
+	.card-body {
+		padding: 1.5rem;
+	}
 
-    /* Icon styling */
-    .fas {
-        opacity: 0.8;
-    }
+	/* Icon styling */
+	.fas {
+		opacity: 0.8;
+	}
 
-    /* Chart containers */
-    .chart-area, .chart-bar, .chart-pie {
-        position: relative;
-        min-height: 200px;
-    }
+	/* Chart containers */
+	.chart-area, .chart-bar, .chart-pie {
+		position: relative;
+		min-height: 200px;
+	}
 
-    .chart-area {
-        min-height: 300px;
-    }
+	.chart-area {
+		min-height: 300px;
+	}
 
-    canvas {
-        width: 100% !important;
-        height: auto !important;
-    }
+	canvas {
+		width: 100% !important;
+		height: auto !important;
+	}
 
-    /* Inventory details styling */
-    .inventory-details {
-        max-height: 200px;
-        overflow-y: auto;
-        font-size: 0.85rem;
-    }
+	/* Inventory details styling */
+	.inventory-details {
+		max-height: 200px;
+		overflow-y: auto;
+		font-size: 0.85rem;
+	}
 
-        .inventory-details::-webkit-scrollbar {
-            width: 4px;
-        }
+		.inventory-details::-webkit-scrollbar {
+			width: 4px;
+		}
 
-        .inventory-details::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 2px;
-        }
+		.inventory-details::-webkit-scrollbar-track {
+			background: #f1f1f1;
+			border-radius: 2px;
+		}
 
-        .inventory-details::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 2px;
-        }
+		.inventory-details::-webkit-scrollbar-thumb {
+			background: #c1c1c1;
+			border-radius: 2px;
+		}
 
-            .inventory-details::-webkit-scrollbar-thumb:hover {
-                background: #a8a8a8;
-            }
+			.inventory-details::-webkit-scrollbar-thumb:hover {
+				background: #a8a8a8;
+			}
 
-    /* Responsive adjustments */
-    @@media (max-width: 768px) {
-        .container-fluid {
-            padding: 0 1rem;
-        }
+	/* Responsive adjustments */
+	@@media (max-width: 768px) {
+		.container-fluid {
+			padding: 0 1rem;
+		}
 
-        .card-body {
-            padding: 1rem;
-        }
+		.card-body {
+			padding: 1rem;
+		}
 
-        .h5 {
-            font-size: 1.1rem;
-        }
+		.h5 {
+			font-size: 1.1rem;
+		}
 
-        .h6 {
-            font-size: 1rem;
-        }
+		.h6 {
+			font-size: 1rem;
+		}
 
-        .fas {
-            font-size: 1.5rem !important;
-        }
+		.fas {
+			font-size: 1.5rem !important;
+		}
 
-        .chart-area {
-            min-height: 250px;
-        }
+		.chart-area {
+			min-height: 250px;
+		}
 
-        .chart-bar, .chart-pie {
-            min-height: 200px;
-        }
-    }
+		.chart-bar, .chart-pie {
+			min-height: 200px;
+		}
+	}
 
-    @@media (max-width: 576px) {
-        .text-xs {
-            font-size: 0.7rem;
-        }
+	@@media (max-width: 576px) {
+		.text-xs {
+			font-size: 0.7rem;
+		}
 
-        .inventory-details {
-            max-height: 150px;
-            font-size: 0.8rem;
-        }
-    }
+		.inventory-details {
+			max-height: 150px;
+			font-size: 0.8rem;
+		}
+	}
 
-    /* Spacing improvements */
-    .mb-4 {
-        margin-bottom: 1.5rem !important;
-    }
+	/* Spacing improvements */
+	.mb-4 {
+		margin-bottom: 1.5rem !important;
+	}
 
-    .row {
-        margin-left: -0.75rem;
-        margin-right: -0.75rem;
-    }
+	.row {
+		margin-left: -0.75rem;
+		margin-right: -0.75rem;
+	}
 
-        .row > [class*="col-"] {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
+		.row > [class*="col-"] {
+			padding-left: 0.75rem;
+			padding-right: 0.75rem;
+		}
 
-    /* Card header improvements */
-    .card-header {
-        background-color: #f8f9fc;
-        border-bottom: 1px solid #e3e6f0;
-        border-radius: 0.5rem 0.5rem 0 0 !important;
-    }
+	/* Card header improvements */
+	.card-header {
+		background-color: #f8f9fc;
+		border-bottom: 1px solid #e3e6f0;
+		border-radius: 0.5rem 0.5rem 0 0 !important;
+	}
 
-    /* Text improvements */
-    .text-gray-800 {
-        word-wrap: break-word;
-    }
+	/* Text improvements */
+	.text-gray-800 {
+		word-wrap: break-word;
+	}
 
-    /* Animation for loading states */
-    .card-body[data-loading="true"] {
-        opacity: 0.7;
-        pointer-events: none;
-    }
+	/* Animation for loading states */
+	.card-body[data-loading="true"] {
+		opacity: 0.7;
+		pointer-events: none;
+	}
+	/* cho phép xổ ra ngoài */
+	.card {
+		overflow: visible !important;
+	}
+
+	/* dropdown */
+	.dropdown-hover {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		width: 100%;
+		background: #fff;
+		border-radius: 10px;
+		box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+		padding: 10px;
+		z-index: 999;
+		opacity: 0;
+		transform: translateY(-10px);
+		transition: all 0.25s ease;
+		pointer-events: none;
+	}
+
+	/* hover thì hiện */
+	.hover-card:hover + .dropdown-hover,
+	.hover-card:hover .dropdown-hover {
+		opacity: 1;
+		transform: translateY(5px);
+		pointer-events: auto;
+	}
+
+	/* item */
+	.dropdown-hover .item {
+		display: flex;
+		justify-content: space-between;
+		padding: 8px;
+		border-radius: 6px;
+		font-size: 14px;
+		transition: 0.2s;
+	}
+
+		.dropdown-hover .item:hover {
+			background: #fff3cd;
+			transform: translateX(5px);
+		}
+
+	.dropdown-hover {
+		z-index: 9999; /* tăng cao */
+	}
+
+	.hover-card {
+		position: relative;
+		z-index: 1;
+	}
+
+		.hover-card:hover {
+			z-index: 1000; /* khi hover thì nổi lên */
+		}
+
+	.row,
+	.col-xl-3 {
+		overflow: visible !important;
+	}
+	/* cho phép xổ ra ngoài */
+	.card {
+		overflow: visible !important;
+	}
+
+	.hover-card {
+		position: relative;
+		z-index: 1;
+	}
+
+		.hover-card:hover {
+			z-index: 1000;
+		}
+
+	/* dropdown */
+	.dropdown-hover {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		width: 100%;
+		background: #fff;
+		border-radius: 10px;
+		box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+		padding: 10px;
+		opacity: 0;
+		transform: translateY(-10px);
+		transition: all 0.25s ease;
+		pointer-events: none;
+		z-index: 9999;
+	}
+
+	/* hover thì hiện */
+	.hover-card:hover .dropdown-hover {
+		opacity: 1;
+		transform: translateY(5px);
+		pointer-events: auto;
+	}
+
+	/* item */
+	.dropdown-hover .item {
+		display: flex;
+		justify-content: space-between;
+		padding: 8px;
+		border-radius: 6px;
+		font-size: 14px;
+		transition: 0.2s;
+	}
+
+		.dropdown-hover .item:hover {
+			background: #f8d7da; /* đỏ nhạt */
+			transform: translateX(5px);
+		}
+
+	.dropdown-hover .item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 8px 10px;
+	}
+
+	.dropdown-hover {
+		padding: 12px;
+	}
+
+		.dropdown-hover .item {
+			margin-bottom: 5px;
+		}
+	/* sắp hết */
+	#sapHetHangList .item:hover {
+		background: #fff3cd;
+	}
+
+	/* hết hàng */
+	#hetHangList .item:hover {
+		background: #f8d7da;
+	}
+
+	.dropdown-hover {
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.dropdown-hover {
+		transition: all 0.2s ease-in-out;
+	}
 </style>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            var api = '/api/ChartsApi';
-            function fmtVnd(n) { return (n || 0).toLocaleString('vi-VN') + ' đ'; }
-            function fmtNum(n) { return (n || 0).toLocaleString('vi-VN'); }
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+	<script type="text/javascript">
+		/*
+			PSEUDOCODE / DETAILED PLAN (placed here as requested):
+			- Goal: Remove navigation links from dropdown product items so clicking them does NOT navigate away.
+			- Approach:
+			  1. For all three dropdown loaders (low stock, out of stock, sold products):
+			     - Stop rendering anchor (`<a href="...">`) wrappers.
+			     - Render bare `.item` elements (divs) and, if needed, attach a `data-id` attribute for future JS handling.
+			     - Ensure visual structure remains identical: two spans inside each `.item` (name on left, badge on right).
+			  2. Keep HTML escaping and number formatting functions intact for safety.
+			  3. Maintain existing error / empty states.
+			  4. No server-side API changes required.
+			  5. Optional: Consumers can bind click handlers to `.item[data-id]` later without causing page navigation.
+		*/
 
-            function setKpisFromSummary(data) {
-                if (!data) return;
-                $('#doanhThuHomNay').text(fmtVnd(data.todayRevenue));
-                $('#doanhThuThang').text(fmtVnd(data.monthRevenue));
-                $('#soLuongDaBan').text(fmtNum(data.monthProductQuantity) + ' sản phẩm');
-                $('#soDonVanChuyenThang').text((data.monthShippingCount || 0) + ' đơn');
-                $('#tongPhiVanChuyenThang').text(fmtVnd(data.monthShippingTotal));
-                $('#soDonVanChuyenHomNay').text((data.todayShippingCount || 0) + ' đơn');
-                $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
-                $('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
-                $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
-                $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
-            }
-            function setInventoryKpis(data) {
-                if (!data) return;
-                $('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
-                $('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
-                $('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
-                $('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
-            }
-            function loadKpisFallback() {
-                $.get(api + '/today-revenue', function (v) { $('#doanhThuHomNay').text(fmtVnd(v)); });
-                $.get(api + '/month-revenue', function (v) { $('#doanhThuThang').text(fmtVnd(v)); });
-                $.get(api + '/month-product-quantity', function (v) { $('#soLuongDaBan').text(fmtNum(v) + ' sản phẩm'); });
-                $.get(api + '/month-shipping-stats', function (res) {
-                    if (res && typeof res === 'object') {
-                        $('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
-                        $('#tongPhiVanChuyenThang').text(fmtVnd(res.totalShipping));
-                    }
-                });
-                $.get(api + '/today-shipping-stats', function (res) {
-                    if (res && typeof res === 'object') $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
-                });
-                $.get(api + '/inventory-summary', function (res) {
-                    if (res && res.success && res.data) setInventoryKpis(res.data);
-                });
-            }
+		$(document).ready(function () {
+			// API base - define once so all internal functions can access it
+			var api = '/api/ChartsApi';
 
-            $.get(api + '/dashboard-summary')
-                .done(function (res) {
-                    if (res && res.success && res.data) setKpisFromSummary(res.data);
-                    else loadKpisFallback();
-                })
-                .fail(function () { loadKpisFallback(); });
+			// Formatting helpers (available to all functions inside this ready block)
+			function fmtVnd(n) { return (n || 0).toLocaleString('vi-VN') + ' đ'; }
+			function fmtNum(n) { return (n || 0).toLocaleString('vi-VN'); }
+			function num(n) { return (n || 0).toLocaleString('vi-VN'); }
+			function escapeHtml(s) {
+				return String(s || '').replace(/[&<>"'\/]/g, function (ch) {
+					return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' }[ch];
+				});
+			}
 
-            setTimeout(function () {
-                $.getScript('/admin/js/demo/chart-area-demo.js');
-                $.getScript('/admin/js/demo/chart-bar-demo.js');
-                $.getScript('/admin/js/demo/chart-pie-demo.js');
-                $.getScript('/admin/js/demo/donhangtrongthang.js');
-            }, 100);
-            loadInventoryChart();
-        });
+			// KPI setters
+			function setKpisFromSummary(data) {
+				if (!data) return;
+				$('#doanhThuHomNay').text(fmtVnd(data.todayRevenue));
+				$('#doanhThuThang').text(fmtVnd(data.monthRevenue));
+				$('#soLuongDaBan').text(fmtNum(data.monthProductQuantity) + ' sản phẩm');
+				$('#soDonVanChuyenThang').text((data.monthShippingCount || 0) + ' đơn');
+				$('#tongPhiVanChuyenThang').text(fmtVnd(data.monthShippingTotal));
+				$('#soDonVanChuyenHomNay').text((data.todayShippingCount || 0) + ' đơn');
+				$('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
+				$('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
+				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
+				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+			}
 
-        function loadInventoryChart() {
-            $.get('/api/ChartsApi/product-category-inventory', function (res) {
-                if (!res || !res.success || !res.data) return;
-                var chartData = res.data;
-                var ctx = document.getElementById('inventoryChart');
-                if (!ctx) return;
-                if (typeof Chart !== 'undefined' && Chart.getChart(ctx)) Chart.getChart(ctx).destroy();
-                new Chart(ctx.getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            data: chartData.datasets[0].data,
-                            backgroundColor: chartData.datasets[0].backgroundColor,
-                            borderColor: chartData.datasets[0].borderColor,
-                            borderWidth: chartData.datasets[0].borderWidth || 2,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        var v = context.parsed;
-                                        var t = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
-                                        var p = t ? ((v / t) * 100).toFixed(1) : 0;
-                                        return (context.label || '') + ': ' + (v || 0).toLocaleString('vi-VN') + ' SP (' + p + '%)';
-                                    }
-                                }
-                            }
-                        },
-                        cutout: '50%'
-                    }
-                });
-                var details = chartData.details || [];
-                var html = '';
-                for (var i = 0; i < details.length; i++) {
-                    var item = details[i];
-                    var color = (chartData.datasets[0].backgroundColor && chartData.datasets[0].backgroundColor[i]) || '#999';
-                    html += '<div class="d-flex align-items-center mb-2">' +
-                        '<div style="width:12px;height:12px;background:' + color + ';border-radius:50%;margin-right:8px;"></div>' +
-                        '<div><strong>' + (item.categoryName || '') + '</strong>: ' + (item.totalQuantity || 0).toLocaleString('vi-VN') + ' SP' +
-                        '<small class="text-muted d-block">' + (item.productCount || 0) + ' loại · ' + (item.variantCount || 0) + ' biến thể</small></div></div>';
-                }
-                $('#inventoryDetails').html(html || '<span class="text-muted">Không có dữ liệu</span>');
-            }).fail(function () {
-                $('#inventoryDetails').html('<span class="text-danger">Không tải được dữ liệu kho hàng</span>');
-            });
-        }
-    </script>
+			function setInventoryKpis(data) {
+				if (!data) return;
+				$('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
+				$('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
+				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
+				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+			}
+
+			function loadKpisFallback() {
+				$.get(api + '/today-revenue', function (v) { $('#doanhThuHomNay').text(fmtVnd(v)); });
+				$.get(api + '/month-revenue', function (v) { $('#doanhThuThang').text(fmtVnd(v)); });
+				$.get(api + '/month-product-quantity', function (v) { $('#soLuongDaBan').text(fmtNum(v) + ' sản phẩm'); });
+				$.get(api + '/month-shipping-stats', function (res) {
+					if (res && typeof res === 'object') {
+						$('#soDonVanChuyenThang').text((res.count || 0) + ' đơn');
+						$('#tongPhiVanChuyenThang').text(fmtVnd(res.totalShipping));
+					}
+				});
+				$.get(api + '/today-shipping-stats', function (res) {
+					if (res && typeof res === 'object') $('#soDonVanChuyenHomNay').text((res.count || 0) + ' đơn');
+				});
+				$.get(api + '/inventory-summary', function (res) {
+					if (res && res.success && res.data) setInventoryKpis(res.data);
+				});
+			}
+
+			// Dashboard loader (centralized)
+			function loadDashboard() {
+				$.get(api + '/dashboard-summary')
+					.done(function (res) {
+						if (res && res.success && res.data) setKpisFromSummary(res.data);
+						else loadKpisFallback();
+					})
+					.fail(function () {
+						loadKpisFallback();
+					});
+			}
+
+			// Inventory donut chart + details
+			function loadInventoryChart() {
+				$.get(api + '/product-category-inventory')
+					.done(function (res) {
+						if (!res || !res.success || !res.data) {
+							$('#inventoryDetails').html('<span class="text-muted">Không có dữ liệu</span>');
+							return;
+						}
+						var chartData = res.data;
+						var ctx = document.getElementById('inventoryChart');
+						if (!ctx) return;
+
+						// destroy existing chart instance if any
+						if (typeof Chart !== 'undefined') {
+							try {
+								var existing = Chart.getChart(ctx);
+								if (existing) existing.destroy();
+							} catch (e) { /* ignore */ }
+						}
+
+						new Chart(ctx, {
+							type: 'doughnut',
+							data: {
+								labels: chartData.labels || [],
+								datasets: [{
+									data: (chartData.datasets && chartData.datasets[0] && chartData.datasets[0].data) || [],
+									backgroundColor: (chartData.datasets && chartData.datasets[0] && chartData.datasets[0].backgroundColor) || [],
+									borderColor: (chartData.datasets && chartData.datasets[0] && chartData.datasets[0].borderColor) || [],
+									borderWidth: (chartData.datasets && chartData.datasets[0] && chartData.datasets[0].borderWidth) || 2,
+									hoverOffset: 4
+								}]
+							},
+							options: {
+								responsive: true,
+								maintainAspectRatio: false,
+								plugins: {
+									legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } },
+									tooltip: {
+										callbacks: {
+											label: function (context) {
+												var v = context.parsed || 0;
+												var t = (context.dataset && context.dataset.data) ? context.dataset.data.reduce(function (a, b) { return a + b; }, 0) : 0;
+												var p = t ? ((v / t) * 100).toFixed(1) : 0;
+												return (context.label || '') + ': ' + (v || 0).toLocaleString('vi-VN') + ' SP (' + p + '%)';
+											}
+										}
+									}
+								},
+								cutout: '50%'
+							}
+						});
+
+						// details rendering
+						var details = chartData.details || [];
+						var html = '';
+						for (var i = 0; i < details.length; i++) {
+							var item = details[i] || {};
+							var color = (chartData.datasets && chartData.datasets[0] && chartData.datasets[0].backgroundColor && chartData.datasets[0].backgroundColor[i]) || '#999';
+							html += '<div class="d-flex align-items-center mb-2">' +
+								'<div style="width:12px;height:12px;background:' + escapeHtml(color) + ';border-radius:50%;margin-right:8px;"></div>' +
+								'<div><strong>' + escapeHtml(item.categoryName || '') + '</strong>: ' + (item.totalQuantity || 0).toLocaleString('vi-VN') + ' SP' +
+								'<small class="text-muted d-block">' + (item.productCount || 0) + ' loại · ' + (item.variantCount || 0) + ' biến thể</small></div></div>';
+						}
+						$('#inventoryDetails').html(html || '<span class="text-muted">Không có dữ liệu</span>');
+					})
+					.fail(function () {
+						$('#inventoryDetails').html('<span class="text-danger">Không tải được dữ liệu kho hàng</span>');
+					});
+			}
+
+			// Low stock table
+			/*
+				PSEUDOCODE / PLAN:
+				- Fetch low-stock products from API endpoint '/SanPhamSapHetHang'
+				- Normalize response to array (either array or { data: [...] })
+				- If empty -> show "Không có"
+				- Otherwise map each product to a non-navigating element:
+				  - Render a div with class="item" and data-id attribute
+				  - Left: warning emoji + escaped product name
+				  - Right: badge showing remaining quantity (badge-warning)
+				- Inject the generated HTML into '#sapHetHangList'
+				- On failure show an error message
+			*/
+			function loadLowStock() {
+				$.get(api + '/SanPhamSapHetHang')
+					.done(function (res) {
+						var data = Array.isArray(res) ? res : (res && res.data) || [];
+						if (!data.length) {
+							$('#sapHetHangList').html('<div class="text-muted p-2">Không có</div>');
+							return;
+						}
+						var html = data.map(function (p) {
+							var ten = escapeHtml(p.tenSanPham || 'Không tên');
+							var soLuong = num(p.soLuong);
+							// Render non-navigating item (no anchor)
+							return `
+								<div class="item" data-id="${p.id}">
+									<span>⚠️ ${ten}</span>
+									<span class="badge badge-warning">${soLuong}</span>
+								</div>
+							`;
+						}).join('');
+						$('#sapHetHangList').html(html);
+					})
+					.fail(function () {
+						$('#sapHetHangList').html('<div class="text-danger p-2">Lỗi tải dữ liệu</div>');
+					});
+			}
+
+			// Out of stock table
+			/*
+				PSEUDOCODE / PLAN:
+				- Fetch out-of-stock products from API endpoint '/SanPhamHetHang'
+				- Normalize response to array
+				- If empty -> show "Không có"
+				- Otherwise map each product to a non-navigating div with:
+				  - data-id attribute
+				  - Product name prefixed with out-of-stock emoji
+				  - Badge (danger) showing quantity (or 0)
+				- Inject HTML into '#hetHangList'
+			*/
+			function loadOutStock() {
+				$.get(api + '/SanPhamHetHang')
+					.done(function (res) {
+						var data = Array.isArray(res) ? res : (res && res.data) || [];
+						if (!data.length) {
+							$('#hetHangList').html('<div class="text-muted p-2">Không có</div>');
+							return;
+						}
+						var html = data.map(function (p) {
+							var ten = escapeHtml(p.tenSanPham || 'Không tên');
+							// Some APIs may include quantity; default to 0 if missing
+							var soLuong = (typeof p.soLuong !== 'undefined') ? num(p.soLuong) : '0';
+							return `
+								<div class="item" data-id="${p.id}">
+									<span>❌ ${ten}</span>
+									<span class="badge badge-danger">${soLuong}</span>
+								</div>
+							`;
+						}).join('');
+						$('#hetHangList').html(html);
+					})
+					.fail(function () {
+						$('#hetHangList').html('<div class="text-danger p-2">Lỗi tải dữ liệu</div>');
+					});
+			}
+
+			// Sản phẩm đã bán
+			/*
+				PSEUDOCODE / PLAN:
+				- Fetch sold products from API endpoint '/SanPhamDaBan'
+				- Normalize response to array
+				- If empty -> show "Không có"
+				- Otherwise map each product to a non-navigating div:
+				  - data-id attribute for potential future handling
+				  - Display product name and sold quantity badge (info)
+				- Inject into '#daBanList'
+			*/
+			function loadDaBan() {
+				$.get(api + '/SanPhamDaBan')
+					.done(function (res) {
+
+						var data = Array.isArray(res) ? res : (res && res.data) || [];
+
+						if (!data.length) {
+							$('#daBanList').html('<div class="text-muted p-2">Không có</div>');
+							return;
+						}
+
+						var html = data.map(function (p) {
+
+							let ten = escapeHtml(p.tenSanPham || 'Không tên');
+							let soLuong = num(p.soLuong);
+
+							// Render non-navigating item (removed anchor to prevent page navigation)
+							return `
+								<div class="item" data-id="${p.id}">
+									<span>🛒 ${ten}</span>
+									<span class="badge badge-info">${soLuong}</span>
+								</div>
+							`;
+
+						}).join('');
+
+						$('#daBanList').html(html);
+					})
+					.fail(function () {
+						$('#daBanList').html('<div class="text-danger p-2">Lỗi tải dữ liệu</div>');
+					});
+			}
+
+			// Init: load chart demo scripts after small delay
+			setTimeout(function () {
+				$.getScript('/admin/js/demo/chart-area-demo.js');
+				$.getScript('/admin/js/demo/chart-bar-demo.js');
+				$.getScript('/admin/js/demo/chart-pie-demo.js');
+				$.getScript('/admin/js/demo/donhangtrongthang.js');
+			}, 100);
+
+			// Hover behavior for collapse (kept for compatibility, non-blocking)
+			(function attachHoverCollapse() {
+				let timeout;
+				$('.hover-card').hover(
+					function () {
+						clearTimeout(timeout);
+						$(this).find('.collapse').stop(true, true).collapse('show');
+					},
+					function () {
+						const el = $(this);
+						timeout = setTimeout(function () {
+							el.find('.collapse').collapse('hide');
+						}, 150);
+					}
+				);
+			})();
+
+			// Load everything
+			loadDashboard();
+			loadLowStock();
+			loadOutStock();
+			loadInventoryChart();
+			loadDaBan();
+		});
+	</script>
 }
