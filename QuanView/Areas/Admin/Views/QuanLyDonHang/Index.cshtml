@@ -209,13 +209,18 @@
                             <label for="trangThai">Trạng thái:</label>
                             @{
                                 var qTrangThai = Context.Request.Query["trangThai"].ToString();
-                                if (string.IsNullOrEmpty(qTrangThai))
+
+                                var isReset = Context.Request.Query["reset"].ToString();
+
+                                if (string.IsNullOrEmpty(qTrangThai) && string.IsNullOrEmpty(isReset))
                                 {
                                     qTrangThai = "Chờ xác nhận";
                                 }
                             }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="">Tất cả trạng thái</option>
+                                <option value="all">
+                                    Tất cả trạng thái
+                                </option>
                                 <option value="Chờ xác nhận"
                                         selected="@(qTrangThai == "Chờ xác nhận" ? "selected" : null)">Chờ xác nhận
                                 </option>
@@ -251,27 +256,32 @@
                         <div class="form-group">
                             <label>Theo ngày:</label>
                             <select class="form-control" id="quickDate" name="quickDate">
-                               
-                                <option value="today">Hôm nay</option>
+
+                                <option value="today"
+                                        selected="@(string.IsNullOrEmpty(Context.Request.Query["quickDate"]) && Context.Request.Query["reset"] != "1" || Context.Request.Query["quickDate"] == "today" ? "selected" : null)">
+                                    Hôm nay
+                                </option>
                                 <option value="1">1 ngày trước</option>
                                 <option value="7">7 ngày trước</option>
                                 <option value="28">28 ngày trước</option>
-                                <option value="">Tất cả</option>
+                                <option value="" selected="@(Context.Request.Query["quickDate"] == "" || Context.Request.Query["reset"] == "1" ? "selected" : null)">
+                                    Tất cả
+                                </option>
                             </select>
                         </div>
                     </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tuNgay">Từ ngày:</label>
-                            @{
-                                var qTuNgay = Context.Request.Query["tuNgay"].ToString();
-                                var qDenNgay = Context.Request.Query["denNgay"].ToString();
+                          @{
+    var qTuNgay = Context.Request.Query["tuNgay"].ToString();
+    var qDenNgay = Context.Request.Query["denNgay"].ToString();
+    var qQuickDate = Context.Request.Query["quickDate"].ToString();
+  
 
-                                var today = DateTime.Now.ToString("yyyy-MM-dd");
-
-                                if (string.IsNullOrEmpty(qTuNgay)) qTuNgay = "";
-                                if (string.IsNullOrEmpty(qDenNgay)) qDenNgay = "";
-                            }
+    // 👉 CHỈ set hôm nay khi KHÔNG phải "Tất cả"
+  
+}
                             <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@qTuNgay">
                                     </div>
                                 </div>
@@ -327,7 +337,7 @@
                                             </button>
                                             &nbsp;
                                             &nbsp;
-                                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <a href="@Url.Action("Index", new { reset = 1 })" class="btn btn-secondary">
                                                 <i class="fas fa-times"></i> Xóa bộ lọc
                                             </a>
                                         </div>
@@ -584,25 +594,53 @@
             }
 
             // ✅ CHỈ SET DEFAULT KHI CHƯA CÓ GÌ
-            if (!urlParams.get('tuNgay') && !urlParams.get('denNgay') && selectedQuick === null) {
-                setDateRange('today');
-                quickDate.value = 'today';
+            const isReset = urlParams.get('reset');
 
-                // 🚀 thêm dòng này
-                form.submit();
+            // 👉 RESET
+            if (isReset) {
+                quickDate.value = "";
+                tuNgay.value = "";
+                denNgay.value = "";
+                document.getElementById('trangThai').value = "all";
+            }
+            else {
+                const qd = urlParams.get('quickDate');
+
+                // 👉 nếu là "Tất cả" thì KHÔNG set ngày, KHÔNG submit
+                if (qd === "") {
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                }
+                else if (!urlParams.get('tuNgay') && !urlParams.get('denNgay')) {
+
+                    if (!qd) {
+                        // 👉 mặc định hôm nay
+                        setDateRange('today');
+                        quickDate.value = 'today';
+                    } else {
+                        setDateRange(qd);
+                    }
+
+                    // 👉 default trạng thái
+                    if (!urlParams.get('trangThai')) {
+                        document.getElementById('trangThai').value = "Chờ xác nhận";
+                    }
+
+                    form.submit();
+                }
             }
 
             // ✅ XỬ LÝ CHANGE
             quickDate.addEventListener('change', function () {
 
                 if (this.value === "") {
-                    // 👉 TẤT CẢ → clear ngày
+                    // 👉 TẤT CẢ → KHÔNG submit nữa
                     tuNgay.value = "";
                     denNgay.value = "";
-                } else {
-                    setDateRange(this.value);
+                    return; // ❗ CHẶN LOOP
                 }
 
+                setDateRange(this.value);
                 form.submit();
             });
 

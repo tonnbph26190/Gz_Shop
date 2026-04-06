@@ -165,16 +165,28 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string sapXep, string maDonHang, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string sapXep, string maDonHang, string quickDate, int page = 1, int pageSize = 10)
         {
             try
             {
 				var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-				trangThai = string.IsNullOrEmpty(trangThai) ? "Chờ xác nhận" : trangThai;
+				// 👉 mặc định
+				if (string.IsNullOrEmpty(trangThai))
+				{
+					trangThai = "Chờ xác nhận";
+				}
+
+				// 👉 xử lý ALL
+				if (trangThai == "all")
+				{
+					trangThai = null;
+				}
 
 				// 👉 FIX CHÍNH Ở ĐÂY
-				if (string.IsNullOrEmpty(tuNgay) || string.IsNullOrEmpty(denNgay))
+				// 👉 chỉ khi cả 2 rỗng mới bỏ lọc
+				// 👉 nếu chọn "Tất cả"
+				if (string.IsNullOrEmpty(quickDate))
 				{
 					tuNgay = null;
 					denNgay = null;
