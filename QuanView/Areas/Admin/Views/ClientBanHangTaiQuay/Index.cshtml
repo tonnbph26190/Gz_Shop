@@ -2377,18 +2377,25 @@ function toggleShipping() {
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = getRequestedPointForUse() * moneyPerPoint;
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: update both point discount display elements
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        // cap the input at max usable so user can't over-enter
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+
         $('#shippingFee').val(shippingFee);
 
-        // Tự động tính lại phí vận chuyển khi tổng tiền thay đổi (nếu đang bật giao hàng)
         if (useShipping && total > 0) {
             calculateShippingFee();
         }
@@ -2399,15 +2406,22 @@ function toggleShipping() {
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = getRequestedPointForUse() * moneyPerPoint;
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: same update here
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+
         $('#shippingFee').val(shippingFee);
     }
 
@@ -2659,7 +2673,20 @@ function toggleShipping() {
 
     // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function () {
+        $('#shippingSwitch').prop('checked', false);
+        $('#pointSwitch').prop('checked', false);
         $('#requestedUsedPoints').closest('.mb-2').hide();
+        useShipping = false;
+        usePoint = false;
+        shippingFee = 0;
+        discountValue = 0;
+        $('#shippingFormCard').hide();
+        $('#btnShowAddress').hide();
+        $('#btnAddAddress').hide();
+        $('#requestedUsedPoints').val(0).closest('.mb-2').hide();
+        $('#pointDiscountLabel').text("- 0 VND");
+        $('#totalPointDiscount').text("- 0 VND");
+        $('#discountCode').val('');
         // Thử khôi phục giỏ hàng từ localStorage trước
         if (!restoreGioHangsFromStorage()) {
             taoGioHang();
