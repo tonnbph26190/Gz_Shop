@@ -15,11 +15,12 @@ namespace QuanApi.Services
         {
             ["Chờ xác nhận"] = new List<string> { "Đã xác nhận", "Đã hủy" },
             ["Đã xác nhận"] = new List<string> { "Chờ lấy hàng", "Đã hủy" },
-            ["Chờ lấy hàng"] = new List<string> { "Đã lấy hàng", "Đã hủy" },
-            ["Đã lấy hàng"] = new List<string> { "Chờ giao hàng", "Đã hủy" },
-            ["Chờ giao hàng"] = new List<string> { "Đang giao hàng", "Đã hủy" },
+            ["Chờ lấy hàng"] = new List<string> { "Đang giao", "Đã hủy" },
+            ["Đang giao"] = new List<string> { "Đã giao", "Đã hủy" },
+            ["Đã giao"] = new List<string> { "Đã hủy" },
+            ["Đã lấy hàng"] = new List<string> { "Đang giao", "Đã hủy" },
+            ["Chờ giao hàng"] = new List<string> { "Đang giao", "Đã hủy" },
             ["Đang giao hàng"] = new List<string> { "Đã giao", "Đã hủy" },
-            ["Đã giao"] = new List<string> { "Giao hàng thành công", "Đã hủy" },
             ["Giao hàng thành công"] = new List<string>(), // Không thể chuyển sang trạng thái khác
             ["Đã hủy"] = new List<string>() // Không thể chuyển sang trạng thái khác
         };
@@ -29,10 +30,11 @@ namespace QuanApi.Services
         {
             ["Đã xác nhận"] = new List<string> { "Chờ xác nhận" },
             ["Chờ lấy hàng"] = new List<string> { "Đã xác nhận" },
+            ["Đang giao"] = new List<string> { "Chờ lấy hàng" },
+            ["Đã giao"] = new List<string> { "Đang giao" },
             ["Đã lấy hàng"] = new List<string> { "Chờ lấy hàng" },
             ["Chờ giao hàng"] = new List<string> { "Đã lấy hàng" },
             ["Đang giao hàng"] = new List<string> { "Chờ giao hàng" },
-            ["Đã giao"] = new List<string> { "Đang giao hàng" },
             ["Giao hàng thành công"] = new List<string> { "Đã giao" },
             ["Đã hủy"] = new List<string>() // Không cho phép rollback từ trạng thái đã hủy
         };
@@ -54,7 +56,7 @@ namespace QuanApi.Services
                 var order = await _context.HoaDons.FindAsync(orderId);
                 if (order == null) return false;
 
-                return _rollbackFlow.ContainsKey(order.TrangThai) && 
+                return _rollbackFlow.ContainsKey(order.TrangThai) &&
                        _rollbackFlow[order.TrangThai].Contains(targetStatus);
             }
             catch (Exception ex)
@@ -69,8 +71,8 @@ namespace QuanApi.Services
             try
             {
                 // Lấy danh sách trạng thái có thể rollback theo luồng
-                return _rollbackFlow.ContainsKey(currentStatus) 
-                    ? _rollbackFlow[currentStatus] 
+                return _rollbackFlow.ContainsKey(currentStatus)
+                    ? _rollbackFlow[currentStatus]
                     : new List<string>();
             }
             catch (Exception ex)

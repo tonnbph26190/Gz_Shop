@@ -486,13 +486,13 @@ namespace QuanView.Areas.Admin.Controllers
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
                         "Đã xác nhận" => "Chờ lấy hàng",
-                        "Chờ lấy hàng" => "Đã lấy hàng",
-                        _ => "Đã lấy hàng"
+                        "Chờ lấy hàng" => "Chờ lấy hàng",
+                        _ => "Chờ lấy hàng"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đã lấy hàng");
+            return await CapNhatTrangThai(id, "Chờ lấy hàng");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanGiaoHang/{id}
@@ -508,14 +508,17 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
-                        "Đã lấy hàng" => "Chờ giao hàng",
-                        "Chờ giao hàng" => "Đang giao hàng",
-                        _ => "Đang giao hàng"
+                        "Chờ lấy hàng" => "Đang giao",
+                        "Đang giao" => "Đang giao",
+                        "Đã lấy hàng" => "Đang giao",
+                        "Chờ giao hàng" => "Đang giao",
+                        "Đang giao hàng" => "Đang giao",
+                        _ => "Đang giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đang giao hàng");
+            return await CapNhatTrangThai(id, "Đang giao");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanDaGiaoHang/{id}
@@ -531,14 +534,15 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
+                        "Đang giao" => "Đã giao",
                         "Đang giao hàng" => "Đã giao",
-                        "Đã giao" => "Giao hàng thành công",
-                        _ => "Giao hàng thành công"
+                        "Đã giao" => "Đã giao",
+                        _ => "Đã giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Giao hàng thành công");
+            return await CapNhatTrangThai(id, "Đã giao");
         }
 
         // POST: Admin/QuanLyDonHang/HuyDonHang/{id}
@@ -699,9 +703,10 @@ namespace QuanView.Areas.Admin.Controllers
                     "Đã xác nhận" => "Chờ xác nhận",
                     "Chờ lấy hàng" => "Đã xác nhận",
                     "Đã lấy hàng" => "Chờ lấy hàng",
-                    "Chờ giao hàng" => "Đã lấy hàng",
-                    "Đang giao hàng" => "Chờ giao hàng",
-                    "Đã giao" => "Đang giao hàng",
+                    "Chờ giao hàng" => "Chờ lấy hàng",
+                    "Đang giao" => "Chờ lấy hàng",
+                    "Đang giao hàng" => "Chờ lấy hàng",
+                    "Đã giao" => "Đang giao",
                     "Giao hàng thành công" => "Đã giao",
                     _ => ""
                 };

@@ -42,7 +42,7 @@ namespace QuanApi.Services
                 var body = GenerateStatusChangeEmailBody(fullOrder, oldStatus, newStatus);
 
                 await SendEmailAsync(fullOrder.KhachHang.Email, subject, body);
-                
+
                 _logger.LogInformation($"Đã gửi email thông báo thay đổi trạng thái từ '{oldStatus}' sang '{newStatus}' cho đơn hàng {hoaDon.MaHoaDon}");
             }
             catch (Exception ex)
@@ -68,7 +68,7 @@ namespace QuanApi.Services
                 var body = GenerateCancellationEmailBody(fullOrder, reason);
 
                 await SendEmailAsync(fullOrder.KhachHang.Email, subject, body);
-                
+
                 _logger.LogInformation($"Đã gửi email thông báo hủy đơn hàng {hoaDon.MaHoaDon}");
             }
             catch (Exception ex)
@@ -128,6 +128,8 @@ namespace QuanApi.Services
             {
                 "Đã xác nhận" => $"Đơn hàng #{orderCode} đã được xác nhận",
                 "Đang chuẩn bị" => $"Đơn hàng #{orderCode} đang được chuẩn bị",
+                "Đang giao" => $"Đơn hàng #{orderCode} đang được giao",
+                "Đã giao" => $"Đơn hàng #{orderCode} đã được giao thành công",
                 "Đang giao hàng" => $"Đơn hàng #{orderCode} đang được giao",
                 "Đã giao hàng" => $"Đơn hàng #{orderCode} đã được giao thành công",
                 "Đã hủy" => $"Đơn hàng #{orderCode} đã bị hủy",
@@ -141,17 +143,17 @@ namespace QuanApi.Services
             sb.AppendLine("<!DOCTYPE html>");
             sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
             sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
-            
+
             // Header
             sb.AppendLine("<div style='background-color: #007bff; color: white; padding: 20px; text-align: center;'>");
             sb.AppendLine("<h1>Cập nhật trạng thái đơn hàng</h1>");
             sb.AppendLine("</div>");
-            
+
             // Content
             sb.AppendLine("<div style='padding: 20px;'>");
             sb.AppendLine($"<p>Xin chào <strong>{hoaDon.KhachHang?.TenKhachHang ?? hoaDon.TenNguoiNhan}</strong>,</p>");
             sb.AppendLine($"<p>Đơn hàng <strong>#{hoaDon.MaHoaDon}</strong> của bạn đã được cập nhật trạng thái:</p>");
-            
+
             // Status change
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
             sb.AppendLine($"<p><strong>Trạng thái cũ:</strong> <span style='color: #6c757d;'>{oldStatus}</span></p>");
@@ -187,15 +189,15 @@ namespace QuanApi.Services
 
             sb.AppendLine("<p>Cảm ơn bạn đã mua sắm tại cửa hàng của chúng tôi!</p>");
             sb.AppendLine("</div>");
-            
+
             // Footer
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; text-align: center; color: #6c757d;'>");
             sb.AppendLine("<p>Đây là email tự động, vui lòng không trả lời email này.</p>");
             sb.AppendLine("<p>Nếu có thắc mắc, vui lòng liên hệ: support@example.com | 0123-456-789</p>");
             sb.AppendLine("</div>");
-            
+
             sb.AppendLine("</div></body></html>");
-            
+
             return sb.ToString();
         }
 
@@ -205,17 +207,17 @@ namespace QuanApi.Services
             sb.AppendLine("<!DOCTYPE html>");
             sb.AppendLine("<html><head><meta charset='UTF-8'></head><body>");
             sb.AppendLine("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>");
-            
+
             // Header
             sb.AppendLine("<div style='background-color: #dc3545; color: white; padding: 20px; text-align: center;'>");
             sb.AppendLine("<h1>Thông báo hủy đơn hàng</h1>");
             sb.AppendLine("</div>");
-            
+
             // Content
             sb.AppendLine("<div style='padding: 20px;'>");
             sb.AppendLine($"<p>Xin chào <strong>{hoaDon.KhachHang?.TenKhachHang ?? hoaDon.TenNguoiNhan}</strong>,</p>");
             sb.AppendLine($"<p>Chúng tôi rất tiếc phải thông báo rằng đơn hàng <strong>#{hoaDon.MaHoaDon}</strong> của bạn đã bị hủy.</p>");
-            
+
             if (!string.IsNullOrEmpty(reason))
             {
                 sb.AppendLine("<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;'>");
@@ -225,18 +227,18 @@ namespace QuanApi.Services
 
             sb.AppendLine($"<p><strong>Thời gian hủy:</strong> {DateTime.UtcNow:dd/MM/yyyy HH:mm}</p>");
             sb.AppendLine($"<p><strong>Tổng tiền đơn hàng:</strong> {hoaDon.TongTien:N0} VNĐ</p>");
-            
+
             sb.AppendLine("<p>Nếu bạn đã thanh toán, chúng tôi sẽ hoàn tiền trong vòng 3-7 ngày làm việc.</p>");
             sb.AppendLine("<p>Chúng tôi xin lỗi vì sự bất tiện này và hy vọng được phục vụ bạn trong tương lai.</p>");
             sb.AppendLine("</div>");
-            
+
             // Footer
             sb.AppendLine("<div style='background-color: #f8f9fa; padding: 15px; text-align: center; color: #6c757d;'>");
             sb.AppendLine("<p>Nếu có thắc mắc, vui lòng liên hệ: support@example.com | 0123-456-789</p>");
             sb.AppendLine("</div>");
-            
+
             sb.AppendLine("</div></body></html>");
-            
+
             return sb.ToString();
         }
 
@@ -246,6 +248,8 @@ namespace QuanApi.Services
             {
                 "Đã xác nhận" => "<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng của bạn đã được xác nhận!</strong> Chúng tôi sẽ chuẩn bị và giao hàng sớm nhất có thể.</p></div>",
                 "Đang chuẩn bị" => "<div style='background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đang được chuẩn bị!</strong> Chúng tôi sẽ thông báo khi đơn hàng được giao cho đơn vị vận chuyển.</p></div>",
+                "Đang giao" => "<div style='background-color: #cce5ff; border: 1px solid #99d6ff; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đang trên đường giao đến bạn!</strong> Vui lòng chú ý điện thoại để nhận hàng.</p></div>",
+                "Đã giao" => "<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đã được giao thành công!</strong> Cảm ơn bạn đã mua sắm tại cửa hàng chúng tôi.</p></div>",
                 "Đang giao hàng" => "<div style='background-color: #cce5ff; border: 1px solid #99d6ff; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đang trên đường giao đến bạn!</strong> Vui lòng chú ý điện thoại để nhận hàng.</p></div>",
                 "Đã giao hàng" => "<div style='background-color: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin: 15px 0;'><p><strong>Đơn hàng đã được giao thành công!</strong> Cảm ơn bạn đã mua sắm tại cửa hàng chúng tôi.</p></div>",
                 _ => ""

@@ -1,54 +1,42 @@
-@model QuanApi.Data.HoaDon
+﻿@model QuanApi.Data.HoaDon
 @using QuanView.Areas.Admin.Models
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
-    // Danh sách trạng thái theo quy trình mới - chỉ có các trạng thái "chờ"
+    // Danh sách trạng thái rút gọn theo quy trình mới
     var statuses = new List<OrderStatus>
     {
         new OrderStatus { Name = "Chờ xác nhận", Icon = "fas fa-clock", Time = Model.NgayTao },
+        new OrderStatus { Name = "Đã xác nhận", Icon = "fas fa-check-circle", Time = null },
         new OrderStatus { Name = "Chờ lấy hàng", Icon = "fas fa-box", Time = null },
-        new OrderStatus { Name = "Chờ giao hàng", Icon = "fas fa-shipping-fast", Time = null },
-        new OrderStatus { Name = "Chờ hoàn thành", Icon = "fas fa-check-circle", Time = null }
+        new OrderStatus { Name = "Đang giao", Icon = "fas fa-shipping-fast", Time = null },
+        new OrderStatus { Name = "Đã giao", Icon = "fas fa-clipboard-check", Time = null }
     };
 
     // Xác định trạng thái hiện tại và các trạng thái đã hoàn thành
-    var orderCurrentStatus = Model.TrangThai;
-    var completedStatuses = new List<string>();
-
-    // Logic xác định các trạng thái đã hoàn thành dựa trên trạng thái hiện tại
-    switch (orderCurrentStatus)
+    var orderCurrentStatus = Model.TrangThai ?? string.Empty;
+    var normalizedStatus = orderCurrentStatus switch
     {
-        case "Chờ xác nhận":
-            completedStatuses = new List<string> { "Chờ xác nhận" };
-            break;
-        case "Đã xác nhận":
-            completedStatuses = new List<string> { "Chờ xác nhận" };
-            break;
-        case "Chờ lấy hàng":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng" };
-            break;
-        case "Đã lấy hàng":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng" };
-            break;
-        case "Chờ giao hàng":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
-            break;
-        case "Đang giao hàng":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
-            break;
-        case "Đã giao":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng" };
-            break;
-        case "Giao hàng thành công":
-            completedStatuses = new List<string> { "Chờ xác nhận", "Chờ lấy hàng", "Chờ giao hàng", "Chờ hoàn thành" };
-            break;
-        default:
-            completedStatuses = new List<string> { "Chờ xác nhận" };
-            break;
+        "Đã lấy hàng" => "Đang giao",
+        "Chờ giao hàng" => "Đang giao",
+        "Đang giao hàng" => "Đang giao",
+        "Giao hàng thành công" => "Đã giao",
+        _ => orderCurrentStatus
+    };
+
+    var statusOrder = new List<string> { "Chờ xác nhận", "Đã xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao" };
+    var completedStatuses = new List<string>();
+    var currentStatusIndex = statusOrder.IndexOf(normalizedStatus);
+    if (currentStatusIndex >= 0)
+    {
+        completedStatuses = statusOrder.Take(currentStatusIndex + 1).ToList();
+    }
+    else
+    {
+        completedStatuses = new List<string> { "Chờ xác nhận" };
     }
 
     // Xác định trạng thái hiện tại và button tiếp theo
-    var currentStatus = Model.TrangThai;
+    var currentStatus = normalizedStatus;
     string nextAction = "";
     string nextActionText = "";
 
@@ -63,26 +51,14 @@
             nextActionText = "Xác nhận lấy hàng";
             break;
         case "Chờ lấy hàng":
-            nextAction = "XacNhanLayHang";
-            nextActionText = "Xác nhận lấy hàng";
-            break;
-        case "Đã lấy hàng":
             nextAction = "XacNhanGiaoHang";
             nextActionText = "Xác nhận giao hàng";
             break;
-        case "Chờ giao hàng":
-            nextAction = "XacNhanGiaoHang";
-            nextActionText = "Xác nhận giao hàng";
-            break;
-        case "Đang giao hàng":
+        case "Đang giao":
             nextAction = "XacNhanDaGiaoHang";
             nextActionText = "Xác nhận đã giao hàng";
             break;
         case "Đã giao":
-            nextAction = "XacNhanDaGiaoHang";
-            nextActionText = "Xác nhận đã giao hàng";
-            break;
-        case "Giao hàng thành công":
             nextAction = "";
             nextActionText = "";
             break;
@@ -106,24 +82,12 @@
             rollbackText = "Quay về đã xác nhận";
             canRollback = true;
             break;
-        case "Đã lấy hàng":
+        case "Đang giao":
             rollbackText = "Quay về chờ lấy hàng";
             canRollback = true;
             break;
-        case "Chờ giao hàng":
-            rollbackText = "Quay về đã lấy hàng";
-            canRollback = true;
-            break;
-        case "Đang giao hàng":
-            rollbackText = "Quay về chờ giao hàng";
-            canRollback = true;
-            break;
         case "Đã giao":
-            rollbackText = "Quay về đang giao hàng";
-            canRollback = true;
-            break;
-        case "Giao hàng thành công":
-            rollbackText = "Quay về đã giao";
+            rollbackText = "Quay về đang giao";
             canRollback = true;
             break;
     }
@@ -131,7 +95,8 @@
     var isBankTransferOrder = (Model.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty)
         .Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
     var canShowRefundButton = !Model.BanTaiQuay && currentStatus == "Đã hủy" && isBankTransferOrder;
-    var orderCompleted = currentStatus == "Giao hàng thành công" || currentStatus == "Đã hoàn tiền";
+    // currentStatus đã normalize "Giao hàng thành công" → "Đã giao"
+    var orderCompleted = currentStatus == "Đã giao" || currentStatus == "Đã hoàn tiền";
     // Chỉ dùng giá trị đã lưu trên hóa đơn (không suy từ cấu hình / bảng khác)
     var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
     // Tạm tính = tiền hàng gốc (tổng thành tiền dòng); Tổng cộng = TongTien sau mọi cộng/trừ (voucher, điểm, ship…)
@@ -336,25 +301,8 @@
                         {
                             var status = statuses[i];
                             var isCompleted = completedStatuses.Contains(status.Name);
-                            var isCurrent = status.Name == orderCurrentStatus ||
-                            (status.Name == "Chờ xác nhận" && orderCurrentStatus == "Đã xác nhận") ||
-                            (status.Name == "Chờ lấy hàng" && orderCurrentStatus == "Đã lấy hàng") ||
-                            (status.Name == "Chờ giao hàng" && (orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao")) ||
-                            (status.Name == "Chờ hoàn thành" && orderCurrentStatus == "Giao hàng thành công");
-
-                            // Xác định tên hiển thị dựa trên trạng thái thực tế
-                            string displayName = status.Name;
-                            if (isCompleted)
-                            {
-                                displayName = status.Name switch
-                                {
-                                    "Chờ xác nhận" when orderCurrentStatus != "Chờ xác nhận" => "Đã xác nhận",
-                                    "Chờ lấy hàng" when orderCurrentStatus != "Chờ lấy hàng" && orderCurrentStatus != "Chờ xác nhận" => "Đã lấy hàng",
-                                    "Chờ giao hàng" when orderCurrentStatus == "Đang giao hàng" || orderCurrentStatus == "Đã giao" || orderCurrentStatus == "Giao hàng thành công" => "Đang giao hàng",
-                                    "Chờ hoàn thành" when orderCurrentStatus == "Giao hàng thành công" => "Giao hàng thành công",
-                                    _ => status.Name
-                                };
-                            }
+                            var isCurrent = status.Name == currentStatus;
+                            var displayName = status.Name;
 
                             <div class="timeline-item">
                                 <div class="timeline-icon @(isCompleted ? "completed" : "")">
@@ -409,7 +357,7 @@
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Trạng thái:</span>
-                                <span class="status-badge">@Model.TrangThai</span>
+                                <span class="status-badge">@currentStatus</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Loại đơn:</span>
@@ -466,8 +414,12 @@
                                     }
                                     var hasStockSnapshot = stockSnapshot != null;
                                     var soLuongTonHienTai = hasStockSnapshot ? stockSnapshot.SoLuongTonHienTai : (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
-                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : soLuongTonHienTai;
-                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : soLuongTonHienTai;
+                                    var daTruKho = currentStatus == "Đã xác nhận"
+                                        || currentStatus == "Chờ lấy hàng"
+                                        || currentStatus == "Đang giao"
+                                        || currentStatus == "Đã giao";
+                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
 
                                     <tr>
                                         <td>
