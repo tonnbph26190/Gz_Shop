@@ -171,9 +171,14 @@ namespace QuanView.Areas.Admin.Controllers
             {
 				var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-				trangThai ??= "Chờ xác nhận";
-				tuNgay ??= today;
-				denNgay ??= today;
+				trangThai = string.IsNullOrEmpty(trangThai) ? "Chờ xác nhận" : trangThai;
+
+				// 👉 FIX CHÍNH Ở ĐÂY
+				if (string.IsNullOrEmpty(tuNgay) || string.IsNullOrEmpty(denNgay))
+				{
+					tuNgay = null;
+					denNgay = null;
+				}
 				loaiDonHang ??= "Tất cả";
 				sapXep ??= "desc"; // mặc định mới nhất
 								   // Xây dựng URL với các tham số phân trang và lọc

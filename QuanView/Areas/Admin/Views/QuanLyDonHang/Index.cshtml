@@ -225,20 +225,20 @@
                                 <option value="Chờ lấy hàng"
                                         selected="@(qTrangThai == "Chờ lấy hàng" ? "selected" : null)">Chờ lấy hàng
                                 </option>
-                                <option value="Đã lấy hàng"
+                               @*  <option value="Đã lấy hàng"
                                         selected="@(qTrangThai == "Đã lấy hàng" ? "selected" : null)">Đã lấy hàng
-                                </option>
-                                <option value="Chờ giao hàng"
+                                </option> *@
+                               @*  <option value="Chờ giao hàng"
                                         selected="@(qTrangThai == "Chờ giao hàng" ? "selected" : null)">Chờ giao hàng
-                                </option>
+                                </option> *@
                                 <option value="Đang giao hàng"
                                         selected="@(qTrangThai == "Đang giao hàng" ? "selected" : null)">Đang giao
                                     hàng</option>
                                     <option value="Đã giao" selected="@(qTrangThai == "Đã giao" ? "selected" : null)">Đã
                                         giao</option>
-                                        <option value="Giao hàng thành công"
+                                       @*  <option value="Giao hàng thành công"
                                                 selected="@(qTrangThai == "Giao hàng thành công" ? "selected" : null)">
-                                            Giao hàng thành công</option>
+                                            Giao hàng thành công</option> *@
                                             <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy" ? "selected" : null)">Đã hủy
                                             </option>
                                             <option value="Đã hoàn tiền"
@@ -247,6 +247,19 @@
                                         </select>
                                     </div>
                                 </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Theo ngày:</label>
+                            <select class="form-control" id="quickDate" name="quickDate">
+                               
+                                <option value="today">Hôm nay</option>
+                                <option value="1">1 ngày trước</option>
+                                <option value="7">7 ngày trước</option>
+                                <option value="28">28 ngày trước</option>
+                                <option value="">Tất cả</option>
+                            </select>
+                        </div>
+                    </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tuNgay">Từ ngày:</label>
@@ -256,8 +269,8 @@
 
                                 var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                                if (string.IsNullOrEmpty(qTuNgay)) qTuNgay = today;
-                                if (string.IsNullOrEmpty(qDenNgay)) qDenNgay = today;
+                                if (string.IsNullOrEmpty(qTuNgay)) qTuNgay = "";
+                                if (string.IsNullOrEmpty(qDenNgay)) qDenNgay = "";
                             }
                             <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@qTuNgay">
                                     </div>
@@ -537,6 +550,71 @@
                         </div>
 
                         <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const quickDate = document.getElementById('quickDate');
+            const tuNgay = document.getElementById('tuNgay');
+            const denNgay = document.getElementById('denNgay');
+            const form = document.getElementById('filterForm');
+
+            const urlParams = new URLSearchParams(window.location.search);
+
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
+
+            function setDateRange(value) {
+                let today = new Date();
+                let fromDate = new Date();
+
+                if (value === "today") {
+                    fromDate = today;
+                } else {
+                    fromDate.setDate(today.getDate() - parseInt(value));
+                }
+
+                tuNgay.value = formatDate(fromDate);
+                denNgay.value = formatDate(today);
+            }
+
+            // ✅ GIỮ LẠI QUICK DATE SAU RELOAD
+            const selectedQuick = urlParams.get('quickDate');
+            if (selectedQuick !== null) {
+                quickDate.value = selectedQuick;
+            }
+
+            // ✅ CHỈ SET DEFAULT KHI CHƯA CÓ GÌ
+            if (!urlParams.get('tuNgay') && !urlParams.get('denNgay') && selectedQuick === null) {
+                setDateRange('today');
+                quickDate.value = 'today';
+            }
+
+            // ✅ XỬ LÝ CHANGE
+            quickDate.addEventListener('change', function () {
+
+                if (this.value === "") {
+                    // 👉 TẤT CẢ → clear ngày
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                } else {
+                    setDateRange(this.value);
+                }
+
+                form.submit();
+            });
+
+            // ✅ PAGE SIZE
+            const elPageSize = document.getElementById('pageSize');
+            if (elPageSize) {
+                elPageSize.addEventListener('change', function () {
+                    var currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('pageSize', this.value);
+                    currentUrl.searchParams.set('page', '1');
+                    window.location.href = currentUrl.toString();
+                });
+            }
+
+        });
                                 // Giữ lại giá trị đã chọn trong dropdown (dùng JavaScript thuần, không cần jQuery)
                                 document.addEventListener('DOMContentLoaded', function () {
                                     var urlParams = new URLSearchParams(window.location.search);
