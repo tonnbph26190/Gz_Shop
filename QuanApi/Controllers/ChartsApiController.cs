@@ -12,7 +12,7 @@ public class ChartsApiController : ControllerBase
     private readonly BanQuanAu1DbContext _context;
 
     /// <summary>Trạng thái đơn hàng được coi là đã thanh toán / hoàn thành (dùng thống kê doanh thu).</summary>
-    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Giao hàng thành công" };
+    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Đã giao", "Đã giao hàng", "Giao hàng thành công" };
 
     public ChartsApiController(BanQuanAu1DbContext context)
     {

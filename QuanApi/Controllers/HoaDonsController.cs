@@ -312,10 +312,11 @@ namespace QuanApi.Controllers
 										SoLuongTonDuKienSauHuy =
 											h.TrangThai == "Đã xác nhận" ||
 											h.TrangThai == "Chờ lấy hàng" ||
+											h.TrangThai == "Đang giao" ||
+											h.TrangThai == "Đã giao" ||
 											h.TrangThai == "Đã lấy hàng" ||
 											h.TrangThai == "Chờ giao hàng" ||
 											h.TrangThai == "Đang giao hàng" ||
-											h.TrangThai == "Đã giao" ||
 											h.TrangThai == "Giao hàng thành công"
 												? ct.SanPhamChiTiet.SoLuong + ct.SoLuong
 												: ct.SanPhamChiTiet.SoLuong,
@@ -511,10 +512,11 @@ namespace QuanApi.Controllers
 				{
 					"Đã xác nhận",
 					"Chờ lấy hàng",
+					"Đang giao",
+					"Đã giao",
 					"Đã lấy hàng",
 					"Chờ giao hàng",
 					"Đang giao hàng",
-					"Đã giao",
 					"Giao hàng thành công"
 				};
 
