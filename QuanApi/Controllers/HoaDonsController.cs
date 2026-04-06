@@ -779,19 +779,17 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
+				page = page < 1 ? 1 : page;
+				pageSize = pageSize < 1 ? 10 : pageSize;
+
 				if (string.IsNullOrEmpty(search))
 				{
 					return BadRequest("Mã đơn hàng là bắt buộc để tìm đơn hàng");
 				}
 
+				// Chỉ lấy các cột cần cho màn hình danh sách đơn hàng để giảm kích thước response
 				var query = _context.HoaDons
-					.Include(h => h.KhachHang)
-					.Include(h => h.NhanVien)
-					.Include(h => h.PhieuGiamGia)
-					.Include(h => h.PhuongThucThanhToan)
-					.Include(h => h.ChiTietHoaDons)
-						.ThenInclude(ct => ct.SanPhamChiTiet)
-							.ThenInclude(spct => spct.SanPham)
+					.AsNoTracking()
 					.Where(h => h.TrangThaiHoaDon);
 
 				query = query.Where(h => h.MaHoaDon.Contains(search));
@@ -799,10 +797,23 @@ namespace QuanApi.Controllers
 				query = query.OrderByDescending(h => h.NgayTao);
 
 				var totalCount = await query.CountAsync();
-				var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+				var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+				if (totalPages > 0 && page > totalPages)
+				{
+					page = totalPages;
+				}
 				var hoaDons = await query
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
+					.Select(h => new HoaDon
+					{
+						IDHoaDon = h.IDHoaDon,
+						MaHoaDon = h.MaHoaDon,
+						TongTien = h.TongTien,
+						TrangThai = h.TrangThai,
+						DiaChiGiaoHang = h.DiaChiGiaoHang,
+						NgayTao = h.NgayTao
+					})
 					.ToListAsync();
 
 				Response.Headers.Append("X-Total-Count", totalCount.ToString());
@@ -827,14 +838,12 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
+				page = page < 1 ? 1 : page;
+				pageSize = pageSize < 1 ? 10 : pageSize;
+
+				// Trả dữ liệu rút gọn để tránh response quá nặng dẫn đến stream bị ngắt giữa chừng
 				var query = _context.HoaDons
-					.Include(h => h.KhachHang)
-					.Include(h => h.NhanVien)
-					.Include(h => h.PhieuGiamGia)
-					.Include(h => h.PhuongThucThanhToan)
-					.Include(h => h.ChiTietHoaDons)
-						.ThenInclude(ct => ct.SanPhamChiTiet)
-							.ThenInclude(spct => spct.SanPham)
+					.AsNoTracking()
 					.Where(h => h.IDKhachHang == customerId && h.TrangThaiHoaDon)
 					.AsQueryable();
 
@@ -857,12 +866,25 @@ namespace QuanApi.Controllers
 				}
 
 				var totalCount = await query.CountAsync();
-				var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+				var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / pageSize);
+				if (totalPages > 0 && page > totalPages)
+				{
+					page = totalPages;
+				}
 
 				var hoaDons = await query
 					.OrderByDescending(h => h.NgayTao)
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
+					.Select(h => new HoaDon
+					{
+						IDHoaDon = h.IDHoaDon,
+						MaHoaDon = h.MaHoaDon,
+						TongTien = h.TongTien,
+						TrangThai = h.TrangThai,
+						DiaChiGiaoHang = h.DiaChiGiaoHang,
+						NgayTao = h.NgayTao
+					})
 					.ToListAsync();
 
 				Response.Headers.Append("X-Total-Count", totalCount.ToString());

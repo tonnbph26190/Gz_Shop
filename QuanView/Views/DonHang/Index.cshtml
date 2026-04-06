@@ -148,6 +148,11 @@
         <i class="bi bi-bag-check text-muted h3 m-0"></i>
     </div>
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-warning" role="alert">@TempData["ErrorMessage"]</div>
+    }
+
     <div class="filter-card">
         @if (isAuthenticated)
         {
@@ -291,20 +296,54 @@
         </div>
     </div>
 
-    @if (pagination != null && pagination.TotalPages > 1)
+    @if (pagination != null && pagination.TotalCount > 0)
     {
+        int currentPage = (int)pagination.CurrentPage;
+        int totalPages = Math.Max(1, (int)pagination.TotalPages);
+        if (currentPage < 1)
+        {
+            currentPage = 1;
+        }
+        if (currentPage > totalPages)
+        {
+            currentPage = totalPages;
+        }
+        int prevPage = currentPage > 1 ? currentPage - 1 : 1;
+        int nextPage = currentPage < totalPages ? currentPage + 1 : totalPages;
         <div class="d-flex justify-content-between align-items-center mt-4 px-2">
             <div class="small text-muted">
                 Showing @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1)-@Math.Min(pagination.CurrentPage * pagination.PageSize, pagination.TotalCount) of @pagination.TotalCount
             </div>
             <nav>
                 <ul class="pagination pagination-sm mb-0">
-                    @for (int i = 1; i <= pagination.TotalPages; i++)
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, fromDate, toDate })" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, fromDate, toDate })" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    @for (int i = 1; i <= totalPages; i++)
                     {
-                        <li class="page-item @(i == pagination.CurrentPage ? "active" : "")">
+                        <li class="page-item @(i == currentPage ? "active" : "")">
                             <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, fromDate, toDate })">@i</a>
                         </li>
                     }
+
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, fromDate, toDate })" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, fromDate, toDate })" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
