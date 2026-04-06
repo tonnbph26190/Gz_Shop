@@ -602,21 +602,27 @@
 	<script type="text/javascript">
 		/*
 			PSEUDOCODE / DETAILED PLAN (placed here as requested):
-			- Goal: Remove navigation links from dropdown product items so clicking them does NOT navigate away.
+			- Goal: Remove anchor wrappers for dropdown items but still allow clicking a product to open its update page.
 			- Approach:
-			  1. For all three dropdown loaders (low stock, out of stock, sold products):
-			     - Stop rendering anchor (`<a href="...">`) wrappers.
-			     - Render bare `.item` elements (divs) and, if needed, attach a `data-id` attribute for future JS handling.
-			     - Ensure visual structure remains identical: two spans inside each `.item` (name on left, badge on right).
-			  2. Keep HTML escaping and number formatting functions intact for safety.
-			  3. Maintain existing error / empty states.
-			  4. No server-side API changes required.
-			  5. Optional: Consumers can bind click handlers to `.item[data-id]` later without causing page navigation.
+			  1. Render dropdown items as plain div.item elements with a `data-id` attribute (already implemented).
+			  2. Introduce a configurable base URL `productEditBase` that will be prefixed to the product id to form the update URL.
+				 - Example: '/Admin/SanPham/Edit/' + id  -> '/Admin/SanPham/Edit/123'
+				 - Maintainers can change `productEditBase` if routing differs (e.g. '/Admin/SanPham/CapNhat/').
+			  3. Attach a delegated click handler to capture clicks on any `.item` inside `#sapHetHangList`, `#hetHangList`, `#daBanList`.
+				 - On click: read `data-id`; if present, navigate to `productEditBase + encodeURIComponent(id)`.
+				 - This keeps markup anchor-free but restores navigation behavior.
+			  4. Keep existing helpers and render logic intact (number formatting, escaping).
+			  5. Ensure click handler executes regardless of when items are injected (use event delegation on `document`).
+			  6. Do not open new tabs; navigate in same window. Consumers can modify to use `_blank` if desired.
 		*/
 
 		$(document).ready(function () {
 			// API base - define once so all internal functions can access it
 			var api = '/api/ChartsApi';
+
+			// Configurable base for product edit/update route.
+			// Change this to match your application's route if different.
+			var productEditBase = '/Admin/SanPham/Edit/';
 
 			// Formatting helpers (available to all functions inside this ready block)
 			function fmtVnd(n) { return (n || 0).toLocaleString('vi-VN') + ' đ'; }
@@ -627,6 +633,15 @@
 					return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' }[ch];
 				});
 			}
+
+			// Delegated click handler: navigate to product update/edit page when a dropdown item is clicked
+			$(document).on('click', '#sapHetHangList .item, #hetHangList .item, #daBanList .item', function (e) {
+				var id = $(this).attr('data-id') || $(this).data('id');
+				if (!id) return;
+				// Build URL and navigate
+				var url = productEditBase + encodeURIComponent(id);
+				window.location.href = url;
+			});
 
 			// KPI setters
 			function setKpisFromSummary(data) {

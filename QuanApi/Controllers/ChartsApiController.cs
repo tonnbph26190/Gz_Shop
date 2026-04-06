@@ -499,6 +499,7 @@ public class ChartsApiController : ControllerBase
 				.Where(g => g.Sum(ct => (int?)ct.SoLuong) == 0)
 				.Select(g => new
 				{
+					Id = g.Key, // ✅ THÊM DÒNG NÀY
 					TenSanPham = g.First().SanPham.TenSanPham,
 					SoLuong = 0
 				})
@@ -523,6 +524,7 @@ public class ChartsApiController : ControllerBase
 						 && g.Sum(x => (int?)x.SoLuong) <= 10)
 				.Select(g => new
 				{
+					Id = g.Key, // ✅ QUAN TRỌNG
 					TenSanPham = g.First().SanPham.TenSanPham,
 					SoLuong = g.Sum(x => (int?)x.SoLuong) ?? 0
 				})
@@ -535,7 +537,6 @@ public class ChartsApiController : ControllerBase
 			return StatusCode(500, ex.Message);
 		}
 	}
-
 	[HttpGet("summary-stats")]
     public async Task<IActionResult> GetSummaryStats()
     {
