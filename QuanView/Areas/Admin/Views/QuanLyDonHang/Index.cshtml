@@ -209,10 +209,17 @@
                             <label for="trangThai">Trạng thái:</label>
                             @{
                                 var qTrangThai = Context.Request.Query["trangThai"].ToString();
+
+                                var isReset = Context.Request.Query["reset"].ToString();
+
+                                if (string.IsNullOrEmpty(qTrangThai) && string.IsNullOrEmpty(isReset))
+                                {
+                                    qTrangThai = "Chờ xác nhận";
+                                }
                             }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="" selected="@(string.IsNullOrEmpty(qTrangThai) ? "selected" : null)">Tất
-                                    cả trạng thái
+                                <option value="all">
+                                    Tất cả trạng thái
                                 </option>
                                 <option value="Chờ xác nhận"
                                         selected="@(qTrangThai == "Chờ xác nhận" ? "selected" : null)">Chờ xác nhận
@@ -223,20 +230,20 @@
                                 <option value="Chờ lấy hàng"
                                         selected="@(qTrangThai == "Chờ lấy hàng" ? "selected" : null)">Chờ lấy hàng
                                 </option>
-                                <option value="Đã lấy hàng"
+                               @*  <option value="Đã lấy hàng"
                                         selected="@(qTrangThai == "Đã lấy hàng" ? "selected" : null)">Đã lấy hàng
-                                </option>
-                                <option value="Chờ giao hàng"
+                                </option> *@
+                               @*  <option value="Chờ giao hàng"
                                         selected="@(qTrangThai == "Chờ giao hàng" ? "selected" : null)">Chờ giao hàng
-                                </option>
+                                </option> *@
                                 <option value="Đang giao hàng"
                                         selected="@(qTrangThai == "Đang giao hàng" ? "selected" : null)">Đang giao
                                     hàng</option>
                                     <option value="Đã giao" selected="@(qTrangThai == "Đã giao" ? "selected" : null)">Đã
                                         giao</option>
-                                        <option value="Giao hàng thành công"
+                                       @*  <option value="Giao hàng thành công"
                                                 selected="@(qTrangThai == "Giao hàng thành công" ? "selected" : null)">
-                                            Giao hàng thành công</option>
+                                            Giao hàng thành công</option> *@
                                             <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy" ? "selected" : null)">Đã hủy
                                             </option>
                                             <option value="Đã hoàn tiền"
@@ -245,25 +252,56 @@
                                         </select>
                                     </div>
                                 </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Theo ngày:</label>
+                            <select class="form-control" id="quickDate" name="quickDate">
+
+                                <option value="today"
+                                        selected="@(string.IsNullOrEmpty(Context.Request.Query["quickDate"]) && Context.Request.Query["reset"] != "1" || Context.Request.Query["quickDate"] == "today" ? "selected" : null)">
+                                    Hôm nay
+                                </option>
+                                <option value="1">1 ngày trước</option>
+                                <option value="7">7 ngày trước</option>
+                                <option value="28">28 ngày trước</option>
+                                <option value="" selected="@(Context.Request.Query["quickDate"] == "" || Context.Request.Query["reset"] == "1" ? "selected" : null)">
+                                    Tất cả
+                                </option>
+                            </select>
+                        </div>
+                    </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="tuNgay">Từ ngày:</label>
-                                        <input type="date" class="form-control" id="tuNgay" name="tuNgay"
-                                               value="@Context.Request.Query["tuNgay"]">
+                          @{
+    var qTuNgay = Context.Request.Query["tuNgay"].ToString();
+    var qDenNgay = Context.Request.Query["denNgay"].ToString();
+    var qQuickDate = Context.Request.Query["quickDate"].ToString();
+  
+
+    // 👉 CHỈ set hôm nay khi KHÔNG phải "Tất cả"
+  
+}
+                            <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@qTuNgay">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="denNgay">Đến ngày:</label>
-                                        <input type="date" class="form-control" id="denNgay" name="denNgay"
-                                               value="@Context.Request.Query["denNgay"]">
+                            <input type="date" class="form-control" id="denNgay" name="denNgay" value="@qDenNgay">
                                     </div>
                                 </div>
+
+
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="loaiDonHang">Loại đơn hàng:</label>
                                         @{
-                                            var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                                var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                                if (string.IsNullOrEmpty(qLoaiDon))
+                                {
+                                    qLoaiDon = "";
+                                }
                                         }
                                         <select class="form-control" id="loaiDonHang" name="loaiDonHang">
                                             <option value="" selected="@(string.IsNullOrEmpty(qLoaiDon) ? "selected" : null)">Tất cả
@@ -276,6 +314,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                 
                                     <div class="row mt-3">
                                         <div class="col-md-3">
                                             <div class="form-group">
@@ -291,13 +330,14 @@
                                                        placeholder="Nhập mã đơn hàng" value="@Context.Request.Query["maDonHang"]">
                                             </div>
                                         </div>
+                                       
                                         <div class="col-md-6 pt-4 mt-2">
                                             <button type="submit" class="btn btn-primary">
                                                 <i class="fas fa-search"></i> Lọc
                                             </button>
                                             &nbsp;
                                             &nbsp;
-                                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                        <a href="@Url.Action("Index", new { reset = 1 })" class="btn btn-secondary">
                                                 <i class="fas fa-times"></i> Xóa bộ lọc
                                             </a>
                                         </div>
@@ -355,12 +395,35 @@
                                                     <th>Khách hàng</th>
                                                     <th>Tổng tiền</th>
                                                     <th>Trạng thái</th>
-                                                    <th>Ngày tạo</th>
+                                @{
+                                    var currentSort = Context.Request.Query["sapXep"].ToString();
+                                    if (string.IsNullOrEmpty(currentSort))
+                                    {
+                                        currentSort = "desc"; // 👈 mặc định
+                                    }
+                                    var nextSort = currentSort == "asc" ? "desc" : "asc";
+                                }
+                                <th>
+                                    <a href="@Url.Action("Index", new {
+        page = 1,
+        pageSize,
+        trangThai = Context.Request.Query["trangThai"],
+        tuNgay = Context.Request.Query["tuNgay"],
+        denNgay = Context.Request.Query["denNgay"],
+        loaiDonHang = Context.Request.Query["loaiDonHang"],
+        khachHang = Context.Request.Query["khachHang"],
+        maDonHang = Context.Request.Query["maDonHang"],
+        sapXep = nextSort
+    })" style="text-decoration:none; color:inherit;">
+                                        Ngày tạo
+                                       @(currentSort == "asc" ? "↑" : currentSort == "desc" ? "↓" : "")
+                                    </a>
+                                </th>
                                                     <th>Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var hoaDon in Model.OrderByDescending(h => h.NgayTao))
+                            @foreach (var hoaDon in Model)
                                                 {
                                                     <tr>
                                                         <td>
@@ -433,7 +496,7 @@
                                                 <!-- Nút Trang đầu -->
                                                 <li class="page-item @(currentPage == 1 ? "disabled" : "")">
                                                     <a class="page-link"
-                                                           href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                   href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"], sapXep = Context.Request.Query["sapXep"] })">
                                                         <i class="fas fa-angle-double-left"></i>
                                                     </a>
                                                 </li>
@@ -497,14 +560,109 @@
                         </div>
 
                         <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const quickDate = document.getElementById('quickDate');
+            const tuNgay = document.getElementById('tuNgay');
+            const denNgay = document.getElementById('denNgay');
+            const form = document.getElementById('filterForm');
+
+            const urlParams = new URLSearchParams(window.location.search);
+
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
+
+            function setDateRange(value) {
+                let today = new Date();
+                let fromDate = new Date();
+
+                if (value === "today") {
+                    fromDate = today;
+                } else {
+                    fromDate.setDate(today.getDate() - parseInt(value));
+                }
+
+                tuNgay.value = formatDate(fromDate);
+                denNgay.value = formatDate(today);
+            }
+
+            // ✅ GIỮ LẠI QUICK DATE SAU RELOAD
+            const selectedQuick = urlParams.get('quickDate');
+            if (selectedQuick !== null) {
+                quickDate.value = selectedQuick;
+            }
+
+            // ✅ CHỈ SET DEFAULT KHI CHƯA CÓ GÌ
+            const isReset = urlParams.get('reset');
+
+            // 👉 RESET
+            if (isReset) {
+                quickDate.value = "";
+                tuNgay.value = "";
+                denNgay.value = "";
+                document.getElementById('trangThai').value = "all";
+            }
+            else {
+                const qd = urlParams.get('quickDate');
+
+                // 👉 nếu là "Tất cả" thì KHÔNG set ngày, KHÔNG submit
+                if (qd === "") {
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                }
+                else if (!urlParams.get('tuNgay') && !urlParams.get('denNgay')) {
+
+                    if (!qd) {
+                        // 👉 mặc định hôm nay
+                        setDateRange('today');
+                        quickDate.value = 'today';
+                    } else {
+                        setDateRange(qd);
+                    }
+
+                    // 👉 default trạng thái
+                    if (!urlParams.get('trangThai')) {
+                        document.getElementById('trangThai').value = "Chờ xác nhận";
+                    }
+
+                    form.submit();
+                }
+            }
+
+            // ✅ XỬ LÝ CHANGE
+            quickDate.addEventListener('change', function () {
+
+                if (this.value === "") {
+                    // 👉 TẤT CẢ → KHÔNG submit nữa
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                    return; // ❗ CHẶN LOOP
+                }
+
+                setDateRange(this.value);
+                form.submit();
+            });
+
+            // ✅ PAGE SIZE
+            const elPageSize = document.getElementById('pageSize');
+            if (elPageSize) {
+                elPageSize.addEventListener('change', function () {
+                    var currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('pageSize', this.value);
+                    currentUrl.searchParams.set('page', '1');
+                    window.location.href = currentUrl.toString();
+                });
+            }
+
+        });
                                 // Giữ lại giá trị đã chọn trong dropdown (dùng JavaScript thuần, không cần jQuery)
                                 document.addEventListener('DOMContentLoaded', function () {
                                     var urlParams = new URLSearchParams(window.location.search);
 
                                     var elTrangThai = document.getElementById('trangThai');
                                     if (elTrangThai) {
-                                        var trangThai = urlParams.get('trangThai');
-                                        if (trangThai) elTrangThai.value = trangThai;
+                                       
                                     }
 
                                     var elLoaiDonHang = document.getElementById('loaiDonHang');
