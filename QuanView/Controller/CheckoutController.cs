@@ -161,6 +161,21 @@ namespace QuanView.Controllers
                 // Cập nhật số điện thoại đã được format
                 checkoutData.SoDienThoaiNguoiNhan = formattedPhone;
 
+                if (string.IsNullOrWhiteSpace(checkoutData.DiaChiGiaoHang))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán" });
+                }
+
+                var hasProvince = !string.IsNullOrWhiteSpace(checkoutData.Province);
+                var hasDistrict = !string.IsNullOrWhiteSpace(checkoutData.District);
+                var hasDistrictId = checkoutData.ToDistrictId.GetValueOrDefault() > 0;
+                var hasWardCode = !string.IsNullOrWhiteSpace(checkoutData.ToWardCode);
+
+                if (!hasProvince || !hasDistrict || !hasDistrictId || !hasWardCode)
+                {
+                    return Json(new { success = false, message = "Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã trước khi thanh toán" });
+                }
+
                 // Lấy giỏ hàng từ session
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
 

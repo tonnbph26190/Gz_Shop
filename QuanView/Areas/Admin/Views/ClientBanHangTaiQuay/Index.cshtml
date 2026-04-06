@@ -1506,8 +1506,51 @@
         updatePaymentInfo();
     }
 
+    function validateShippingAddressForPayment() {
+        if (!useShipping) {
+            return true;
+        }
+
+        const shipTinh = $('#shipTinh').val();
+        const shipQuan = $('#shipQuan').val();
+        const shipPhuong = $('#shipPhuong').val();
+        const shipDiaChiChiTiet = ($('#shipDiaChiChiTiet').val() || '').trim();
+        const fullAddress = ($('#shipAddress').val() || '').trim();
+
+        if (!shipTinh || shipTinh === '0') {
+            showWarning('Vui lòng chọn Tỉnh/Thành để giao hàng.');
+            return false;
+        }
+
+        if (!shipQuan || shipQuan === '0') {
+            showWarning('Vui lòng chọn Quận/Huyện để giao hàng.');
+            return false;
+        }
+
+        if (!shipPhuong || shipPhuong === '0') {
+            showWarning('Vui lòng chọn Phường/Xã để giao hàng.');
+            return false;
+        }
+
+        if (!shipDiaChiChiTiet) {
+            showWarning('Vui lòng nhập số nhà, tên đường để giao hàng.');
+            return false;
+        }
+
+        if (!fullAddress) {
+            showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán.');
+            return false;
+        }
+
+        return true;
+    }
+
     // Thanh toán hóa đơn
     function openPaymentModal() {
+        if (!validateShippingAddressForPayment()) {
+            return;
+        }
+
         let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
@@ -2471,6 +2514,7 @@ function toggleShipping() {
     function payInvoice() {
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
+        if (!validateShippingAddressForPayment()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
