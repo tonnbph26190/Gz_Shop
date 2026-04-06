@@ -587,6 +587,9 @@
             if (!urlParams.get('tuNgay') && !urlParams.get('denNgay') && selectedQuick === null) {
                 setDateRange('today');
                 quickDate.value = 'today';
+
+                // 🚀 thêm dòng này
+                form.submit();
             }
 
             // ✅ XỬ LÝ CHANGE
