@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using QuanApi.Data;
@@ -162,8 +162,8 @@ namespace QuanView.Areas.Admin.Controllers
                 PhanTramGiam = model.PhanTramGiam,
                 NgayBatDau = model.NgayBatDau,
                 NgayKetThuc = model.NgayKetThuc,
-                TrangThai = model.TrangThai,
-                SanPhamChiTietIds = SelectedSanPhamChiTietIds
+				TrangThai = model.TrangThai,
+				SanPhamChiTietIds = SelectedSanPhamChiTietIds
             };
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
