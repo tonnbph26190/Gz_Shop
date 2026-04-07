@@ -2946,15 +2946,30 @@ function toggleShipping() {
 
     // Chọn địa chỉ
     function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
+
+        // ❌ Bỏ chọn tất cả
+        $('.address-item').removeClass('border-primary').addClass('border-light');
+
+        // ❌ Ẩn tất cả dấu tích
+        $('.address-item .bi-check-circle-fill').hide();
+
+        // ✅ Lấy item đang click
+        let selectedItem = event.currentTarget;
+
+        // ✅ Đổi border xanh
+        $(selectedItem).removeClass('border-light').addClass('border-primary');
+
+        // ✅ Hiện dấu tích
+        $(selectedItem).find('.bi-check-circle-fill').show();
+
+        // ✅ Điền form
         $('#shipName').val(tenNguoiNhan);
         $('#shipPhone').val(sdtNguoiNhan);
         $('#shipAddress').val(diaChiChiTiet);
 
-        // Đóng modal
-        $('#selectAddressModal').modal('hide');
+        // ❌ BỎ dòng đóng modal nếu bạn muốn thấy hiệu ứng chọn
+        // $('#selectAddressModal').modal('hide');
 
-        // Hiển thị thông báo
         showSuccess('Đã chọn địa chỉ giao hàng!');
     }
 
@@ -3135,7 +3150,7 @@ function toggleShipping() {
                 addresses.forEach(addr => {
                     const isDefault = addr.laMacDinh ? '<span class="badge bg-primary">Mặc định</span>' : '';
                     addressHtml += `
-                                <div class="address-card card mb-3" onclick="selectAddress('${addr.idDiaChi}', '${addr.tenNguoiNhan || ''}', '${addr.sdtNguoiNhan || ''}', '${addr.diaChiChiTiet || ''}')">
+                                    <div class="address-card card mb-3" onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -3167,37 +3182,27 @@ function toggleShipping() {
     }
 
     // Chọn địa chỉ từ modal
-    async function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
-        if (tenNguoiNhan && tenNguoiNhan !== 'N/A') {
-            $('#shipName').val(tenNguoiNhan);
-        }
-        if (sdtNguoiNhan && sdtNguoiNhan !== 'N/A') {
-            $('#shipPhone').val(sdtNguoiNhan);
-        }
+    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
 
-        // Sync ngay địa chỉ đầy đủ để validate không báo thiếu dù UI đã có dữ liệu
-        if (diaChiChiTiet) {
-            $('#shipAddress').val(diaChiChiTiet);
-        }
+        // ❌ Bỏ chọn tất cả
+        $('.address-item').removeClass('border-primary').addClass('border-light');
 
-        // Sử dụng logic parse và populate dropdown như checkout
-        if (diaChiChiTiet) {
-            await populateAddressFromString(diaChiChiTiet);
-        }
+        // ❌ Ẩn tất cả dấu tích
+        $('.address-item .bi-check-circle-fill').hide();
 
-        // Lưu ID địa chỉ đã chọn
-        $('#selectedAddressId').val(addressId);
+        // ✅ Lấy đúng item đang click
+        let selectedItem = event.currentTarget;
 
-        // Đóng modal
-        $('#selectAddressModal').modal('hide');
+        // ✅ Set lại UI
+        $(selectedItem).removeClass('border-light').addClass('border-primary');
+        $(selectedItem).find('.bi-check-circle-fill').show();
 
-        // Tính lại phí vận chuyển nếu có địa chỉ
-        if (diaChiChiTiet && typeof calculateShippingFee === 'function') {
-            calculateShippingFee();
-        }
+        // ✅ Đổ dữ liệu
+        $('#shipName').val(tenNguoiNhan);
+        $('#shipPhone').val(sdtNguoiNhan);
+        $('#shipAddress').val(diaChiChiTiet);
 
-        showSuccess('Đã chọn địa chỉ thành công!');
+        showSuccess('Đã chọn địa chỉ giao hàng!');
     }
 
     // Xóa form địa chỉ
