@@ -14,6 +14,23 @@
         gap: 3px;
     }
 
+    .address-item {
+        border: 1px solid #ddd;
+        transition: all 0.2s ease;
+    }
+
+        .address-item.active {
+            border: 2px solid #0d6efd !important;
+            background-color: #f0f7ff;
+        }
+
+        .address-item .bi-check-circle-fill {
+            display: none;
+        }
+
+        .address-item.active .bi-check-circle-fill {
+            display: block;
+        }
     .nav-tabs .nav-link {
         border: 1px solid #dee2e6;
         border-radius: 8px 8px 0 0;
@@ -836,6 +853,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -2885,11 +2903,20 @@ function toggleShipping() {
         $('#selectAddressModal').modal('show');
     }
 
-    // Load danh sách địa chỉ của khách hàng
     function loadCustomerAddresses() {
         if (!selectedCustomer) return;
 
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang', { customerId: selectedCustomer.id }, function (data) {
+
+            // ✅ LẤY ID đã lưu
+            const savedId = $('#selectedAddressId').val();
+
+            if (savedId) {
+                selectedAddressId = savedId;
+            } else {
+                selectedAddressId = null;
+            }
+
             if (data && Array.isArray(data) && data.length > 0) {
                 renderAddressList(data);
                 $('#addressList').show();
@@ -2898,19 +2925,15 @@ function toggleShipping() {
                 $('#addressList').hide();
                 $('#noAddressMessage').show();
             }
-        }).fail(function (xhr, status, error) {
-            console.error('Lỗi khi lấy danh sách địa chỉ:', error);
-            $('#addressList').hide();
-            $('#noAddressMessage').show();
         });
     }
-
+    let selectedAddressId = null;
     // Render danh sách địa chỉ
     function renderAddressList(addresses) {
         let html = '';
         addresses.forEach((address, index) => {
             const isDefault = address.laMacDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : '';
-            const isSelected = (address.diaChiChiTiet === $('#shipAddress').val()) ? 'border-primary' : 'border-light';
+            const isSelected = (address.id === selectedAddressId);
 
             // Escape các ký tự đặc biệt để tránh lỗi JavaScript
             const safeTenNguoiNhan = (address.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
@@ -2918,7 +2941,10 @@ function toggleShipping() {
             const safeDiaChiChiTiet = (address.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 
             html += `
-                        <div class="card mb-2 address-item ${isSelected}" style="cursor: pointer;" onclick="selectAddress('${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
+
+                             <div class="card mb-2 address-item ${isSelected ? 'active' : ''}"
+         style="cursor: pointer;"
+         onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
@@ -2932,9 +2958,7 @@ function toggleShipping() {
                                             <i class="bi bi-geo-alt"></i> ${address.diaChiChiTiet || 'N/A'}
                                         </p>
                                     </div>
-                                    <div class="ms-2">
-                                        <i class="bi bi-check-circle-fill text-primary" style="display: ${isSelected.includes('border-primary') ? 'block' : 'none'};"></i>
-                                    </div>
+                                 
                                 </div>
                             </div>
                         </div>
@@ -2945,30 +2969,22 @@ function toggleShipping() {
     }
 
     // Chọn địa chỉ
-    function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
 
+        // ✅ Lưu ID
+        selectedAddressId = addressId;
+        $('#selectedAddressId').val(addressId);
         // ❌ Bỏ chọn tất cả
-        $('.address-item').removeClass('border-primary').addClass('border-light');
+        $('.address-item').removeClass('active');
 
-        // ❌ Ẩn tất cả dấu tích
-        $('.address-item .bi-check-circle-fill').hide();
-
-        // ✅ Lấy item đang click
+        // ✅ Chọn item hiện tại
         let selectedItem = event.currentTarget;
-
-        // ✅ Đổi border xanh
-        $(selectedItem).removeClass('border-light').addClass('border-primary');
-
-        // ✅ Hiện dấu tích
-        $(selectedItem).find('.bi-check-circle-fill').show();
+        $(selectedItem).addClass('active');
 
         // ✅ Điền form
         $('#shipName').val(tenNguoiNhan);
         $('#shipPhone').val(sdtNguoiNhan);
         $('#shipAddress').val(diaChiChiTiet);
-
-        // ❌ BỎ dòng đóng modal nếu bạn muốn thấy hiệu ứng chọn
-        // $('#selectAddressModal').modal('hide');
 
         showSuccess('Đã chọn địa chỉ giao hàng!');
     }
@@ -2990,10 +3006,10 @@ function toggleShipping() {
                             box-shadow: 0 2px 8px rgba(0,123,255,0.15);
                             transform: translateY(-1px);
                         }
-                        .address-item.border-primary {
-                            border-color: #007bff;
-                            background-color: #f8f9ff;
-                        }
+                           .address-item.active {
+        border: 2px solid #007bff !important;
+        background-color: #f8f9ff;
+    }
                         .address-item .card-body {
                             padding: 1rem;
                         }
@@ -3185,17 +3201,11 @@ function toggleShipping() {
     function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
 
         // ❌ Bỏ chọn tất cả
-        $('.address-item').removeClass('border-primary').addClass('border-light');
+        $('.address-item').removeClass('active');
 
-        // ❌ Ẩn tất cả dấu tích
-        $('.address-item .bi-check-circle-fill').hide();
-
-        // ✅ Lấy đúng item đang click
+        // ✅ Chọn cái đang click
         let selectedItem = event.currentTarget;
-
-        // ✅ Set lại UI
-        $(selectedItem).removeClass('border-light').addClass('border-primary');
-        $(selectedItem).find('.bi-check-circle-fill').show();
+        $(selectedItem).addClass('active');
 
         // ✅ Đổ dữ liệu
         $('#shipName').val(tenNguoiNhan);
