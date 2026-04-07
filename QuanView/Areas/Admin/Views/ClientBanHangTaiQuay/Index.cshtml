@@ -880,6 +880,23 @@
         return Math.max(0, Math.min(getPointLimitByConfig(available), getPointLimitByAmount(total, discount)));
     }
 
+    function updatePointRateLabel(total, discount) {
+        const rateLabel = document.getElementById('pointRateLabel');
+        if (!rateLabel) {
+            return;
+        }
+
+        if (!moneyPerPoint || moneyPerPoint <= 0) {
+            rateLabel.textContent = 'Không lấy được cấu hình điểm';
+            return;
+        }
+
+        const available = Number(selectedCustomer?.point || 0);
+        const configLimit = getPointLimitByConfig(available);
+        const orderLimit = getMaxUsablePoint(total, discount);
+        rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND | Tối đa theo cấu hình: ${configLimit.toLocaleString('vi-VN')} điểm | Tối đa theo đơn hiện tại: ${orderLimit.toLocaleString('vi-VN')} điểm`;
+    }
+
 
     function resetKhachHangForm() {
     // Xóa input text
@@ -2407,14 +2424,12 @@ function toggleShipping() {
                 return;
             }
             moneyPerPoint = rate;
-
-            const rateLabel = document.getElementById('pointRateLabel');
-            if (rateLabel) {
-                const maxText = maxPointsPerOrder > 0 ? ` | Tối đa ${maxPointsPerOrder.toLocaleString('vi-VN')} điểm/đơn` : '';
-                rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND${maxText}`;
-            }
+ 
             const currentPoint = Number(selectedCustomer?.point || 0);
             $('#requestedUsedPoints').attr('max', getPointLimitByConfig(currentPoint));
+            const gh = gioHangs[currentGioHang];
+            const total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
+            updatePointRateLabel(total, discountValue || 0);
             updatePaymentInfoWithoutRecalculation();
         } catch (error) {
             console.error('Không tải được cấu hình quy đổi điểm:', error);
@@ -2442,6 +2457,7 @@ function toggleShipping() {
         // cap the input at max usable so user can't over-enter
         const maxUsable = getMaxUsablePoint(total, discount);
         $('#requestedUsedPoints').attr('max', maxUsable);
+        updatePointRateLabel(total, discount);
 
         $('#shippingFee').val(shippingFee);
 
@@ -2470,6 +2486,7 @@ function toggleShipping() {
 
         const maxUsable = getMaxUsablePoint(total, discount);
         $('#requestedUsedPoints').attr('max', maxUsable);
+        updatePointRateLabel(total, discount);
 
         $('#shippingFee').val(shippingFee);
     }
