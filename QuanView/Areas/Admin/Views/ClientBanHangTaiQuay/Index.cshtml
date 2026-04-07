@@ -1515,7 +1515,7 @@
         const shipQuan = $('#shipQuan').val();
         const shipPhuong = $('#shipPhuong').val();
         const shipDiaChiChiTiet = ($('#shipDiaChiChiTiet').val() || '').trim();
-        const fullAddress = ($('#shipAddress').val() || '').trim();
+        let fullAddress = ($('#shipAddress').val() || '').trim();
 
         if (!shipTinh || shipTinh === '0') {
             showWarning('Vui lòng chọn Tỉnh/Thành để giao hàng.');
@@ -1535,6 +1535,12 @@
         if (!shipDiaChiChiTiet) {
             showWarning('Vui lòng nhập số nhà, tên đường để giao hàng.');
             return false;
+        }
+
+        // Nếu UI đã có đủ dropdown + địa chỉ chi tiết nhưng fullAddress chưa sync kịp, tự ghép lại
+        if (!fullAddress && shipTinh && shipTinh !== '0' && shipQuan && shipQuan !== '0' && shipPhuong && shipPhuong !== '0' && shipDiaChiChiTiet) {
+            concatenateShippingAddress();
+            fullAddress = ($('#shipAddress').val() || '').trim();
         }
 
         if (!fullAddress) {
@@ -3168,6 +3174,11 @@ function toggleShipping() {
         }
         if (sdtNguoiNhan && sdtNguoiNhan !== 'N/A') {
             $('#shipPhone').val(sdtNguoiNhan);
+        }
+
+        // Sync ngay địa chỉ đầy đủ để validate không báo thiếu dù UI đã có dữ liệu
+        if (diaChiChiTiet) {
+            $('#shipAddress').val(diaChiChiTiet);
         }
 
         // Sử dụng logic parse và populate dropdown như checkout

@@ -69,12 +69,16 @@ namespace QuanApi.Controllers
 
 				if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
 				{
-					query = query.Where(h => h.NgayTao.Date >= tuNgayDate.Date);
+					// So sánh theo khoảng UTC để tránh lỗi Date/Kind khi map timestamp với PostgreSQL.
+					var startDateUtc = DateTime.SpecifyKind(tuNgayDate.Date, DateTimeKind.Utc);
+					query = query.Where(h => h.NgayTao >= startDateUtc);
 				}
 
 				if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
 				{
-					query = query.Where(h => h.NgayTao.Date <= denNgayDate.Date);
+					// Lấy hết dữ liệu trong ngày denNgay (inclusive) bằng upper-bound độc quyền.
+					var endExclusiveUtc = DateTime.SpecifyKind(denNgayDate.Date.AddDays(1), DateTimeKind.Utc);
+					query = query.Where(h => h.NgayTao < endExclusiveUtc);
 				}
 
 				if (!string.IsNullOrEmpty(loaiDonHang))
@@ -853,16 +857,18 @@ namespace QuanApi.Controllers
 					query = query.Where(h => h.MaHoaDon.Contains(search));
 				}
 
-				// Lọc theo ngày từ
+				// Lọc theo ngày từ (UTC range compare để ổn định với PostgreSQL timestamp)
 				if (!string.IsNullOrEmpty(fromDate) && DateTime.TryParse(fromDate, out var fromDateParsed))
 				{
-					query = query.Where(h => h.NgayTao.Date >= fromDateParsed.Date);
+					var fromDateUtc = DateTime.SpecifyKind(fromDateParsed.Date, DateTimeKind.Utc);
+					query = query.Where(h => h.NgayTao >= fromDateUtc);
 				}
 
-				// Lọc theo ngày đến
+				// Lọc theo ngày đến (inclusive theo ngày, dùng upper-bound độc quyền)
 				if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out var toDateParsed))
 				{
-					query = query.Where(h => h.NgayTao.Date <= toDateParsed.Date);
+					var toDateExclusiveUtc = DateTime.SpecifyKind(toDateParsed.Date.AddDays(1), DateTimeKind.Utc);
+					query = query.Where(h => h.NgayTao < toDateExclusiveUtc);
 				}
 
 				var totalCount = await query.CountAsync();

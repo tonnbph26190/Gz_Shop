@@ -34,10 +34,31 @@ namespace QuanView.Controllers
         }
 
         // GET: DonHang/Index
-        public async Task<IActionResult> Index(string search = "", string fromDate = "", string toDate = "", int page = 1)
+        public async Task<IActionResult> Index(string search = "", string fromDate = "", string toDate = "", string quickDate = "", int page = 1)
         {
             try
             {
+                // Đồng bộ quickDate với from/to để pagination hoặc reload không làm mất bộ lọc.
+                if (quickDate == "")
+                {
+                    fromDate = "";
+                    toDate = "";
+                }
+                else if (!string.Equals(quickDate, "custom", StringComparison.OrdinalIgnoreCase)
+                         && !string.IsNullOrEmpty(quickDate)
+                         && string.IsNullOrEmpty(fromDate)
+                         && string.IsNullOrEmpty(toDate))
+                {
+                    var today = DateTime.UtcNow.Date;
+                    var startDate = quickDate == "today"
+                        ? today
+                        : (int.TryParse(quickDate, out var days) ? today.AddDays(-days) : today);
+
+                    fromDate = startDate.ToString("yyyy-MM-dd");
+                    toDate = today.ToString("yyyy-MM-dd");
+                }
+
+                ViewBag.QuickDate = quickDate;
                 var isAuthenticated = User.Identity.IsAuthenticated;
                 var customerId = ResolveCurrentCustomerId();
 
@@ -274,6 +295,7 @@ namespace QuanView.Controllers
                 ViewBag.Search = search;
                 ViewBag.FromDate = fromDate;
                 ViewBag.ToDate = toDate;
+                ViewBag.QuickDate = quickDate;
                 ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
                 TempData["ErrorMessage"] = "Không kết nối được tới hệ thống đơn hàng. Vui lòng thử lại sau.";
 
@@ -299,6 +321,7 @@ namespace QuanView.Controllers
                 ViewBag.Search = search;
                 ViewBag.FromDate = fromDate;
                 ViewBag.ToDate = toDate;
+                ViewBag.QuickDate = quickDate;
                 ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
 
                 var emptyViewModel = new

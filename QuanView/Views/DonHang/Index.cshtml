@@ -8,6 +8,7 @@
     var search = ViewBag.Search as string ?? "";
     var fromDate = ViewBag.FromDate as string ?? "";
     var toDate = ViewBag.ToDate as string ?? "";
+    var quickDate = ViewBag.QuickDate as string ?? "";
     var isAuthenticated = ViewBag.IsAuthenticated as bool? ?? false;
 }
 
@@ -167,13 +168,29 @@
                         <label class="form-label">@label</label>
                         <input type="text" class="form-control" name="search" placeholder="@placeholder" value="@search" pattern="[A-Z0-9_]+" title="@titleMsg"> 
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">@((lang == "vi") ? "Từ ngày" : "From")</label>
-                        <input type="date" class="form-control" name="fromDate" value="@fromDate">
+                    <div class="col-md-2">
+                        <label class="form-label">@((lang == "vi") ? "Theo ngày" : "Quick date")</label>
+                        @{
+                            var isCustomQuickDate = quickDate == "custom"
+                                                    || ((!string.IsNullOrEmpty(fromDate) || !string.IsNullOrEmpty(toDate))
+                                                        && quickDate != "today" && quickDate != "1" && quickDate != "7" && quickDate != "28" && quickDate != "");
+                        }
+                        <select class="form-control" id="quickDate" name="quickDate">
+                            <option value="today" selected="@(quickDate == "today" ? "selected" : null)">@((lang == "vi") ? "Hôm nay" : "Today")</option>
+                            <option value="1" selected="@(quickDate == "1" ? "selected" : null)">@((lang == "vi") ? "1 ngày trước" : "Last 1 day")</option>
+                            <option value="7" selected="@(quickDate == "7" ? "selected" : null)">@((lang == "vi") ? "7 ngày trước" : "Last 7 days")</option>
+                            <option value="28" selected="@(quickDate == "28" ? "selected" : null)">@((lang == "vi") ? "28 ngày trước" : "Last 28 days")</option>
+                            <option value="custom" selected="@(isCustomQuickDate ? "selected" : null)">@((lang == "vi") ? "Tự chọn" : "Custom")</option>
+                            <option value="" selected="@(quickDate == "" ? "selected" : null)">@((lang == "vi") ? "Tất cả" : "All")</option>
+                        </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <label class="form-label">@((lang == "vi") ? "Từ ngày" : "From")</label>
+                        <input type="date" class="form-control" id="fromDate" name="fromDate" value="@fromDate">
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">@((lang == "vi") ? "Đến ngày" : "To")</label>
-                        <input type="date" class="form-control" name="toDate" value="@toDate">
+                        <input type="date" class="form-control" id="toDate" name="toDate" value="@toDate">
                     </div>
                     <div class="col-md-2 d-flex align-items-end gap-2">
                         <button type="submit" class="btn btn-search w-25" id=search-icon>
@@ -317,12 +334,12 @@
             <nav>
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, fromDate, toDate })" aria-label="First">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, fromDate, toDate, quickDate })" aria-label="First">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, fromDate, toDate })" aria-label="Previous">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, fromDate, toDate, quickDate })" aria-label="Previous">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -330,17 +347,17 @@
                     @for (int i = 1; i <= totalPages; i++)
                     {
                         <li class="page-item @(i == currentPage ? "active" : "")">
-                            <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, fromDate, toDate })">@i</a>
+                            <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, fromDate, toDate, quickDate })">@i</a>
                         </li>
                     }
 
                     <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, fromDate, toDate })" aria-label="Next">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, fromDate, toDate, quickDate })" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, fromDate, toDate })" aria-label="Last">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, fromDate, toDate, quickDate })" aria-label="Last">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -354,6 +371,9 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.querySelector('input[name="search"]');
+        const quickDateSelect = document.getElementById('quickDate');
+        const fromDateInput = document.getElementById('fromDate');
+        const toDateInput = document.getElementById('toDate');
         if (searchInput) {
             const form = document.getElementById('filterForm');
             form.addEventListener('submit', function (e) {
@@ -372,6 +392,53 @@
                         return false;
                     }
                 }
+            });
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function setDateRange(days) {
+            const today = new Date();
+            const from = new Date();
+            if (days === 'today') {
+                // giữ nguyên today
+            } else {
+                from.setDate(today.getDate() - parseInt(days, 10));
+            }
+
+            fromDateInput.value = formatDate(from);
+            toDateInput.value = formatDate(today);
+        }
+
+        if (quickDateSelect && fromDateInput && toDateInput) {
+            // Nếu đã có khoảng ngày nhưng quickDate chưa rõ thì mặc định là custom.
+            if ((fromDateInput.value || toDateInput.value) && !quickDateSelect.value) {
+                quickDateSelect.value = 'custom';
+            }
+
+            quickDateSelect.addEventListener('change', function () {
+                if (this.value === '') {
+                    fromDateInput.value = '';
+                    toDateInput.value = '';
+                    return;
+                }
+
+                if (this.value === 'custom') {
+                    return;
+                }
+
+                setDateRange(this.value);
+                document.getElementById('filterForm')?.submit();
+            });
+
+            fromDateInput.addEventListener('change', function () {
+                quickDateSelect.value = 'custom';
+            });
+
+            toDateInput.addEventListener('change', function () {
+                quickDateSelect.value = 'custom';
             });
         }
     });

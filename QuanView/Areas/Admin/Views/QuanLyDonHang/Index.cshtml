@@ -256,14 +256,28 @@
                         <div class="form-group">
                             <label>Theo ngày:</label>
                             <select class="form-control" id="quickDate" name="quickDate">
-
+                                @{
+                                    var quickDateValue = Context.Request.Query["quickDate"].ToString();
+                                    var hasDateRange = !string.IsNullOrEmpty(Context.Request.Query["tuNgay"])
+                                                       || !string.IsNullOrEmpty(Context.Request.Query["denNgay"]);
+                                    var isKnownQuickDate = quickDateValue == "today"
+                                                           || quickDateValue == "1"
+                                                           || quickDateValue == "7"
+                                                           || quickDateValue == "28"
+                                                           || quickDateValue == ""
+                                                           || quickDateValue == "custom";
+                                    var isCustomQuickDate = quickDateValue == "custom"
+                                                            || (hasDateRange && !isKnownQuickDate)
+                                                            || (hasDateRange && string.IsNullOrEmpty(quickDateValue));
+                                }
                                 <option value="today"
-                                        selected="@(string.IsNullOrEmpty(Context.Request.Query["quickDate"]) && Context.Request.Query["reset"] != "1" || Context.Request.Query["quickDate"] == "today" ? "selected" : null)">
+                                        selected="@(quickDateValue == "today" || (string.IsNullOrEmpty(quickDateValue) && !hasDateRange && Context.Request.Query["reset"] != "1") ? "selected" : null)">
                                     Hôm nay
                                 </option>
-                                <option value="1">1 ngày trước</option>
-                                <option value="7">7 ngày trước</option>
-                                <option value="28">28 ngày trước</option>
+                                <option value="1" selected="@(quickDateValue == "1" ? "selected" : null)">1 ngày trước</option>
+                                <option value="7" selected="@(quickDateValue == "7" ? "selected" : null)">7 ngày trước</option>
+                                <option value="28" selected="@(quickDateValue == "28" ? "selected" : null)">28 ngày trước</option>
+                                <option value="custom" selected="@(isCustomQuickDate ? "selected" : null)">Tự chọn</option>
                                 <option value="" selected="@(Context.Request.Query["quickDate"] == "" || Context.Request.Query["reset"] == "1" ? "selected" : null)">
                                     Tất cả
                                 </option>
@@ -592,6 +606,9 @@
             if (selectedQuick !== null) {
                 quickDate.value = selectedQuick;
             }
+            else if (tuNgay.value || denNgay.value) {
+                quickDate.value = 'custom';
+            }
 
             // ✅ CHỈ SET DEFAULT KHI CHƯA CÓ GÌ
             const isReset = urlParams.get('reset');
@@ -640,8 +657,22 @@
                     return; // ❗ CHẶN LOOP
                 }
 
+                if (this.value === "custom") {
+                    // 👉 TỰ CHỌN: user sẽ nhập tay khoảng ngày
+                    return;
+                }
+
                 setDateRange(this.value);
                 form.submit();
+            });
+
+            // Khi user chỉnh tay ngày, tự chuyển dropdown về "Tự chọn".
+            tuNgay.addEventListener('change', function () {
+                quickDate.value = 'custom';
+            });
+
+            denNgay.addEventListener('change', function () {
+                quickDate.value = 'custom';
             });
 
             // ✅ PAGE SIZE
