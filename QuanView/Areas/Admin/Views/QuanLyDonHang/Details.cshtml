@@ -16,7 +16,7 @@
 
     var orderCurrentStatus = Model.TrangThai ?? string.Empty;
 
-    // Normalize status for consistency
+    // Normalize status
     var normalizedStatus = orderCurrentStatus switch
     {
         "Đã lấy hàng" or "Chờ giao hàng" or "Đang giao hàng" => "Đang giao",
@@ -116,7 +116,7 @@
         background: #007bff; 
         animation: pulse 2s infinite; 
     }
-    @keyframes pulse {
+    @@keyframes pulse {
         0% { box-shadow: 0 0 0 0 rgba(0,123,255,0.5); }
         70% { box-shadow: 0 0 0 15px rgba(0,123,255,0); }
         100% { box-shadow: 0 0 0 0 rgba(0,123,255,0); }
@@ -171,7 +171,7 @@
         </div>
     }
 
-    <!-- Timeline - Only for online orders -->
+    <!-- Timeline -->
     @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
     {
         <div class="card order-card shadow mb-4">
@@ -244,7 +244,7 @@
     }
 
     <div class="row">
-        <!-- Left Column -->
+        <!-- Left Column - Info + Products -->
         <div class="col-lg-8">
             <!-- Order Information -->
             <div class="card order-card shadow mb-4">
@@ -427,25 +427,27 @@
                     </div>
                     <div class="d-flex justify-content-between py-2">
                         <span class="info-label">Phí vận chuyển:</span>
-                        <span>@((Model.PhiVanChuyen ?? 0).ToString("N0")) VNĐ</span>
+                        <span class="text-danger">+@((Model.PhiVanChuyen ?? 0).ToString("N0")) VNĐ</span>
                     </div>
                     <div class="d-flex justify-content-between py-2">
                         <span class="info-label">Giảm giá:</span>
-                        <span>@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
+                        <span class="text-success">-@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
                     </div>
-                    @if (Model.SoTienGiamTuDiem > 0)
-                    {
-                        <div class="d-flex justify-content-between py-2">
-                            <span class="info-label">Giảm từ điểm:</span>
-                            <span class="text-success">-@Model.SoTienGiamTuDiem.ToString("N0") VNĐ</span>
-                        </div>
-                    }
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="info-label">Điểm đã dùng:</span>
+                        <span>@Model.DiemDaDung.ToString("N0") điểm</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="info-label">Giảm từ điểm:</span>
+                        <span class="text-success">-@Model.SoTienGiamTuDiem.ToString("N0") VNĐ</span>
+                    </div>
                     <div class="border-top border-bottom py-3 my-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="info-label fw-bold fs-5">Tổng cộng:</span>
                             <span class="fw-bold text-primary fs-5">@Model.TongTien.ToString("N0") VNĐ</span>
                         </div>
                     </div>
+
                     <div class="d-flex justify-content-between py-2">
                         <span class="info-label">Phương thức thanh toán:</span>
                         <span>@(Model.PhuongThucThanhToan?.TenPhuongThuc ?? "N/A")</span>
