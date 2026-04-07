@@ -119,6 +119,7 @@ namespace QuanView.Controllers
                                 TenSanPham = spct.TenSanPham
                             },
                             GiaBan = spct.price,
+                            SoLuong = spct.SoLuongKhaDung,
                             AnhSanPhams = new List<AnhSanPham>
                             {
                                 new AnhSanPham
@@ -193,6 +194,14 @@ namespace QuanView.Controllers
                         var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                         if (spct != null && spct.price > 0)
                         {
+                            if (item.SoLuong > spct.SoLuongKhaDung)
+                            {
+                                return Json(new
+                                {
+                                    success = false,
+                                    message = $"Sản phẩm {spct.TenSanPham} chỉ còn {spct.SoLuongKhaDung} sản phẩm khả dụng."
+                                });
+                            }
                             item.GiaBan = spct.price;
                         }
                         else
@@ -787,6 +796,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham
@@ -827,6 +837,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham

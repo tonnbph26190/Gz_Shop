@@ -100,6 +100,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             TenKichCo = ct.KichCo.TenKichCo,
                             TenMauSac = ct.MauSac.TenMauSac,
@@ -178,11 +181,11 @@ namespace QuanApi.Controllers
             // Filter by variant quantity range
             if (qtyFrom.HasValue)
             {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong >= qtyFrom.Value));
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom.Value));
             }
             if (qtyTo.HasValue)
             {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong <= qtyTo.Value));
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value));
             }
 			// ✅ SORT NGÀY TẠO
 			if (!string.IsNullOrEmpty(sortDate))
@@ -269,6 +272,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             price = ct.GiaBan,
                             originalPrice = ct.GiaBan,
