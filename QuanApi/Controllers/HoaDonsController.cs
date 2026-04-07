@@ -50,69 +50,122 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
-				var query = _context.HoaDons
+				if (page < 1) page = 1;
+				if (pageSize <= 0) pageSize = 10;
+
+				var trangThaiFilter = string.IsNullOrWhiteSpace(trangThai) ? null : trangThai.Trim();
+				var loaiDonHangFilter = string.IsNullOrWhiteSpace(loaiDonHang) ? null : loaiDonHang.Trim().ToLower();
+				var khachHangFilter = string.IsNullOrWhiteSpace(khachHang) ? null : khachHang.Trim().ToLower();
+				var maDonHangFilter = string.IsNullOrWhiteSpace(maDonHang) ? null : maDonHang.Trim().ToLower();
+
+				DateTime? tuNgayDate = null;
+				DateTime? denNgayDate = null;
+				DateTime? fromUtc = null;
+				DateTime? toUtcExclusive = null;
+
+				if (!string.IsNullOrWhiteSpace(tuNgay) && DateTime.TryParseExact(tuNgay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedTuNgay))
+				{
+					tuNgayDate = parsedTuNgay.Date;
+				}
+
+				if (!string.IsNullOrWhiteSpace(denNgay) && DateTime.TryParseExact(denNgay, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDenNgay))
+				{
+					denNgayDate = parsedDenNgay.Date;
+				}
+
+				// Nếu user nhập ngược khoảng ngày thì tự đảo lại để tránh ra kết quả rỗng ngoài ý muốn
+				if (tuNgayDate.HasValue && denNgayDate.HasValue && tuNgayDate > denNgayDate)
+				{
+					var temp = tuNgayDate;
+					tuNgayDate = denNgayDate;
+					denNgayDate = temp;
+				}
+
+				// PostgreSQL đang dùng timestamptz => lọc theo mốc UTC rõ ràng để tránh lỗi timezone khi query.
+				if (tuNgayDate.HasValue)
+				{
+					fromUtc = new DateTimeOffset(tuNgayDate.Value, TimeSpan.FromHours(7)).UtcDateTime;
+				}
+
+				if (denNgayDate.HasValue)
+				{
+					toUtcExclusive = new DateTimeOffset(denNgayDate.Value.AddDays(1), TimeSpan.FromHours(7)).UtcDateTime;
+				}
+
+				IQueryable<HoaDon> ApplyFilters(IQueryable<HoaDon> source, bool includeTrangThai)
+				{
+					var q = source;
+
+					if (includeTrangThai && !string.IsNullOrEmpty(trangThaiFilter))
+					{
+						q = q.Where(h => h.TrangThai == trangThaiFilter);
+					}
+
+					if (!string.IsNullOrEmpty(loaiDonHangFilter))
+					{
+						if (loaiDonHangFilter == "online")
+						{
+							q = q.Where(h => h.BanTaiQuay == false);
+						}
+						else if (loaiDonHangFilter == "taiquay")
+						{
+							q = q.Where(h => h.BanTaiQuay == true);
+						}
+					}
+
+					if (fromUtc.HasValue)
+					{
+						var fromDateUtc = fromUtc.Value;
+						q = q.Where(h => h.NgayTao >= fromDateUtc);
+					}
+
+					if (toUtcExclusive.HasValue)
+					{
+						var toDateUtcExclusive = toUtcExclusive.Value;
+						q = q.Where(h => h.NgayTao < toDateUtcExclusive);
+					}
+
+					if (!string.IsNullOrEmpty(khachHangFilter))
+					{
+						q = q.Where(h =>
+							(h.TenNguoiNhan != null && h.TenNguoiNhan.ToLower().Contains(khachHangFilter)) ||
+							(h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHangFilter)) ||
+							(h.KhachHang != null && h.KhachHang.TenKhachHang != null && h.KhachHang.TenKhachHang.ToLower().Contains(khachHangFilter)) ||
+							(h.KhachHang != null && h.KhachHang.SoDienThoai != null && h.KhachHang.SoDienThoai.Contains(khachHangFilter))
+						);
+					}
+
+					if (!string.IsNullOrEmpty(maDonHangFilter))
+					{
+						q = q.Where(h => h.MaHoaDon.ToLower().Contains(maDonHangFilter));
+					}
+
+					return q;
+				}
+
+				var baseQuery = _context.HoaDons.AsQueryable();
+
+				// Thống kê: áp dụng toàn bộ bộ lọc kết hợp, bao gồm trạng thái đang chọn
+				var statsQuery = ApplyFilters(baseQuery, includeTrangThai: true);
+				var totalOnlineCount = await statsQuery.CountAsync(h => h.BanTaiQuay == false);
+				var totalTaiQuayCount = await statsQuery.CountAsync(h => h.BanTaiQuay == true);
+				var totalPendingCount = await statsQuery.CountAsync(h => h.TrangThai == "Chờ xác nhận");
+
+				// Dữ liệu danh sách: áp dụng toàn bộ bộ lọc bao gồm trạng thái
+				var filteredQuery = ApplyFilters(baseQuery, includeTrangThai: true)
 					.Include(h => h.KhachHang)
 					.Include(h => h.NhanVien)
 					.Include(h => h.PhieuGiamGia)
 					.Include(h => h.PhuongThucThanhToan)
-					.Include(h => h.ChiTietHoaDons) // Thêm include này để tránh lỗi
-					.AsQueryable();
+					.Include(h => h.ChiTietHoaDons);
 
-				// Áp dụng các bộ lọc
-				if (!string.IsNullOrEmpty(trangThai))
-				{
-					query = query.Where(h => h.TrangThai == trangThai);
-				}
-
-				if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
-				{
-					query = query.Where(h => h.NgayTao.Date >= tuNgayDate.Date);
-				}
-
-				if (!string.IsNullOrEmpty(denNgay) && DateTime.TryParse(denNgay, out var denNgayDate))
-				{
-					query = query.Where(h => h.NgayTao.Date <= denNgayDate.Date);
-				}
-
-				if (!string.IsNullOrEmpty(loaiDonHang))
-				{
-					if (loaiDonHang == "online")
-					{
-						query = query.Where(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
-					}
-					else if (loaiDonHang == "taiquay")
-					{
-						query = query.Where(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
-					}
-				}
-
-				if (!string.IsNullOrEmpty(khachHang))
-				{
-					var khachHangLower = khachHang.ToLower();
-					query = query.Where(h =>
-						(h.KhachHang != null && h.KhachHang.TenKhachHang.ToLower().Contains(khachHangLower)) ||
-						(h.TenNguoiNhan != null && h.TenNguoiNhan.ToLower().Contains(khachHangLower)) ||
-						(h.SoDienThoaiNguoiNhan != null && h.SoDienThoaiNguoiNhan.Contains(khachHangLower))
-					);
-				}
-
-				if (!string.IsNullOrEmpty(maDonHang))
-				{
-					var maDonHangLower = maDonHang.ToLower();
-					query = query.Where(h => h.MaHoaDon.ToLower().Contains(maDonHangLower));
-				}
-
-				// Tính tổng số bản ghi sau khi lọc
-				var totalCount = await query.CountAsync();
+				var totalCount = await filteredQuery.CountAsync();
 				var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-
-				// Thống kê theo cùng bộ lọc (khớp Admin/QuanLyDonHang — online/tại quầy/chờ xác nhận)
-				var totalOnlineCount = await query.CountAsync(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang));
-				var totalTaiQuayCount = await query.CountAsync(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
-				var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
+				if (totalPages == 0) totalPages = 1;
+				if (page > totalPages) page = totalPages;
 
 				// Áp dụng phân trang
-				var hoaDons = await query
+				var hoaDons = await filteredQuery
 					.OrderByDescending(h => h.NgayTao)
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
@@ -138,7 +191,7 @@ namespace QuanApi.Controllers
 							IDNhanVien = h.NhanVien.IDNhanVien,
 							TenNhanVien = h.NhanVien.TenNhanVien
 						} : null,
-						SoLuongSanPham = h.ChiTietHoaDons.Count
+						SoLuongSanPham = h.ChiTietHoaDons != null ? h.ChiTietHoaDons.Count : 0
 					})
 					.ToListAsync();
 
