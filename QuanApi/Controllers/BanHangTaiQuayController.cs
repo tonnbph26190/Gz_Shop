@@ -483,8 +483,40 @@ namespace QuanApi.Controllers
         [HttpPost("thanh-toan")]
         public async Task<IActionResult> PayInvoice([FromBody] InvoiceDto dto)
         {
-            // Map code sang ID phương thức thanh toán
-            Guid paymentMethodId = Guid.Empty;
+			// ===== VALIDATE SHIPPING INFO =====
+			var nameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-ZÀ-ỹ\s]+$");
+			var phoneRegex = new System.Text.RegularExpressions.Regex(@"^(0|\+84)[0-9]{9}$");
+			var emailRegex = new System.Text.RegularExpressions.Regex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
+
+			string name = (dto.CustomerName ?? "").Trim();
+			string phone = (dto.CustomerPhone ?? "").Trim();
+			string email = (dto.CustomerEmail ?? "").Trim();
+
+			// ❌ TÊN
+			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			{
+				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			}
+
+			// ❌ SĐT
+			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			{
+				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			}
+
+			// ❌ EMAIL (không bắt buộc nhưng nếu có phải đúng)
+			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
+			{
+				return BadRequest(new { message = "Email không đúng định dạng." });
+			}
+
+			// ❌ ĐỊA CHỈ nếu giao hàng
+			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
+			{
+				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			}
+			// Map code sang ID phương thức thanh toán
+			Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
             {
                 var method = await _context.PhuongThucThanhToans
@@ -1310,9 +1342,45 @@ namespace QuanApi.Controllers
 
             if (!gioHang.ChiTietGioHangs.Any())
                 return BadRequest(new { message = "Giỏ hàng không có sản phẩm nào." });
+			// ===== VALIDATE THÔNG TIN KHÁCH =====
+			var nameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-ZÀ-ỹ\s]+$");
 
-            // Map code sang ID phương thức thanh toán
-            Guid paymentMethodId = Guid.Empty;
+			// ✅ SĐT chuẩn VN + không cho toàn số 0
+			var phoneRegex = new System.Text.RegularExpressions.Regex(
+		@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$"
+	);
+			// ✅ Email chuẩn hơn (chặt hơn chút)
+			var emailRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+
+			string name = (dto.CustomerName ?? "").Trim();
+			string phone = (dto.CustomerPhone ?? "").Trim();
+			string email = (dto.CustomerEmail ?? "").Trim();
+
+			// ❌ TÊN
+			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			{
+				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			}
+
+			// ❌ SĐT
+			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			{
+				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			}
+
+			// ❌ EMAIL
+			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
+			{
+				return BadRequest(new { message = "Email không đúng định dạng." });
+			}
+
+			// ❌ ĐỊA CHỈ nếu giao hàng
+			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
+			{
+				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			}
+			// Map code sang ID phương thức thanh toán
+			Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
             {
                 var method = await _context.PhuongThucThanhToans
