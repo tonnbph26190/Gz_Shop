@@ -514,51 +514,80 @@
 			</div>
 
 			<div class="col-lg-4">
-				<div class="order-summary">
-					<h5 class="order-title">Đơn hàng của bạn</h5>
-					<div id="orderItems">
+				<div class="o<div class="order-summary" style="border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+					<h5 class="order-title px-4 py-2" style="border-bottom: 2px solid #28a745;">Đơn hàng của bạn</h5>
+					
+					<div id="orderItems" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
 						@foreach (var item in cartItems)
 						{
 							var spct = item.SanPhamChiTiet;
 							var sp = spct?.SanPham;
-							var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
 							var thanhTien = item.GiaBan * item.SoLuong;
 
-							<!-- Debug info -->
-							<!-- Item: @item.IDSanPhamChiTiet, GiaBan: @item.GiaBan, SoLuong: @item.SoLuong, ThanhTien: @thanhTien -->
-
-							<div class="order-item">
-								<div>
-									<div style="font-weight: 500;">@sp?.TenSanPham</div>
-									<small style="color: #666;">Số lượng: @item.SoLuong</small>
+							<div class="order-item px-4" style="font-size: 0.9rem;">
+								<div style="flex: 1;">
+									<div style="font-weight: 600; color: #444;">@sp?.TenSanPham <small class="text-muted">x @item.SoLuong</small></div>
 								</div>
-								<span>@thanhTien.ToString("N0") VND</span>
+								<span style="font-weight: 500;">@thanhTien.ToString("N0") VND</span>
 							</div>
 						}
 					</div>
 
-					<div class="order-total">
-						<div class="order-item">
-							<span>Tạm tính:</span>
-							<span id="tamTinh">@ViewBag.TongTien.ToString("N0") VND</span>
+					<div class="calculation-box" style="background: #fff; border-radius: 8px; padding: 15px; border: 1px solid #edf2f7;">
+						
+						<div id="pointInfoSection" style="display:none; background: #f0f7ff; margin: -15px -15px 15px -15px; padding: 15px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #d0e3ff;">
+							<div class="d-flex justify-content-between mb-1">
+								<span class="text-muted small">Điểm hiện có:</span>
+								<strong id="availablePointsText" class="text-primary">0 điểm</strong>
+							</div>
+							<div class="d-flex justify-content-between mb-2">
+								<span class="text-muted small">Tỷ lệ:</span>
+								<span id="pointRateText" class="badge bg-white text-dark border">1đ = 0 VND</span>
+							</div>
+							<div class="input-group input-group-sm mb-1">
+								<span class="input-group-text bg-white"><i class="bi bi-coin text-warning"></i></span>
+								<input type="number" id="requestedUsedPoints" class="form-control" placeholder="Nhập số điểm..." style="border-left: none;">
+							</div>
+							<small id="pointHintText" style="font-size: 11px; color: #6c757d;"></small>
 						</div>
-						<div class="order-item">
-							<span>Giảm giá:</span>
-							<span style="color:#28a745;" id="giamGia">0 VND</span>
+
+						<div class="order-item border-0 py-1">
+							<span class="text-secondary">Tạm tính (tiền hàng):</span>
+							<span id="tamTinh" style="font-weight: 500;">@ViewBag.TongTien.ToString("N0") VND</span>
 						</div>
-						<div class="order-item">
-							<span>Phí vận chuyển:</span>
-							<span id="phiVanChuyen">0 VND</span>
+						<div class="order-item border-0 py-1">
+							<span class="text-secondary">Phí vận chuyển:</span>
+							<span id="phiVanChuyen" style="font-weight: 500;">0 VND</span>
 						</div>
-						<div id="shippingDiscountMsg" style="display:none; margin: 4px 0 8px 0; font-size: 13px; color: #2e7d32;"></div>
-						<div class="order-item">
-							<strong>Tổng cộng:</strong>
-							<strong style="color:#d32f2f;" id="tongCong">@(((decimal)ViewBag.TongTien).ToString("N0")) VND</strong>
+
+						<hr style="opacity: 0.1; margin: 10px 0;">
+
+						<div class="order-item border-0 py-1">
+							<span class="text-secondary"><i class="bi bi-ticket-perforated me-1"></i>Giảm giá:</span>
+							<span id="giamGia" class="text-success" style="font-weight: 600;">- 0 VND</span>
+						</div>
+						<div class="order-item border-0 py-1">
+							<span class="text-secondary"><i class="bi bi-person-check me-1"></i>Giảm từ điểm:</span>
+							<span id="pointDiscount" class="text-success" style="font-weight: 600;">- 0 VND</span>
+						</div>
+						
+						<div id="shippingDiscountMsg" class="alert alert-success py-1 px-2 mt-2" style="display:none; font-size: 12px;"></div>
+
+						<div class="mt-3 pt-3" style="border-top: 2px dashed #dee2e6;">
+							<div class="d-flex justify-content-between align-items-center">
+								<span style="font-weight: 700; color: #333; font-size: 1.1rem;">Tổng cộng:</span>
+								<div class="text-end">
+									<div id="tongCong" style="color: #d32f2f; font-size: 1.4rem; font-weight: 800; line-height: 1;">
+										@(((decimal)ViewBag.TongTien).ToString("N0")) VND
+									</div>
+									<small class="text-muted" style="font-size: 10px;">(Đã bao gồm VAT)</small>
+								</div>
+							</div>
 						</div>
 					</div>
 
-					<button type="button" class="btn-checkout" onclick="datHang()">
-						ĐẶT HÀNG NGAY
+					<button type="button" class="btn-checkout shadow-sm mt-3" onclick="datHang()" style="letter-spacing: 1px; transition: transform 0.2s;">
+						<i class="bi bi-cart-check me-2"></i>ĐẶT HÀNG NGAY
 					</button>
 				</div>
 			</div>
@@ -615,8 +644,6 @@
 	</div>
 </div>
 
-
-
 <!-- jQuery cho esgoo.net API -->
 <script src="https://esgoo.net/scripts/jquery.js"></script>
 @section Scripts {
@@ -624,6 +651,43 @@
 			let gioHangData = null;
 			let phuongThucThanhToan = null;
 			let discountValue = 0;
+			let availablePoints = 0;
+			let moneyPerPoint = 0;
+			let maxPointsPerOrder = 0;
+
+			function getPointLimitByConfig() {
+				if (maxPointsPerOrder > 0) {
+					return Math.min(availablePoints, maxPointsPerOrder);
+				}
+
+				return availablePoints;
+			}
+
+			function getPointLimitByAmount(subtotal, discount) {
+				if (!moneyPerPoint || moneyPerPoint <= 0) {
+					return 0;
+				}
+
+				const baseAmount = Math.max(0, (parseFloat(subtotal) || 0) - (parseFloat(discount) || 0));
+				return Math.floor(baseAmount / moneyPerPoint);
+			}
+
+			function getMaxUsablePoints(subtotal, discount) {
+				return Math.max(0, Math.min(getPointLimitByConfig(), getPointLimitByAmount(subtotal, discount)));
+			}
+
+			function getClampedRequestedUsedPoints(subtotal, discount) {
+				const inputEl = document.getElementById('requestedUsedPoints');
+				const requested = Math.max(0, parseInt(inputEl?.value) || 0);
+				const maxUsable = getMaxUsablePoints(subtotal, discount);
+				const clamped = Math.min(requested, maxUsable);
+
+				if (inputEl && requested !== clamped) {
+					inputEl.value = clamped.toString();
+				}
+
+				return clamped;
+			}
 
 			// Load dữ liệu khi trang được tải
 			document.addEventListener('DOMContentLoaded', async function() {
@@ -671,6 +735,7 @@
 			// Load các thông tin khác
 				loadPhuongThucThanhToan();
 			loadCustomerInfo();
+			loadPointInfo();
 			loadDiscountFromSession();
 
 			// Bind event handlers cho các nút phiếu giảm giá
@@ -836,12 +901,34 @@
 					return;
 				}
 
-				// Kiểm tra địa chỉ: hoặc là có địa chỉ đầy đủ từ dropdown hoặc từ textarea
-				const hasDropdownAddress = tinh !== '0' && quan !== '0' && phuong !== '0' && diaChiChiTiet.trim() !== '';
-				const hasTextareaAddress = diaChiGiaoHang.trim() !== '';
+				const hasTinh = tinh && tinh !== '0';
+				const hasQuan = quan && quan !== '0';
+				const hasPhuong = phuong && phuong !== '0';
+				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
+				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
 
-				if (!hasDropdownAddress && !hasTextareaAddress) {
-					alert('Vui lòng chọn địa chỉ từ dropdown (Tỉnh/Quận/Phường + Địa chỉ chi tiết) hoặc nhập địa chỉ đầy đủ');
+				if (!hasTinh) {
+					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
+					return;
+				}
+
+				if (!hasQuan) {
+					alert('Vui lòng chọn Quận/Huyện để giao hàng');
+					return;
+				}
+
+				if (!hasPhuong) {
+					alert('Vui lòng chọn Phường/Xã để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiChiTiet) {
+					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiDayDu) {
+					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
 					return;
 				}
 
@@ -890,6 +977,7 @@
 				}
 
 				// Tạo dữ liệu đặt hàng
+				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
 				const checkoutData = {
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
@@ -897,7 +985,9 @@
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
-				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
+				usePoint: requestedUsedPoints > 0,
+				requestedUsedPoints: requestedUsedPoints,
+				tongTien: Math.max(0, tongTien - discountValue - (requestedUsedPoints * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
@@ -997,6 +1087,71 @@
 					}
 				} catch (error) {
 					console.error('Lỗi khi tải thông tin khách hàng:', error);
+				}
+			}
+
+			async function loadPointInfo() {
+				try {
+					const response = await fetch('/Checkout/GetPointInfo');
+					if (!response.ok) {
+						return;
+					}
+
+					const result = await response.json();
+					if (!result.success || !result.isLoggedIn) {
+						const section = document.getElementById('pointInfoSection');
+						if (section) section.style.display = 'none';
+						return;
+					}
+
+					availablePoints = parseInt(result.availablePoints) || 0;
+					moneyPerPoint = parseFloat(result.moneyPerPoint) || 0;
+					maxPointsPerOrder = Math.max(0, parseInt(result.maxPointsPerOrder) || 0);
+					if (moneyPerPoint <= 0) {
+						const section = document.getElementById('pointInfoSection');
+						if (section) section.style.display = 'none';
+						return;
+					}
+
+					const section = document.getElementById('pointInfoSection');
+					if (section) section.style.display = 'block';
+
+					const availableEl = document.getElementById('availablePointsText');
+					const rateEl = document.getElementById('pointRateText');
+					const hintEl = document.getElementById('pointHintText');
+					const inputEl = document.getElementById('requestedUsedPoints');
+
+					if (availableEl) {
+						availableEl.textContent = `${availablePoints.toLocaleString('vi-VN')} điểm`;
+					}
+
+					if (rateEl) {
+						rateEl.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND`;
+					}
+
+					if (hintEl) {
+						const configText = maxPointsPerOrder > 0
+							? `${Math.min(availablePoints, maxPointsPerOrder).toLocaleString('vi-VN')} điểm (theo cấu hình)`
+							: `${availablePoints.toLocaleString('vi-VN')} điểm`;
+						hintEl.textContent = `Bạn có thể dùng tối đa ${configText}.`;
+					}
+
+					if (inputEl) {
+						inputEl.max = getPointLimitByConfig();
+						inputEl.addEventListener('input', () => {
+							const value = parseInt(inputEl.value) || 0;
+							if (value < 0) inputEl.value = '0';
+							getClampedRequestedUsedPoints(
+								parseFloat(document.getElementById('tamTinh')?.textContent?.replace(/[^\d]/g, '')) || 0,
+								discountValue || 0
+							);
+							updatePaymentInfo();
+						});
+					}
+
+					updatePaymentInfo();
+				} catch (error) {
+					console.error('Lỗi khi tải thông tin điểm:', error);
 				}
 			}
 
@@ -1877,12 +2032,34 @@
 					return;
 				}
 
-				// Kiểm tra địa chỉ: hoặc là có địa chỉ đầy đủ từ dropdown hoặc từ textarea
-				const hasDropdownAddress = tinh !== '0' && quan !== '0' && phuong !== '0' && diaChiChiTiet.trim() !== '';
-				const hasTextareaAddress = diaChiGiaoHang.trim() !== '';
+				const hasTinh = tinh && tinh !== '0';
+				const hasQuan = quan && quan !== '0';
+				const hasPhuong = phuong && phuong !== '0';
+				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
+				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
 
-				if (!hasDropdownAddress && !hasTextareaAddress) {
-					alert('Vui lòng chọn địa chỉ từ dropdown (Tỉnh/Quận/Phường + Địa chỉ chi tiết) hoặc nhập địa chỉ đầy đủ');
+				if (!hasTinh) {
+					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
+					return;
+				}
+
+				if (!hasQuan) {
+					alert('Vui lòng chọn Quận/Huyện để giao hàng');
+					return;
+				}
+
+				if (!hasPhuong) {
+					alert('Vui lòng chọn Phường/Xã để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiChiTiet) {
+					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiDayDu) {
+					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
 					return;
 				}
 
@@ -1938,7 +2115,9 @@
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
-				tongTien: Math.max(0, tongTien - discountValue + (window.currentShippingFee || 0)),
+				usePoint: (parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) > 0,
+				requestedUsedPoints: parseInt(document.getElementById('requestedUsedPoints')?.value) || 0,
+				tongTien: Math.max(0, tongTien - discountValue - ((parseInt(document.getElementById('requestedUsedPoints')?.value) || 0) * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
@@ -3007,8 +3186,13 @@
 
 				// Cập nhật UI trực tiếp (bao gồm phí vận chuyển)
 				const phiVanChuyen = window.currentShippingFee || 0;
-				const tongCong = Math.max(0, total - discountAmount + phiVanChuyen);
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(total, discountAmount)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+				const tongCong = Math.max(0, total - discountAmount - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = discountAmount.toLocaleString() + ' VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 
 				console.log('UI updated directly:', {
@@ -3042,8 +3226,13 @@
 				}
 
 				const phiVanChuyen = window.currentShippingFee || 0;
-				const tongCongCleared = tamTinh + phiVanChuyen;
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+				const tongCongCleared = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 				document.getElementById('giamGia').textContent = '0 VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCongCleared.toLocaleString() + ' VND';
 
 				console.log('UI cleared directly:', {
@@ -3235,6 +3424,9 @@
 
 				// Phí vận chuyển động
 				const phiVanChuyen = window.currentShippingFee || 0;
+				const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+				const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, discountValue)));
+				const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
 
 				// Kiểm tra phiếu giảm giá hiện tại có hợp lệ không
 				const discountInfo = sessionStorage.getItem('appliedDiscount');
@@ -3259,9 +3451,14 @@
 							// showNotification(`Phiếu giảm giá công khai ${discount.maCode} đã bị xóa vì đơn hàng không đủ điều kiện tối thiểu ${donToiThieu.toLocaleString()} VND!`, 'warning');
 
 							// Cập nhật UI với discount = 0
-							const tongCong = tamTinh + phiVanChuyen;
+							const requestedPoints = parseInt(document.getElementById('requestedUsedPoints')?.value) || 0;
+							const usedPoints = Math.max(0, Math.min(requestedPoints, getMaxUsablePoints(tamTinh, 0)));
+							const pointDiscountAmount = usedPoints * (moneyPerPoint || 0);
+							const tongCong = Math.max(0, tamTinh - pointDiscountAmount + phiVanChuyen);
 							document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
 							document.getElementById('giamGia').textContent = '0 VND';
+							const pointDiscountEl = document.getElementById('pointDiscount');
+							if (pointDiscountEl) pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
 							document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 							return; // Thoát khỏi function để tránh cập nhật UI với discount cũ
 						}
@@ -3293,12 +3490,13 @@
 					discountValue = 0;
 				}
 
-				// Đảm bảo tổng cộng không âm (tạm tính - giảm giá + phí vận chuyển)
-				const tongCong = Math.max(0, tamTinh - discountValue + phiVanChuyen);
+				// Đảm bảo tổng cộng không âm (tạm tính - giảm giá - giảm từ điểm + phí vận chuyển)
+				const tongCong = Math.max(0, tamTinh - discountValue - pointDiscountAmount + phiVanChuyen);
 
 				console.log('updatePaymentInfo calculation:', {
 					tamTinh: tamTinh,
 					giamGia: discountValue,
+					giamTuDiem: pointDiscountAmount,
 					phiVanChuyen: phiVanChuyen,
 					tongCong: tongCong,
 					discountValue: discountValue
@@ -3307,6 +3505,10 @@
 				// Cập nhật giao diện
 				document.getElementById('tamTinh').textContent = tamTinh.toLocaleString() + ' VND';
 				document.getElementById('giamGia').textContent = discountValue.toLocaleString() + ' VND';
+				const pointDiscountEl = document.getElementById('pointDiscount');
+				if (pointDiscountEl) {
+					pointDiscountEl.textContent = pointDiscountAmount.toLocaleString() + ' VND';
+				}
 				document.getElementById('phiVanChuyen').textContent = phiVanChuyen.toLocaleString() + ' VND';
 				document.getElementById('tongCong').textContent = tongCong.toLocaleString() + ' VND';
 			}

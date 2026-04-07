@@ -5,12 +5,14 @@ namespace QuanView.Areas.Admin.Models
     public class ChuyenGioHangThanhHoaDonDto
     {
         public Guid IDGioHang { get; set; }
+        public Guid? CustomerId { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerPhone { get; set; }
         public string? CustomerEmail { get; set; }
         public string? Address { get; set; }
         public string? DiscountCode { get; set; }
         public bool UsePoint { get; set; }
+        public int? RequestedUsedPoints { get; set; }
         public bool Shipping { get; set; }
         public string? PaymentMethod { get; set; }
         public decimal? CustomerPaid { get; set; }

@@ -20,19 +20,22 @@ namespace QuanApi.Controllers
         private readonly IGHNService _ghnService;
         private readonly IShippingPolicyService _shippingPolicyService;
         private readonly ILoyaltyService _loyaltyService;
+        private readonly IInventoryReservationService _inventoryReservationService;
 
         public BanHangTaiQuayController(
             BanQuanAu1DbContext context,
             IShippingService shippingService,
             IGHNService ghnService,
             IShippingPolicyService shippingPolicyService,
-            ILoyaltyService loyaltyService)
+            ILoyaltyService loyaltyService,
+            IInventoryReservationService inventoryReservationService)
         {
             _context = context;
             _shippingService = shippingService;
             _ghnService = ghnService;
             _shippingPolicyService = shippingPolicyService;
             _loyaltyService = loyaltyService;
+            _inventoryReservationService = inventoryReservationService;
         }
 
         // 1. Tạo đơn hàng mới
@@ -60,6 +63,7 @@ namespace QuanApi.Controllers
                 TrangThaiHoaDon = true
             };
             _context.HoaDons.Add(hoaDon);
+            var directCommitLines = new List<InventoryLine>();
             await _context.SaveChangesAsync();
 
             // Thêm sản phẩm nếu có
@@ -71,13 +75,14 @@ namespace QuanApi.Controllers
                     if (spct == null)
                         return BadRequest(new { message = $"Không tìm thấy sản phẩm chi tiết: {sp.IDSanPhamChiTiet}" });
 
-                    // Kiểm tra số lượng tồn kho
-                    if (spct.SoLuong <= 0)
+                    // Kiểm tra số lượng tồn kho khả dụng (đã trừ phần đặt chỗ)
+                    var soLuongKhaDung = spct.SoLuong - spct.SoLuongDatCho;
+                    if (soLuongKhaDung <= 0)
                         return BadRequest(new { message = $"Sản phẩm {spct.MaSPChiTiet} đã hết hàng." });
                     if (sp.SoLuong <= 0)
                         return BadRequest(new { message = $"Số lượng phải lớn hơn 0 cho sản phẩm: {spct.MaSPChiTiet}" });
-                    if (sp.SoLuong > spct.SoLuong)
-                        return BadRequest(new { message = $"Số lượng vượt quá tồn kho cho sản phẩm {spct.MaSPChiTiet}. Hiện có: {spct.SoLuong}" });
+                    if (sp.SoLuong > soLuongKhaDung)
+                        return BadRequest(new { message = $"Số lượng vượt quá tồn khả dụng cho sản phẩm {spct.MaSPChiTiet}. Hiện có: {soLuongKhaDung}" });
 
                     // Tính giá sau khi áp dụng đợt giảm giá
                     var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
@@ -113,13 +118,14 @@ namespace QuanApi.Controllers
             if (spct == null)
                 return BadRequest(new { message = "Không tìm thấy sản phẩm chi tiết." });
 
-            // Kiểm tra số lượng tồn kho
-            if (spct.SoLuong <= 0)
+            // Kiểm tra số lượng tồn kho khả dụng
+            var soLuongKhaDung = spct.SoLuong - spct.SoLuongDatCho;
+            if (soLuongKhaDung <= 0)
                 return BadRequest(new { message = "Sản phẩm đã hết hàng." });
             if (dto.SoLuong <= 0)
                 return BadRequest(new { message = "Số lượng phải lớn hơn 0." });
-            if (dto.SoLuong > spct.SoLuong)
-                return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}" });
+            if (dto.SoLuong > soLuongKhaDung)
+                return BadRequest(new { message = $"Số lượng vượt quá tồn khả dụng. Hiện có: {soLuongKhaDung}" });
 
             // Tính giá sau khi áp dụng đợt giảm giá
             var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
@@ -128,8 +134,8 @@ namespace QuanApi.Controllers
             if (cthd != null)
             {
                 // Kiểm tra tổng số lượng sau khi thêm có vượt quá tồn kho không
-                if (cthd.SoLuong + dto.SoLuong > spct.SoLuong)
-                    return BadRequest(new { message = $"Tổng số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}, Đã chọn: {cthd.SoLuong}" });
+                if (cthd.SoLuong + dto.SoLuong > soLuongKhaDung)
+                    return BadRequest(new { message = $"Tổng số lượng vượt quá tồn khả dụng. Hiện có: {soLuongKhaDung}, Đã chọn: {cthd.SoLuong}" });
 
                 cthd.SoLuong += dto.SoLuong;
                 cthd.ThanhTien = cthd.SoLuong * giaSauGiam;
@@ -180,11 +186,12 @@ namespace QuanApi.Controllers
                 if (spct == null)
                     return BadRequest(new { message = "Không tìm thấy sản phẩm chi tiết." });
 
-                // Kiểm tra số lượng tồn kho
-                if (spct.SoLuong <= 0)
+                // Kiểm tra số lượng tồn kho khả dụng
+                var soLuongKhaDungMoi = spct.SoLuong - spct.SoLuongDatCho;
+                if (soLuongKhaDungMoi <= 0)
                     return BadRequest(new { message = "Sản phẩm đã hết hàng." });
-                if (dto.SoLuongMoi > spct.SoLuong)
-                    return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}" });
+                if (dto.SoLuongMoi > soLuongKhaDungMoi)
+                    return BadRequest(new { message = $"Số lượng vượt quá tồn khả dụng. Hiện có: {soLuongKhaDungMoi}" });
 
                 // Tính giá sau khi áp dụng đợt giảm giá
                 var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
@@ -285,7 +292,7 @@ namespace QuanApi.Controllers
                         .Where(a => a.TrangThai && a.LaAnhChinh)
                         .Select(a => a.UrlAnh)
                         .FirstOrDefault() ?? "/img/default-product.jpg",
-                    stock = x.SoLuong,
+                    stock = x.SoLuong - x.SoLuongDatCho,
                     // Thêm thông tin sản phẩm gốc
                     productId = x.IDSanPham,
                     productName = x.SanPham.TenSanPham,
@@ -364,7 +371,7 @@ namespace QuanApi.Controllers
                         .Where(a => a.TrangThai && a.LaAnhChinh)
                         .Select(a => a.UrlAnh)
                         .FirstOrDefault() ?? "/img/default-product.jpg",
-                    stock = x.SoLuong,
+                    stock = x.SoLuong - x.SoLuongDatCho,
                     productId = x.IDSanPham,
                     productName = x.SanPham.TenSanPham
                 })
@@ -468,6 +475,7 @@ namespace QuanApi.Controllers
             public List<InvoiceProductDto> Products { get; set; }
             public string? DiscountCode { get; set; }
             public bool UsePoint { get; set; }
+            public int? RequestedUsedPoints { get; set; }
             public bool Shipping { get; set; }
             public string? PaymentMethod { get; set; } // Mã phương thức thanh toán ("cash", "bank", ...)
             public decimal? CustomerPaid { get; set; }
@@ -483,6 +491,40 @@ namespace QuanApi.Controllers
         [HttpPost("thanh-toan")]
         public async Task<IActionResult> PayInvoice([FromBody] InvoiceDto dto)
         {
+			// ===== VALIDATE SHIPPING INFO =====
+			var nameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-ZÀ-ỹ\s]+$");
+			var phoneRegex = new System.Text.RegularExpressions.Regex(@"^(0|\+84)[0-9]{9}$");
+			var emailRegex = new System.Text.RegularExpressions.Regex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
+
+			string name = (dto.CustomerName ?? "").Trim();
+			string phone = (dto.CustomerPhone ?? "").Trim();
+			string email = (dto.CustomerEmail ?? "").Trim();
+
+			// ❌ TÊN
+			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			{
+				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			}
+
+			// ❌ SĐT
+			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			{
+				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			}
+
+			// ❌ EMAIL (không bắt buộc nhưng nếu có phải đúng)
+			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
+			{
+				return BadRequest(new { message = "Email không đúng định dạng." });
+			}
+
+			// ❌ ĐỊA CHỈ nếu giao hàng
+			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
+			{
+				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			}
+			
+            await using var tx = await _context.Database.BeginTransactionAsync();
             // Map code sang ID phương thức thanh toán
             Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
@@ -529,12 +571,15 @@ namespace QuanApi.Controllers
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
                 TrangThai = trangThaiHoaDon,
+                DaDatChoTonKho = false,
+                DaTruTonKho = true,
                 BanTaiQuay = true,
                 NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true,
                 IDPhuongThucThanhToan = paymentMethodId
             };
             _context.HoaDons.Add(hoaDon);
+            var directCommitLines = new List<InventoryLine>();
 
             // 2. Thêm chi tiết hóa đơn và kiểm tra tồn kho
             foreach (var p in dto.Products)
@@ -546,12 +591,13 @@ namespace QuanApi.Controllers
                     return BadRequest(new { message = $"Sản phẩm {spct.MaSPChiTiet ?? spct.IDSanPhamChiTiet.ToString()} đã ngưng bán, không thể thanh toán." });
 
                 // Kiểm tra số lượng tồn kho
-                if (spct.SoLuong <= 0)
+                var soLuongKhaDung = spct.SoLuong - spct.SoLuongDatCho;
+                if (soLuongKhaDung <= 0)
                     return BadRequest(new { message = $"Sản phẩm {spct.IDSanPhamChiTiet} đã hết hàng" });
                 if (p.Quantity <= 0)
                     return BadRequest(new { message = $"Số lượng phải lớn hơn 0 cho sản phẩm {spct.IDSanPhamChiTiet}" });
-                if (p.Quantity > spct.SoLuong)
-                    return BadRequest(new { message = $"Sản phẩm {spct.IDSanPhamChiTiet} vượt quá tồn kho ({spct.SoLuong})" });
+                if (p.Quantity > soLuongKhaDung)
+                    return BadRequest(new { message = $"Sản phẩm {spct.IDSanPhamChiTiet} vượt quá tồn khả dụng ({soLuongKhaDung})" });
                 // Tính giá sau khi áp dụng đợt giảm giá
                 var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
 
@@ -569,9 +615,7 @@ namespace QuanApi.Controllers
                 };
                 hoaDon.TongTien += cthd.ThanhTien;
                 _context.ChiTietHoaDons.Add(cthd);
-
-                // Trừ tồn kho
-                spct.SoLuong -= p.Quantity;
+                directCommitLines.Add(new InventoryLine(p.ProductDetailId, p.Quantity));
             }
 
             // 3. Áp dụng mã giảm giá nếu có
@@ -622,11 +666,17 @@ namespace QuanApi.Controllers
             }
 
             // 4. Áp dụng điểm nếu có
-            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+                customerIdForInvoice,
+                hoaDon.TongTien,
+                dto.UsePoint,
+                dto.RequestedUsedPoints);
+            // Luôn lưu snapshot điểm / tỷ lệ quy đổi (khớp dữ liệu hiển thị khi tạo đơn); chỉ trừ TongTien khi có giảm từ điểm
+            hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+            hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+            hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
             if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
-                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 
@@ -657,7 +707,14 @@ namespace QuanApi.Controllers
                 await _loyaltyService.ApplyCheckoutPointChangesAsync(customerIdForInvoice.Value, hoaDon.IDHoaDon, loyaltyResult, "POS");
             }
 
+            var directCommitResult = await _inventoryReservationService.CommitDirectAsync(directCommitLines, "POS");
+            if (!directCommitResult.Success)
+            {
+                return BadRequest(new { message = directCommitResult.ErrorMessage ?? "Không thể trừ tồn kho khi thanh toán." });
+            }
+
             await _context.SaveChangesAsync();
+            await tx.CommitAsync();
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon });
         }
 
@@ -774,7 +831,7 @@ namespace QuanApi.Controllers
                     description = $"Kích cỡ: {x.KichCo.TenKichCo}, Màu sắc: {x.MauSac.TenMauSac}" +
                                  (x.HoaTiet != null ? $", Họa tiết: {x.HoaTiet.TenHoaTiet}" : ""),
                     price = x.GiaBan,
-                    stock = x.SoLuong,
+                    stock = x.SoLuong - x.SoLuongDatCho,
                     size = x.KichCo.TenKichCo,
                     color = x.MauSac.TenMauSac,
                     pattern = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : null,
@@ -1079,9 +1136,9 @@ namespace QuanApi.Controllers
             if (spct == null || !spct.TrangThai)
                 return BadRequest(new { message = "Sản phẩm không tồn tại hoặc đã bị vô hiệu hóa." });
 
-            // Kiểm tra tồn kho
-            if (spct.SoLuong < dto.SoLuong)
-                return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}" });
+            var soLuongKhaDung = spct.SoLuong - spct.SoLuongDatCho;
+            if (soLuongKhaDung < dto.SoLuong)
+                return BadRequest(new { message = $"Số lượng vượt quá tồn khả dụng. Hiện có: {soLuongKhaDung}" });
 
             // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
             var cthd = await _context.ChiTietGioHangs
@@ -1091,14 +1148,17 @@ namespace QuanApi.Controllers
 
             if (cthd != null)
             {
-                // Kiểm tra tổng số lượng sau khi thêm
-                if (spct.SoLuong < cthd.SoLuong + dto.SoLuong)
-                    return BadRequest(new { message = $"Tổng số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}, Đã chọn: {cthd.SoLuong}" });
+                var reserveResult = await _inventoryReservationService.ReserveAsync(
+                    new[] { new InventoryLine(dto.IDSanPhamChiTiet, dto.SoLuong) },
+                    dto.NguoiCapNhat ?? "System");
+                if (!reserveResult.Success)
+                    return BadRequest(new { message = reserveResult.ErrorMessage ?? "Không thể giữ chỗ tồn kho." });
 
                 // Cập nhật số lượng và đồng bộ giá theo sản phẩm hiện tại
                 var giaSauGiam = await TinhGiaSauGiam(spct.IDSanPhamChiTiet, spct.GiaBan);
                 cthd.GiaBan = giaSauGiam;
                 cthd.SoLuong += dto.SoLuong;
+                cthd.SoLuongDatCho += dto.SoLuong;
                 cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
             }
@@ -1115,21 +1175,24 @@ namespace QuanApi.Controllers
                     IDGioHang = dto.IDGioHang,
                     IDSanPhamChiTiet = dto.IDSanPhamChiTiet,
                     SoLuong = dto.SoLuong,
+                    SoLuongDatCho = dto.SoLuong,
                     GiaBan = giaSauGiam,
                     NgayTao = DateTime.UtcNow,
                     NguoiTao = dto.NguoiCapNhat ?? "System",
                     TrangThai = true
                 };
+
+                var reserveResult = await _inventoryReservationService.ReserveAsync(
+                    new[] { new InventoryLine(dto.IDSanPhamChiTiet, dto.SoLuong) },
+                    dto.NguoiCapNhat ?? "System");
+                if (!reserveResult.Success)
+                    return BadRequest(new { message = reserveResult.ErrorMessage ?? "Không thể giữ chỗ tồn kho." });
+
                 _context.ChiTietGioHangs.Add(cthd);
             }
 
-            //// Trừ tồn kho ngay lập tức
-            //spct.SoLuong -= dto.SoLuong;
-            //spct.LanCapNhatCuoi = DateTime.UtcNow;
-            //spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
-
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Thêm vào giỏ hàng thành công", soLuongConLai = spct.SoLuong });
+            return Ok(new { message = "Thêm vào giỏ hàng thành công", soLuongConLai = spct.SoLuong - spct.SoLuongDatCho });
         }
 
         // Cập nhật số lượng sản phẩm trong giỏ hàng
@@ -1154,17 +1217,41 @@ namespace QuanApi.Controllers
 
             int soLuongCu = cthd.SoLuong;
             int soLuongMoi = dto.SoLuongMoi;
+            int chenhLech = soLuongMoi - soLuongCu;
 
             if (soLuongMoi <= 0)
             {
+                if (cthd.SoLuongDatCho > 0)
+                {
+                    var releaseResult = await _inventoryReservationService.ReleaseAsync(
+                        new[] { new InventoryLine(dto.IDSanPhamChiTiet, cthd.SoLuongDatCho) },
+                        dto.NguoiCapNhat ?? "System");
+                    if (!releaseResult.Success)
+                        return BadRequest(new { message = releaseResult.ErrorMessage ?? "Không thể nhả giữ chỗ tồn kho." });
+                }
                 _context.ChiTietGioHangs.Remove(cthd);
             }
             else
             {
-                if (soLuongMoi > spct.SoLuong)
-                    return BadRequest(new { message = $"Số lượng vượt quá tồn kho. Hiện có: {spct.SoLuong}" });
+                if (chenhLech > 0)
+                {
+                    var reserveResult = await _inventoryReservationService.ReserveAsync(
+                        new[] { new InventoryLine(dto.IDSanPhamChiTiet, chenhLech) },
+                        dto.NguoiCapNhat ?? "System");
+                    if (!reserveResult.Success)
+                        return BadRequest(new { message = reserveResult.ErrorMessage ?? "Không thể tăng giữ chỗ tồn kho." });
+                }
+                else if (chenhLech < 0)
+                {
+                    var releaseResult = await _inventoryReservationService.ReleaseAsync(
+                        new[] { new InventoryLine(dto.IDSanPhamChiTiet, -chenhLech) },
+                        dto.NguoiCapNhat ?? "System");
+                    if (!releaseResult.Success)
+                        return BadRequest(new { message = releaseResult.ErrorMessage ?? "Không thể giảm giữ chỗ tồn kho." });
+                }
 
                 cthd.SoLuong = soLuongMoi;
+                cthd.SoLuongDatCho = soLuongMoi;
                 cthd.LanCapNhatCuoi = DateTime.UtcNow;
                 cthd.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
             }
@@ -1173,7 +1260,7 @@ namespace QuanApi.Controllers
             spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Cập nhật số lượng thành công", soLuongConLai = spct.SoLuong });
+            return Ok(new { message = "Cập nhật số lượng thành công", soLuongConLai = spct.SoLuong - spct.SoLuongDatCho });
         }
 
         // Xóa sản phẩm khỏi giỏ hàng (trả lại tồn kho)
@@ -1191,6 +1278,15 @@ namespace QuanApi.Controllers
 
             if (cthd == null)
                 return BadRequest(new { message = "Sản phẩm không tồn tại trong giỏ hàng." });
+
+            if (cthd.SoLuongDatCho > 0)
+            {
+                var releaseResult = await _inventoryReservationService.ReleaseAsync(
+                    new[] { new InventoryLine(dto.IDSanPhamChiTiet, cthd.SoLuongDatCho) },
+                    dto.NguoiCapNhat ?? "System");
+                if (!releaseResult.Success)
+                    return BadRequest(new { message = releaseResult.ErrorMessage ?? "Không thể nhả giữ chỗ tồn kho." });
+            }
 
             // Xóa sản phẩm khỏi giỏ
             _context.ChiTietGioHangs.Remove(cthd);
@@ -1281,17 +1377,20 @@ namespace QuanApi.Controllers
             if (gioHang == null)
                 return BadRequest(new { message = "Giỏ hàng không tồn tại hoặc đã bị vô hiệu hóa." });
 
-            // Trả lại tồn kho cho tất cả sản phẩm
+            var lines = gioHang.ChiTietGioHangs
+                .Where(x => x.SoLuongDatCho > 0)
+                .Select(x => new InventoryLine(x.IDSanPhamChiTiet, x.SoLuongDatCho))
+                .ToList();
+
+            if (lines.Count > 0)
+            {
+                var releaseResult = await _inventoryReservationService.ReleaseAsync(lines, dto.NguoiCapNhat ?? "System");
+                if (!releaseResult.Success)
+                    return BadRequest(new { message = releaseResult.ErrorMessage ?? "Không thể nhả tồn giữ chỗ cho giỏ hàng." });
+            }
+
             _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
             _context.GioHangs.Remove(gioHang);
-            await _context.SaveChangesAsync();
-
-            // Xóa tất cả chi tiết giỏ hàng
-            _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
-
-            // Xóa giỏ hàng
-            _context.GioHangs.Remove(gioHang);
-
             await _context.SaveChangesAsync();
             return Ok(new { message = "Xóa giỏ hàng thành công" });
         }
@@ -1300,6 +1399,7 @@ namespace QuanApi.Controllers
         [HttpPost("chuyen-gio-hang-thanh-hoa-don")]
         public async Task<IActionResult> ChuyenGioHangThanhHoaDon([FromBody] ChuyenGioHangThanhHoaDonDto dto)
         {
+            await using var tx = await _context.Database.BeginTransactionAsync();
             var gioHang = await _context.GioHangs
                 .Include(g => g.ChiTietGioHangs.Where(ct => ct.TrangThai))
                     .ThenInclude(ct => ct.SanPhamChiTiet)
@@ -1310,9 +1410,45 @@ namespace QuanApi.Controllers
 
             if (!gioHang.ChiTietGioHangs.Any())
                 return BadRequest(new { message = "Giỏ hàng không có sản phẩm nào." });
+			// ===== VALIDATE THÔNG TIN KHÁCH =====
+			var nameRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-ZÀ-ỹ\s]+$");
 
-            // Map code sang ID phương thức thanh toán
-            Guid paymentMethodId = Guid.Empty;
+			// ✅ SĐT chuẩn VN + không cho toàn số 0
+			var phoneRegex = new System.Text.RegularExpressions.Regex(
+		@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$"
+	);
+			// ✅ Email chuẩn hơn (chặt hơn chút)
+			var emailRegex = new System.Text.RegularExpressions.Regex(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+
+			string name = (dto.CustomerName ?? "").Trim();
+			string phone = (dto.CustomerPhone ?? "").Trim();
+			string email = (dto.CustomerEmail ?? "").Trim();
+
+			// ❌ TÊN
+			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			{
+				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			}
+
+			// ❌ SĐT
+			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			{
+				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			}
+
+			// ❌ EMAIL
+			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
+			{
+				return BadRequest(new { message = "Email không đúng định dạng." });
+			}
+
+			// ❌ ĐỊA CHỈ nếu giao hàng
+			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
+			{
+				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			}
+			// Map code sang ID phương thức thanh toán
+			Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
             {
                 var method = await _context.PhuongThucThanhToans
@@ -1340,9 +1476,10 @@ namespace QuanApi.Controllers
                 trangThaiHoaDon = "DaThanhToan";
             }
 
-            // Khách vãng lai (giỏ hàng không có IDKhachHang) chọn giao hàng: tạo KhachHang + địa chỉ trong DB
-            Guid? customerIdForInvoice = gioHang.IDKhachHang;
-            if (!gioHang.IDKhachHang.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+            // Khách có tài khoản: ưu tiên CustomerId từ POS (chọn khách sau khi tạo giỏ thì GioHang.IDKhachHang thường vẫn null)
+            var registeredCustomerId = dto.CustomerId ?? gioHang.IDKhachHang;
+            Guid? customerIdForInvoice = registeredCustomerId;
+            if (!customerIdForInvoice.HasValue && dto.Shipping && !string.IsNullOrWhiteSpace(dto.CustomerName) && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
             {
                 var guest = await TaoKhachHangVangLaiAsync(dto.CustomerName, dto.CustomerPhone, dto.CustomerEmail, dto.Address);
                 customerIdForInvoice = guest.IDKhachHang;
@@ -1365,14 +1502,12 @@ namespace QuanApi.Controllers
                 IDPhuongThucThanhToan = paymentMethodId
             };
             _context.HoaDons.Add(hoaDon);
+            var committedLines = new List<InventoryLine>();
 
             // Chuyển chi tiết giỏ hàng thành chi tiết hóa đơn (dùng giá hiện tại, chỉ với SP đang bán)
             foreach (var cthd in gioHang.ChiTietGioHangs)
             {
                 var spct = cthd.SanPhamChiTiet;
-
-                if (spct.SoLuong < cthd.SoLuong)
-                    return BadRequest(new { message = $"Sản phẩm {spct.MaSPChiTiet} không đủ tồn kho" });
 
                 var giaSauGiam = await TinhGiaSauGiam(cthd.IDSanPhamChiTiet, spct.GiaBan);
 
@@ -1392,9 +1527,7 @@ namespace QuanApi.Controllers
                 _context.ChiTietHoaDons.Add(cthdHoaDon);
 
                 hoaDon.TongTien += cthdHoaDon.ThanhTien;
-
-                // ⭐ TRỪ TỒN KHO
-                spct.SoLuong -= cthd.SoLuong;
+                committedLines.Add(new InventoryLine(cthd.IDSanPhamChiTiet, cthd.SoLuongDatCho > 0 ? cthd.SoLuongDatCho : cthd.SoLuong));
             }
 
             // Áp dụng mã giảm giá nếu có
@@ -1403,12 +1536,12 @@ namespace QuanApi.Controllers
                 var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
                 if (discount != null)
                 {
-                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
-                    if (gioHang.IDKhachHang.HasValue)
+                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không (dùng registeredCustomerId: khớp khách đang chọn trên POS)
+                    if (registeredCustomerId.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == gioHang.IDKhachHang.Value &&
+                                                     x.IDKhachHang == registeredCustomerId.Value &&
                                                      x.TrangThai &&
                                                      x.SoLuongDaSuDung < x.SoLuong);
 
@@ -1447,12 +1580,17 @@ namespace QuanApi.Controllers
                 }
             }
 
-            // Áp dụng điểm khách hàng nếu có
-            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(customerIdForInvoice, hoaDon.TongTien, dto.UsePoint);
+            // Loyalty: tính điểm / giảm điểm theo khách trên hóa đơn (đã gồm CustomerId từ POS)
+            var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+                customerIdForInvoice,
+                hoaDon.TongTien,
+                dto.UsePoint,
+                dto.RequestedUsedPoints);
+            hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
+            hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
+            hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
             if (loyaltyResult.DiscountFromPoints > 0)
             {
-                hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
-                hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
                 hoaDon.TongTien = Math.Max(hoaDon.TongTien - loyaltyResult.DiscountFromPoints, 0);
             }
 
@@ -1483,11 +1621,23 @@ namespace QuanApi.Controllers
                 await _loyaltyService.ApplyCheckoutPointChangesAsync(customerIdForInvoice.Value, hoaDon.IDHoaDon, loyaltyResult, "POS");
             }
 
+            var hasFullReservation = gioHang.ChiTietGioHangs.All(x => x.SoLuongDatCho >= x.SoLuong);
+            var commitResult = hasFullReservation
+                ? await _inventoryReservationService.CommitReservedAsync(committedLines, "POS")
+                : await _inventoryReservationService.CommitDirectAsync(
+                    gioHang.ChiTietGioHangs.Select(x => new InventoryLine(x.IDSanPhamChiTiet, x.SoLuong)),
+                    "POS");
+            if (!commitResult.Success)
+            {
+                return BadRequest(new { message = commitResult.ErrorMessage ?? "Không thể hoàn tất thanh toán từ phần tồn đã giữ chỗ." });
+            }
+
             // Xóa giỏ hàng và chi tiết giỏ hàng
             _context.ChiTietGioHangs.RemoveRange(gioHang.ChiTietGioHangs);
             _context.GioHangs.Remove(gioHang);
 
             await _context.SaveChangesAsync();
+            await tx.CommitAsync();
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
         }
 

@@ -43,6 +43,9 @@ namespace QuanApi.Data
         [Range(0, double.MaxValue, ErrorMessage = "Tiền giảm từ điểm phải lớn hơn hoặc bằng 0.")]
         public decimal SoTienGiamTuDiem { get; set; } = 0;
 
+        [Range(0, double.MaxValue, ErrorMessage = "Tỷ lệ quy đổi điểm phải lớn hơn hoặc bằng 0.")]
+        public decimal TyLeQuyDoiDiem { get; set; } = 0;
+
         [Range(0, int.MaxValue, ErrorMessage = "Điểm cộng phải lớn hơn hoặc bằng 0.")]
         public int DiemCong { get; set; } = 0;
 
@@ -73,6 +76,10 @@ namespace QuanApi.Data
 
         [MaxLength(500)]
         public string? LyDoHuyDon { get; set; }
+
+        public bool DaDatChoTonKho { get; set; } = false;
+
+        public bool DaTruTonKho { get; set; } = false;
 
         public bool TrangThaiHoaDon { get; set; } = true;
         [ForeignKey("IDKhachHang")]

@@ -101,10 +101,10 @@ namespace QuanApi.Services
                 query = query.Where(x => x.SanPhamChiTiets.Any(ct => ct.GiaBan <= priceTo));
 
             if (qtyFrom.HasValue)
-                query = query.Where(x => x.SanPhamChiTiets.Any(ct => ct.SoLuong >= qtyFrom));
+                query = query.Where(x => x.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom));
 
             if (qtyTo.HasValue)
-                query = query.Where(x => x.SanPhamChiTiets.Any(ct => ct.SoLuong <= qtyTo));
+                query = query.Where(x => x.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) <= qtyTo));
 
             var total = await query.CountAsync();
 
@@ -451,6 +451,9 @@ namespace QuanApi.Services
                     IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
 
                     SoLuong = ct.SoLuong,
+                    SoLuongVatLy = ct.SoLuong,
+                    SoLuongDatCho = ct.SoLuongDatCho,
+                    SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                     GiaBan = ct.GiaBan,
                     price = ct.GiaBan,
                     originalPrice = ct.GiaBan,

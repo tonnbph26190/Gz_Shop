@@ -1,6 +1,8 @@
-﻿@model QuanApi.Data.HoaDon
+@model QuanApi.Data.HoaDon
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
+    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -210,11 +212,11 @@
                         <i class="bi bi-credit-card-2-back-fill premium-icon"></i>
                         <h5>Thanh toán</h5>
                     </div>
-                    <div class="p-4">
+                    <div class="">
                         <div class="summary-box">
                             <div class="summary-row text-muted">
-                                <span>Tạm tính</span>
-                                <span>@((Model.TongTien + (Model.TienGiam ?? 0)).ToString("N0")) ₫</span>
+                                <span>Tạm tính (tiền hàng)</span>
+                                <span>@tamTinh.ToString("N0") ₫</span>
                             </div>
                             @if (Model.TienGiam > 0)
                             {
@@ -223,17 +225,33 @@
                                     <span>-@Model.TienGiam?.ToString("N0") ₫</span>
                                 </div>
                             }
+                            @if (Model.DiemDaDung > 0)
+                            {
+                                <div class="summary-row text-muted">
+                                    <span>Điểm đã dùng</span>
+                                    <span>@Model.DiemDaDung.ToString("N0") điểm</span>
+                                </div>
+                                <div class="summary-row text-success">
+                                    <div>
+                                        <span>Quy đổi từ điểm</span><br>&nbsp;&nbsp;&nbsp;
+                                        <span style="color: #8b8b8b;">(1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") ₫)</span>
+                                    </div>
+                                    <div>
+                                        <span>-@soTienGiamTuDiem.ToString("N0") ₫ </span>
+                                    </div>
+                                </div>
+                            }
                             <div class="summary-row text-muted">
                                 <span>Phí vận chuyển</span>
                                 <span>@(Model.PhiVanChuyen > 0 ? Model.PhiVanChuyen?.ToString("N0") + " ₫" : "Miễn phí")</span>
                             </div>
                             <div class="summary-row summary-total">
-                                <span>Tổng cộng</span>
+                                <span>Tổng tiền thanh toán</span>
                                 <span>@Model.TongTien.ToString("N0") ₫</span>
                             </div>
                         </div>
 
-                        <div class="mt-4 info-item">
+                        <div class="mt-4 info-item p-4">
                             <label>Phương thức</label>
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-wallet2 text-primary"></i>

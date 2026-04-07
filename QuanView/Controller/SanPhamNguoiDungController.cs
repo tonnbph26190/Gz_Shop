@@ -134,7 +134,7 @@ namespace QuanView.Controllers
 					HoaTiet = b.TenHoaTiet,
 					GiaGoc = b.GiaBan,
 					GiaSauGiam = b.price,
-					SoLuong = b.SoLuong
+					SoLuong = b.SoLuongKhaDung
 				}).ToList()
 			};
 

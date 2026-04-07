@@ -85,6 +85,10 @@ namespace QuanView.Areas.Admin.Controllers
             public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
+            public decimal SoTienGiamTuDiem { get; set; }
+            public int DiemDaDung { get; set; }
+            public int DiemCong { get; set; }
+            public decimal TyLeQuyDoiDiem { get; set; }
             public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayTao { get; set; }
@@ -153,6 +157,13 @@ namespace QuanView.Areas.Admin.Controllers
             public SanPhamDetailDto SanPham { get; set; }
         }
 
+        public class StockSnapshotDto
+        {
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
+        }
+
         public class KichCoDto { public string TenKichCo { get; set; } }
         public class MauSacDto { public string TenMauSac { get; set; } }
         public class HoaTietDto { public string TenHoaTiet { get; set; } }
@@ -165,14 +176,40 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string sapXep, string maDonHang, string quickDate, int page = 1, int pageSize = 10)
         {
             try
             {
-                // Xây dựng URL với các tham số phân trang và lọc
-                var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                if (!string.IsNullOrEmpty(trangThai))
+				// 👉 mặc định
+				if (string.IsNullOrEmpty(trangThai))
+				{
+					trangThai = "Chờ xác nhận";
+				}
+
+				// 👉 xử lý ALL
+				if (trangThai == "all")
+				{
+					trangThai = null;
+				}
+
+				// 👉 FIX CHÍNH Ở ĐÂY
+				// 👉 chỉ khi cả 2 rỗng mới bỏ lọc
+				// 👉 nếu chọn "Tất cả"
+				if (string.IsNullOrEmpty(quickDate))
+				{
+					tuNgay = null;
+					denNgay = null;
+				}
+				loaiDonHang ??= "Tất cả";
+				sapXep ??= "desc"; // mặc định mới nhất
+								   // Xây dựng URL với các tham số phân trang và lọc
+				var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				if (!string.IsNullOrEmpty(sapXep))
+					url += $"&sapXep={sapXep}";
+
+				if (!string.IsNullOrEmpty(trangThai))
                     url += $"&trangThai={Uri.EscapeDataString(trangThai)}";
                 if (!string.IsNullOrEmpty(tuNgay))
                     url += $"&tuNgay={Uri.EscapeDataString(tuNgay)}";
@@ -260,8 +297,16 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
                         ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
                         ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
-
-                        return View(hoaDons);
+						// ✅ SORT LOCAL (nếu API không xử lý)
+						if (sapXep == "asc")
+						{
+							hoaDons = hoaDons.OrderBy(h => h.NgayTao).ToList();
+						}
+						else
+						{
+							hoaDons = hoaDons.OrderByDescending(h => h.NgayTao).ToList();
+						}
+						return View(hoaDons);
                     }
                     catch (System.Text.Json.JsonException jsonEx)
                     {
@@ -301,6 +346,10 @@ namespace QuanView.Areas.Admin.Controllers
                             BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
+                            SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                            DiemDaDung = hoaDonData.DiemDaDung,
+                            DiemCong = hoaDonData.DiemCong,
+                            TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
                             NgayTao = hoaDonData.NgayTao,
@@ -344,6 +393,7 @@ namespace QuanView.Areas.Admin.Controllers
                         // Add ChiTietHoaDons if exists
                         if (hoaDonData.ChiTietHoaDons != null)
                         {
+                            var stockSnapshots = new Dictionary<Guid, StockSnapshotDto>();
                             hoaDon.ChiTietHoaDons = new List<ChiTietHoaDon>();
                             foreach (var ct in hoaDonData.ChiTietHoaDons)
                             {
@@ -378,6 +428,13 @@ namespace QuanView.Areas.Admin.Controllers
                                         } : null
                                     };
 
+                                    stockSnapshots[chiTiet.IDChiTietHoaDon] = new StockSnapshotDto
+                                    {
+                                        SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuongTonHienTai,
+                                        SoLuongTonTruocXacNhan = ct.SanPhamChiTiet.SoLuongTonTruocXacNhan,
+                                        SoLuongTonDuKienSauHuy = ct.SanPhamChiTiet.SoLuongTonDuKienSauHuy
+                                    };
+
                                     if (ct.SanPhamChiTiet.SanPham != null)
                                     {
                                         chiTiet.SanPhamChiTiet.SanPham = new SanPham
@@ -392,6 +449,8 @@ namespace QuanView.Areas.Admin.Controllers
 
                                 hoaDon.ChiTietHoaDons.Add(chiTiet);
                             }
+
+                            ViewBag.StockSnapshots = stockSnapshots;
                         }
 
                         return View(hoaDon);
@@ -461,13 +520,13 @@ namespace QuanView.Areas.Admin.Controllers
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
                         "Đã xác nhận" => "Chờ lấy hàng",
-                        "Chờ lấy hàng" => "Đã lấy hàng",
-                        _ => "Đã lấy hàng"
+                        "Chờ lấy hàng" => "Chờ lấy hàng",
+                        _ => "Chờ lấy hàng"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đã lấy hàng");
+            return await CapNhatTrangThai(id, "Chờ lấy hàng");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanGiaoHang/{id}
@@ -483,14 +542,17 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
-                        "Đã lấy hàng" => "Chờ giao hàng",
-                        "Chờ giao hàng" => "Đang giao hàng",
-                        _ => "Đang giao hàng"
+                        "Chờ lấy hàng" => "Đang giao",
+                        "Đang giao" => "Đang giao",
+                        "Đã lấy hàng" => "Đang giao",
+                        "Chờ giao hàng" => "Đang giao",
+                        "Đang giao hàng" => "Đang giao",
+                        _ => "Đang giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đang giao hàng");
+            return await CapNhatTrangThai(id, "Đang giao");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanDaGiaoHang/{id}
@@ -506,14 +568,15 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
+                        "Đang giao" => "Đã giao",
                         "Đang giao hàng" => "Đã giao",
-                        "Đã giao" => "Giao hàng thành công",
-                        _ => "Giao hàng thành công"
+                        "Đã giao" => "Đã giao",
+                        _ => "Đã giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Giao hàng thành công");
+            return await CapNhatTrangThai(id, "Đã giao");
         }
 
         // POST: Admin/QuanLyDonHang/HuyDonHang/{id}
@@ -674,9 +737,10 @@ namespace QuanView.Areas.Admin.Controllers
                     "Đã xác nhận" => "Chờ xác nhận",
                     "Chờ lấy hàng" => "Đã xác nhận",
                     "Đã lấy hàng" => "Chờ lấy hàng",
-                    "Chờ giao hàng" => "Đã lấy hàng",
-                    "Đang giao hàng" => "Chờ giao hàng",
-                    "Đã giao" => "Đang giao hàng",
+                    "Chờ giao hàng" => "Chờ lấy hàng",
+                    "Đang giao" => "Chờ lấy hàng",
+                    "Đang giao hàng" => "Chờ lấy hàng",
+                    "Đã giao" => "Đang giao",
                     "Giao hàng thành công" => "Đã giao",
                     _ => ""
                 };
@@ -766,6 +830,10 @@ namespace QuanView.Areas.Admin.Controllers
                     MaHoaDon = hoaDonData.MaHoaDon ?? "",
                     TongTien = hoaDonData.TongTien,
                     TienGiam = hoaDonData.TienGiam ?? 0,
+                    SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                    DiemDaDung = hoaDonData.DiemDaDung,
+                    DiemCong = hoaDonData.DiemCong,
+                    TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                     PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                     TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                     NgayTao = hoaDonData.NgayTao,
