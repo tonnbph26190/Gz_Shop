@@ -36,6 +36,7 @@ builder.Services.AddScoped<IKieuDangService, KieuDangService>();
 builder.Services.AddScoped<IHoaTietService, HoaTietService>();
 builder.Services.AddScoped<IVaiTroService, VaiTroService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
+builder.Services.AddScoped<IInventoryReservationService, InventoryReservationService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 builder.Services.AddScoped<IShippingPolicyService, ShippingPolicyService>();
 builder.Services.Configure<QuanApi.Models.GHNSettings>(builder.Configuration.GetSection(QuanApi.Models.GHNSettings.SectionName));
@@ -195,6 +196,11 @@ ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "PhiVanChuyenGoc" numeric NULL;
 ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "SoTienGiamPhiVanChuyen" numeric NULL;
 ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "SoTienGiamTuDiem" numeric NOT NULL DEFAULT 0;
 ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "TyLeQuyDoiDiem" numeric NOT NULL DEFAULT 0;
+ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "DaDatChoTonKho" boolean NOT NULL DEFAULT FALSE;
+ALTER TABLE "HoaDons" ADD COLUMN IF NOT EXISTS "DaTruTonKho" boolean NOT NULL DEFAULT FALSE;
+
+ALTER TABLE "SanPhamChiTiets" ADD COLUMN IF NOT EXISTS "SoLuongDatCho" integer NOT NULL DEFAULT 0;
+ALTER TABLE "ChiTietGioHangs" ADD COLUMN IF NOT EXISTS "SoLuongDatCho" integer NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS "LichSuDiemKhachHangs" (
     "IDLichSuDiemKhachHang" uuid NOT NULL PRIMARY KEY,

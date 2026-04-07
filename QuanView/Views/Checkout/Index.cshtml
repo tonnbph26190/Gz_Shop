@@ -901,12 +901,34 @@
 					return;
 				}
 
-				// Kiểm tra địa chỉ: hoặc là có địa chỉ đầy đủ từ dropdown hoặc từ textarea
-				const hasDropdownAddress = tinh !== '0' && quan !== '0' && phuong !== '0' && diaChiChiTiet.trim() !== '';
-				const hasTextareaAddress = diaChiGiaoHang.trim() !== '';
+				const hasTinh = tinh && tinh !== '0';
+				const hasQuan = quan && quan !== '0';
+				const hasPhuong = phuong && phuong !== '0';
+				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
+				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
 
-				if (!hasDropdownAddress && !hasTextareaAddress) {
-					alert('Vui lòng chọn địa chỉ từ dropdown (Tỉnh/Quận/Phường + Địa chỉ chi tiết) hoặc nhập địa chỉ đầy đủ');
+				if (!hasTinh) {
+					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
+					return;
+				}
+
+				if (!hasQuan) {
+					alert('Vui lòng chọn Quận/Huyện để giao hàng');
+					return;
+				}
+
+				if (!hasPhuong) {
+					alert('Vui lòng chọn Phường/Xã để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiChiTiet) {
+					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiDayDu) {
+					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
 					return;
 				}
 
@@ -2010,12 +2032,34 @@
 					return;
 				}
 
-				// Kiểm tra địa chỉ: hoặc là có địa chỉ đầy đủ từ dropdown hoặc từ textarea
-				const hasDropdownAddress = tinh !== '0' && quan !== '0' && phuong !== '0' && diaChiChiTiet.trim() !== '';
-				const hasTextareaAddress = diaChiGiaoHang.trim() !== '';
+				const hasTinh = tinh && tinh !== '0';
+				const hasQuan = quan && quan !== '0';
+				const hasPhuong = phuong && phuong !== '0';
+				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
+				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
 
-				if (!hasDropdownAddress && !hasTextareaAddress) {
-					alert('Vui lòng chọn địa chỉ từ dropdown (Tỉnh/Quận/Phường + Địa chỉ chi tiết) hoặc nhập địa chỉ đầy đủ');
+				if (!hasTinh) {
+					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
+					return;
+				}
+
+				if (!hasQuan) {
+					alert('Vui lòng chọn Quận/Huyện để giao hàng');
+					return;
+				}
+
+				if (!hasPhuong) {
+					alert('Vui lòng chọn Phường/Xã để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiChiTiet) {
+					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
+					return;
+				}
+
+				if (!hasDiaChiDayDu) {
+					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
 					return;
 				}
 

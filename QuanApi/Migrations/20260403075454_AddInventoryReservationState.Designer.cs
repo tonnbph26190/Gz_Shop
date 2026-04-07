@@ -3,6 +3,7 @@ using System;
 using BanQuanAu1.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace QuanApi.Migrations
 {
     [DbContext(typeof(BanQuanAu1DbContext))]
-    partial class BanQuanAu1DbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403075454_AddInventoryReservationState")]
+    partial class AddInventoryReservationState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -81,7 +84,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDHangKhachHang");
 
-                    b.ToTable("KhachHang", (string)null);
+                    b.ToTable("KhachHang");
                 });
 
             modelBuilder.Entity("QuanApi.Data.AnhSanPham", b =>
@@ -127,7 +130,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDSanPhamChiTiet");
 
-                    b.ToTable("AnhSanPhams", (string)null);
+                    b.ToTable("AnhSanPhams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.Banner", b =>
@@ -149,7 +152,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Banners", (string)null);
+                    b.ToTable("Banners");
                 });
 
             modelBuilder.Entity("QuanApi.Data.BannerSanPham", b =>
@@ -171,7 +174,7 @@ namespace QuanApi.Migrations
                     b.HasIndex("BannerId", "IDSanPham")
                         .IsUnique();
 
-                    b.ToTable("BannerSanPhams", (string)null);
+                    b.ToTable("BannerSanPhams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.CauHinhBanHang", b =>
@@ -234,7 +237,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDCauHinhBanHang");
 
-                    b.ToTable("CauHinhBanHangs", (string)null);
+                    b.ToTable("CauHinhBanHangs");
 
                     b.HasData(
                         new
@@ -291,7 +294,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDChatLieu");
 
-                    b.ToTable("ChatLieus", (string)null);
+                    b.ToTable("ChatLieus");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ChiTietGioHang", b =>
@@ -343,7 +346,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDSanPhamChiTiet");
 
-                    b.ToTable("ChiTietGioHangs", (string)null);
+                    b.ToTable("ChiTietGioHangs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ChiTietHoaDon", b =>
@@ -395,7 +398,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDSanPhamChiTiet");
 
-                    b.ToTable("ChiTietHoaDons", (string)null);
+                    b.ToTable("ChiTietHoaDons");
                 });
 
             modelBuilder.Entity("QuanApi.Data.DanhMuc", b =>
@@ -433,7 +436,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDDanhMuc");
 
-                    b.ToTable("DanhMucs", (string)null);
+                    b.ToTable("DanhMucs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.DiaChi", b =>
@@ -487,7 +490,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDKhachHang");
 
-                    b.ToTable("DiaChis", (string)null);
+                    b.ToTable("DiaChis");
                 });
 
             modelBuilder.Entity("QuanApi.Data.DotGiamGia", b =>
@@ -534,7 +537,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDDotGiamGia");
 
-                    b.ToTable("DotGiamGias", (string)null);
+                    b.ToTable("DotGiamGias");
                 });
 
             modelBuilder.Entity("QuanApi.Data.GioHang", b =>
@@ -572,7 +575,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDKhachHang");
 
-                    b.ToTable("GioHangs", (string)null);
+                    b.ToTable("GioHangs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.HangKhachHang", b =>
@@ -619,7 +622,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDHangKhachHang");
 
-                    b.ToTable("HangKhachHangs", (string)null);
+                    b.ToTable("HangKhachHangs");
 
                     b.HasData(
                         new
@@ -778,7 +781,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDPhuongThucThanhToan");
 
-                    b.ToTable("HoaDons", (string)null);
+                    b.ToTable("HoaDons");
                 });
 
             modelBuilder.Entity("QuanApi.Data.HoaTiet", b =>
@@ -816,7 +819,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDHoaTiet");
 
-                    b.ToTable("HoaTiet", (string)null);
+                    b.ToTable("HoaTiet");
                 });
 
             modelBuilder.Entity("QuanApi.Data.KhachHangPhieuGiam", b =>
@@ -865,7 +868,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDPhieuGiamGia");
 
-                    b.ToTable("KhachHangPhieuGiams", (string)null);
+                    b.ToTable("KhachHangPhieuGiams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.KichCo", b =>
@@ -903,7 +906,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDKichCo");
 
-                    b.ToTable("KichCos", (string)null);
+                    b.ToTable("KichCos");
                 });
 
             modelBuilder.Entity("QuanApi.Data.KieuDang", b =>
@@ -941,7 +944,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDKieuDang");
 
-                    b.ToTable("KieuDangs", (string)null);
+                    b.ToTable("KieuDangs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LichSuDiemKhachHang", b =>
@@ -990,7 +993,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDKhachHang");
 
-                    b.ToTable("LichSuDiemKhachHangs", (string)null);
+                    b.ToTable("LichSuDiemKhachHangs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LichSuHoaDon", b =>
@@ -1032,7 +1035,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDHoaDon");
 
-                    b.ToTable("LichSuHoaDons", (string)null);
+                    b.ToTable("LichSuHoaDons");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LoaiOng", b =>
@@ -1070,7 +1073,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDLoaiOng");
 
-                    b.ToTable("LoaiOngs", (string)null);
+                    b.ToTable("LoaiOngs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.LungQuan", b =>
@@ -1108,7 +1111,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDLungQuan");
 
-                    b.ToTable("LungQuans", (string)null);
+                    b.ToTable("LungQuans");
                 });
 
             modelBuilder.Entity("QuanApi.Data.MauSac", b =>
@@ -1146,7 +1149,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDMauSac");
 
-                    b.ToTable("MauSacs", (string)null);
+                    b.ToTable("MauSacs");
                 });
 
             modelBuilder.Entity("QuanApi.Data.NhanVien", b =>
@@ -1216,7 +1219,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDVaiTro");
 
-                    b.ToTable("NhanViens", (string)null);
+                    b.ToTable("NhanViens");
                 });
 
             modelBuilder.Entity("QuanApi.Data.PhieuGiamGia", b =>
@@ -1275,7 +1278,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDPhieuGiamGia");
 
-                    b.ToTable("PhieuGiamGias", (string)null);
+                    b.ToTable("PhieuGiamGias");
                 });
 
             modelBuilder.Entity("QuanApi.Data.PhongTroChuyen", b =>
@@ -1315,7 +1318,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDNhanVien");
 
-                    b.ToTable("PhongTroChuyens", (string)null);
+                    b.ToTable("PhongTroChuyens");
                 });
 
             modelBuilder.Entity("QuanApi.Data.PhuongThucThanhToan", b =>
@@ -1356,7 +1359,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDPhuongThucThanhToan");
 
-                    b.ToTable("PhuongThucThanhToans", (string)null);
+                    b.ToTable("PhuongThucThanhToans");
                 });
 
             modelBuilder.Entity("QuanApi.Data.SanPham", b =>
@@ -1430,7 +1433,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDThuongHieu");
 
-                    b.ToTable("SanPhams", (string)null);
+                    b.ToTable("SanPhams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.SanPhamChiTiet", b =>
@@ -1504,7 +1507,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDSanPham");
 
-                    b.ToTable("SanPhamChiTiets", (string)null);
+                    b.ToTable("SanPhamChiTiets");
                 });
 
             modelBuilder.Entity("QuanApi.Data.SanPhamDotGiam", b =>
@@ -1547,7 +1550,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDSanPhamChiTiet");
 
-                    b.ToTable("SanPhamDotGiams", (string)null);
+                    b.ToTable("SanPhamDotGiams");
                 });
 
             modelBuilder.Entity("QuanApi.Data.ThuongHieu", b =>
@@ -1585,7 +1588,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDThuongHieu");
 
-                    b.ToTable("ThuongHieus", (string)null);
+                    b.ToTable("ThuongHieus");
                 });
 
             modelBuilder.Entity("QuanApi.Data.TinNhan", b =>
@@ -1634,7 +1637,7 @@ namespace QuanApi.Migrations
 
                     b.HasIndex("IDPhongTroChuyen");
 
-                    b.ToTable("TinNhans", (string)null);
+                    b.ToTable("TinNhans");
                 });
 
             modelBuilder.Entity("QuanApi.Data.VaiTro", b =>
@@ -1672,7 +1675,7 @@ namespace QuanApi.Migrations
 
                     b.HasKey("IDVaiTro");
 
-                    b.ToTable("VaiTro", (string)null);
+                    b.ToTable("VaiTro");
 
                     b.HasData(
                         new

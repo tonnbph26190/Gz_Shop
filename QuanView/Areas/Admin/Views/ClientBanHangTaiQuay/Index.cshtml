@@ -1506,8 +1506,57 @@
         updatePaymentInfo();
     }
 
+    function validateShippingAddressForPayment() {
+        if (!useShipping) {
+            return true;
+        }
+
+        const shipTinh = $('#shipTinh').val();
+        const shipQuan = $('#shipQuan').val();
+        const shipPhuong = $('#shipPhuong').val();
+        const shipDiaChiChiTiet = ($('#shipDiaChiChiTiet').val() || '').trim();
+        let fullAddress = ($('#shipAddress').val() || '').trim();
+
+        if (!shipTinh || shipTinh === '0') {
+            showWarning('Vui lòng chọn Tỉnh/Thành để giao hàng.');
+            return false;
+        }
+
+        if (!shipQuan || shipQuan === '0') {
+            showWarning('Vui lòng chọn Quận/Huyện để giao hàng.');
+            return false;
+        }
+
+        if (!shipPhuong || shipPhuong === '0') {
+            showWarning('Vui lòng chọn Phường/Xã để giao hàng.');
+            return false;
+        }
+
+        if (!shipDiaChiChiTiet) {
+            showWarning('Vui lòng nhập số nhà, tên đường để giao hàng.');
+            return false;
+        }
+
+        // Nếu UI đã có đủ dropdown + địa chỉ chi tiết nhưng fullAddress chưa sync kịp, tự ghép lại
+        if (!fullAddress && shipTinh && shipTinh !== '0' && shipQuan && shipQuan !== '0' && shipPhuong && shipPhuong !== '0' && shipDiaChiChiTiet) {
+            concatenateShippingAddress();
+            fullAddress = ($('#shipAddress').val() || '').trim();
+        }
+
+        if (!fullAddress) {
+            showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán.');
+            return false;
+        }
+
+        return true;
+    }
+
     // Thanh toán hóa đơn
     function openPaymentModal() {
+        if (!validateShippingAddressForPayment()) {
+            return;
+        }
+
         let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
@@ -2471,6 +2520,7 @@ function toggleShipping() {
     function payInvoice() {
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
+        if (!validateShippingAddressForPayment()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
@@ -2490,16 +2540,28 @@ function toggleShipping() {
         const hasValidDistrictId = Number.isFinite(parsedDistrictId) && parsedDistrictId > 0;
         const hasValidWardCode = !!(shipPhuongVal && shipPhuongVal !== '0');
 
+        const pointSwitchOn = $('#pointSwitch').is(':checked') && selectedCustomer && !selectedCustomer.isGuest;
+        const rawPointReq = parseInt($('#requestedUsedPoints').val(), 10);
+        let requestedPtsForApi = 0;
+        let usePointForApi = false;
+        if (pointSwitchOn) {
+            usePointForApi = true;
+            requestedPtsForApi = (Number.isFinite(rawPointReq) && rawPointReq > 0)
+                ? getRequestedPointForUse()
+                : null;
+        }
+
         // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
         let dto = {
             idGioHang: gh.id,
+            customerId: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             customerName: selectedCustomer ? (selectedCustomer.isGuest ? ($('#shipName').val() || 'Khách vãng lai') : selectedCustomer.name) : ($('#shipName').val() || ''),
             customerPhone: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipPhone').val() : selectedCustomer.phone) : $('#shipPhone').val(),
             customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
             address: $('#shipAddress').val(),
             discountCode: $('#discountCode').val(),
-            usePoint: usePoint && getRequestedPointForUse() > 0,
-            requestedUsedPoints: getRequestedPointForUse(),
+            usePoint: usePointForApi,
+            requestedUsedPoints: requestedPtsForApi,
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,
@@ -3112,6 +3174,11 @@ function toggleShipping() {
         }
         if (sdtNguoiNhan && sdtNguoiNhan !== 'N/A') {
             $('#shipPhone').val(sdtNguoiNhan);
+        }
+
+        // Sync ngay địa chỉ đầy đủ để validate không báo thiếu dù UI đã có dữ liệu
+        if (diaChiChiTiet) {
+            $('#shipAddress').val(diaChiChiTiet);
         }
 
         // Sử dụng logic parse và populate dropdown như checkout

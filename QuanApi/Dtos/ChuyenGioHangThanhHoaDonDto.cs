@@ -5,6 +5,8 @@ namespace QuanApi.Dtos
     public class ChuyenGioHangThanhHoaDonDto
     {
         public Guid IDGioHang { get; set; }
+        /// <summary>Khách đang chọn trên POS (ưu tiên khi giỏ hàng tạo trước khi gán IDKhachHang).</summary>
+        public Guid? CustomerId { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerPhone { get; set; }
         public string? CustomerEmail { get; set; }
