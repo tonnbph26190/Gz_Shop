@@ -1,4 +1,4 @@
-﻿namespace QuanApi.Dtos
+namespace QuanApi.Dtos
 {
     public class DotGiamGiaUpdateDto
     {
@@ -7,7 +7,8 @@
         public string TenDot { get; set; }
         public DateTime NgayBatDau { get; set; }
         public DateTime NgayKetThuc { get; set; }
-        public int PhanTramGiam { get; set; }
+		public bool TrangThai { get; set; }
+		public int PhanTramGiam { get; set; }
         public List<Guid> SanPhamChiTietIds { get; set; }
     }
 
