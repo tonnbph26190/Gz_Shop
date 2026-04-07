@@ -1,10 +1,8 @@
 ﻿@model QuanApi.Data.HoaDon
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
-    var tamTinh = Math.Max(0, (Model.TongTien + (Model.TienGiam ?? 0) - (Model.PhiVanChuyen ?? 0)));
-    var soTienGiamTuDiem = Model.SoTienGiamTuDiem > 0
-        ? Model.SoTienGiamTuDiem
-        : (Model.DiemDaDung * Model.TyLeQuyDoiDiem);
+    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -217,7 +215,7 @@
                     <div class="">
                         <div class="summary-box">
                             <div class="summary-row text-muted">
-                                <span>Tạm tính</span>
+                                <span>Tạm tính (tiền hàng)</span>
                                 <span>@tamTinh.ToString("N0") ₫</span>
                             </div>
                             @if (Model.TienGiam > 0)
@@ -248,7 +246,7 @@
                                 <span>@(Model.PhiVanChuyen > 0 ? Model.PhiVanChuyen?.ToString("N0") + " ₫" : "Miễn phí")</span>
                             </div>
                             <div class="summary-row summary-total">
-                                <span>Tổng cộng</span>
+                                <span>Tổng tiền thanh toán</span>
                                 <span>@Model.TongTien.ToString("N0") ₫</span>
                             </div>
                         </div>
@@ -277,54 +275,7 @@
                     </div>
                 </div>
             </div>
-                        <!-- Order Summary -->
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Tổng quan đơn hàng</h6>
-                </div>
-                <div class="card-body">
-                    <div class="info-row">
-                        <span class="info-label">Tạm tính (tiền hàng):</span>
-                        <span class="info-value">@tamTinh.ToString("N0") VNĐ</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Phí vận chuyển:</span>
-                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Giảm giá:</span>
-                        <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Điểm đã dùng:</span>
-                        <span class="info-value">@Model.DiemDaDung.ToString("N0") điểm</span>
-                    </div>
-                    @if (Model.DiemCong > 0)
-                    {
-                        <div class="info-row">
-                            <span class="info-label">Quy đổi từ điểm:</span>
-                            <span class="info-value text-success">-@soTienGiamTuDiem.ToString("N0") VNĐ (1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") VNĐ)</span>
-                        </div>
-                    }
-                    @* <div class="info-row">
-                        <span class="info-label">Phí vận chuyển:</span>
-                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
-                    </div> *@
-                    <div class="info-row">
-                        <span class="info-label font-weight-bold">Tổng cộng:</span>
-                        <span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
-                    </div>
-                    <hr>
-                    <div class="info-row">
-                        <span class="info-label">Phương thức thanh toán:</span>
-                        <span class="info-value">@(Model.PhuongThucThanhToan?.TenPhuongThuc ?? "N/A")</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Ngày tạo:</span>
-                        <span class="info-value">@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     }
 </div>
