@@ -52,43 +52,48 @@ builder.Services.AddScoped<IVnPayService, VnPayService>();
 // 3️⃣ CẤU HÌNH XÁC THỰC Google + Cookie
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie(options =>
-{
-    options.LoginPath = "/Login/Index";
-    options.LogoutPath = "/Login/Logout";
-    options.AccessDeniedPath = "/Login/AccessDenied";
-})
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
-    options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.CallbackPath = "/signin-google";
-    options.Scope.Add("profile");
-    options.ClaimActions.MapJsonKey("picture", "picture", "url");
+	// Use the standard constant for the default scheme
+	options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
-    options.Events = new OAuthEvents
-    {
-        OnRemoteFailure = context =>
-        {
-            context.Response.Redirect("/Home/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
-            context.HandleResponse();
-            return Task.CompletedTask;
-        },
-        OnCreatingTicket = ctx =>
-        {
-            var name = ctx.Identity.FindFirst(ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(name))
-            {
-                ctx.Identity.AddClaim(new Claim(ClaimTypes.Name, name));
-            }
-            return Task.CompletedTask;
-        }
-    };
+	// If the user isn't logged in and hits an [Authorize] page, send them to Google
+	options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+	options.LoginPath = "/Login/Index";
+	options.LogoutPath = "/Login/Logout";
+	options.AccessDeniedPath = "/Login/AccessDenied";
+	options.Cookie.Name = "BanQuanGZ_Auth";
+})
+.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+{
+	// 1. Replace these with your actual keys from the Google Console
+	options.ClientId = builder.Configuration["GoogleKeys:ClientId"];
+	options.ClientSecret = builder.Configuration["GoogleKeys:ClientSecret"];
+
+	// 2. THIS IS CRITICAL: Tells Google to temporarily save the 
+	// login info into the Cookie scheme so your Controller can read it.
+	options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+	options.CallbackPath = "/signin-google";
+	options.Scope.Add("profile");
+	options.ClaimActions.MapJsonKey("picture", "picture", "url");
+
+	options.Events = new OAuthEvents
+	{
+		OnRemoteFailure = context =>
+		{
+			context.Response.Redirect("/Login/Index?error=" + Uri.EscapeDataString(context.Failure?.Message ?? "unknown"));
+			context.HandleResponse();
+			return Task.CompletedTask;
+		},
+		OnCreatingTicket = ctx =>
+		{
+			// You don't usually need to manually add the Name claim here 
+			// because Google's default handler does it, but it doesn't hurt.
+			return Task.CompletedTask;
+		}
+	};
 });
 
 // 3️⃣ CẤU HÌNH AUTHORIZATION
@@ -129,6 +134,15 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("DatabaseSchemaRepair");
+    var dbContext = scope.ServiceProvider.GetRequiredService<BanQuanAu1DbContext>();
+    await EnsureBannerLinkSchemaAsync(dbContext, logger);
+}
+
 // 7️⃣ MIDDLEWARE PIPELINE
 if (!app.Environment.IsDevelopment())
 {
@@ -159,4 +173,52 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+static async Task EnsureBannerLinkSchemaAsync(BanQuanAu1DbContext dbContext, ILogger logger)
+{
+    if (!dbContext.Database.IsNpgsql())
+    {
+        logger.LogInformation("Skip banner-link schema repair because provider is not PostgreSQL.");
+        return;
+    }
+
+    const string sql = """
+CREATE TABLE IF NOT EXISTS "BannerSanPhams" (
+    "IDBannerSanPham" uuid NOT NULL PRIMARY KEY,
+    "BannerId" integer NOT NULL,
+    "IDSanPham" uuid NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS "IX_BannerSanPhams_BannerId" ON "BannerSanPhams" ("BannerId");
+CREATE INDEX IF NOT EXISTS "IX_BannerSanPhams_IDSanPham" ON "BannerSanPhams" ("IDSanPham");
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_BannerSanPhams_BannerId_IDSanPham" ON "BannerSanPhams" ("BannerId", "IDSanPham");
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'FK_BannerSanPhams_Banners_BannerId'
+    ) THEN
+        ALTER TABLE "BannerSanPhams"
+            ADD CONSTRAINT "FK_BannerSanPhams_Banners_BannerId"
+            FOREIGN KEY ("BannerId") REFERENCES "Banners" ("Id") ON DELETE CASCADE;
+    END IF;
+END
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'FK_BannerSanPhams_SanPhams_IDSanPham'
+    ) THEN
+        ALTER TABLE "BannerSanPhams"
+            ADD CONSTRAINT "FK_BannerSanPhams_SanPhams_IDSanPham"
+            FOREIGN KEY ("IDSanPham") REFERENCES "SanPhams" ("IDSanPham") ON DELETE CASCADE;
+    END IF;
+END
+$$;
+""";
+
+    await dbContext.Database.ExecuteSqlRawAsync(sql);
+    logger.LogInformation("Banner-link schema repair completed.");
+}
 

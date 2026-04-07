@@ -37,6 +37,7 @@ namespace QuanView.Controllers
                         var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                         if (spct != null)
                         {
+                            var soLuongKhaDung = spct.SoLuongKhaDung;
                             item.GiaBan = spct.price;
                             item.SanPhamChiTiet = new SanPhamChiTiet
                             {
@@ -45,7 +46,7 @@ namespace QuanView.Controllers
                                     TenSanPham = spct.TenSanPham
                                 },
                                 GiaBan = spct.price,
-                                SoLuong = spct.SoLuong,
+                                SoLuong = soLuongKhaDung,
                                 KichCo = new KichCo { TenKichCo = spct.TenKichCo },
                                 MauSac = new MauSac { TenMauSac = spct.TenMauSac },
                                 AnhSanPhams = new List<AnhSanPham>
@@ -83,12 +84,13 @@ namespace QuanView.Controllers
                     var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                     if (spct != null)
                     {
+                        var soLuongKhaDung = spct.SoLuongKhaDung;
                         item.GiaBan = spct.price;
                         if (item.SanPhamChiTiet == null)
                         {
                             item.SanPhamChiTiet = new SanPhamChiTiet();
                         }
-                        item.SanPhamChiTiet.SoLuong = spct.SoLuong;
+                        item.SanPhamChiTiet.SoLuong = soLuongKhaDung;
                         item.SanPhamChiTiet.SanPham = new SanPham { TenSanPham = spct.TenSanPham };
                         item.SanPhamChiTiet.KichCo = new KichCo { TenKichCo = spct.TenKichCo };
                         item.SanPhamChiTiet.MauSac = new MauSac { TenMauSac = spct.TenMauSac };
@@ -130,7 +132,7 @@ namespace QuanView.Controllers
                     return Json(new { success = false, message = "Không tìm thấy sản phẩm!" });
                 }
                 var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                if (spct == null || spct.SoLuong < soluong)
+                if (spct == null || spct.SoLuongKhaDung < soluong)
                 {
                     return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
                 }
@@ -155,7 +157,7 @@ namespace QuanView.Controllers
                     var existingItem = cart.FirstOrDefault(x => x.IDSanPhamChiTiet == idsp);
                     if (existingItem != null)
                     {
-                        if (existingItem.SoLuong + soluong > spct.SoLuong)
+                        if (existingItem.SoLuong + soluong > spct.SoLuongKhaDung)
                         {
                             return Json(new { success = false, message = "Số lượng vượt quá tồn kho!" });
                         }
@@ -224,7 +226,7 @@ namespace QuanView.Controllers
                     return RedirectToAction(nameof(Index), new { iduser = iduser });
                 }
                 var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                if (spct == null || spct.SoLuong < soluong)
+                if (spct == null || spct.SoLuongKhaDung < soluong)
                 {
                     TempData["ErrorMessage"] = "Số lượng vượt quá tồn kho!";
                     return RedirectToAction(nameof(Index), new { iduser = iduser });

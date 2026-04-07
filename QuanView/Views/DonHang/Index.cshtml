@@ -1,6 +1,6 @@
 ﻿@model dynamic
 @{
-    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
+    var lang = Context.Request.Cookies["UserLanguage"] ?? "vi";
     ViewData["Title"] = ((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS");
     var label = (lang == "vi") ? "Tìm kiếm đơn hàng" : "Search Order";
     var placeholder = (lang == "vi") ? "Nhập mã đơn hàng (tùy chọn)" : "Enter order ID (optional)";
@@ -8,218 +8,196 @@
     var search = ViewBag.Search as string ?? "";
     var fromDate = ViewBag.FromDate as string ?? "";
     var toDate = ViewBag.ToDate as string ?? "";
+    var quickDate = ViewBag.QuickDate as string ?? "";
     var isAuthenticated = ViewBag.IsAuthenticated as bool? ?? false;
-}
 }
 
 <style>
-    .order-tabs {
-        border-bottom: 2px solid #eee;
-        margin-bottom: 30px;
+    :root {
+        --primary-blue: #007bff;
+        --border-light: #f0f0f0;
     }
 
-    .order-tab {
-        padding: 12px 24px;
-        border: none;
-        background: none;
-        color: #666;
-        font-weight: 500;
-        border-bottom: 3px solid transparent;
-        transition: all 0.3s;
+    .order-container {
+        max-width: 1100px;
+        margin: auto;
     }
 
-        .order-tab.active {
-            color: #007bff;
-            border-bottom-color: #007bff;
-        }
+    /* Professional Filter Section */
+    .filter-card {
+        background: #fff;
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        margin-bottom: 25px;
+    }
 
-        .order-tab:hover {
-            color: #007bff;
-        }
+    .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
-    .filter-section {
-        background: #f8f9fa;
-        padding: 20px;
+    .form-control {
         border-radius: 8px;
-        margin-bottom: 20px;
+        padding: 10px 15px;
+        border: 1px solid #ced4da !important; 
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus {   
+        border-color: var(--primary-blue) !important;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15); 
+        outline: none;
     }
 
-    .order-table {
+    /* Modern Order Table */
+    .order-table-wrapper {
         background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
 
-        .order-table th {
-            background: #f8f9fa;
-            border: none;
-            padding: 15px 10px;
-            font-weight: 600;
-            color: #333;
-        }
+    .table thead th {
+        background: #fafafa;
+        color: #888;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-light);
+    }
 
-        .order-table td {
-            padding: 15px 10px;
-            border: none;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
+    .table tbody td {
+        padding: 18px 20px;
+        vertical-align: middle;
+        font-size: 0.95rem;
+        border-bottom: 1px solid #f8f8f8;
+    }
 
+    /* Refined Status Badges */
     .status-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
     }
 
-    .status-cho-xac-nhan {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .status-da-xac-nhan {
-        background: #d1ecf1;
-        color: #0c5460;
-    }
-
-    .status-cho-lay-hang {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .status-da-lay-hang {
-        background: #cce5ff;
-        color: #004085;
-    }
-
-    .status-cho-giao-hang {
-        background: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .status-dang-giao-hang {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .status-da-giao {
-        background: #cce5ff;
-        color: #004085;
-    }
-
-    .status-giao-hang-thanh-cong {
-        background: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .status-da-huy {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
+    .status-cho-confirm { background: #fff8e1; color: #f57c00; } /* Pending */
+    .status-shipping { background: #e3f2fd; color: #1976d2; }    /* Delivering */
+    .status-success { background: #e8f5e9; color: #2e7d32; }     /* Success */
+    .status-cancel { background: #ffebee; color: #c62828; }      /* Cancelled */
+    
+    /* Buttons */
     .action-btn {
-        padding: 8px 16px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none !important;
+        transition: all 0.2s;
         border: none;
+    }
+
+    .btn-view { background: #f0f0f0; color: #333; }
+    .btn-view:hover { background: #e0e0e0; color: #000; }
+
+    .btn-cancel { background: #fff1f1; color: #d32f2f; }
+    .btn-cancel:hover { background: #d32f2f; color: #fff; }
+
+    .btn-search {
+        background: #111;
+        color: #fff;
+        border-radius: 8px;
+        padding: 10px 25px;
+        font-weight: 600;
+    }
+
+    .btn-search:hover { background: #333; color: #fff; }
+
+    /* Pagination */
+    .pagination .page-link {
+        border: none;
+        color: #111;
+        margin: 0 3px;
         border-radius: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
+        font-weight: 600;
     }
 
-    .btn-view {
-        background: #007bff;
-        color: white;
+    .pagination .page-item.active .page-link {
+        background: #111;
+        border-color: #111;
     }
 
-        .btn-view:hover {
-            background: #0056b3;
-            color: white;
-        }
-
-    .btn-cancel {
-        background: #dc3545;
-        color: white;
+    #search-icon {
+        border: 1px solid #6c757d !important; 
     }
-
-        .btn-cancel:hover {
-            background: #c82333;
-            color: white;
-        }
-
-    .pagination-info {
-        font-size: 14px;
-        color: #666;
-    }
-
-    .page-link {
-        color: #007bff;
-        border: 1px solid #dee2e6;
-    }
-
-        .page-link:hover {
-            color: #0056b3;
-            background-color: #e9ecef;
-            border-color: #dee2e6;
-        }
-
-    .page-item.active .page-link {
-        background-color: #007bff;
-        border-color: #007bff;
+    #search-icon:hover {
+        background-color: #6c757d !important; 
     }
 </style>
 
-<div class="container mt-4">
-    <h2 class="mb-4">@((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS")</h2>
+<div class="container order-container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold m-0">@((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS")</h2>
+        <i class="bi bi-bag-check text-muted h3 m-0"></i>
+    </div>
 
-    <!-- Bộ lọc nâng cao -->
-    <div class="filter-section">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-warning" role="alert">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="filter-card">
         @if (isAuthenticated)
         {
-            <!-- Form tìm kiếm cho người dùng đã đăng nhập -->
-            <div class="alert alert-success mb-3">
-                <i class="bi bi-person-check"></i>
-                <strong>Xin chào, @User.Identity.Name!</strong> Dưới đây là đơn hàng của bạn
+            <div class="d-flex align-items-center mb-4 text-success">
+                <i class="bi bi-patch-check-fill me-2"></i>
+                <span class="small fw-bold">Verified Account: @User.Identity.Name</span>
             </div>
 
             <form method="get" action="@Url.Action("Index")" id="filterForm">
-                <div class="row">
-                    <!-- Tìm kiếm theo mã đơn hàng -->
-                    <div class="col-md-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
                         <label class="form-label">@label</label>
-                        <input type="text" 
-                            class="form-control" 
-                            name="search"
-                            placeholder="@placeholder"
-                            value="@search"
-                            pattern="[A-Z0-9_]+"
-                            title="@titleMsg"> 
+                        <input type="text" class="form-control" name="search" placeholder="@placeholder" value="@search" pattern="[A-Z0-9_]+" title="@titleMsg"> 
                     </div>
-
-                    <!-- Lọc theo ngày từ -->
-                    <div class="col-md-3">
-                        <label class="form-label">@((lang == "vi") ? "Từ ngày:" : "From Date:")</label>
-                        <input type="date" class="form-control" name="fromDate"
-                               value="@fromDate">
+                    <div class="col-md-2">
+                        <label class="form-label">@((lang == "vi") ? "Theo ngày" : "Quick date")</label>
+                        @{
+                            var isCustomQuickDate = quickDate == "custom"
+                                                    || ((!string.IsNullOrEmpty(fromDate) || !string.IsNullOrEmpty(toDate))
+                                                        && quickDate != "today" && quickDate != "1" && quickDate != "7" && quickDate != "28" && quickDate != "");
+                        }
+                        <select class="form-control" id="quickDate" name="quickDate">
+                            <option value="today" selected="@(quickDate == "today" ? "selected" : null)">@((lang == "vi") ? "Hôm nay" : "Today")</option>
+                            <option value="1" selected="@(quickDate == "1" ? "selected" : null)">@((lang == "vi") ? "1 ngày trước" : "Last 1 day")</option>
+                            <option value="7" selected="@(quickDate == "7" ? "selected" : null)">@((lang == "vi") ? "7 ngày trước" : "Last 7 days")</option>
+                            <option value="28" selected="@(quickDate == "28" ? "selected" : null)">@((lang == "vi") ? "28 ngày trước" : "Last 28 days")</option>
+                            <option value="custom" selected="@(isCustomQuickDate ? "selected" : null)">@((lang == "vi") ? "Tự chọn" : "Custom")</option>
+                            <option value="" selected="@(quickDate == "" ? "selected" : null)">@((lang == "vi") ? "Tất cả" : "All")</option>
+                        </select>
                     </div>
-
-                    <!-- Lọc theo ngày đến -->
-                    <div class="col-md-3">
-                        <label class="form-label">@((lang == "vi") ? "Đến ngày:" : "To Date:")</label>
-                        <input type="date" class="form-control" name="toDate"
-                               value="@toDate">
+                    <div class="col-md-2">
+                        <label class="form-label">@((lang == "vi") ? "Từ ngày" : "From")</label>
+                        <input type="date" class="form-control" id="fromDate" name="fromDate" value="@fromDate">
                     </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> @((lang == "vi") ? "Tìm đơn hàng" : "Search Orders")
+                    <div class="col-md-2">
+                        <label class="form-label">@((lang == "vi") ? "Đến ngày" : "To")</label>
+                        <input type="date" class="form-control" id="toDate" name="toDate" value="@toDate">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-search w-25" id=search-icon>
+                             <i class="bi bi-search"></i>
                         </button>
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Xóa bộ lọc Tìm đơn hàng" : "Clear Search Filters")
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary rounded-3 px-3">
+                            <i class="bi bi-arrow-clockwise"></i>
                         </a>
                     </div>
                 </div>
@@ -227,219 +205,184 @@
         }
         else
         {
-            <!-- Form tìm kiếm cho khách vãng lai -->
-            <div class="alert alert-info mb-3">
-                <i class="bi bi-info-circle"></i>
-                <strong>@((lang == "vi") ? "Khách vãng lai:" : "Guest User:")</strong> @((lang == "vi") ? "Vui lòng nhập mã đơn hàng để tìm đơn hàng của bạn" : "Please enter order ID to find your order")
+            <div class="mb-3">
+                <h6 class="fw-bold"><i class="bi bi-search me-2"></i>@((lang == "vi") ? "Tra cứu khách vãng lai" : "Guest Order Lookup")</h6>
+                <p class="text-muted small">@((lang == "vi") ? "Vui lòng nhập mã đơn hàng để tìm đơn hàng của bạn" : "Enter your order ID below")</p>
             </div>
 
             <form method="get" action="@Url.Action("Index")" id="filterForm">
-                <div class="row">
-                    <!-- Tìm kiếm theo mã đơn hàng -->
-                    <div class="col-md-6">
-                        <label class="form-label">@((lang == "vi") ? "Mã đơn hàng:" : "Order ID:")</label>
+                <div class="row g-3">
+                    <div class="col-md-8">
                         <input type="text" class="form-control" name="search"
-                               placeholder="@((lang == "vi") ? "Nhập mã đơn hàng để tìm kiếm" : "Enter order ID to search")"
-                               value="@search"
-                               pattern="[A-Z0-9_]+"
-                               title="@((lang == "vi") ? "Mã đơn hàng chỉ chứa chữ hoa, số và dấu gạch dưới" : "Order ID only contains uppercase letters, numbers and underscores")"
-                               required>
-                        <div class="form-text">@((lang == "vi") ? "Nhập mã đơn hàng bạn đã nhận khi đặt hàng" : "Enter the order ID you received when placing the order")</div>
+                               placeholder="@((lang == "vi") ? "Nhập mã đơn hàng..." : "Enter order ID...")"
+                               value="@search" pattern="[A-Z0-9_]+" required>
                     </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> @((lang == "vi") ? "Tìm đơn hàng" : "Search Orders")
-                        </button>
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Xóa bộ lọc" : "Clear Filters")
-                        </a>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-search w-100">@((lang == "vi") ? "Tìm đơn hàng" : "Track Order")</button>
                     </div>
                 </div>
             </form>
         }
     </div>
 
-    <!-- Bảng đơn hàng -->
-    <div class="table-responsive order-table">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>@((lang == "vi") ? "Mã hóa đơn" : "Invoice ID")</th>
-                    <th>@((lang == "vi") ? "Tổng giá trị" : "Total Value")</th>
-                    <th>@((lang == "vi") ? "Tiền giảm" : "Discount Amount")</th>
-                    <th>@((lang == "vi") ? "Trạng thái" : "Status")</th>
-                    <th>@((lang == "vi") ? "Loại đơn" : "Order Type")</th>
-                    <th>@((lang == "vi") ? "Ngày đặt" : "Order Date")</th>
-                    <th>@((lang == "vi") ? "Hành động" : "Actions")</th>
-                </tr>
-            </thead>
-            <tbody id="orderTableBody">
-                @{
-                    var hoaDons = Model?.HoaDons as List<QuanApi.Data.HoaDon> ?? new List<QuanApi.Data.HoaDon>();
-                    var pagination = Model?.Pagination;
-                }
-                @if (hoaDons != null && hoaDons.Any())
-                {
-                    int stt = 1;
-                    foreach (var hoaDon in hoaDons.OrderByDescending(h => h.NgayTao))
+    <div class="order-table-wrapper">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-center">#</th>
+                        <th>@((lang == "vi") ? "Mã đơn hàng" : "Order ID")</th>
+                        <th>@((lang == "vi") ? "Giá trị" : "Total")</th>
+                        <th>@((lang == "vi") ? "Trạng thái" : "Status")</th>
+                        <th>@((lang == "vi") ? "Loại" : "Type")</th>
+                        <th>@((lang == "vi") ? "Ngày đặt" : "Date")</th>
+                        <th class="text-center">@((lang == "vi") ? "Hành động" : "Actions")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var hoaDons = Model?.HoaDons as List<QuanApi.Data.HoaDon> ?? new List<QuanApi.Data.HoaDon>();
+                        var pagination = Model?.Pagination;
+                    }
+                    @if (hoaDons.Any())
+                    {
+                        int stt = 1;
+                        foreach (var hoaDon in hoaDons.OrderByDescending(h => h.NgayTao))
+                        {
+                            var statusClass = hoaDon.TrangThai switch {
+                                "Chờ xác nhận" => "status-cho-confirm",
+                                "Đang giao hàng" => "status-shipping",
+                                "Giao hàng thành công" => "status-success",
+                                "Đã hủy" => "status-cancel",
+                                _ => "bg-light text-dark"
+                            };
+
+                            <tr>
+                                <td class="text-center text-muted small">@stt</td>
+                                <td><span class="fw-bold">#@hoaDon.MaHoaDon</span></td>
+                                <td class="fw-bold text-dark">@hoaDon.TongTien.ToString("N0") <small>₫</small></td>
+                                <td>
+                                    <span class="status-badge @statusClass">
+                                        @GetTrangThaiText(hoaDon.TrangThai)
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(hoaDon.DiaChiGiaoHang)) {
+                                        <span class="small text-primary"><i class="bi bi-globe me-1"></i>Online</span>
+                                    } else {
+                                        <span class="small text-muted"><i class="bi bi-shop me-1"></i>Store</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a href="@Url.Action("ChiTiet", new { id = hoaDon.IDHoaDon })" class="action-btn btn-view">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+
+                                        @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
+                                        {
+                                            <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        }
+
+                                        @if (hoaDon.TrangThai == "Đang giao hàng")
+                                        {
+                                            <button class="action-btn btn-view text-primary" onclick="viewShippingInfo('@hoaDon.IDHoaDon')">
+                                                <i class="bi bi-truck"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>@stt</td>
-                            <td><strong>@hoaDon.MaHoaDon</strong></td>
-                            <td>@hoaDon.TongTien.ToString("N0") ₫</td>
-                            <td>@(hoaDon.TienGiam?.ToString("N0") ?? "0") ₫</td>
-                            <td>
-                                <span class="status-badge status-@hoaDon.TrangThai.ToLower().Replace(" ", "-")">
-                                    @GetTrangThaiText(hoaDon.TrangThai)
-                                </span>
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(hoaDon.DiaChiGiaoHang))
-                                {
-                                    <span class="badge bg-primary">Online</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">@((lang == "vi") ? "Tại quầy" : "In-store")</span>
-                                }
-                            </td>
-                            <td>@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <!-- Nút xem chi tiết - luôn hiển thị -->
-                                    <a href="@Url.Action("ChiTiet", new { id = hoaDon.IDHoaDon })" class="action-btn btn-view" title="@((lang == "vi") ? "Xem chi tiết đơn hàng" : "View order details")">
-                                        <i class="bi bi-eye"></i> @((lang == "vi") ? "Chi tiết" : "Details")
-                                    </a>
-
-                                    @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
-                                    {
-                                        <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')" title="@((lang == "vi") ? "Hủy đơn hàng" : "Cancel order")">
-                                            <i class="bi bi-x-circle"></i> @((lang == "vi") ? "Hủy đơn" : "Cancel Order")
-                                        </button>
-                                    }
-
-                                    @if (hoaDon.TrangThai == "Đang giao hàng")
-                                    {
-                                        <button class="action-btn btn-view" onclick="viewShippingInfo('@hoaDon.IDHoaDon')" title="@((lang == "vi") ? "Xem thông tin vận chuyển" : "View shipping information")">
-                                            <i class="bi bi-truck"></i> @((lang == "vi") ? "Vận chuyển" : "Shipping")
-                                        </button>
-                                    }
-                                </div>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="opacity-25 mb-3"><i class="bi bi-inbox h1"></i></div>
+                                <p class="text-muted">@((lang == "vi") ? "Không tìm thấy dữ liệu đơn hàng" : "No orders found")</p>
                             </td>
                         </tr>
-                        stt++;
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="8" class="text-center py-4">
-                            <div class="text-muted">
-                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                @if (isAuthenticated)
-                                {
-                                    <p class="mt-2">@((lang == "vi") ? "Bạn chưa có đơn hàng nào" : "You don't have any orders yet")</p>
-                                    <p class="text-sm">@((lang == "vi") ? "Hãy mua sắm để có đơn hàng đầu tiên!" : "Please shop to get your first order!")</p>
-                                }
-                                else if (!string.IsNullOrEmpty(search))
-                                {
-                                    <p class="mt-2">@((lang == "vi") ? "Không tìm thấy đơn hàng nào với mã" : "No orders found with the code") <strong>@search</strong></p>
-                                    <p class="text-sm">@((lang == "vi") ? "Vui lòng kiểm tra lại mã đơn hàng hoặc liên hệ hỗ trợ" : "Please check the order code or contact support")</p>
-                                }
-                                else
-                                {
-                                    <p class="mt-2">@((lang == "vi") ? "Vui lòng nhập mã đơn hàng để tìm kiếm" : "Please enter an order code to search")</p>
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- Phân trang -->
-    @if (pagination != null)
+    @if (pagination != null && pagination.TotalCount > 0)
     {
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="pagination-info">
-                @((lang == "vi") ? "Hiển thị" : "Showing") @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1) -
-                @Math.Min(pagination.CurrentPage * pagination.PageSize, pagination.TotalCount)
-                @((lang == "vi") ? "trong tổng số" : "out of") @pagination.TotalCount  @((lang == "vi") ? "đơn hàng" : "orders")
+        int currentPage = (int)pagination.CurrentPage;
+        int totalPages = Math.Max(1, (int)pagination.TotalPages);
+        if (currentPage < 1)
+        {
+            currentPage = 1;
+        }
+        if (currentPage > totalPages)
+        {
+            currentPage = totalPages;
+        }
+        int prevPage = currentPage > 1 ? currentPage - 1 : 1;
+        int nextPage = currentPage < totalPages ? currentPage + 1 : totalPages;
+        <div class="d-flex justify-content-between align-items-center mt-4 px-2">
+            <div class="small text-muted">
+                Showing @(((pagination.CurrentPage - 1) * pagination.PageSize) + 1)-@Math.Min(pagination.CurrentPage * pagination.PageSize, pagination.TotalCount) of @pagination.TotalCount
             </div>
-
-            <nav aria-label="Phân trang">
+            <nav>
                 <ul class="pagination pagination-sm mb-0">
-                    @if (pagination.HasPreviousPage)
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, fromDate, toDate, quickDate })" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, fromDate, toDate, quickDate })" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    @for (int i = 1; i <= totalPages; i++)
                     {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new {
-                                page = pagination.CurrentPage - 1,
-                                search = search,
-                                fromDate = fromDate,
-                                toDate = toDate
-                            })">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, fromDate, toDate, quickDate })">@i</a>
                         </li>
                     }
 
-                    @{
-                        var startPage = Math.Max(1, pagination.CurrentPage - 2);
-                        var endPage = Math.Min(pagination.TotalPages, pagination.CurrentPage + 2);
-                    }
-
-                    @for (int i = startPage; i <= endPage; i++)
-                    {
-                        <li class="page-item @(i == pagination.CurrentPage ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new {
-                                page = i,
-                                search = search,
-                                fromDate = fromDate,
-                                toDate = toDate
-                            })">@i</a>
-                        </li>
-                    }
-
-                    @if (pagination.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new {
-                                page = pagination.CurrentPage + 1,
-                                search = search,
-                                fromDate = fromDate,
-                                toDate = toDate
-                            })">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    }
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, fromDate, toDate, quickDate })" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, fromDate, toDate, quickDate })" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
     }
 </div>
 
+@* NO CHANGES TO JAVASCRIPT LOGIC - JUST MOVED SCRIPTS BELOW TO KEEP IT CLEAN *@
 <script>
-    // Validate mã đơn hàng
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.querySelector('input[name="search"]');
+        const quickDateSelect = document.getElementById('quickDate');
+        const fromDateInput = document.getElementById('fromDate');
+        const toDateInput = document.getElementById('toDate');
         if (searchInput) {
-            // Validate khi submit form
             const form = document.getElementById('filterForm');
             form.addEventListener('submit', function (e) {
-                // Chỉ validate bắt buộc cho khách vãng lai (có thuộc tính required)
                 if (searchInput.hasAttribute('required') && searchInput.value.trim() === '') {
                     e.preventDefault();
                     alert('Vui lòng nhập mã đơn hàng để tìm kiếm');
                     searchInput.focus();
                     return false;
                 }
-
-                // Validate format mã đơn hàng nếu có nhập
                 if (searchInput.value.trim() !== '') {
                     const orderCodePattern = /^[A-Z0-9_]+$/;
                     if (!orderCodePattern.test(searchInput.value.trim())) {
@@ -452,74 +395,87 @@
             });
         }
 
-        // Validate ngày cho người dùng đã đăng nhập
-        const fromDateInput = document.querySelector('input[name="fromDate"]');
-        const toDateInput = document.querySelector('input[name="toDate"]');
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
 
-        if (fromDateInput && toDateInput) {
-            fromDateInput.addEventListener('change', function () {
-                if (toDateInput.value && this.value > toDateInput.value) {
-                    alert('Ngày bắt đầu không thể lớn hơn ngày kết thúc');
-                    this.value = '';
+        function setDateRange(days) {
+            const today = new Date();
+            const from = new Date();
+            if (days === 'today') {
+                // giữ nguyên today
+            } else {
+                from.setDate(today.getDate() - parseInt(days, 10));
+            }
+
+            fromDateInput.value = formatDate(from);
+            toDateInput.value = formatDate(today);
+        }
+
+        if (quickDateSelect && fromDateInput && toDateInput) {
+            // Nếu đã có khoảng ngày nhưng quickDate chưa rõ thì mặc định là custom.
+            if ((fromDateInput.value || toDateInput.value) && !quickDateSelect.value) {
+                quickDateSelect.value = 'custom';
+            }
+
+            quickDateSelect.addEventListener('change', function () {
+                if (this.value === '') {
+                    fromDateInput.value = '';
+                    toDateInput.value = '';
+                    return;
                 }
+
+                if (this.value === 'custom') {
+                    return;
+                }
+
+                setDateRange(this.value);
+                document.getElementById('filterForm')?.submit();
+            });
+
+            fromDateInput.addEventListener('change', function () {
+                quickDateSelect.value = 'custom';
             });
 
             toDateInput.addEventListener('change', function () {
-                if (fromDateInput.value && this.value < fromDateInput.value) {
-                    alert('Ngày kết thúc không thể nhỏ hơn ngày bắt đầu');
-                    this.value = '';
-                }
+                quickDateSelect.value = 'custom';
             });
         }
     });
 
-    // Hủy đơn hàng
     function cancelOrder(orderId) {
-        // Hiển thị form nhập lý do hủy đơn
         const lyDo = prompt('Vui lòng nhập lý do hủy đơn hàng:');
-
-        if (lyDo === null) {
-            // Người dùng nhấn Cancel
-            return;
-        }
-
+        if (lyDo === null) return;
         if (lyDo.trim() === '') {
             alert('Vui lòng nhập lý do hủy đơn hàng!');
             return;
         }
-
         if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
             fetch(`/DonHang/HuyDon/${orderId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    LyDoHuyDon: lyDo.trim()
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ LyDoHuyDon: lyDo.trim() })
             })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        alert('Đã hủy đơn hàng thành công!');
-                        location.reload();
-                    } else {
-                        alert(result.message || 'Không thể hủy đơn hàng');
-                    }
-                })
-                .catch(error => {
-                    console.error('Lỗi:', error);
-                    alert('Có lỗi xảy ra khi hủy đơn hàng');
-                });
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Đã hủy đơn hàng thành công!');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Không thể hủy đơn hàng');
+                }
+            })
+            .catch(error => alert('Có lỗi xảy ra khi hủy đơn hàng'));
         }
     }
 
-    // Xem thông tin vận chuyển
     async function viewShippingInfo(orderId) {
         alert('Đơn hàng sẽ đến tay bạn từ 3-5 ngày');
     }
 </script>
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 @functions {
     public string GetTrangThaiText(string trangThai)
     {

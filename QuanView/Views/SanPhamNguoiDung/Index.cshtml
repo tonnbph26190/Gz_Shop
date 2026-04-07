@@ -9,188 +9,162 @@
     var category = Context.Request.Query["category"].ToString();
     var size = Context.Request.Query["size"].ToString();
     var color = Context.Request.Query["color"].ToString();
+    var sortOrder = Context.Request.Query["sortOrder"].ToString();
+    var stockFilter = Context.Request.Query["stockFilter"].ToString();
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-    .product-card {
-        border-radius: 12px;
-        border: 1px solid #eee;
-        background: #fff;
-        transition: box-shadow 0.2s;
-        overflow: hidden;
-        position: relative;
-        height: 100%;
+    :root {
+        --primary-red: #e74c3c;
+        --dark-gray: #2d3436;
     }
 
-        .product-card:hover {
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-            border-color: #ddd;
-            z-index: 2;
-        }
+    body { background-color: #fcfcfc; }
+
+    /* Product Card Enhancements */
+    .product-card {
+        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+        background: #fff;
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+        cursor: pointer;
+    }
+
+    .product-card:hover {
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        transform: translateY(-4px);
+        border-color: var(--primary-red);
+    }
+
+    .product-img-container {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 1/1;
+    }
 
     .product-img {
         width: 100%;
-        aspect-ratio: 1/1;
+        height: 100%;
         object-fit: cover;
-        background: #f8f8f8;
-        border-bottom: 1px solid #eee;
+        transition: transform 0.5s ease;
+    }
+
+    .product-card:hover .product-img {
+        transform: scale(1.05);
     }
 
     .product-title {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
-        margin-bottom: 0.25rem;
-        white-space: nowrap;
+        color: var(--dark-gray);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
+        height: 2.8rem;
+        line-height: 1.4;
     }
 
+    /* Price Styling */
     .product-price {
-        font-size: 1.1rem;
-        font-weight: bold;
-        color: #e74c3c;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--primary-red);
     }
 
     .product-oldprice {
         text-decoration: line-through;
-        color: #888;
-        font-size: 0.95rem;
-        margin-left: 8px;
-    }
-
-    .product-sale {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        background: #e74c3c;
-        color: #fff;
+        color: #adb5bd;
         font-size: 0.85rem;
-        font-weight: bold;
-        padding: 2px 10px;
-        border-radius: 8px;
-        z-index: 3;
     }
 
-    .product-card .btn {
-        font-size: 0.95rem;
-        border-radius: 8px;
-    }
-
+    /* Sidebar & Filters */
     .sidebar-section {
         background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 24px;
+        border-radius: 16px;
+        padding: 24px;
         border: 1px solid #eee;
+        position: sticky;
+        top: 20px;
     }
 
+    .form-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #636e72;
+    }
+
+    /* Pagination */
     .pagination .page-link {
-        border-radius: 50% !important;
-        margin: 0 2px;
-        color: #333;
+        border: none;
+        margin: 0 4px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        font-weight: 600;
     }
 
     .pagination .active .page-link {
-        background: #e74c3c;
-        color: #fff;
-        border: none;
+        background: var(--primary-red);
+        box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
     }
-
-    .filter-toggle {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .filter-toggle:hover,
-    .filter-toggle:focus {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .toggle-icon {
-        font-size: 1.1rem;
-        transition: transform 0.35s ease;
-    }
-
-    .filter-toggle[aria-expanded="true"] .toggle-icon {
-        transform: rotate(180deg);
-    }
-
-    #filterContent {
-        transition: all 0.35s ease;
-        overflow: hidden;
-    }
-
-    /* Optional: make it start closed on mobile */
-    @@media (max-width: 991px) {
-        #filterContent {
-            /* .show is added by Bootstrap when open */
-        }
-        
-        /* You can choose to start closed on mobile */
-        /* #filterContent:not(.show) { max-height: 0; }  ← already handled by collapse */
-    }
-
 </style>
 
-<div class="container py-4">
+<div class="container py-5">
     <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-3 mb-4">
-            <div class="sidebar-section">
-                <!-- Toggle header -->
-                <button class="btn btn-link w-100 text-start p-2 mb-3 filter-toggle border border-secondary rounded" 
-                        type="button" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#filterContent" 
-                        aria-expanded="true" 
-                        aria-controls="filterContent">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-funnel-fill text-primary"></i>
-                            Bộ lọc
-                        </h5>
-                        <i class="bi bi-chevron-down toggle-icon transition-all"></i>
-                    </div>
+        <div class="col-lg-3">
+            <div class="sidebar-section shadow-sm">
+                <button class="btn btn-dark w-100 d-lg-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterContent">
+                    <i class="bi bi-filter"></i> Bộ lọc
                 </button>
 
-                <!-- Collapsible content -->
-                <div class="collapse @(ViewContext.HttpContext.Request.Headers["User-Agent"].ToString().Contains("Mobile") ? "" : "show")" id="filterContent">
-                    <form method="get" asp-action="Index" id="filterForm">
-                        <input type="text" class="form-control mb-3" name="search" placeholder="Tìm kiếm sản phẩm..." value="@Context.Request.Query["search"]" />
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Giá từ</label>
-                            <input type="number" class="form-control" name="priceFrom" min="0" placeholder="Từ..." value="@priceFrom">
+                <div class="collapse d-lg-block" id="filterContent">
+                    <h5 class="fw-bold mb-4 d-none d-lg-block">
+                        <i class="bi bi-funnel me-2"></i>Bộ lọc
+                    </h5>
+                    
+                    <form method="get" asp-action="Index">
+                        <div class="mb-4">
+                            <label class="form-label">Tìm kiếm</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control bg-light border-start-0" name="search" placeholder="Tên sản phẩm..." value="@Context.Request.Query["search"]" />
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Đến</label>
-                            <input type="number" class="form-control" name="priceTo" min="0" placeholder="Đến..." value="@priceTo">
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label">Giá từ</label>
+                                <input type="number" class="form-control" name="priceFrom" placeholder="0đ" value="@priceFrom">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Đến</label>
+                                <input type="number" class="form-control" name="priceTo" placeholder="Đến..." value="@priceTo">
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Danh mục</label>
-                            <input type="text" class="form-control" name="category" placeholder="Nhập tên danh mục..." value="@category">
-                        </div>
-                        
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label class="form-label">Kích cỡ</label>
-                            <select class="form-select" name="size">
-                                <option value="">Tất cả size</option>
+                            <select class="form-select border-0 bg-light" name="size">
+                                <option value="">Mọi kích cỡ</option>
                                 @foreach (var s in ViewBag.Sizes as List<string> ?? new List<string>())
                                 {
                                     <option value="@s" @(size == s ? "selected" : "")>@s</option>
                                 }
                             </select>
                         </div>
-                        
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label class="form-label">Màu sắc</label>
-                            <select class="form-select" name="color">
-                                <option value="">Tất cả màu</option>
+                            <select class="form-select border-0 bg-light" name="color">
+                                <option value="">Mọi màu sắc</option>
                                 @foreach (var c in ViewBag.Colors as List<string> ?? new List<string>())
                                 {
                                     <option value="@c" @(color == c ? "selected" : "")>@c</option>
@@ -198,107 +172,117 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn btn-outline-primary w-100">Lọc</button>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm py-2">
+                            Áp dụng lọc
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
-        <!-- Product Grid -->
+
         <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <span>Hiển thị <b>@Model.Count</b> sản phẩm</span>
-                <form method="get" class="mb-0" id="sortForm">
+            <div class="bg-white p-3 rounded-4 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <span class="text-muted">Tìm thấy <b class="text-dark">@total</b> sản phẩm</span>
+                
+                <form method="get" class="d-flex gap-2 mb-0" id="sortForm">
                     <input type="hidden" name="search" value="@Context.Request.Query["search"]" />
                     <input type="hidden" name="priceFrom" value="@priceFrom" />
                     <input type="hidden" name="priceTo" value="@priceTo" />
                     <input type="hidden" name="category" value="@category" />
                     <input type="hidden" name="size" value="@size" />
                     <input type="hidden" name="color" value="@color" />
-                    <select class="form-select w-auto" name="sortOrder" onchange="document.getElementById('sortForm').submit()">
-                        <option value="" @(string.IsNullOrEmpty(Context.Request.Query["sortOrder"]) ? "selected" : "")>Mặc định (None)</option>
-                        <option value="asc" @(Context.Request.Query["sortOrder"] == "asc" ? "selected" : "")>Sắp xếp theo giá tăng dần</option>
-                        <option value="desc" @(Context.Request.Query["sortOrder"] == "desc" ? "selected" : "")>Sắp xếp theo giá giảm dần</option>
+
+                    <select class="form-select form-select-sm w-auto rounded-3" name="stockFilter" onchange="this.form.submit()">
+                        <option value="" @(stockFilter == "" ? "selected" : "")>Tình trạng</option>
+                        <option value="inStock" @(stockFilter == "inStock" ? "selected" : "")>Còn hàng</option>
+                        <option value="outStock" @(stockFilter == "outStock" ? "selected" : "")>Hết hàng</option>
+                    </select>
+
+                    <select class="form-select form-select-sm w-auto rounded-3" name="sortOrder" onchange="this.form.submit()">
+                        <option value="" @(sortOrder == "" ? "selected" : "")>Sắp xếp</option>
+                        <option value="asc" @(sortOrder == "asc" ? "selected" : "")>Giá thấp → Cao</option>
+                        <option value="desc" @(sortOrder == "desc" ? "selected" : "")>Giá cao → Thấp</option>
                     </select>
                 </form>
             </div>
+
             <div class="row g-4">
-                @for (int i = 0; i < Model.Count; i++)
+                @foreach (var sp in Model)
                 {
-                    var sp = Model[i];
+                    var minBienThe = sp.BienThes?.OrderBy(b => b.GiaSauGiam > 0 ? b.GiaSauGiam : b.GiaGoc).FirstOrDefault();
+                    var giaGoc = minBienThe?.GiaGoc ?? 0;
+                    var giaSauGiam = minBienThe?.GiaSauGiam ?? 0;
+                    var totalStock = sp.BienThes?.Sum(b => b.SoLuong) ?? 0;
+                    var detailUrl = (sp.BienThes != null && sp.BienThes.Any()) 
+                                    ? $"/SanPhamNguoiDung/Detail/{sp.BienThes.First().IDSanPhamChiTiet}" 
+                                    : "#";
 
-                    var giaGoc = sp.BienThes.Max(b => b.GiaGoc);
-                    <div class="col-12 col-sm-6 col-md-4">
-                        <div class="product-card h-100 d-flex flex-column">
-                          
-                            <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" />
+                    <div class="col-6 col-md-4">
+                        <div class="product-card h-100 d-flex flex-column" onclick="location.href='@detailUrl'">
+                            <div class="product-img-container">
+                                <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" loading="lazy" />
+                                @if (giaGoc > 0 && giaSauGiam > 0 && giaSauGiam < giaGoc)
+                                {
+                                    var discountPercent = Math.Round((double)(giaGoc - giaSauGiam) / (double)giaGoc * 100);
+                                    
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 shadow-sm">
+                                        -@discountPercent%
+                                    </span>
+                                }
+                            </div>
+
                             <div class="p-3 flex-grow-1 d-flex flex-column">
-                                <div class="product-title">@sp.TenSanPham</div>
-                                <div class="text-muted mb-1" style="font-size:0.95rem;">@sp.DanhMuc</div>
-                                <div>
-                                    <span class="product-price">@giaGoc.ToString("N0") ₫</span>
-                                </div>
+                                <small class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">@sp.DanhMuc</small>
+                                <div class="product-title mb-2">@sp.TenSanPham</div>
+                                
+                                <div class="mt-auto">
+                                    <div class="d-flex align-items-center mb-2">
+                                        @if (giaSauGiam > 0 && giaSauGiam < giaGoc)
+                                        {
+                                            <span class="product-price me-2">@giaSauGiam.ToString("N0")₫</span>
+                                            <span class="product-oldprice">@giaGoc.ToString("N0")₫</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="product-price">@giaGoc.ToString("N0")₫</span>
+                                        }
+                                    </div>
 
-                                <!-- Hiển thị số lượng tồn kho -->
-                                <div class="mb-2">
-                                    @{
-                                        var totalStock = sp.BienThes?.Sum(b => b.SoLuong) ?? 0;
-                                        var stockClass = totalStock > 10 ? "text-success" : totalStock > 0 ? "text-warning" : "text-danger";
-                                        var stockText = totalStock > 0 ? $"Còn {totalStock} sản phẩm" : "Hết hàng";
-                                    }
-                                    <small class="@stockClass fw-bold">
-                                        <i class="bi bi-box-seam"></i> @stockText
-                                    </small>
-                                </div>
-
-                                @if (sp.BienThes != null && sp.BienThes.Any())
-                                {
-                                    @if (totalStock > 0)
-                                    {
-                                        <a class="btn btn-outline-danger btn-sm mt-2 w-100"
-                                           href="/SanPhamNguoiDung/Detail/@sp.BienThes.First().IDSanPhamChiTiet">
-                                            Xem chi tiết
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-secondary btn-sm mt-2 w-100" disabled>
-                                            <i class="bi bi-x-circle"></i> Hết hàng
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        @{
+                                            var stockColor = totalStock > 10 ? "text-success" : totalStock > 0 ? "text-warning" : "text-danger";
+                                        }
+                                        <small class="@stockColor fw-semibold" style="font-size: 0.8rem;">
+                                            <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                            @(totalStock > 0 ? $"Còn {totalStock}" : "Hết hàng")
+                                        </small>
+                                        
+                                        <button class="btn btn-sm btn-light rounded-circle @(totalStock == 0 ? "disabled" : "")">
+                                            <i class="bi bi-cart-plus"></i>
                                         </button>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="text-danger fw-bold mt-3">Không có biến thể</span>
-                                }
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 }
             </div>
-            <!-- Pagination -->
-            <nav class="mt-4">
-                <ul class="pagination justify-content-center">
-                    @for (int i = 1; i <= Math.Ceiling((double)total / pageSize); i++)
-                    {
-                        <li class="page-item @(i == (int)page ? "active" : "")">
-                            <a class="page-link" href="?page=@i
-                                &search=@Context.Request.Query["search"]
-                                &priceFrom=@priceFrom
-                                &priceTo=@priceTo
-                                &category=@category
-                                &size=@size
-                                &color=@color
-                                &sortOrder=@Context.Request.Query["sortOrder"]">@i
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </nav>
+
+            @if (total > pageSize)
+            {
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        @for (int i = 1; i <= Math.Ceiling((double)total / pageSize); i++)
+                        {
+                            <li class="page-item @(i == (int)page ? "active" : "")">
+                                <a class="page-link shadow-sm" href="?page=@i&search=@Context.Request.Query["search"]&priceFrom=@priceFrom&priceTo=@priceTo&category=@category&size=@size&color=@color&sortOrder=@sortOrder&stockFilter=@stockFilter">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-    </script>
-}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

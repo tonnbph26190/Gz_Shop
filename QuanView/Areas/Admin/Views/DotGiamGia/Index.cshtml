@@ -1,4 +1,4 @@
-﻿@using QuanApi.Dtos
+@using QuanApi.Dtos
 @model QuanApi.Dtos.PagedResultGeneric<QuanApi.Data.DotGiamGia>
 
 
@@ -115,9 +115,9 @@
                                 <td>@item.MaDot</td>
                                 <td>@item.TenDot</td>
                                 <td>@item.PhanTramGiam%</td>
-                                <td>@item.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@item.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@(item.LanCapNhatCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
+                                <td>@item.NgayBatDau.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@item.NgayKetThuc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(item.LanCapNhatCuoi?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
                                 <td>
                                     @if (item.TrangThai)
                                     {

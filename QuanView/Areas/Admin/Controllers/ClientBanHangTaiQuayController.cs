@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuanApi.Dtos;
@@ -32,6 +33,16 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var response = await _httpClient.GetAsync("BanHangTaiQuay/danh-sach-san-pham");
             var result = await response.Content.ReadAsStringAsync();
+            return Content(result, "application/json");
+        }
+
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/tim-san-pham-theo-qr")]
+        public async Task<IActionResult> FindProductByQr(string qrCode)
+        {
+            var response = await _httpClient.GetAsync($"BanHangTaiQuay/tim-san-pham-theo-qr?qrCode={Uri.EscapeDataString(qrCode ?? string.Empty)}");
+            var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
             return Content(result, "application/json");
         }
 
@@ -123,6 +134,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
             var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
             return Content(result, "application/json");
         }
 
@@ -164,6 +176,16 @@ namespace QuanView.Areas.Admin.Controllers
             return Content(result, "application/json");
         }
 
+        [HttpGet]
+        [Route("Admin/ClientBanHangTaiQuay/cau-hinh-ban-hang")]
+        public async Task<IActionResult> GetSalesConfig()
+        {
+            var response = await _httpClient.GetAsync("CauHinhBanHang");
+            var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
+            return Content(result, "application/json");
+        }
+
         // Lấy danh sách phương thức thanh toán
         [HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-phuong-thuc-thanh-toan")]
@@ -184,29 +206,33 @@ namespace QuanView.Areas.Admin.Controllers
                 return StatusCode(500, $"Lỗi: {ex.Message}");
             }
         }
+		[HttpGet]
+		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		{
+			try
+			{
+				var response = await _httpClient.GetAsync(
+					$"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}&tongTien={tongTien.ToString(CultureInfo.InvariantCulture)}"
+				);
 
-        [HttpGet]
-        [Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
-        public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync($"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(vouchers);
-                }
-                return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+				if (response.IsSuccessStatusCode)
+				{
+					var vouchers = await response.Content.ReadFromJsonAsync<object>();
+					return Ok(vouchers);
+				}
 
-        // Lấy địa chỉ của khách hàng
-        [HttpGet]
+				var error = await response.Content.ReadAsStringAsync(); // 👈 debug thêm
+				return StatusCode((int)response.StatusCode, error);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, $"Lỗi: {ex.Message}");
+			}
+		}
+
+		// Lấy địa chỉ của khách hàng
+		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddress(Guid customerId)
         {
@@ -226,30 +252,41 @@ namespace QuanView.Areas.Admin.Controllers
             }
         }
 
-        // Tạo địa chỉ mới cho khách hàng
-        [HttpPost]
-        [Route("Admin/ClientBanHangTaiQuay/tao-dia-chi")]
-        public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(result);
-                }
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, errorContent);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi: {ex.Message}");
-            }
-        }
+		// Tạo địa chỉ mới cho khách hàng
+		[HttpPost]
+		[Route("Admin/ClientBanHangTaiQuay/tao-dia-chi")]
+		public async Task<IActionResult> TaoDiaChi([FromBody] TaoDiaChiDto dto)
+		{
+			try
+			{
+				var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/tao-dia-chi", dto);
 
-        // Lấy danh sách địa chỉ của khách hàng
-        [HttpGet]
+				var content = await response.Content.ReadAsStringAsync();
+
+				// ✅ thành công
+				if (response.IsSuccessStatusCode)
+				{
+					return Ok(content); // hoặc Deserialize nếu muốn
+				}
+
+				// 🚫 lỗi (ví dụ: trùng địa chỉ)
+				return StatusCode((int)response.StatusCode, new
+				{
+					message = content
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new
+				{
+					message = "Lỗi server",
+					detail = ex.Message
+				});
+			}
+		}
+
+		// Lấy danh sách địa chỉ của khách hàng
+		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang")]
         public async Task<IActionResult> GetCustomerAddresses(Guid customerId)
         {

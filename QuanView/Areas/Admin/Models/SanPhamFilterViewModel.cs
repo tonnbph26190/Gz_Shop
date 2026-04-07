@@ -1,4 +1,4 @@
-﻿using QuanView.Areas.Admin.Models;
+using QuanView.Areas.Admin.Models;
 
 namespace QuanView.ViewModels
 {
@@ -13,7 +13,8 @@ namespace QuanView.ViewModels
         // Bộ lọc
         public string? Keyword { get; set; }
         public string? TrangThai { get; set; }
-        public decimal? PriceFrom { get; set; }
+		public string SortDate { get; set; }
+		public decimal? PriceFrom { get; set; }
         public decimal? PriceTo { get; set; }
         public int? QtyFrom { get; set; }
         public int? QtyTo { get; set; }

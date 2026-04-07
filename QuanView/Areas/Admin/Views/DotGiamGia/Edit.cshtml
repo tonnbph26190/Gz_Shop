@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
@@ -100,7 +100,7 @@
             </div>
         }
 
-        <input type="hidden" asp-for="IDDotGiamGia" />
+    
 
         <div class="row mb-3">
             <div class="col-md-6">
@@ -132,6 +132,14 @@
                 <label asp-for="NgayKetThuc" class="form-label fw-semibold">Ngày kết thúc</label>
                 <input asp-for="NgayKetThuc" type="datetime-local" class="form-control" />
                 <span asp-validation-for="NgayKetThuc" class="text-danger small"></span>
+            </div>
+            <input type="hidden" asp-for="IDDotGiamGia" />
+            <div class="col-md-4">
+                <label class="form-label">Trạng thái</label>
+                <select asp-for="TrangThai" class="form-control">
+                    <option value="true">Đang kích hoạt</option>
+                    <option value="false">Tạm ngưng</option>
+                </select>
             </div>
         </div>
 

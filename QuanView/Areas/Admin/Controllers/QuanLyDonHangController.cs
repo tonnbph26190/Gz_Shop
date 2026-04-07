@@ -67,6 +67,14 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public List<T> Data { get; set; }
             public PaginationInfo Pagination { get; set; }
+            public OrderStatistics Statistics { get; set; }
+        }
+
+        public class OrderStatistics
+        {
+            public int TotalOnlineCount { get; set; }
+            public int TotalTaiQuayCount { get; set; }
+            public int TotalPendingCount { get; set; }
         }
 
         // DTO classes for detailed invoice
@@ -77,6 +85,10 @@ namespace QuanView.Areas.Admin.Controllers
             public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
+            public decimal SoTienGiamTuDiem { get; set; }
+            public int DiemDaDung { get; set; }
+            public int DiemCong { get; set; }
+            public decimal TyLeQuyDoiDiem { get; set; }
             public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayTao { get; set; }
@@ -135,10 +147,21 @@ namespace QuanView.Areas.Admin.Controllers
             public Guid IDSanPhamChiTiet { get; set; }
             public string MaSPChiTiet { get; set; }
             public decimal GiaBan { get; set; }
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongDatMua { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
             public KichCoDto KichCo { get; set; }
             public MauSacDto MauSac { get; set; }
             public HoaTietDto HoaTiet { get; set; }
             public SanPhamDetailDto SanPham { get; set; }
+        }
+
+        public class StockSnapshotDto
+        {
+            public int SoLuongTonHienTai { get; set; }
+            public int SoLuongTonTruocXacNhan { get; set; }
+            public int SoLuongTonDuKienSauHuy { get; set; }
         }
 
         public class KichCoDto { public string TenKichCo { get; set; } }
@@ -153,14 +176,40 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Admin/QuanLyDonHang
-        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string maDonHang, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string trangThai, string tuNgay, string denNgay, string loaiDonHang, string khachHang, string sapXep, string maDonHang, string quickDate, int page = 1, int pageSize = 10)
         {
             try
             {
-                // Xây dựng URL với các tham số phân trang và lọc
-                var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                if (!string.IsNullOrEmpty(trangThai))
+				// 👉 mặc định
+				if (string.IsNullOrEmpty(trangThai))
+				{
+					trangThai = "Chờ xác nhận";
+				}
+
+				// 👉 xử lý ALL
+				if (trangThai == "all")
+				{
+					trangThai = null;
+				}
+
+				// 👉 FIX CHÍNH Ở ĐÂY
+				// 👉 chỉ khi cả 2 rỗng mới bỏ lọc
+				// 👉 nếu chọn "Tất cả"
+				if (string.IsNullOrEmpty(quickDate))
+				{
+					tuNgay = null;
+					denNgay = null;
+				}
+				loaiDonHang ??= "Tất cả";
+				sapXep ??= "desc"; // mặc định mới nhất
+								   // Xây dựng URL với các tham số phân trang và lọc
+				var url = $"HoaDons?page={page}&pageSize={pageSize}";
+				if (!string.IsNullOrEmpty(sapXep))
+					url += $"&sapXep={sapXep}";
+
+				if (!string.IsNullOrEmpty(trangThai))
                     url += $"&trangThai={Uri.EscapeDataString(trangThai)}";
                 if (!string.IsNullOrEmpty(tuNgay))
                     url += $"&tuNgay={Uri.EscapeDataString(tuNgay)}";
@@ -245,8 +294,19 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalCount = pagination.TotalCount;
                         ViewBag.HasPreviousPage = pagination.HasPreviousPage;
                         ViewBag.HasNextPage = pagination.HasNextPage;
-
-                        return View(hoaDons);
+                        ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
+                        ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
+                        ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
+						// ✅ SORT LOCAL (nếu API không xử lý)
+						if (sapXep == "asc")
+						{
+							hoaDons = hoaDons.OrderBy(h => h.NgayTao).ToList();
+						}
+						else
+						{
+							hoaDons = hoaDons.OrderByDescending(h => h.NgayTao).ToList();
+						}
+						return View(hoaDons);
                     }
                     catch (System.Text.Json.JsonException jsonEx)
                     {
@@ -286,6 +346,10 @@ namespace QuanView.Areas.Admin.Controllers
                             BanTaiQuay = hoaDonData.BanTaiQuay,
                             TongTien = hoaDonData.TongTien,
                             TienGiam = hoaDonData.TienGiam ?? 0,
+                            SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                            DiemDaDung = hoaDonData.DiemDaDung,
+                            DiemCong = hoaDonData.DiemCong,
+                            TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
                             NgayTao = hoaDonData.NgayTao,
@@ -329,6 +393,7 @@ namespace QuanView.Areas.Admin.Controllers
                         // Add ChiTietHoaDons if exists
                         if (hoaDonData.ChiTietHoaDons != null)
                         {
+                            var stockSnapshots = new Dictionary<Guid, StockSnapshotDto>();
                             hoaDon.ChiTietHoaDons = new List<ChiTietHoaDon>();
                             foreach (var ct in hoaDonData.ChiTietHoaDons)
                             {
@@ -348,6 +413,7 @@ namespace QuanView.Areas.Admin.Controllers
                                         IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                         MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
                                         GiaBan = ct.SanPhamChiTiet.GiaBan,
+                                        SoLuong = ct.SanPhamChiTiet.SoLuongTonHienTai,
                                         KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
                                         {
                                             TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo
@@ -362,6 +428,13 @@ namespace QuanView.Areas.Admin.Controllers
                                         } : null
                                     };
 
+                                    stockSnapshots[chiTiet.IDChiTietHoaDon] = new StockSnapshotDto
+                                    {
+                                        SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuongTonHienTai,
+                                        SoLuongTonTruocXacNhan = ct.SanPhamChiTiet.SoLuongTonTruocXacNhan,
+                                        SoLuongTonDuKienSauHuy = ct.SanPhamChiTiet.SoLuongTonDuKienSauHuy
+                                    };
+
                                     if (ct.SanPhamChiTiet.SanPham != null)
                                     {
                                         chiTiet.SanPhamChiTiet.SanPham = new SanPham
@@ -371,10 +444,13 @@ namespace QuanView.Areas.Admin.Controllers
                                             MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
                                         };
                                     }
+
                                 }
 
                                 hoaDon.ChiTietHoaDons.Add(chiTiet);
                             }
+
+                            ViewBag.StockSnapshots = stockSnapshots;
                         }
 
                         return View(hoaDon);
@@ -444,13 +520,13 @@ namespace QuanView.Areas.Admin.Controllers
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
                         "Đã xác nhận" => "Chờ lấy hàng",
-                        "Chờ lấy hàng" => "Đã lấy hàng",
-                        _ => "Đã lấy hàng"
+                        "Chờ lấy hàng" => "Chờ lấy hàng",
+                        _ => "Chờ lấy hàng"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đã lấy hàng");
+            return await CapNhatTrangThai(id, "Chờ lấy hàng");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanGiaoHang/{id}
@@ -466,14 +542,17 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
-                        "Đã lấy hàng" => "Chờ giao hàng",
-                        "Chờ giao hàng" => "Đang giao hàng",
-                        _ => "Đang giao hàng"
+                        "Chờ lấy hàng" => "Đang giao",
+                        "Đang giao" => "Đang giao",
+                        "Đã lấy hàng" => "Đang giao",
+                        "Chờ giao hàng" => "Đang giao",
+                        "Đang giao hàng" => "Đang giao",
+                        _ => "Đang giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Đang giao hàng");
+            return await CapNhatTrangThai(id, "Đang giao");
         }
 
         // POST: Admin/QuanLyDonHang/XacNhanDaGiaoHang/{id}
@@ -489,14 +568,15 @@ namespace QuanView.Areas.Admin.Controllers
                 {
                     string trangThaiMoi = hoaDon.TrangThai switch
                     {
+                        "Đang giao" => "Đã giao",
                         "Đang giao hàng" => "Đã giao",
-                        "Đã giao" => "Giao hàng thành công",
-                        _ => "Giao hàng thành công"
+                        "Đã giao" => "Đã giao",
+                        _ => "Đã giao"
                     };
                     return await CapNhatTrangThai(id, trangThaiMoi);
                 }
             }
-            return await CapNhatTrangThai(id, "Giao hàng thành công");
+            return await CapNhatTrangThai(id, "Đã giao");
         }
 
         // POST: Admin/QuanLyDonHang/HuyDonHang/{id}
@@ -559,6 +639,77 @@ namespace QuanView.Areas.Admin.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // POST: Admin/QuanLyDonHang/HoanTien/{id}
+        [HttpPost]
+        public async Task<IActionResult> HoanTien(Guid id)
+        {
+            try
+            {
+                var detailResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!detailResponse.IsSuccessStatusCode)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var hoaDon = await detailResponse.Content.ReadFromJsonAsync<HoaDonDetailDto>(ApiJsonOptions);
+                if (hoaDon == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy đơn hàng";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.BanTaiQuay)
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn online.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai == "Đã hoàn tiền")
+                {
+                    TempData["ErrorMessage"] = "Đơn hàng đã được hoàn tiền trước đó.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (hoaDon.TrangThai != "Đã hủy")
+                {
+                    TempData["ErrorMessage"] = "Chỉ hoàn tiền cho đơn hàng đã hủy.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var tenPhuongThucThanhToan = hoaDon.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty;
+                if (!tenPhuongThucThanhToan.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn thanh toán chuyển khoản.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var payload = new
+                {
+                    TrangThai = "Đã hoàn tiền",
+                    NguoiCapNhat = User.Identity?.Name ?? "Admin",
+                    LanCapNhatCuoi = DateTime.UtcNow
+                };
+
+                var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
+                if (updateResponse.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] = "Đã hoàn tiền cho đơn hàng thành công.";
+                }
+                else
+                {
+                    var error = await updateResponse.Content.ReadAsStringAsync();
+                    TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi khi hoàn tiền: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         // POST: Admin/QuanLyDonHang/Rollback/{id}
         [HttpPost]
         public async Task<IActionResult> Rollback(Guid id)
@@ -586,9 +737,10 @@ namespace QuanView.Areas.Admin.Controllers
                     "Đã xác nhận" => "Chờ xác nhận",
                     "Chờ lấy hàng" => "Đã xác nhận",
                     "Đã lấy hàng" => "Chờ lấy hàng",
-                    "Chờ giao hàng" => "Đã lấy hàng",
-                    "Đang giao hàng" => "Chờ giao hàng",
-                    "Đã giao" => "Đang giao hàng",
+                    "Chờ giao hàng" => "Chờ lấy hàng",
+                    "Đang giao" => "Chờ lấy hàng",
+                    "Đang giao hàng" => "Chờ lấy hàng",
+                    "Đã giao" => "Đang giao",
                     "Giao hàng thành công" => "Đã giao",
                     _ => ""
                 };
@@ -678,6 +830,10 @@ namespace QuanView.Areas.Admin.Controllers
                     MaHoaDon = hoaDonData.MaHoaDon ?? "",
                     TongTien = hoaDonData.TongTien,
                     TienGiam = hoaDonData.TienGiam ?? 0,
+                    SoTienGiamTuDiem = hoaDonData.SoTienGiamTuDiem,
+                    DiemDaDung = hoaDonData.DiemDaDung,
+                    DiemCong = hoaDonData.DiemCong,
+                    TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                     PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                     TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
                     NgayTao = hoaDonData.NgayTao,

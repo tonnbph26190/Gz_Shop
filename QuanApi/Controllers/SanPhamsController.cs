@@ -100,6 +100,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             TenKichCo = ct.KichCo.TenKichCo,
                             TenMauSac = ct.MauSac.TenMauSac,
@@ -126,7 +129,9 @@ namespace QuanApi.Controllers
             decimal? priceTo = null,
             int? qtyFrom = null,
             int? qtyTo = null,
-            DateTime? dateFrom = null,
+			 string? sortDate = null,
+
+			DateTime? dateFrom = null,
             DateTime? dateTo = null)
         {
             if (page <= 0) page = 1;
@@ -176,14 +181,25 @@ namespace QuanApi.Controllers
             // Filter by variant quantity range
             if (qtyFrom.HasValue)
             {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong >= qtyFrom.Value));
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom.Value));
             }
             if (qtyTo.HasValue)
             {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong <= qtyTo.Value));
+                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value));
             }
-
-            var total = await baseQuery.CountAsync();
+			// ✅ SORT NGÀY TẠO
+			if (!string.IsNullOrEmpty(sortDate))
+			{
+				if (sortDate == "desc")
+					baseQuery = baseQuery.OrderByDescending(s => s.NgayTao);
+				else if (sortDate == "asc")
+					baseQuery = baseQuery.OrderBy(s => s.NgayTao);
+			}
+			else
+			{
+				baseQuery = baseQuery.OrderBy(s => s.TenSanPham); // mặc định
+			}
+			var total = await baseQuery.CountAsync();
 
             var data = await baseQuery
                 .Include(s => s.ChatLieu)
@@ -200,7 +216,7 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.HoaTiet)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
-                .OrderBy(s => s.TenSanPham)
+               
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(s => new SanPhamDto
@@ -256,6 +272,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             price = ct.GiaBan,
                             originalPrice = ct.GiaBan,

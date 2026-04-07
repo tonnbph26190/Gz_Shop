@@ -50,6 +50,17 @@ namespace QuanView.Controllers
             _logger = logger;
         }
 
+        private Guid? ResolveCurrentCustomerId()
+        {
+            var customerIdClaim = User.FindFirst("custom:id_khachhang");
+            if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
+            {
+                return parsedCustomerId;
+            }
+
+            return null;
+        }
+
         private bool ValidateVietnamesePhoneNumber(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -108,6 +119,7 @@ namespace QuanView.Controllers
                                 TenSanPham = spct.TenSanPham
                             },
                             GiaBan = spct.price,
+                            SoLuong = spct.SoLuongKhaDung,
                             AnhSanPhams = new List<AnhSanPham>
                             {
                                 new AnhSanPham
@@ -150,6 +162,21 @@ namespace QuanView.Controllers
                 // Cập nhật số điện thoại đã được format
                 checkoutData.SoDienThoaiNguoiNhan = formattedPhone;
 
+                if (string.IsNullOrWhiteSpace(checkoutData.DiaChiGiaoHang))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán" });
+                }
+
+                var hasProvince = !string.IsNullOrWhiteSpace(checkoutData.Province);
+                var hasDistrict = !string.IsNullOrWhiteSpace(checkoutData.District);
+                var hasDistrictId = checkoutData.ToDistrictId.GetValueOrDefault() > 0;
+                var hasWardCode = !string.IsNullOrWhiteSpace(checkoutData.ToWardCode);
+
+                if (!hasProvince || !hasDistrict || !hasDistrictId || !hasWardCode)
+                {
+                    return Json(new { success = false, message = "Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã trước khi thanh toán" });
+                }
+
                 // Lấy giỏ hàng từ session
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
 
@@ -167,6 +194,14 @@ namespace QuanView.Controllers
                         var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                         if (spct != null && spct.price > 0)
                         {
+                            if (item.SoLuong > spct.SoLuongKhaDung)
+                            {
+                                return Json(new
+                                {
+                                    success = false,
+                                    message = $"Sản phẩm {spct.TenSanPham} chỉ còn {spct.SoLuongKhaDung} sản phẩm khả dụng."
+                                });
+                            }
                             item.GiaBan = spct.price;
                         }
                         else
@@ -197,12 +232,7 @@ namespace QuanView.Controllers
                 }
 
                 // Lấy KhachHangId từ claims nếu user đã đăng nhập
-                Guid? khachHangId = null;
-                var customerIdClaim = User.FindFirst("custom:id_khachhang");
-                if (customerIdClaim != null && Guid.TryParse(customerIdClaim.Value, out var parsedCustomerId))
-                {
-                    khachHangId = parsedCustomerId;
-                }
+                Guid? khachHangId = ResolveCurrentCustomerId();
 
                 // Xử lý phiếu giảm giá nếu có
                 Guid? phieuGiamGiaId = null;
@@ -235,13 +265,19 @@ namespace QuanView.Controllers
                 try
                 {
                     var orderValue = chiTietHoaDons.Sum(x => x.thanhTien);
-                    if (!string.IsNullOrWhiteSpace(checkoutData.Province))
+                    if (!string.IsNullOrWhiteSpace(checkoutData.Province)
+                        || checkoutData.ToDistrictId.GetValueOrDefault() > 0
+                        || !string.IsNullOrWhiteSpace(checkoutData.ToWardCode))
                     {
-                        var calcRequest = new
+                        var calcRequest = new CalculateShippingRequest
                         {
-                            Province = checkoutData.Province,
-                            District = checkoutData.District,
-                            OrderValue = orderValue
+                            Province = checkoutData.Province ?? string.Empty,
+                            District = checkoutData.District ?? string.Empty,
+                            OrderValue = orderValue,
+                            ToDistrictId = checkoutData.ToDistrictId,
+                            ToWardCode = checkoutData.ToWardCode,
+                            Weight = checkoutData.Weight,
+                            CustomerId = khachHangId
                         };
                         var shippingResp = await _httpClient.PostAsJsonAsync("shipping/calculate", calcRequest);
                         if (shippingResp.IsSuccessStatusCode)
@@ -250,6 +286,7 @@ namespace QuanView.Controllers
                             if (shippingInfo != null)
                             {
                                 checkoutData.PhiVanChuyen = shippingInfo.FinalFee;
+                                checkoutData.PhiVanChuyenDaGiam = true;
                             }
                         }
                     }
@@ -273,7 +310,10 @@ namespace QuanView.Controllers
                             PhuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                             TongTien = checkoutData.TongTien,
                             TienGiam = checkoutData.TienGiam ?? 0,
+                            UsePoint = checkoutData.UsePoint,
+                            RequestedUsedPoints = checkoutData.RequestedUsedPoints,
                             PhiVanChuyen = checkoutData.PhiVanChuyen,
+                            PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                             DiaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -320,7 +360,10 @@ namespace QuanView.Controllers
                     phuongThucThanhToanId = checkoutData.PhuongThucThanhToanId,
                     tongTien = checkoutData.TongTien,
                     tienGiam = checkoutData.TienGiam,
+                    usePoint = checkoutData.UsePoint,
+                    requestedUsedPoints = checkoutData.RequestedUsedPoints,
                     phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
+                    phiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -338,6 +381,9 @@ namespace QuanView.Controllers
                     Console.WriteLine($"API Response: {responseContent}");
 
                     string maHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}"; // Fallback
+                    decimal soTienGiamTuDiem = 0;
+                    decimal tyLeQuyDoiDiem = 0;
+                    int diemDaDung = checkoutData.RequestedUsedPoints ?? 0;
 
                     try
                     {
@@ -358,6 +404,22 @@ namespace QuanView.Controllers
                             // Thử parse như HoaDon object
                             var hoaDonResponse = JsonSerializer.Deserialize<HoaDon>(responseContent);
                             maHoaDon = hoaDonResponse?.MaHoaDon ?? maHoaDon;
+                            soTienGiamTuDiem = hoaDonResponse?.SoTienGiamTuDiem ?? 0;
+                            tyLeQuyDoiDiem = hoaDonResponse?.TyLeQuyDoiDiem ?? 0;
+                            diemDaDung = hoaDonResponse?.DiemDaDung ?? diemDaDung;
+                        }
+
+                        if (responseData.TryGetProperty("soTienGiamTuDiem", out var soTienGiamTuDiemElement))
+                        {
+                            soTienGiamTuDiem = soTienGiamTuDiemElement.GetDecimal();
+                        }
+                        if (responseData.TryGetProperty("tyLeQuyDoiDiem", out var tyLeQuyDoiDiemElement))
+                        {
+                            tyLeQuyDoiDiem = tyLeQuyDoiDiemElement.GetDecimal();
+                        }
+                        if (responseData.TryGetProperty("diemDaDung", out var diemDaDungElement))
+                        {
+                            diemDaDung = diemDaDungElement.GetInt32();
                         }
                     }
                     catch (Exception ex)
@@ -390,7 +452,10 @@ namespace QuanView.Controllers
                             customerName = checkoutData.TenNguoiNhan,
                             customerPhone = checkoutData.SoDienThoaiNguoiNhan,
                             customerAddress = checkoutData.DiaChiGiaoHang,
-                            shippingFee = checkoutData.PhiVanChuyen
+                            shippingFee = checkoutData.PhiVanChuyen,
+                            usedPoints = diemDaDung,
+                            pointDiscount = soTienGiamTuDiem,
+                            pointRate = tyLeQuyDoiDiem
                         }),
                         message = $"Đặt hàng thành công! Mã đơn hàng của bạn là: {maHoaDon}"
                     });
@@ -409,13 +474,33 @@ namespace QuanView.Controllers
 
         // Proxy tính phí vận chuyển giống bán hàng tại quầy
         [HttpPost]
-        public async Task<IActionResult> CalculateShipping([FromBody] object shippingData)
+        public async Task<IActionResult> CalculateShipping([FromBody] CalculateShippingRequest shippingData)
         {
             try
             {
+                if (shippingData == null)
+                {
+                    return BadRequest(new { error = "Thiếu dữ liệu tính phí vận chuyển" });
+                }
+
+                if (!shippingData.CustomerId.HasValue)
+                {
+                    shippingData.CustomerId = ResolveCurrentCustomerId();
+                }
+
+                if (!shippingData.Weight.HasValue || shippingData.Weight.Value <= 0)
+                {
+                    shippingData.Weight = 500;
+                }
+
                 var response = await _httpClient.PostAsJsonAsync("shipping/calculate", shippingData);
                 var result = await response.Content.ReadAsStringAsync();
-                return Content(result, "application/json");
+                return new ContentResult
+                {
+                    StatusCode = (int)response.StatusCode,
+                    Content = result,
+                    ContentType = "application/json"
+                };
             }
             catch (Exception ex)
             {
@@ -471,7 +556,7 @@ namespace QuanView.Controllers
         // GET: Trang thành công
         public IActionResult Success(string orderCode, decimal? total = null, string paymentMethod = null,
             string customerName = null, string customerPhone = null, string customerAddress = null,
-            decimal? shippingFee = null)
+            decimal? shippingFee = null, int? usedPoints = null, decimal? pointDiscount = null, decimal? pointRate = null)
         {
             ViewBag.OrderCode = orderCode;
             ViewBag.OrderTotal = total ?? 0;
@@ -481,6 +566,9 @@ namespace QuanView.Controllers
             ViewBag.CustomerPhone = customerPhone;
             ViewBag.CustomerAddress = customerAddress;
             ViewBag.ShippingFee = shippingFee ?? 0;
+            ViewBag.UsedPoints = usedPoints ?? 0;
+            ViewBag.PointDiscount = pointDiscount ?? 0;
+            ViewBag.PointRate = pointRate ?? 0;
             return View();
         }
 
@@ -529,6 +617,80 @@ namespace QuanView.Controllers
                 {
                     return Json(new { success = false, message = "Không thể lấy thông tin khách hàng" });
                 }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPointInfo()
+        {
+            try
+            {
+                var customerId = ResolveCurrentCustomerId();
+                if (!customerId.HasValue)
+                {
+                    return Json(new { success = true, isLoggedIn = false, availablePoints = 0, moneyPerPoint = 0m });
+                }
+
+                var customerResponse = await _httpClient.GetAsync($"KhachHang/{customerId.Value}");
+                var configResponse = await _httpClient.GetAsync("CauHinhBanHang");
+                if (!customerResponse.IsSuccessStatusCode || !configResponse.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Không thể lấy thông tin điểm khách hàng" });
+                }
+
+                using var customerDoc = JsonDocument.Parse(await customerResponse.Content.ReadAsStringAsync());
+                using var configDoc = JsonDocument.Parse(await configResponse.Content.ReadAsStringAsync());
+
+                var availablePoints = 0;
+                if (customerDoc.RootElement.TryGetProperty("soDiemHienTai", out var soDiemCamel))
+                {
+                    availablePoints = soDiemCamel.GetInt32();
+                }
+                else if (customerDoc.RootElement.TryGetProperty("SoDiemHienTai", out var soDiemPascal))
+                {
+                    availablePoints = soDiemPascal.GetInt32();
+                }
+
+                decimal? moneyPerPoint = null;
+                int maxPointsPerOrder = 0;
+                if (configDoc.RootElement.TryGetProperty("config", out var config))
+                {
+                    if (config.TryGetProperty("soTienGiamTrenMotDiem", out var giamCamel))
+                    {
+                        moneyPerPoint = giamCamel.GetDecimal();
+                    }
+                    else if (config.TryGetProperty("SoTienGiamTrenMotDiem", out var giamPascal))
+                    {
+                        moneyPerPoint = giamPascal.GetDecimal();
+                    }
+
+                    if (config.TryGetProperty("diemToiDaSuDungMoiDon", out var maxCamel))
+                    {
+                        maxPointsPerOrder = maxCamel.GetInt32();
+                    }
+                    else if (config.TryGetProperty("DiemToiDaSuDungMoiDon", out var maxPascal))
+                    {
+                        maxPointsPerOrder = maxPascal.GetInt32();
+                    }
+                }
+
+                if (!moneyPerPoint.HasValue || moneyPerPoint.Value <= 0)
+                {
+                    return Json(new { success = false, message = "Cấu hình quy đổi điểm chưa hợp lệ" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    isLoggedIn = true,
+                    availablePoints = Math.Max(availablePoints, 0),
+                    moneyPerPoint = moneyPerPoint.Value,
+                    maxPointsPerOrder = Math.Max(maxPointsPerOrder, 0)
+                });
             }
             catch (Exception ex)
             {
@@ -634,6 +796,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham
@@ -674,6 +837,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham
@@ -868,7 +1032,10 @@ namespace QuanView.Controllers
                             phuongThucThanhToanId = checkoutInfo.PhuongThucThanhToanId,
                             tongTien = checkoutInfo.TongTien,
                             tienGiam = checkoutInfo.TienGiam,
+                            usePoint = checkoutInfo.UsePoint,
+                            requestedUsedPoints = checkoutInfo.RequestedUsedPoints,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
+                            phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
                             soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
                             diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
@@ -887,7 +1054,17 @@ namespace QuanView.Controllers
                             var responseContent = await hoaDonResponse.Content.ReadAsStringAsync();
                             using (var doc = JsonDocument.Parse(responseContent))
                             {
-                                var maHoaDon = doc.RootElement.GetProperty("maHoaDon").GetString();
+                                var root = doc.RootElement;
+                                var maHoaDon = root.GetProperty("maHoaDon").GetString();
+                                var diemDaDung = root.TryGetProperty("diemDaDung", out var diemDaDungEl)
+                                    ? diemDaDungEl.GetInt32()
+                                    : (checkoutInfo.RequestedUsedPoints ?? 0);
+                                var soTienGiamTuDiem = root.TryGetProperty("soTienGiamTuDiem", out var soTienGiamTuDiemEl)
+                                    ? soTienGiamTuDiemEl.GetDecimal()
+                                    : 0m;
+                                var tyLeQuyDoiDiem = root.TryGetProperty("tyLeQuyDoiDiem", out var tyLeQuyDoiDiemEl)
+                                    ? tyLeQuyDoiDiemEl.GetDecimal()
+                                    : 0m;
 
                                 // Chuẩn bị dữ liệu cho trang Success
                                 ViewBag.OrderCode = maHoaDon;
@@ -898,6 +1075,9 @@ namespace QuanView.Controllers
                                 ViewBag.CustomerPhone = checkoutInfo.SoDienThoaiNguoiNhan;
                                 ViewBag.CustomerAddress = checkoutInfo.DiaChiGiaoHang;
                                 ViewBag.ShippingFee = checkoutInfo.PhiVanChuyen;
+                                ViewBag.UsedPoints = diemDaDung;
+                                ViewBag.PointDiscount = soTienGiamTuDiem;
+                                ViewBag.PointRate = tyLeQuyDoiDiem;
 
                                 // Xóa giỏ hàng và thông tin đơn hàng tạm
                                 HttpContext.Session.Remove("Cart");
@@ -986,9 +1166,15 @@ namespace QuanView.Controllers
         public Guid? PhieuGiamGiaId { get; set; }
         public decimal TongTien { get; set; }
         public decimal? TienGiam { get; set; }
+        public bool UsePoint { get; set; }
+        public int? RequestedUsedPoints { get; set; }
         public string GhiChu { get; set; }
         public string MaGiamGia { get; set; }
         public decimal PhiVanChuyen { get; set; } = 50000;
+        public bool PhiVanChuyenDaGiam { get; set; } = true;
+        public int? ToDistrictId { get; set; }
+        public string? ToWardCode { get; set; }
+        public int? Weight { get; set; } = 500;
     }
 
     public class PhieuGiamGiaResponse

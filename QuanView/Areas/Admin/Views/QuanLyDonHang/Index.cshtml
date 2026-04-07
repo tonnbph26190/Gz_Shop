@@ -8,27 +8,30 @@
     var totalCount = ViewBag.TotalCount ?? 0;
     var hasPreviousPage = ViewBag.HasPreviousPage ?? false;
     var hasNextPage = ViewBag.HasNextPage ?? false;
+    var totalOnlineCount = ViewBag.TotalOnlineCount ?? 0;
+    var totalTaiQuayCount = ViewBag.TotalTaiQuayCount ?? 0;
+    var totalPendingCount = ViewBag.TotalPendingCount ?? 0;
 }
 
 <style>
     .order-table {
         background: white;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
-        .order-table th {
-            background: #f8f9fa;
-            border: none;
-            font-weight: 600;
-            color: #333;
-        }
+    .order-table th {
+        background: #f8f9fa;
+        border: none;
+        font-weight: 600;
+        color: #333;
+    }
 
-        .order-table td {
-            vertical-align: middle;
-            border: none;
-            border-bottom: 1px solid #eee;
-        }
+    .order-table td {
+        vertical-align: middle;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
 
     .status-badge {
         padding: 4px 12px;
@@ -87,10 +90,10 @@
         color: white;
     }
 
-        .btn-details:hover {
-            background: #0056b3;
-            color: white;
-        }
+    .btn-details:hover {
+        background: #0056b3;
+        color: white;
+    }
 
     .pagination-info {
         background: #f8f9fa;
@@ -145,7 +148,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Đơn hàng Online
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => !string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@totalOnlineCount</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
@@ -163,7 +166,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Đơn hàng tại quầy
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => string.IsNullOrEmpty(h.DiaChiGiaoHang))</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@totalTaiQuayCount</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-store fa-2x text-gray-300"></i>
@@ -181,7 +184,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Chờ xử lý
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(h => h.TrangThai == "Chờ xác nhận")</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@totalPendingCount</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-clock fa-2x text-gray-300"></i>
@@ -206,278 +209,476 @@
                             <label for="trangThai">Trạng thái:</label>
                             @{
                                 var qTrangThai = Context.Request.Query["trangThai"].ToString();
+
+                                var isReset = Context.Request.Query["reset"].ToString();
+
+                                if (string.IsNullOrEmpty(qTrangThai) && string.IsNullOrEmpty(isReset))
+                                {
+                                    qTrangThai = "Chờ xác nhận";
+                                }
                             }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="" selected="@(string.IsNullOrEmpty(qTrangThai))">Tất cả trạng thái</option>
-                                <option value="Chờ xác nhận" selected="@(qTrangThai == "Chờ xác nhận")">Chờ xác nhận</option>
-                                <option value="Đã xác nhận" selected="@(qTrangThai == "Đã xác nhận")">Đã xác nhận</option>
-                                <option value="Chờ lấy hàng" selected="@(qTrangThai == "Chờ lấy hàng")">Chờ lấy hàng</option>
-                                <option value="Đã lấy hàng" selected="@(qTrangThai == "Đã lấy hàng")">Đã lấy hàng</option>
-                                <option value="Chờ giao hàng" selected="@(qTrangThai == "Chờ giao hàng")">Chờ giao hàng</option>
-                                <option value="Đang giao hàng" selected="@(qTrangThai == "Đang giao hàng")">Đang giao hàng</option>
-                                <option value="Đã giao" selected="@(qTrangThai == "Đã giao")">Đã giao</option>
-                                <option value="Giao hàng thành công" selected="@(qTrangThai == "Giao hàng thành công")">Giao hàng thành công</option>
-                                <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy")">Đã hủy</option>
+                                <option value="all">
+                                    Tất cả trạng thái
+                                </option>
+                                <option value="Chờ xác nhận"
+                                        selected="@(qTrangThai == "Chờ xác nhận" ? "selected" : null)">Chờ xác nhận
+                                </option>
+                                <option value="Đã xác nhận"
+                                        selected="@(qTrangThai == "Đã xác nhận" ? "selected" : null)">Đã xác nhận
+                                </option>
+                                <option value="Chờ lấy hàng"
+                                        selected="@(qTrangThai == "Chờ lấy hàng" ? "selected" : null)">Chờ lấy hàng
+                                </option>
+                               @*  <option value="Đã lấy hàng"
+                                        selected="@(qTrangThai == "Đã lấy hàng" ? "selected" : null)">Đã lấy hàng
+                                </option> *@
+                               @*  <option value="Chờ giao hàng"
+                                        selected="@(qTrangThai == "Chờ giao hàng" ? "selected" : null)">Chờ giao hàng
+                                </option> *@
+                                <option value="Đang giao hàng"
+                                        selected="@(qTrangThai == "Đang giao hàng" ? "selected" : null)">Đang giao
+                                    hàng</option>
+                                    <option value="Đã giao" selected="@(qTrangThai == "Đã giao" ? "selected" : null)">Đã
+                                        giao</option>
+                                       @*  <option value="Giao hàng thành công"
+                                                selected="@(qTrangThai == "Giao hàng thành công" ? "selected" : null)">
+                                            Giao hàng thành công</option> *@
+                                            <option value="Đã hủy" selected="@(qTrangThai == "Đã hủy" ? "selected" : null)">Đã hủy
+                                            </option>
+                                            <option value="Đã hoàn tiền"
+                                                    selected="@(qTrangThai == "Đã hoàn tiền" ? "selected" : null)">Đã hoàn tiền
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Theo ngày:</label>
+                            <select class="form-control" id="quickDate" name="quickDate">
+                                @{
+                                    var quickDateValue = Context.Request.Query["quickDate"].ToString();
+                                    var hasDateRange = !string.IsNullOrEmpty(Context.Request.Query["tuNgay"])
+                                                       || !string.IsNullOrEmpty(Context.Request.Query["denNgay"]);
+                                    var isKnownQuickDate = quickDateValue == "today"
+                                                           || quickDateValue == "1"
+                                                           || quickDateValue == "7"
+                                                           || quickDateValue == "28"
+                                                           || quickDateValue == ""
+                                                           || quickDateValue == "custom";
+                                    var isCustomQuickDate = quickDateValue == "custom"
+                                                            || (hasDateRange && !isKnownQuickDate)
+                                                            || (hasDateRange && string.IsNullOrEmpty(quickDateValue));
+                                }
+                                <option value="today"
+                                        selected="@(quickDateValue == "today" || (string.IsNullOrEmpty(quickDateValue) && !hasDateRange && Context.Request.Query["reset"] != "1") ? "selected" : null)">
+                                    Hôm nay
+                                </option>
+                                <option value="1" selected="@(quickDateValue == "1" ? "selected" : null)">1 ngày trước</option>
+                                <option value="7" selected="@(quickDateValue == "7" ? "selected" : null)">7 ngày trước</option>
+                                <option value="28" selected="@(quickDateValue == "28" ? "selected" : null)">28 ngày trước</option>
+                                <option value="custom" selected="@(isCustomQuickDate ? "selected" : null)">Tự chọn</option>
+                                <option value="" selected="@(Context.Request.Query["quickDate"] == "" || Context.Request.Query["reset"] == "1" ? "selected" : null)">
+                                    Tất cả
+                                </option>
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="tuNgay">Từ ngày:</label>
-                            <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@Context.Request.Query["tuNgay"]">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="denNgay">Đến ngày:</label>
-                            <input type="date" class="form-control" id="denNgay" name="denNgay" value="@Context.Request.Query["denNgay"]">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="loaiDonHang">Loại đơn hàng:</label>
-                            @{
-                                var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
-                            }
-                            <select class="form-control" id="loaiDonHang" name="loaiDonHang">
-                                <option value="" selected="@(string.IsNullOrEmpty(qLoaiDon))">Tất cả</option>
-                                <option value="online" selected="@(qLoaiDon == "online")">Đơn hàng Online</option>
-                                <option value="taiquay" selected="@(qLoaiDon == "taiquay")">Đơn hàng tại quầy</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="khachHang">Tìm kiếm khách hàng:</label>
-                            <input type="text" class="form-control" id="khachHang" name="khachHang" placeholder="Nhập tên hoặc SĐT khách hàng" value="@Context.Request.Query["khachHang"]">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="maDonHang">Mã đơn hàng:</label>
-                            <input type="text" class="form-control" id="maDonHang" name="maDonHang" placeholder="Nhập mã đơn hàng" value="@Context.Request.Query["maDonHang"]">
-                        </div>
-                    </div>
-                    <div class="col-md-6 pt-4 mt-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search"></i> Lọc
-                        </button>
-                        &nbsp;
-                        &nbsp;
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Xóa bộ lọc
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="tuNgay">Từ ngày:</label>
+                          @{
+    var qTuNgay = Context.Request.Query["tuNgay"].ToString();
+    var qDenNgay = Context.Request.Query["denNgay"].ToString();
+    var qQuickDate = Context.Request.Query["quickDate"].ToString();
+  
 
-@if (TempData["SuccessMessage"] != null)
-{
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
+    // 👉 CHỈ set hôm nay khi KHÔNG phải "Tất cả"
+  
 }
+                            <input type="date" class="form-control" id="tuNgay" name="tuNgay" value="@qTuNgay">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="denNgay">Đến ngày:</label>
+                            <input type="date" class="form-control" id="denNgay" name="denNgay" value="@qDenNgay">
+                                    </div>
+                                </div>
 
-@if (TempData["ErrorMessage"] != null)
-{
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
-}
 
-    <!-- Thông tin phân trang -->
-    <div class="pagination-info">
-        <i class="fas fa-info-circle"></i>
-        Hiển thị @(((currentPage - 1) * pageSize) + 1) - @Math.Min(currentPage * pageSize, totalCount) trong tổng số @totalCount đơn hàng
-        (Trang @currentPage/@totalPages)
-    </div>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Danh sách đơn hàng</h6>
-        </div>
-        <div class="card-body">
-            @if (!Model.Any())
-            {
-                <div class="text-center py-4">
-                    <p class="text-muted">Chưa có đơn hàng nào</p>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover order-table">
-                        <thead>
-                            <tr>
-                                <th>Mã đơn hàng</th>
-                                <th>Khách hàng</th>
-                                <th>Tổng tiền</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tạo</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var hoaDon in Model.OrderByDescending(h => h.NgayTao))
-                            {
-                                <tr>
-                                    <td>
-                                        <strong>@hoaDon.MaHoaDon</strong>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <div class="font-weight-bold">@(hoaDon.KhachHang?.TenKhachHang ?? "Khách lẻ")</div>
-                                            <small class="text-muted">@hoaDon.TenNguoiNhan</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="font-weight-bold text-primary">
-                                            @hoaDon.TongTien.ToString("N0") VNĐ
-                                        </span>
-                                    </td>
-                                    <td>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="loaiDonHang">Loại đơn hàng:</label>
                                         @{
-                                            var statusClass = hoaDon.TrangThai switch
-                                            {
-                                                "Chờ xác nhận" => "status-pending",
-                                                "Đã xác nhận" => "status-confirmed",
-                                                "Chờ lấy hàng" => "status-pending",
-                                                "Đã lấy hàng" => "status-confirmed",
-                                                "Chờ giao hàng" => "status-shipping",
-                                                "Đang giao hàng" => "status-shipping",
-                                                "Đã giao" => "status-delivered",
-                                                "Giao hàng thành công" => "status-success",
-                                                "Đã hủy" => "status-cancelled",
-                                                _ => "status-pending"
-                                            };
+                                var qLoaiDon = Context.Request.Query["loaiDonHang"].ToString();
+                                if (string.IsNullOrEmpty(qLoaiDon))
+                                {
+                                    qLoaiDon = "";
+                                }
                                         }
-                                        <span class="status-badge @statusClass">
-                                            @hoaDon.TrangThai
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            @hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <a href="@Url.Action("Details", new { id = hoaDon.IDHoaDon })"
-                                           class="btn btn-action btn-details">
-                                            <i class="fas fa-eye"></i> Chi tiết
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                                        <select class="form-control" id="loaiDonHang" name="loaiDonHang">
+                                            <option value="" selected="@(string.IsNullOrEmpty(qLoaiDon) ? "selected" : null)">Tất cả
+                                            </option>
+                                            <option value="online" selected="@(qLoaiDon == "online" ? "selected" : null)">Đơn hàng
+                                                Online</option>
+                                                <option value="taiquay" selected="@(qLoaiDon == "taiquay" ? "selected" : null)">Đơn hàng
+                                                    tại quầy</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                 
+                                    <div class="row mt-3">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="khachHang">Tìm kiếm khách hàng:</label>
+                                                <input type="text" class="form-control" id="khachHang" name="khachHang"
+                                                       placeholder="Nhập tên hoặc SĐT khách hàng" value="@Context.Request.Query["khachHang"]">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="maDonHang">Mã đơn hàng:</label>
+                                                <input type="text" class="form-control" id="maDonHang" name="maDonHang"
+                                                       placeholder="Nhập mã đơn hàng" value="@Context.Request.Query["maDonHang"]">
+                                            </div>
+                                        </div>
+                                       
+                                        <div class="col-md-6 pt-4 mt-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-search"></i> Lọc
+                                            </button>
+                                            &nbsp;
+                                            &nbsp;
+                        <a href="@Url.Action("Index", new { reset = 1 })" class="btn btn-secondary">
+                                                <i class="fas fa-times"></i> Xóa bộ lọc
+                                            </a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
 
-                <!-- Điều khiển phân trang -->
-                <div class="pagination-controls">
-                    <div class="page-size-selector">
-                        <label for="pageSize">Hiển thị:</label>
-                        <select id="pageSize" class="form-control form-control-sm d-inline-block w-auto ml-2">
-                            <option value="5" selected="@(pageSize == 5)">5</option>
-                            <option value="10" selected="@(pageSize == 10)">10</option>
-                            <option value="20" selected="@(pageSize == 20)">20</option>
-                            <option value="50" selected="@(pageSize == 50)">50</option>
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                @TempData["SuccessMessage"]
+                                <button type="button" class="close" data-dismiss="alert">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                        }
 
-                        </select>
-                    </div>
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                @TempData["ErrorMessage"]
+                                <button type="button" class="close" data-dismiss="alert">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                        }
 
-                    <nav aria-label="Phân trang">
-                        <ul class="pagination mb-0">
-                            <!-- Nút Trang đầu -->
-                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                    <i class="fas fa-angle-double-left"></i>
-                                </a>
-                            </li>
+                        <!-- Thông tin phân trang -->
+                        <div class="pagination-info">
+                            <i class="fas fa-info-circle"></i>
+                            Hiển thị @(((currentPage - 1) * pageSize) + 1) - @Math.Min(currentPage * pageSize, totalCount) trong tổng số
+                            @totalCount đơn hàng
+                            (Trang @currentPage/@totalPages)
+                        </div>
 
-                            <!-- Nút Trang trước -->
-                            <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                    <i class="fas fa-angle-left"></i>
-                                </a>
-                            </li>
-
-                            <!-- Hiển thị các trang -->
-                            @{
-                                var startPage = Math.Max(1, currentPage - 2);
-                                var endPage = Math.Min(totalPages, currentPage + 2);
-
-                                if (startPage > 1)
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Danh sách đơn hàng</h6>
+                            </div>
+                            <div class="card-body">
+                                @if (!Model.Any())
                                 {
-                                    <li class="page-item">
-                                        <span class="page-link">...</span>
-                                    </li>
+                                    <div class="text-center py-4">
+                                        <p class="text-muted">Chưa có đơn hàng nào</p>
+                                    </div>
                                 }
-
-                                for (int i = startPage; i <= endPage; i++)
+                                else
                                 {
-                                    <li class="page-item @(i == currentPage ? "active" : "")">
-                                        <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">@i</a>
-                                    </li>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover order-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Mã đơn hàng</th>
+                                                    <th>Khách hàng</th>
+                                                    <th>Tổng tiền</th>
+                                                    <th>Trạng thái</th>
+                                @{
+                                    var currentSort = Context.Request.Query["sapXep"].ToString();
+                                    if (string.IsNullOrEmpty(currentSort))
+                                    {
+                                        currentSort = "desc"; // 👈 mặc định
+                                    }
+                                    var nextSort = currentSort == "asc" ? "desc" : "asc";
                                 }
+                                <th>
+                                    <a href="@Url.Action("Index", new {
+        page = 1,
+        pageSize,
+        trangThai = Context.Request.Query["trangThai"],
+        tuNgay = Context.Request.Query["tuNgay"],
+        denNgay = Context.Request.Query["denNgay"],
+        loaiDonHang = Context.Request.Query["loaiDonHang"],
+        khachHang = Context.Request.Query["khachHang"],
+        maDonHang = Context.Request.Query["maDonHang"],
+        sapXep = nextSort
+    })" style="text-decoration:none; color:inherit;">
+                                        Ngày tạo
+                                       @(currentSort == "asc" ? "↑" : currentSort == "desc" ? "↓" : "")
+                                    </a>
+                                </th>
+                                                    <th>Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                            @foreach (var hoaDon in Model)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <strong>@hoaDon.MaHoaDon</strong>
+                                                        </td>
+                                                        <td>
+                                                            <div>
+                                                                <div class="font-weight-bold">@(hoaDon.KhachHang?.TenKhachHang ?? "Khách lẻ")</div>
+                                                                <small class="text-muted">@hoaDon.TenNguoiNhan</small>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="font-weight-bold text-primary">
+                                                                @hoaDon.TongTien.ToString("N0") VNĐ
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            @{
+                                                                var statusClass = hoaDon.TrangThai switch
+                                                                {
+                                                                    "Chờ xác nhận" => "status-pending",
+                                                                    "Đã xác nhận" => "status-confirmed",
+                                                                    "Chờ lấy hàng" => "status-pending",
+                                                                    "Đã lấy hàng" => "status-confirmed",
+                                                                    "Chờ giao hàng" => "status-shipping",
+                                                                    "Đang giao hàng" => "status-shipping",
+                                                                    "Đã giao" => "status-delivered",
+                                                                    "Giao hàng thành công" => "status-success",
+                                                                    "Đã hủy" => "status-cancelled",
+                                                                    "Đã hoàn tiền" => "status-completed",
+                                                                    _ => "status-pending"
+                                                                };
+                                                            }
+                                                            <span class="status-badge @statusClass">
+                                                                @hoaDon.TrangThai
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <small class="text-muted">
+                                                                @hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")
+                                                            </small>
+                                                        </td>
+                                                        <td>
+                                                            <a href="@Url.Action("Details", new { id = hoaDon.IDHoaDon })"
+                                                                   class="btn btn-action btn-details">
+                                                                <i class="fas fa-eye"></i> Chi tiết
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
 
-                                if (endPage < totalPages)
-                                {
-                                    <li class="page-item">
-                                        <span class="page-link">...</span>
-                                    </li>
+                                    <!-- Điều khiển phân trang -->
+                                    <div class="pagination-controls">
+                                        <div class="page-size-selector">
+                                            <label for="pageSize">Hiển thị:</label>
+                                            <select id="pageSize" class="form-control form-control-sm d-inline-block w-auto ml-2">
+                                                <option value="5" selected="@(pageSize == 5 ? "selected" : null)">5</option>
+                                                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10</option>
+                                                <option value="20" selected="@(pageSize == 20 ? "selected" : null)">20</option>
+                                                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50</option>
+
+                                            </select>
+                                        </div>
+
+                                        <nav aria-label="Phân trang">
+                                            <ul class="pagination mb-0">
+                                                <!-- Nút Trang đầu -->
+                                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                                    <a class="page-link"
+                                   href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"], sapXep = Context.Request.Query["sapXep"] })">
+                                                        <i class="fas fa-angle-double-left"></i>
+                                                    </a>
+                                                </li>
+
+                                                <!-- Nút Trang trước -->
+                                                <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+                                                    <a class="page-link"
+                                                           href="@Url.Action("Index", new { page = currentPage - 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                                        <i class="fas fa-angle-left"></i>
+                                                    </a>
+                                                </li>
+
+                                                <!-- Hiển thị các trang -->
+                                                @{
+                                                    var startPage = Math.Max(1, currentPage - 2);
+                                                    var endPage = Math.Min(totalPages, currentPage + 2);
+
+                                                    if (startPage > 1)
+                                                    {
+                                                        <li class="page-item">
+                                                            <span class="page-link">...</span>
+                                                        </li>
+                                                    }
+
+                                                    for (int i = startPage; i <= endPage; i++)
+                                                    {
+                                                        <li class="page-item @(i == currentPage ? "active" : "")">
+                                                            <a class="page-link"
+                                                               href="@Url.Action("Index", new { page = i, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">@i</a>
+                                                        </li>
+                                                    }
+
+                                                    if (endPage < totalPages)
+                                                    {
+                                                        <li class="page-item">
+                                                            <span class="page-link">...</span>
+                                                        </li>
+                                                    }
+                                                }
+
+                                                <!-- Nút Trang sau -->
+                                                <li class="page-item @(!hasNextPage ? "disabled" : "")">
+                                                    <a class="page-link"
+                                                           href="@Url.Action("Index", new { page = currentPage + 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                                        <i class="fas fa-angle-right"></i>
+                                                    </a>
+                                                </li>
+
+                                                <!-- Nút Trang cuối -->
+                                                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                                    <a class="page-link"
+                                                           href="@Url.Action("Index", new { page = totalPages, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
+                                                        <i class="fas fa-angle-double-right"></i>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
                                 }
-                            }
+                            </div>
+                        </div>
 
-                            <!-- Nút Trang sau -->
-                            <li class="page-item @(!hasNextPage ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                    <i class="fas fa-angle-right"></i>
-                                </a>
-                            </li>
+                        <script>
+        document.addEventListener('DOMContentLoaded', function () {
 
-                            <!-- Nút Trang cuối -->
-                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("Index", new { page = totalPages, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                    <i class="fas fa-angle-double-right"></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            }
-        </div>
-    </div>
+            const quickDate = document.getElementById('quickDate');
+            const tuNgay = document.getElementById('tuNgay');
+            const denNgay = document.getElementById('denNgay');
+            const form = document.getElementById('filterForm');
 
-    <script>
-        // Giữ lại giá trị đã chọn trong dropdown (dùng JavaScript thuần, không cần jQuery)
-        document.addEventListener('DOMContentLoaded', function() {
-            var urlParams = new URLSearchParams(window.location.search);
+            const urlParams = new URLSearchParams(window.location.search);
 
-            var elTrangThai = document.getElementById('trangThai');
-            if (elTrangThai) {
-                var trangThai = urlParams.get('trangThai');
-                if (trangThai) elTrangThai.value = trangThai;
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
             }
 
-            var elLoaiDonHang = document.getElementById('loaiDonHang');
-            if (elLoaiDonHang) {
-                var loaiDonHang = urlParams.get('loaiDonHang');
-                if (loaiDonHang) elLoaiDonHang.value = loaiDonHang;
+            function setDateRange(value) {
+                let today = new Date();
+                let fromDate = new Date();
+
+                if (value === "today") {
+                    fromDate = today;
+                } else {
+                    fromDate.setDate(today.getDate() - parseInt(value));
+                }
+
+                tuNgay.value = formatDate(fromDate);
+                denNgay.value = formatDate(today);
             }
 
-            var elPageSize = document.getElementById('pageSize');
+            // ✅ GIỮ LẠI QUICK DATE SAU RELOAD
+            const selectedQuick = urlParams.get('quickDate');
+            if (selectedQuick !== null) {
+                quickDate.value = selectedQuick;
+            }
+            else if (tuNgay.value || denNgay.value) {
+                quickDate.value = 'custom';
+            }
+
+            // ✅ CHỈ SET DEFAULT KHI CHƯA CÓ GÌ
+            const isReset = urlParams.get('reset');
+
+            // 👉 RESET
+            if (isReset) {
+                quickDate.value = "";
+                tuNgay.value = "";
+                denNgay.value = "";
+                document.getElementById('trangThai').value = "all";
+            }
+            else {
+                const qd = urlParams.get('quickDate');
+
+                // 👉 nếu là "Tất cả" thì KHÔNG set ngày, KHÔNG submit
+                if (qd === "") {
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                }
+                else if (!urlParams.get('tuNgay') && !urlParams.get('denNgay')) {
+
+                    if (!qd) {
+                        // 👉 mặc định hôm nay
+                        setDateRange('today');
+                        quickDate.value = 'today';
+                    } else {
+                        setDateRange(qd);
+                    }
+
+                    // 👉 default trạng thái
+                    if (!urlParams.get('trangThai')) {
+                        document.getElementById('trangThai').value = "Chờ xác nhận";
+                    }
+
+                    form.submit();
+                }
+            }
+
+            // ✅ XỬ LÝ CHANGE
+            quickDate.addEventListener('change', function () {
+
+                if (this.value === "") {
+                    // 👉 TẤT CẢ → KHÔNG submit nữa
+                    tuNgay.value = "";
+                    denNgay.value = "";
+                    return; // ❗ CHẶN LOOP
+                }
+
+                if (this.value === "custom") {
+                    // 👉 TỰ CHỌN: user sẽ nhập tay khoảng ngày
+                    return;
+                }
+
+                setDateRange(this.value);
+                form.submit();
+            });
+
+            // Khi user chỉnh tay ngày, tự chuyển dropdown về "Tự chọn".
+            tuNgay.addEventListener('change', function () {
+                quickDate.value = 'custom';
+            });
+
+            denNgay.addEventListener('change', function () {
+                quickDate.value = 'custom';
+            });
+
+            // ✅ PAGE SIZE
+            const elPageSize = document.getElementById('pageSize');
             if (elPageSize) {
-                elPageSize.addEventListener('change', function() {
+                elPageSize.addEventListener('change', function () {
                     var currentUrl = new URL(window.location);
                     currentUrl.searchParams.set('pageSize', this.value);
                     currentUrl.searchParams.set('page', '1');
@@ -485,12 +686,38 @@
                 });
             }
 
-            var filterForm = document.getElementById('filterForm');
-            if (filterForm) {
-                filterForm.addEventListener('submit', function() {
-                    var pageInput = this.querySelector('input[name="page"]');
-                    if (pageInput) pageInput.value = '1';
-                });
-            }
         });
-    </script>
+                                // Giữ lại giá trị đã chọn trong dropdown (dùng JavaScript thuần, không cần jQuery)
+                                document.addEventListener('DOMContentLoaded', function () {
+                                    var urlParams = new URLSearchParams(window.location.search);
+
+                                    var elTrangThai = document.getElementById('trangThai');
+                                    if (elTrangThai) {
+                                       
+                                    }
+
+                                    var elLoaiDonHang = document.getElementById('loaiDonHang');
+                                    if (elLoaiDonHang) {
+                                        var loaiDonHang = urlParams.get('loaiDonHang');
+                                        if (loaiDonHang) elLoaiDonHang.value = loaiDonHang;
+                                    }
+
+                                    var elPageSize = document.getElementById('pageSize');
+                                    if (elPageSize) {
+                                        elPageSize.addEventListener('change', function () {
+                                            var currentUrl = new URL(window.location);
+                                            currentUrl.searchParams.set('pageSize', this.value);
+                                            currentUrl.searchParams.set('page', '1');
+                                            window.location.href = currentUrl.toString();
+                                        });
+                                    }
+
+                                    var filterForm = document.getElementById('filterForm');
+                                    if (filterForm) {
+                                        filterForm.addEventListener('submit', function () {
+                                            var pageInput = this.querySelector('input[name="page"]');
+                                            if (pageInput) pageInput.value = '1';
+                                        });
+                                    }
+                                });
+                        </script>

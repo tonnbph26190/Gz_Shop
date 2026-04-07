@@ -8,9 +8,13 @@ namespace QuanApi.Dtos
         public Guid IdMauSac { get; set; }
         public Guid IdHoaTiet { get; set; }
         public int SoLuong { get; set; }
+        public int SoLuongVatLy { get; set; }
+        public int SoLuongDatCho { get; set; }
+        public int SoLuongKhaDung { get; set; }
         public decimal GiaBan { get; set; }
         public decimal originalPrice { get; set; }
         public decimal price { get; set; }
+        public string? QrCode { get; set; }
         public string? TenKichCo { get; set; }
         public string? TenMauSac { get; set; }
         public string? TenHoaTiet { get; set; }

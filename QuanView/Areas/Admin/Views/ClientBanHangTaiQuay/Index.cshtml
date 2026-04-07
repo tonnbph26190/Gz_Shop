@@ -1,12 +1,111 @@
 @{
     ViewBag.Title = "Bán hàng";
 }
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <style>
+    .nav-tabs {
+        border-bottom: none !important;
+        gap: 3px;
+    }
+
+    .address-item {
+        border: 1px solid #ddd;
+        transition: all 0.2s ease;
+    }
+
+        .address-item.active {
+            border: 2px solid #0d6efd !important;
+            background-color: #f0f7ff;
+        }
+
+        .address-item .bi-check-circle-fill {
+            display: none;
+        }
+
+        .address-item.active .bi-check-circle-fill {
+            display: block;
+        }
+    .nav-tabs .nav-link {
+        border: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 16px 8px 16px;
+        font-weight: 500;
+        position: relative;
+        min-width: 170px;
+        background: #f8f9fa;
+        color: #555;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+    }
+
+    .nav-tabs .nav-link.active {
+        background: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+        color: #000;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        border-bottom: 2px solid #fff; /* blends with content */
+    }
+
+    .nav-tabs .nav-link:hover {
+        background: #fff;
+        border-color: #adb5bd;
+        color: #333;
+    }
+
+    .tab-close {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 18px;
+        color: #999;
+        opacity: 0.75;
+        transition: all 0.2s;
+    }
+    .nav-link:hover .tab-close {
+        opacity: 1;
+    }
+
+    .tab-close:hover {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.15);
+    }
+
+    .invoice-tabs-container {
+        display: flex;
+        align-items: end;
+        gap: 3px;
+        flex-wrap: wrap;
+    }
+    #btnAddInvoice {
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+    }
+    #btnAddInvoice:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+    /* Toast styles (kept from your original) */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 350px;
+    }
     /* Toast Notification Styles */
     .toast-container {
         position: fixed;
@@ -203,19 +302,82 @@
             border-color: #007bff;
             background-color: #f8f9ff;
         }
+        
+    .voucher-ticket {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 1px solid rgba(0,0,0,0.05) !important;
+        background: #fff;
+    }
+    
+    .voucher-ticket:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important;
+        border-color: rgba(0,0,0,0.1) !important;
+    }
+
+    /* Reactive Badge Color Shifts */
+    .badge-reactive {
+        transition: all 0.3s ease !important;
+        transform: scale(1);
+    }
+
+    /* When the WHOLE card is hovered, change the badge colors */
+    .voucher-ticket:hover .badge-reactive.bg-success {
+        background-color: #198754 !important; /* Deeper Green */
+        box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-secondary {
+        background-color: #495057 !important; /* Darker Gray */
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-danger {
+        background-color: #bb2d3b !important; /* Deeper Red */
+        box-shadow: 0 0 10px rgba(187, 45, 59, 0.4);
+        transform: scale(1.1);
+    }
+
+    /* Button Hover */
+    .btn-voucher-active:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        transform: translateY(-1px);
+    }
+
+    #qrReader {
+        min-height: 220px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111;
+    }
 </style>
 
 <div class="container mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <ul class="nav nav-tabs" id="invoiceTabs"></ul>
-        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo giỏ hàng</button>
-    </div>
-    <div class="d-flex justify-content-end mb-2">
-        @* <button class="btn btn-info me-2" id="btnQRCode">QR Code</button> *@
-        <button class="btn btn-success" id="btnAddProduct">Thêm sản phẩm</button>
-    </div>
-    <div id="invoiceContent"></div>
+    <!-- Tab Header - Chrome-like Style with Clear Outlines -->
+    <div class="d-flex align-items-end mb-3">
+        <div class="invoice-tabs-container d-flex align-items-end flex-grow-1" style="gap: 3px;">
+            <ul class="nav nav-tabs" id="invoiceTabs" style="border-bottom: none; background: transparent;"></ul>
+            
+            <!-- Small + Button like Chrome -->
+            <button class="btn btn-light border shadow-sm d-flex align-items-center justify-content-center" 
+                    id="btnAddInvoice" 
+                    style="width: 42px; height: 38px; border-radius: 8px 8px 0 0; margin-bottom: 2px; font-size: 1.5rem; line-height: 1;">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
 
+        <div class="d-flex gap-2 ms-auto">
+            <button class="btn btn-info" id="btnQRCode">
+                <i class="bi bi-qr-code-scan me-1"></i> QR Code
+            </button>
+            <button class="btn btn-success" id="btnAddProduct">
+                <i class="bi bi-plus-circle me-1"></i> Thêm sản phẩm
+            </button>
+        </div>
+    </div>
+    <div id="invoiceContent" class="mt-3"></div>
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     <div class="row mt-4">
@@ -235,8 +397,8 @@
                     <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;" onclick="clearCustomer()" title="Hủy chọn khách hàng">
                         <i class="bi bi-x-circle"></i> Hủy chọn
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
-                    <button class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
                 </div>
             </div>
 
@@ -308,67 +470,96 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header fw-bold"><i class="bi bi-bag"></i> Thông tin thanh toán</div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <span>Tiền hàng:</span>
-                        <span class="float-end" id="goodsAmount">0 VND</span>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Phí vận chuyển:</label>
-                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
-                    </div>
+<div class="col-md-5">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-bold py-3">
+            <i class="bi bi-bag-check-fill me-2"></i>Thông tin thanh toán
+        </div>
+        <div class="card-body">
 
-                    <div class="mb-2">
-                        <label class="form-label">Mã giảm giá:</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="discountCode" value="" placeholder="Chọn phiếu giảm giá" readonly>
-                            <button class="btn btn-outline-secondary" type="button" onclick="applyDiscount()">Chọn mã</button>
-                            <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()" title="Xóa phiếu giảm giá">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
-                        <label class="form-check-label" for="shippingSwitch">Giao Hàng</label>
-                    </div>
-                    <div class="mb-2">
-                        <span>Khách cần thanh toán</span>
-                        <span class="float-end fw-bold" id="payAmount">0 VND</span>
-                    </div>
-
-                    <div class="mb-2">
-                        <span>Tiền thối lại:</span>
-                        <span class="float-end fw-bold text-success" id="changeAmount">0 VND</span>
-                    </div>
-                    <div class="mb-2">
-                        <span>Giảm giá:</span>
-                        <span class="float-end text-success" id="discountAmount">0 VND</span>
-                    </div>
-                    @*   <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
-                    <label class="form-check-label" for="pointSwitch">Điểm hiện tại là <span id="customerPoint">0</span>:</label>
-                    </div> *@
-                    <div class="mb-2 d-flex align-items-center">
-                        <span>Hình thức thanh toán:</span>
-                        <span class="ms-auto d-flex align-items-center">
-                            <span id="selectedPaymentMethod">Tiền mặt</span>
-                            <a href="javascript:void(0)" onclick="openPaymentModal()" class="ms-2" title="Chỉnh sửa">
-                                <i class="bi bi-pencil-square" style="font-size: 1.2em; cursor: pointer;"></i>
-                            </a>
-                        </span>
-                    </div>
-                    <div class="mb-2">
-                        <span class="fw-bold">Tổng tiền:</span>
-                        <span class="float-end fw-bold text-danger" id="totalAmount">0 VND</span>
-                    </div>
-                    <button class="btn btn-primary w-100" onclick="payInvoice()">Thanh toán</button>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Mã giảm giá:</label>
+                <div class="input-group">
+                    <input type="text" class="form-control border-end-0" id="discountCode" placeholder="Chọn phiếu giảm giá" readonly>
+                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="applyDiscount()">Chọn mã</button>
+                    <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
+
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
+                <label class="form-check-label fw-medium" for="shippingSwitch">Giao Hàng</label>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background-color: #f0f7ff; border: 1px solid #d0e3ff;">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                    <label class="form-check-label fw-bold text-primary" for="pointSwitch">
+                        Dùng điểm (<span id="customerPoint">0</span> điểm)
+                    </label>
+                </div>
+                <div class="small text-muted mb-2" id="pointRateLabel">
+                    1 điểm = 1,000 VND | Tối đa 200 điểm/đơn
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Số điểm muốn dùng:</label>
+                    <input type="number" class="form-control form-control-lg border-primary-subtle" id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="small fw-bold text-uppercase">Điểm quy đổi:</span>
+                    <span class="fw-bold text-primary" id="pointDiscountLabel">- 0 VND</span>
+                </div>
+            </div>
+
+            <hr class="my-4 opacity-10">
+
+            <div class="payment-summary">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Tạm tính (tiền hàng):</span>
+                    <span class="fw-medium" id="goodsAmount">0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Phí vận chuyển:</span>
+                    <span class="fw-medium text-dark" id="shippingFeeContainer">+ 0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Giảm từ phiếu giảm giá:</span>
+                    <span class="text-success" id="discountAmount">- 0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Tổng điểm giảm:</span>
+                    <span class="text-success" id="totalPointDiscount">- 0 VND</span>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                    <span class="text-secondary">Tiền thối lại:</span>
+                    <span class="fw-bold text-success" id="changeAmount">0 VND</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center py-3">
+                    <span class="h5 mb-0 fw-bold">Tổng tiền:</span>
+                    <span class="h4 mb-0 fw-bold text-danger" id="totalAmount">0 VND</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
+                <span class="small text-muted">Hình thức: <span id="selectedPaymentMethod" class="text-dark fw-bold">Tiền mặt</span></span>
+                <a href="javascript:void(0)" onclick="openPaymentModal()" class="text-decoration-none">
+                    <i class="bi bi-pencil-square"></i> Sửa
+                </a>
+            </div>
+
+            <button class="btn btn-dark btn-lg w-100 fw-bold shadow-sm" onclick="payInvoice()">
+                THANH TOÁN
+            </button>
         </div>
+    </div>
+</div>
     </div>
 </div>
 
@@ -382,6 +573,40 @@
             </div>
             <div class="modal-body" id="productList">
                 <!-- Danh sách sản phẩm sẽ được load ở đây -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal quét QR -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-qr-code-scan me-2"></i>Quét mã QR sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary" id="btnQrCameraToggle" data-on="false">
+                        <i class="bi bi-camera-video me-1"></i><span id="btnQrCameraToggleText">Bật camera</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnQrUpload">
+                        <i class="bi bi-upload me-1"></i>Tải ảnh QR lên
+                    </button>
+                    <input type="file" id="qrFileInput" accept="image/*" class="d-none" />
+                </div>
+                <div id="qrReader" class="mb-3"></div>
+                <label for="qrCodeInput" class="form-label">Hoặc nhập / máy quét cầm tay</label>
+                <input type="text" class="form-control" id="qrCodeInput" placeholder="Dán mã hoặc quét bằng máy quét, sau đó nhấn Enter">
+                <div class="form-text">
+                    Sau khi nhận mã hợp lệ, hệ thống mở cửa sổ nhập số lượng (từ 1 đến tồn kho).
+                </div>
+                <div id="qrLastResult" class="small mt-3 text-muted"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button class="btn btn-primary" id="btnQrScan"><i class="bi bi-box-arrow-in-right me-1"></i>Tìm sản phẩm &amp; nhập số lượng</button>
             </div>
         </div>
     </div>
@@ -426,15 +651,16 @@
                 <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
                 <button class="btn btn-primary btn-sm mb-2" onclick="searchCustomer()">Tìm kiếm</button>
                 <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-bordered table-sm">
+                    <table class="table table-bordered table-sm text-center">
                         <thead class="table-light sticky-top">
                             <tr>
                                 <th>STT</th>
-                                <th>Ảnh</th>
+                                @* <th>Ảnh</th> *@
                                 <th>Tên</th>
                                 <th>Email</th>
                                 <th>SĐT</th>
                                 <th>Điểm</th>
+                                <th>Tên hạng</th>
                                 <th>Chọn</th>
                             </tr>
                         </thead>
@@ -627,6 +853,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -643,9 +870,63 @@
     let useShipping = false; // Có sử dụng giao hàng không
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
     let usePoint = false;
+    let moneyPerPoint = 1000;
+    let maxPointsPerOrder = 0;
     let selectedPaymentCode;
     let shippingFee = 0;
+    let isHandlingQrScan = false;
+    let html5QrCodeInstance = null;
+    let qrDecodeHandled = false;
 
+    function getPointLimitByConfig(available) {
+        if (maxPointsPerOrder > 0) {
+            return Math.min(available, maxPointsPerOrder);
+        }
+        return available;
+    }
+
+    function getPointLimitByAmount(total, discount) {
+        if (!moneyPerPoint || moneyPerPoint <= 0) {
+            return 0;
+        }
+        const baseAmount = Math.max(0, (Number(total) || 0) - (Number(discount) || 0));
+        return Math.floor(baseAmount / moneyPerPoint);
+    }
+
+    function getMaxUsablePoint(total, discount) {
+        const available = Number(selectedCustomer?.point || 0);
+        return Math.max(0, Math.min(getPointLimitByConfig(available), getPointLimitByAmount(total, discount)));
+    }
+
+
+    function resetKhachHangForm() {
+    // Xóa input text
+    document.querySelectorAll('#khachHangForm input[type="text"], #khachHangForm input[type="email"]').forEach(el => el.value = '');
+
+    // Xóa textarea
+    document.querySelectorAll('#khachHangForm textarea').forEach(el => el.value = '');
+
+    // Reset select
+    document.querySelectorAll('#khachHangForm select').forEach(el => el.selectedIndex = 0);
+
+    // Tắt checkbox giao hàng
+    const giaoHangCheckbox = document.querySelector('#GiaoHang');
+    if (giaoHangCheckbox) {
+        giaoHangCheckbox.checked = false;
+    }
+
+    // Xóa địa chỉ hiển thị
+    const diaChiContainer = document.querySelector('#diaChiContainer');
+    if (diaChiContainer) {
+        diaChiContainer.innerHTML = '';
+    }
+
+    // Reset text hiển thị địa chỉ
+    const diaChiFull = document.querySelector('#DiaChiDayDu');
+    if (diaChiFull) {
+        diaChiFull.value = '';
+    }
+}
     // Toast Notification System
     function showToast(message, type = 'success', duration = 4000) {
         const toastContainer = document.getElementById('toastContainer');
@@ -740,6 +1021,151 @@
         });
     }
 
+    function upsertProductCache(product) {
+        if (!product || !product.id) return;
+        const existingIndex = products.findIndex(p => p.id === product.id);
+        if (existingIndex >= 0) {
+            products[existingIndex] = { ...products[existingIndex], ...product };
+        } else {
+            products.push(product);
+        }
+    }
+
+    function stopQrCamera() {
+        if (!html5QrCodeInstance) return Promise.resolve();
+        return html5QrCodeInstance.stop().then(function () {
+            html5QrCodeInstance.clear();
+            html5QrCodeInstance = null;
+        }).catch(function () {
+            try {
+                if (html5QrCodeInstance) html5QrCodeInstance.clear();
+            } catch (e) { }
+            html5QrCodeInstance = null;
+        });
+    }
+
+    function startQrCamera() {
+        if (typeof Html5Qrcode === 'undefined') {
+            showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+            return;
+        }
+        stopQrCamera().then(function () {
+            $('#qrReader').empty();
+            html5QrCodeInstance = new Html5Qrcode('qrReader');
+            Html5Qrcode.getCameras().then(function (cameras) {
+                if (!cameras || cameras.length === 0) {
+                    showError('Không tìm thấy camera trên thiết bị.');
+                    html5QrCodeInstance = null;
+                    return;
+                }
+                const cameraId = cameras[0].id;
+                html5QrCodeInstance.start(
+                    cameraId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    function (decodedText) {
+                        if (qrDecodeHandled) return;
+                        const text = (decodedText || '').trim();
+                        if (!text) return;
+                        qrDecodeHandled = true;
+                        stopQrCamera().then(function () {
+                            $('#btnQrCameraToggle').data('on', false);
+                            $('#btnQrCameraToggleText').text('Bật camera');
+                            $('#qrCodeInput').val(text);
+                            lookupProductByQrAndOpenQuantity(text);
+                        });
+                    },
+                    function () { }
+                ).then(function () {
+                    $('#btnQrCameraToggle').data('on', true);
+                    $('#btnQrCameraToggleText').text('Tắt camera');
+                }).catch(function (err) {
+                    showError('Không bật được camera: ' + (err && err.message ? err.message : err));
+                    html5QrCodeInstance = null;
+                });
+            }).catch(function () {
+                showError('Không đọc được danh sách camera.');
+                html5QrCodeInstance = null;
+            });
+        });
+    }
+
+    function toggleQrCamera() {
+        const on = $('#btnQrCameraToggle').data('on');
+        if (on) {
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+            });
+        } else {
+            qrDecodeHandled = false;
+            startQrCamera();
+        }
+    }
+
+    function openQrScannerModal() {
+        qrDecodeHandled = false;
+        $('#qrCodeInput').val('');
+        $('#qrLastResult').text('');
+        stopQrCamera().then(function () {
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
+        });
+        $('#qrScannerModal').modal('show');
+        setTimeout(function () {
+            $('#qrCodeInput').trigger('focus');
+        }, 250);
+    }
+
+    /** Gọi API theo mã QR, sau đó đóng modal QR và mở popup nhập số lượng (1..tồn). */
+    function lookupProductByQrAndOpenQuantity(qrCode) {
+        if (gioHangs.length === 0) {
+            showWarning('Vui lòng tạo giỏ hàng trước!');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        const code = (qrCode || '').trim();
+        if (!code) {
+            showWarning('Vui lòng nhập hoặc quét mã QR.');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        if (isHandlingQrScan) return;
+        isHandlingQrScan = true;
+        $('#btnQrScan').prop('disabled', true);
+
+        $.get('/Admin/ClientBanHangTaiQuay/tim-san-pham-theo-qr', { qrCode: code }, function (product) {
+            upsertProductCache(product);
+            $('#qrLastResult').html(`<span class="text-success">Đã nhận diện: <b>${product.name || 'Sản phẩm'}</b></span>`);
+            $('#qrScannerModal').one('hidden.bs.modal', function () {
+                showQuantityModal(product.id);
+            });
+            $('#qrScannerModal').modal('hide');
+            $('#qrCodeInput').val('');
+        }).fail(function (xhr) {
+            let msg = 'Không tìm thấy sản phẩm từ mã QR.';
+            if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+            else if (xhr.responseText) {
+                try {
+                    const obj = JSON.parse(xhr.responseText);
+                    if (obj.message) msg = obj.message;
+                    else msg = xhr.responseText;
+                } catch {
+                    msg = xhr.responseText;
+                }
+            }
+            $('#qrLastResult').html(`<span class="text-danger">${msg}</span>`);
+            showError(msg);
+        }).always(function () {
+            isHandlingQrScan = false;
+            $('#btnQrScan').prop('disabled', false);
+            qrDecodeHandled = false;
+            $('#qrCodeInput').trigger('focus');
+        });
+    }
+
     // Load khách hàng từ API
     function loadCustomers(callback) {
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-khach-hang', function (data) {
@@ -774,6 +1200,9 @@
         $('#customerPhone').text('—');
         $('#customerEmail').text('—');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
         $('#btnShowAddress').hide();
         $('#btnAddAddress').hide();
@@ -992,41 +1421,62 @@
             let buttonClass = isDisabled ? 'disabled' : '';
 
             html += `
-                        <div class="col-md-6 mb-3">
-                            <div class="card ${statusClass} h-100 ${cardClass}">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">${voucher.tenPhieu}</h6>
-                                    <span class="badge ${statusBadgeClass}">
+                <div class="col-md-6 mb-3">
+                    <div class="card voucher-ticket h-100 border-0 ${!isActive ? 'opacity-75' : ''}" 
+                        style="border-radius: 12px; overflow: hidden; position: relative; min-height: 130px;">
+                        
+                        <div class="row g-0 h-100">
+                            <div class="${isExpired ? 'bg-danger' : (isActive && meetsMinimum ? 'bg-success' : 'bg-secondary')} ${typeof isBest !== 'undefined' && isBest ? 'bg-warning' : ''}" 
+                                style="width: 7px;"></div>
+
+                            <div class="col px-3 py-2 d-flex flex-column justify-content-between">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-truncate" style="max-width: 65%;">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">${voucher.tenPhieu}</h6>
+                                        ${typeof isBest !== 'undefined' && isBest ? '<span class="badge badge-best mt-1" style="font-size: 0.6rem;">🔥 ƯU TIÊN</span>' : ''}
+                                    </div>
+                                    <span class="badge badge-reactive ${statusBadgeClass}" style="font-size: 0.65rem; letter-spacing: 0.5px;">
                                         ${statusText}
                                     </span>
                                 </div>
-                                <div class="card-body">
-                                    <div class="mb-2">
-                                        <strong>Mã:</strong> <code>${voucher.maCode}</code>
+
+                                <div class="d-flex align-items-center justify-content-between my-2">
+                                    <div class="bg-light px-2 py-1 rounded">
+                                        <code class="fw-bold text-primary" style="font-size: 1.1rem; background: transparent;">${voucher.maCode}</code>
                                     </div>
-                                    <div class="mb-2">
-                                        <strong>Giảm giá:</strong> ${voucher.giaTriGiam}% (tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
+                                    <div class="text-end">
+                                        <span class="fw-bold text-dark" style="font-size: 1.1rem;">-${voucher.giaTriGiam}%</span>
+                                        <small class="text-muted d-block" style="font-size: 0.65rem;">Tối đa ${voucher.giaTriGiamToiDa.toLocaleString()}đ</small>
                                     </div>
-                                    <div class="mb-2">
-                                        <strong>Đơn tối thiểu:</strong>
-                                        <span class="${!meetsMinimum && isActive ? 'text-danger fw-bold' : ''}">${voucher.donToiThieu.toLocaleString()} VND</span>
-                                        ${!meetsMinimum && isActive ? `<span class="badge bg-danger ms-2">Thiếu ${(voucher.donToiThieu - orderTotal).toLocaleString()} VND</span>` : ''}
-                                    </div>
-                                    <div class="mb-2">
-                                        <strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
-                                    </div>
-                                    ${voucher.moTa ? `<div class="mb-2"><strong>Mô tả:</strong> ${voucher.moTa}</div>` : ''}
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-primary btn-sm w-100 ${buttonClass}"
+
+                                <div class="d-flex justify-content-between align-items-end pt-1" style="border-top: 1px dashed #e0e0e0 !important;">
+                                    <div style="line-height: 1.3;">
+                                        <div class="${!meetsMinimum && isActive ? 'text-danger fw-bold' : 'text-muted'}" style="font-size: 0.75rem;">
+                                            Đơn từ ${voucher.donToiThieu.toLocaleString()}đ
+                                        </div>
+                                        ${!meetsMinimum && isActive ? `
+                                            <div class="badge bg-soft-danger text-danger border border-danger-subtle" style="font-size: 0.6rem;">
+                                                Cần thêm ${(voucher.donToiThieu - orderTotal).toLocaleString()}đ
+                                            </div>` : (isActive && meetsMinimum && typeof realDiscount !== 'undefined' ? 
+                                            `<div class="text-success fw-bold" style="font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Giảm ${realDiscount.toLocaleString()}đ</div>` : 
+                                            `<div class="text-muted" style="font-size: 0.65rem;">Hạn: ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`)}
+                                    </div>
+                                    
+                                    <button class="btn btn-sm py-0 px-3 rounded-pill btn-voucher-apply ${isActive && meetsMinimum ? 'btn-outline-primary btn-voucher-active' : 'btn-outline-secondary btn-voucher-disabled'}"
+                                            style="font-size: 0.75rem; height: 28px; border-width: 1.5px;"
                                             onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
                                             ${!isActive ? 'disabled' : ''}>
-                                        ${isExpired ? 'Hết hạn' : !meetsMinimum ? 'Không đủ điều kiện' : !isActive ? 'Không có hiệu lực' : 'Chọn phiếu này'}
+                                        ${isExpired ? 'Hết hạn' : !meetsMinimum ? 'Chưa đủ' : 'Dùng ngay'}
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    `;
+
+                        <div style="position: absolute; width: 16px; height: 16px; background: #f4f7f6; border-radius: 50%; left: -8px; top: 50%; transform: translateY(-50%); border: 1px solid rgba(0,0,0,0.05);"></div>
+                    </div>
+                </div>
+            `;
         });
         html += '</div>';
         $('#voucherList').html(html);
@@ -1074,9 +1524,58 @@
         updatePaymentInfo();
     }
 
+    function validateShippingAddressForPayment() {
+        if (!useShipping) {
+            return true;
+        }
+
+        const shipTinh = $('#shipTinh').val();
+        const shipQuan = $('#shipQuan').val();
+        const shipPhuong = $('#shipPhuong').val();
+        const shipDiaChiChiTiet = ($('#shipDiaChiChiTiet').val() || '').trim();
+        let fullAddress = ($('#shipAddress').val() || '').trim();
+
+        if (!shipTinh || shipTinh === '0') {
+            showWarning('Vui lòng chọn Tỉnh/Thành để giao hàng.');
+            return false;
+        }
+
+        if (!shipQuan || shipQuan === '0') {
+            showWarning('Vui lòng chọn Quận/Huyện để giao hàng.');
+            return false;
+        }
+
+        if (!shipPhuong || shipPhuong === '0') {
+            showWarning('Vui lòng chọn Phường/Xã để giao hàng.');
+            return false;
+        }
+
+        if (!shipDiaChiChiTiet) {
+            showWarning('Vui lòng nhập số nhà, tên đường để giao hàng.');
+            return false;
+        }
+
+        // Nếu UI đã có đủ dropdown + địa chỉ chi tiết nhưng fullAddress chưa sync kịp, tự ghép lại
+        if (!fullAddress && shipTinh && shipTinh !== '0' && shipQuan && shipQuan !== '0' && shipPhuong && shipPhuong !== '0' && shipDiaChiChiTiet) {
+            concatenateShippingAddress();
+            fullAddress = ($('#shipAddress').val() || '').trim();
+        }
+
+        if (!fullAddress) {
+            showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán.');
+            return false;
+        }
+
+        return true;
+    }
+
     // Thanh toán hóa đơn
     function openPaymentModal() {
-        let pay = $('#payAmount').text();
+        if (!validateShippingAddressForPayment()) {
+            return;
+        }
+
+        let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
         // Đặt lại phương thức thanh toán trong modal theo ngoài giao diện
@@ -1101,6 +1600,10 @@
 
     // Tạo giỏ hàng mới
     function taoGioHang() {
+        if (gioHangs.length >= maxGioHangs) {
+            showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
+            return;
+        }
         const dto = {
             idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             nguoiTao: "Admin"
@@ -1119,34 +1622,75 @@
                 };
                 gioHangs.push(gioHang);
                 currentGioHang = gioHangs.length - 1;
-                // Lưu tất cả giỏ hàng vào localStorage
+
                 saveGioHangsToStorage();
                 renderTabs();
-                loadGioHang(); // Load dữ liệu từ server
+                loadGioHang();
+                showSuccess('Đã tạo giỏ hàng mới!');
             },
-            error: function (err) {
+            error: function () {
                 showError('Tạo giỏ hàng thất bại!');
             }
         });
     }
 
-    // Render tabs giỏ hàng
     function renderTabs() {
         let html = '';
         gioHangs.forEach((gh, idx) => {
-            html += `<li class="nav-item">
-                        <a class="nav-link ${idx === currentGioHang ? 'active' : ''}" href="#" onclick="switchGioHang(${idx})">Giỏ hàng ${idx + 1}${gh.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>' + gh.products.length + '</span>' : ''}</a>
-                    </li>`;
+            const isActive = idx === currentGioHang;
+            const productCount = gh.products ? gh.products.length : 0;
+
+            html += `
+                <li class="nav-item">
+                    <a class="nav-link ${isActive ? 'active' : ''}" href="#" 
+                    onclick="switchGioHang(${idx}); event.preventDefault();">
+                        Giỏ hàng ${idx + 1}
+                        ${productCount > 0 ? `<span class="badge bg-danger ms-1">${productCount}</span>` : ''}
+                        
+                        <span class="tab-close" onclick="event.stopImmediatePropagation(); closeTab(${idx});" 
+                            title="Đóng giỏ hàng">×</span>
+                    </a>
+                </li>`;
         });
+
         $('#invoiceTabs').html(html);
+    }
+    function closeTab(index) {
+        if (gioHangs.length <= 1) {
+            showWarning("Phải giữ ít nhất một giỏ hàng!");
+            return;
+        }
+
+        // Remove the cart
+        gioHangs.splice(index, 1);
+
+        // Adjust current index
+        if (currentGioHang >= index) {
+            currentGioHang = Math.max(0, currentGioHang - 1);
+        }
+
+        saveGioHangsToStorage();
+        renderTabs();
+        loadGioHang();
+    }
+    function addMiddleClickSupport() {
+        $(document).on('mousedown', '.nav-tabs .nav-link', function (e) {
+            if (e.button === 1) { // Middle mouse button
+                e.preventDefault();
+                const index = $(this).parent().index();
+                if (index !== -1) {
+                    closeTab(index);
+                }
+            }
+        });
     }
 
     // Chuyển giỏ hàng
     function switchGioHang(idx) {
         currentGioHang = idx;
-        saveGioHangsToStorage(); // Lưu trạng thái hiện tại
+        saveGioHangsToStorage();
         renderTabs();
-        loadGioHang(); // Load dữ liệu từ server thay vì render trực tiếp
+        loadGioHang();
     }
 
     // Load thông tin giỏ hàng từ server
@@ -1578,9 +2122,15 @@
         const modal = document.getElementById('quantityModal');
         const productId = modal.getAttribute('data-product-id');
         const quantity = parseInt(document.getElementById('quantityInput').value);
+        const productInfo = products.find(p => p.id === productId);
 
         if (isNaN(quantity) || quantity <= 0) {
-            showError('Vui lòng nhập số lượng hợp lệ!');
+            showError('Số lượng phải lớn hơn 0!');
+            return;
+        }
+
+        if (productInfo && quantity > productInfo.stock) {
+            showError(`Số lượng không được vượt quá tồn kho (${productInfo.stock}).`);
             return;
         }
 
@@ -1638,13 +2188,14 @@
         lastRenderedCustomerList = list || [];
         let html = lastRenderedCustomerList.map((c, i) => `
                     <tr>
-                        <td>${i + 1}</td>
-                        <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td>
+                        <td><b>${i + 1}</b></td>
+                        @* <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td> *@
                         <td>${(c.name || '—')}</td>
                         <td>${(c.email || '—')}</td>
                         <td>${(c.phone || '—')}</td>
                         <td>${(c.point != null ? c.point : 0)}</td>
-                        <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
+                               <td>${(c.rankName || '—')}</td>
+                            <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
                     </tr>
                 `).join('');
         if (!html) html = '<tr><td colspan="7" class="text-center text-muted">Không có khách hàng nào. Thêm mới hoặc chọn Khách vãng lai.</td></tr>';
@@ -1662,10 +2213,14 @@
         $('#customerDetails').show();
         $('#customerPhone').text(selectedCustomer.phone || '—');
         $('#customerEmail').text(selectedCustomer.email || '—');
-        $('#customerPoint').text(selectedCustomer.point != null ? selectedCustomer.point : 0);
+        const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
+        $('#customerPoint').text(currentPoint);
+        $('#requestedUsedPoints').val(0).attr('max', getPointLimitByConfig(currentPoint));
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
-        $('#btnShowAddress').show();
-        $('#btnAddAddress').show();
+        @* $('#btnShowAddress').show();
+        $('#btnAddAddress').show(); *@
 
         // Reset phiếu giảm giá khi chọn khách hàng mới
         $('#discountCode').val('');
@@ -1695,6 +2250,9 @@
         $('#customerPhone').text('');
         $('#customerEmail').text('');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
 
         // Ẩn nút hủy chọn và các nút địa chỉ
         $('#btnClearCustomer').hide();
@@ -1725,32 +2283,54 @@
         // Cập nhật lại thông tin thanh toán
         updatePaymentInfo();
     }
+    function clearCustomerForm() {
+        // Xóa input
+        // ===== XÓA THÔNG TIN KHÁCH =====
+        $('#shipName').val('');
+        $('#shipPhone').val('');
+        $('#shipEmail').val('');
 
-    // Toggle giao hàng
-    function toggleShipping() {
-        useShipping = $('#shippingSwitch').is(':checked');
-        if (useShipping) {
-            $('#shippingFormCard').show();
-            $('#btnShowAddress').show();
-            $('#btnAddAddress').show();
-            // Tính phí vận chuyển động thay vì cố định
-            calculateShippingFee();
-            // Nếu đã chọn khách hàng thì tự động điền địa chỉ
-            if (selectedCustomer) {
-                loadCustomerAddress();
-            }
-        } else {
-            $('#shippingFormCard').hide();
-            $('#btnShowAddress').hide();
-            $('#btnAddAddress').hide();
-            // Reset phí vận chuyển về 0
-            shippingFee = 0;
-            $('#shippingFee').val(0);
-            // Xóa hiển thị phí vận chuyển
-            $('#shippingFeeDisplay').html('');
+        // ===== XÓA ĐỊA CHỈ =====
+        $('#shipTinh').val('0').change();
+        $('#shipQuan').html('<option value="0">Quận Huyện</option>');
+        $('#shipPhuong').html('<option value="0">Phường Xã</option>');
+
+        $('#shipDiaChiChiTiet').val('');
+        $('#shipAddress').val('');
+        $('#shipNote').val('');
+
+        // ===== RESET BIẾN =====
+        selectedCustomer = null;
+        selectedCustomerId = null;
+
+        // Nếu có cache
+        if (typeof lastRenderedCustomerList !== 'undefined') {
+            lastRenderedCustomerList = [];
         }
-        updatePaymentInfo();
     }
+    // Toggle giao hàng
+function toggleShipping() {
+    useShipping = $('#shippingSwitch').is(':checked');
+
+    if (useShipping) {
+        $('#shippingFormCard, #btnShowAddress, #btnAddAddress, #shippingFeeContainer').show();
+        
+        calculateShippingFee();
+        if (selectedCustomer && selectedCustomerId) {
+            loadCustomerAddress();
+        }
+    } else {
+        $('#shippingFormCard, #btnShowAddress, #btnAddAddress').hide();
+
+        shippingFee = 0;
+        // Reset the container to the default text
+        $('#shippingFeeContainer').html('+ 0 VND');
+        
+        clearCustomerForm();
+    }
+
+    updatePaymentInfo();
+}
 
     // Load địa chỉ khách hàng (chỉ khi chọn khách có trong DB, không áp dụng cho khách vãng lai)
     function loadCustomerAddress() {
@@ -1788,7 +2368,75 @@
     // Toggle sử dụng điểm
     function togglePoint() {
         usePoint = $('#pointSwitch').is(':checked');
+        
+        if (usePoint) {
+            $('#requestedUsedPoints').closest('.mb-2').show();
+            $('#requestedUsedPoints').val(0);
+        } else {
+            $('#requestedUsedPoints').closest('.mb-2').hide();
+            $('#requestedUsedPoints').val(0);
+        }
+        
         updatePaymentInfo();
+    }
+
+    function getRequestedPointForUse() {
+        if (!selectedCustomer || selectedCustomer.isGuest || !usePoint) {
+            return 0;
+        }
+
+        let gh = gioHangs[currentGioHang];
+        const total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
+        const discount = discountValue || 0;
+        const maxUsable = getMaxUsablePoint(total, discount);
+        const requested = Math.max(0, parseInt($('#requestedUsedPoints').val(), 10) || 0);
+        if (requested > maxUsable) {
+            $('#requestedUsedPoints').val(maxUsable);
+            return maxUsable;
+        }
+
+        return requested;
+    }
+
+    async function loadPointRate() {
+        try {
+            const response = await fetch('/Admin/ClientBanHangTaiQuay/cau-hinh-ban-hang');
+            if (!response.ok) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Không lấy được cấu hình điểm';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+
+            const data = await response.json();
+            const config = data?.config || {};
+            const rate = Number(config.soTienGiamTrenMotDiem ?? config.SoTienGiamTrenMotDiem);
+            maxPointsPerOrder = Math.max(0, Number(config.diemToiDaSuDungMoiDon ?? config.DiemToiDaSuDungMoiDon) || 0);
+            if (!Number.isFinite(rate) || rate <= 0) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Cấu hình quy đổi điểm chưa hợp lệ';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+            moneyPerPoint = rate;
+
+            const rateLabel = document.getElementById('pointRateLabel');
+            if (rateLabel) {
+                const maxText = maxPointsPerOrder > 0 ? ` | Tối đa ${maxPointsPerOrder.toLocaleString('vi-VN')} điểm/đơn` : '';
+                rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND${maxText}`;
+            }
+            const currentPoint = Number(selectedCustomer?.point || 0);
+            $('#requestedUsedPoints').attr('max', getPointLimitByConfig(currentPoint));
+            updatePaymentInfoWithoutRecalculation();
+        } catch (error) {
+            console.error('Không tải được cấu hình quy đổi điểm:', error);
+        }
     }
 
     // Cập nhật thông tin thanh toán (có tính lại phí vận chuyển)
@@ -1796,19 +2444,25 @@
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: update both point discount display elements
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        // cap the input at max usable so user can't over-enter
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+
         $('#shippingFee').val(shippingFee);
 
-        // Tự động tính lại phí vận chuyển khi tổng tiền thay đổi (nếu đang bật giao hàng)
         if (useShipping && total > 0) {
             calculateShippingFee();
         }
@@ -1819,16 +2473,22 @@
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: same update here
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+
         $('#shippingFee').val(shippingFee);
     }
 
@@ -1878,30 +2538,58 @@
     function payInvoice() {
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
+        if (!validateShippingAddressForPayment()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
         let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
-        let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
+        let pay = parseInt($('#totalAmount').text().replace(/\D/g, '')) || 0;
 
         if (customerPaid < pay) {
             showError('Khách đưa chưa đủ tiền!');
             return;
         }
 
+        const tinhText = $('#shipTinh option:selected').text() || '';
+        const quanText = $('#shipQuan option:selected').text() || '';
+        const shipQuanVal = $('#shipQuan').val();
+        const shipPhuongVal = $('#shipPhuong').val();
+        const parsedDistrictId = parseInt(shipQuanVal, 10);
+        const hasValidDistrictId = Number.isFinite(parsedDistrictId) && parsedDistrictId > 0;
+        const hasValidWardCode = !!(shipPhuongVal && shipPhuongVal !== '0');
+
+        const pointSwitchOn = $('#pointSwitch').is(':checked') && selectedCustomer && !selectedCustomer.isGuest;
+        const rawPointReq = parseInt($('#requestedUsedPoints').val(), 10);
+        let requestedPtsForApi = 0;
+        let usePointForApi = false;
+        if (pointSwitchOn) {
+            usePointForApi = true;
+            requestedPtsForApi = (Number.isFinite(rawPointReq) && rawPointReq > 0)
+                ? getRequestedPointForUse()
+                : null;
+        }
+
         // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
         let dto = {
             idGioHang: gh.id,
+            customerId: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             customerName: selectedCustomer ? (selectedCustomer.isGuest ? ($('#shipName').val() || 'Khách vãng lai') : selectedCustomer.name) : ($('#shipName').val() || ''),
             customerPhone: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipPhone').val() : selectedCustomer.phone) : $('#shipPhone').val(),
             customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
             address: $('#shipAddress').val(),
             discountCode: $('#discountCode').val(),
-            usePoint: usePoint,
+            usePoint: usePointForApi,
+            requestedUsedPoints: requestedPtsForApi,
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,
-            shippingFee: shippingFee
+            shippingFee: shippingFee,
+            province: tinhText && tinhText !== 'Tỉnh Thành' ? tinhText : '',
+            district: quanText && quanText !== 'Quận Huyện' ? quanText : '',
+            toDistrictId: hasValidDistrictId ? parsedDistrictId : null,
+            toWardCode: hasValidWardCode ? String(shipPhuongVal) : null,
+            weight: (hasValidDistrictId && hasValidWardCode) ? 500 : null,
+            shippingFeeSource: 'Config'
         };
 
         // Nếu chọn chuyển khoản/thẻ (VNPay): theo mã thường là "vnpay", "bank", "chuyển khoản", "thẻ"
@@ -1937,8 +2625,18 @@
             data: JSON.stringify(dto),
             success: function (res) {
                 showSuccess('Thanh toán thành công!');
-                $('#confirmPaymentModal').modal('hide');
+                // RESET KHÁCH HÀNG
+                clearCustomerForm();
 
+                // Tắt giao hàng
+                $('#shippingSwitch').prop('checked', false);
+
+                // 🔥 Reset luôn biến control
+                useShipping = false;
+
+                toggleShipping();
+
+                $('#confirmPaymentModal').modal('hide');
                 // Xóa giỏ hàng đã thanh toán
                 gioHangs.splice(currentGioHang, 1);
                 if (gioHangs.length === 0) {
@@ -2043,29 +2741,90 @@
 
     // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function () {
+        $('#shippingSwitch').prop('checked', false);
+        $('#pointSwitch').prop('checked', false);
+        $('#requestedUsedPoints').closest('.mb-2').hide();
+        useShipping = false;
+        usePoint = false;
+        shippingFee = 0;
+        discountValue = 0;
+        $('#shippingFormCard').hide();
+        $('#btnShowAddress').hide();
+        $('#btnAddAddress').hide();
+        $('#requestedUsedPoints').val(0).closest('.mb-2').hide();
+        $('#pointDiscountLabel').text("- 0 VND");
+        $('#totalPointDiscount').text("- 0 VND");
+        $('#discountCode').val('');
         // Thử khôi phục giỏ hàng từ localStorage trước
         if (!restoreGioHangsFromStorage()) {
-            // Nếu không khôi phục được, tạo giỏ hàng mới
             taoGioHang();
         }
+
         loadProducts();
         loadCustomers();
-        loadPaymentMethods(); // Load phương thức thanh toán động từ API
+        loadPaymentMethods();
+        loadPointRate();
 
-        $('#btnAddInvoice').click(function () {
-            if (gioHangs.length < maxGioHangs) {
-                taoGioHang();
-            } else {
-                showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
-            }
-        });
-
+        $('#btnAddInvoice').click(taoGioHang);
         // Khi mở modal chọn sản phẩm, luôn reload sản phẩm mới nhất
         $('#btnAddProduct').click(function () {
             loadProducts(function () {
                 renderProductModal();
                 $('#productModal').modal('show');
             });
+        });
+
+        $('#btnQRCode').click(openQrScannerModal);
+        addMiddleClickSupport();
+        $('#btnQrScan').click(function () {
+            lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+        });
+
+        $('#qrCodeInput').on('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+            }
+        });
+
+        $('#btnQrCameraToggle').click(function () {
+            toggleQrCamera();
+        });
+
+        $('#btnQrUpload').click(function () {
+            $('#qrFileInput').click();
+        });
+
+        $('#qrFileInput').on('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (typeof Html5Qrcode === 'undefined') {
+                showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+                return;
+            }
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+                $('#qrReader').empty();
+                const h = new Html5Qrcode('qrReader');
+                h.scanFile(file, true).then(function (decodedText) {
+                    const text = (decodedText || '').trim();
+                    try { h.clear(); } catch (x) { }
+                    $('#qrCodeInput').val(text);
+                    lookupProductByQrAndOpenQuantity(text);
+                }).catch(function () {
+                    showError('Không đọc được mã QR từ ảnh. Thử ảnh rõ nét hơn.');
+                    try { h.clear(); } catch (x) { }
+                });
+            });
+            e.target.value = '';
+        });
+
+        $('#qrScannerModal').on('hidden.bs.modal', function () {
+            stopQrCamera();
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
         });
 
         // Cập nhật thông tin thanh toán ban đầu
@@ -2144,11 +2903,20 @@
         $('#selectAddressModal').modal('show');
     }
 
-    // Load danh sách địa chỉ của khách hàng
     function loadCustomerAddresses() {
         if (!selectedCustomer) return;
 
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang', { customerId: selectedCustomer.id }, function (data) {
+
+            // ✅ LẤY ID đã lưu
+            const savedId = $('#selectedAddressId').val();
+
+            if (savedId) {
+                selectedAddressId = savedId;
+            } else {
+                selectedAddressId = null;
+            }
+
             if (data && Array.isArray(data) && data.length > 0) {
                 renderAddressList(data);
                 $('#addressList').show();
@@ -2157,19 +2925,15 @@
                 $('#addressList').hide();
                 $('#noAddressMessage').show();
             }
-        }).fail(function (xhr, status, error) {
-            console.error('Lỗi khi lấy danh sách địa chỉ:', error);
-            $('#addressList').hide();
-            $('#noAddressMessage').show();
         });
     }
-
+    let selectedAddressId = null;
     // Render danh sách địa chỉ
     function renderAddressList(addresses) {
         let html = '';
         addresses.forEach((address, index) => {
             const isDefault = address.laMacDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : '';
-            const isSelected = (address.diaChiChiTiet === $('#shipAddress').val()) ? 'border-primary' : 'border-light';
+            const isSelected = (address.id === selectedAddressId);
 
             // Escape các ký tự đặc biệt để tránh lỗi JavaScript
             const safeTenNguoiNhan = (address.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
@@ -2177,7 +2941,10 @@
             const safeDiaChiChiTiet = (address.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 
             html += `
-                        <div class="card mb-2 address-item ${isSelected}" style="cursor: pointer;" onclick="selectAddress('${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
+
+                             <div class="card mb-2 address-item ${isSelected ? 'active' : ''}"
+         style="cursor: pointer;"
+         onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
@@ -2191,9 +2958,7 @@
                                             <i class="bi bi-geo-alt"></i> ${address.diaChiChiTiet || 'N/A'}
                                         </p>
                                     </div>
-                                    <div class="ms-2">
-                                        <i class="bi bi-check-circle-fill text-primary" style="display: ${isSelected.includes('border-primary') ? 'block' : 'none'};"></i>
-                                    </div>
+                                 
                                 </div>
                             </div>
                         </div>
@@ -2204,16 +2969,23 @@
     }
 
     // Chọn địa chỉ
-    function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
+    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+
+        // ✅ Lưu ID
+        selectedAddressId = addressId;
+        $('#selectedAddressId').val(addressId);
+        // ❌ Bỏ chọn tất cả
+        $('.address-item').removeClass('active');
+
+        // ✅ Chọn item hiện tại
+        let selectedItem = event.currentTarget;
+        $(selectedItem).addClass('active');
+
+        // ✅ Điền form
         $('#shipName').val(tenNguoiNhan);
         $('#shipPhone').val(sdtNguoiNhan);
         $('#shipAddress').val(diaChiChiTiet);
 
-        // Đóng modal
-        $('#selectAddressModal').modal('hide');
-
-        // Hiển thị thông báo
         showSuccess('Đã chọn địa chỉ giao hàng!');
     }
 
@@ -2234,10 +3006,10 @@
                             box-shadow: 0 2px 8px rgba(0,123,255,0.15);
                             transform: translateY(-1px);
                         }
-                        .address-item.border-primary {
-                            border-color: #007bff;
-                            background-color: #f8f9ff;
-                        }
+                           .address-item.active {
+        border: 2px solid #007bff !important;
+        background-color: #f8f9ff;
+    }
                         .address-item .card-body {
                             padding: 1rem;
                         }
@@ -2394,7 +3166,7 @@
                 addresses.forEach(addr => {
                     const isDefault = addr.laMacDinh ? '<span class="badge bg-primary">Mặc định</span>' : '';
                     addressHtml += `
-                                <div class="address-card card mb-3" onclick="selectAddress('${addr.idDiaChi}', '${addr.tenNguoiNhan || ''}', '${addr.sdtNguoiNhan || ''}', '${addr.diaChiChiTiet || ''}')">
+                                    <div class="address-card card mb-3" onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -2426,32 +3198,21 @@
     }
 
     // Chọn địa chỉ từ modal
-    async function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
-        if (tenNguoiNhan && tenNguoiNhan !== 'N/A') {
-            $('#shipName').val(tenNguoiNhan);
-        }
-        if (sdtNguoiNhan && sdtNguoiNhan !== 'N/A') {
-            $('#shipPhone').val(sdtNguoiNhan);
-        }
+    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
 
-        // Sử dụng logic parse và populate dropdown như checkout
-        if (diaChiChiTiet) {
-            await populateAddressFromString(diaChiChiTiet);
-        }
+        // ❌ Bỏ chọn tất cả
+        $('.address-item').removeClass('active');
 
-        // Lưu ID địa chỉ đã chọn
-        $('#selectedAddressId').val(addressId);
+        // ✅ Chọn cái đang click
+        let selectedItem = event.currentTarget;
+        $(selectedItem).addClass('active');
 
-        // Đóng modal
-        $('#selectAddressModal').modal('hide');
+        // ✅ Đổ dữ liệu
+        $('#shipName').val(tenNguoiNhan);
+        $('#shipPhone').val(sdtNguoiNhan);
+        $('#shipAddress').val(diaChiChiTiet);
 
-        // Tính lại phí vận chuyển nếu có địa chỉ
-        if (diaChiChiTiet && typeof calculateShippingFee === 'function') {
-            calculateShippingFee();
-        }
-
-        showSuccess('Đã chọn địa chỉ thành công!');
+        showSuccess('Đã chọn địa chỉ giao hàng!');
     }
 
     // Xóa form địa chỉ
@@ -2614,56 +3375,38 @@
     }
 
     // Hiển thị thông tin phí vận chuyển chi tiết
-    function updateShippingFeeDisplay(shippingResponse) {
-        const originalFee = shippingResponse.originalFee || 0;
-        const finalFee = shippingResponse.finalFee || 0;
-        const discountAmount = shippingResponse.discountAmount || 0;
-        const discountMessage = shippingResponse.discountMessage || '';
+function updateShippingFeeDisplay(shippingResponse) {
+    const originalFee = shippingResponse.originalFee || 0;
+    const finalFee = shippingResponse.finalFee || 0;
+    const discountAmount = shippingResponse.discountAmount || 0;
+    const discountMessage = shippingResponse.discountMessage || '';
 
-        // Tạo HTML hiển thị phí vận chuyển
-        let feeDisplayHtml = '';
+    let feeDisplayHtml = '';
 
-        if (discountAmount > 0) {
-            // Có giảm giá
-            feeDisplayHtml = `
-                        <div class="shipping-fee-details">
-                            <div class="original-fee text-muted">
-                                <small>Phí gốc: <span style="text-decoration: line-through;">${originalFee.toLocaleString()} VNĐ</span></small>
-                            </div>
-                            <div class="final-fee text-success fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
-                            </div>
-                            <div class="discount-info text-success">
-                                <small><i class="bi bi-tag"></i> ${discountMessage}</small>
-                            </div>
-                        </div>
-                    `;
-        } else {
-            // Không có giảm giá
-            feeDisplayHtml = `
-                        <div class="shipping-fee-details">
-                            <div class="final-fee fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
-                            </div>
-                        </div>
-                    `;
-        }
-
-        // Tìm và cập nhật phần hiển thị phí vận chuyển
-        let feeDisplayElement = $('#shippingFeeDisplay');
-        if (feeDisplayElement.length === 0) {
-            // Tạo element mới nếu chưa có
-            $('#shippingFee').after('<div id="shippingFeeDisplay" class="mt-2"></div>');
-            feeDisplayElement = $('#shippingFeeDisplay');
-        }
-
-        feeDisplayElement.html(feeDisplayHtml);
-
-        // Hiển thị toast notification nếu có giảm giá
-        if (discountAmount > 0) {
-            showSuccess(`${discountMessage} - Tiết kiệm ${discountAmount.toLocaleString()} VNĐ!`);
-        }
+    if (discountAmount > 0) {
+        feeDisplayHtml = `
+            <div class="shipping-fee-details text-end">
+                <div class="original-fee text-muted">
+                    <small>Phí gốc: <span style="text-decoration: line-through;">${originalFee.toLocaleString()} VNĐ</span></small>
+                </div>
+                <div class="final-fee text-success fw-bold">
+                    <span>+ ${finalFee.toLocaleString()} VNĐ</span>
+                </div>
+                <div class="discount-info text-success">
+                    <small><i class="bi bi-tag"></i> ${discountMessage}</small>
+                </div>
+            </div>`;
+        showSuccess(`${discountMessage} - Tiết kiệm ${discountAmount.toLocaleString()} VNĐ!`);
+    } else {
+        feeDisplayHtml = `
+            <div class="final-fee fw-bold text-end">
+                <span>+ ${finalFee.toLocaleString()} VNĐ</span>
+            </div>`;
     }
+
+    // This one line replaces EVERYTHING inside the container
+    $('#shippingFeeContainer').html(feeDisplayHtml);
+}
 
     // Tính phí vận chuyển động từ API
     function calculateShippingFee() {
@@ -2679,7 +3422,7 @@
 
         // Khi dùng GHN: cần chọn đủ tỉnh, quận, phường. Không dùng GHN: chỉ cần tỉnh + quận
         const phuongText = $('#shipPhuong option:selected').text() || '';
-        const needWard = useGHN;
+        const needWard = false;
         const hasWard = phuongText && phuongText !== 'Phường Xã';
         if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện' || (needWard && !hasWard)) {
             shippingFee = 0;
@@ -2700,7 +3443,7 @@
         // GHN: gửi thêm ToDistrictId, ToWardCode, Weight để API tính phí chính xác
         const shipQuanVal = $('#shipQuan').val();
         const shipPhuongVal = $('#shipPhuong').val();
-        if (useGHN && shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
+        if (shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
             requestData.ToDistrictId = parseInt(shipQuanVal, 10);
             requestData.ToWardCode = String(shipPhuongVal);
             requestData.Weight = 500; // gram, mặc định
@@ -2891,8 +3634,11 @@
 
             // Cập nhật địa chỉ đầy đủ sau khi điền xong
             setTimeout(() => {
-                concatenateShippingAddress();
-            }, 200);
+                renderTabs();
+                if (gioHangs.length > 0) {
+                    loadGioHang();
+                }
+            }, 300);
 
         } catch (error) {
             console.error('Error populating dropdowns from parsed address:', error);

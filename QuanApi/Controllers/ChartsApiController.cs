@@ -12,7 +12,7 @@ public class ChartsApiController : ControllerBase
     private readonly BanQuanAu1DbContext _context;
 
     /// <summary>Trạng thái đơn hàng được coi là đã thanh toán / hoàn thành (dùng thống kê doanh thu).</summary>
-    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Giao hàng thành công" };
+    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Đã giao", "Đã giao hàng", "Giao hàng thành công" };
 
     public ChartsApiController(BanQuanAu1DbContext context)
     {
@@ -488,19 +488,56 @@ public class ChartsApiController : ControllerBase
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
     }
+	[HttpGet("SanPhamHetHang")]
+	public async Task<IActionResult> GetSanPhamHetHang()
+	{
+		try
+		{
+			var list = await _context.SanPhamChiTiets
+				.Include(ct => ct.SanPham)
+				.GroupBy(ct => ct.IDSanPham)
+				.Where(g => g.Sum(ct => (int?)ct.SoLuong) == 0)
+				.Select(g => new
+				{
+					Id = g.Key, // ✅ THÊM DÒNG NÀY
+					TenSanPham = g.First().SanPham.TenSanPham,
+					SoLuong = 0
+				})
+				.ToListAsync();
 
-    [HttpGet("SanPhamHetHang")]
-    public async Task<IActionResult> GetSanPhamHetHang()
-    {
-        var list = await _context.SanPhamChiTiets
-            .GroupBy(ct => ct.IDSanPham)
-            .Where(g => g.Sum(ct => ct.SoLuong) == 0)
-            .Join(_context.SanPhams, g => g.Key, sp => sp.IDSanPham, (g, sp) => new { sp.IDSanPham, sp.MaSanPham, sp.TenSanPham })
-            .ToListAsync();
-        return Ok(list);
-    }
+			return Ok(list);
+		}
+		catch (Exception ex)
+		{
+			return StatusCode(500, ex.Message);
+		}
+	}
+	[HttpGet("SanPhamSapHetHang")]
+	public async Task<IActionResult> SanPhamSapHetHang()
+	{
+		try
+		{
+			var data = await _context.SanPhamChiTiets
+				.Include(x => x.SanPham)
+				.GroupBy(x => x.IDSanPham)
+				.Where(g => g.Sum(x => (int?)x.SoLuong) > 0
+						 && g.Sum(x => (int?)x.SoLuong) <= 10)
+				.Select(g => new
+				{
+					Id = g.Key, // ✅ QUAN TRỌNG
+					TenSanPham = g.First().SanPham.TenSanPham,
+					SoLuong = g.Sum(x => (int?)x.SoLuong) ?? 0
+				})
+				.ToListAsync();
 
-    [HttpGet("summary-stats")]
+			return Ok(data);
+		}
+		catch (Exception ex)
+		{
+			return StatusCode(500, ex.Message);
+		}
+	}
+	[HttpGet("summary-stats")]
     public async Task<IActionResult> GetSummaryStats()
     {
         try
@@ -532,4 +569,48 @@ public class ChartsApiController : ControllerBase
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
     }
+	[HttpGet("SanPhamDaBan")]
+	public async Task<IActionResult> GetSanPhamDaBan()
+	{
+		try
+		{
+			var now = DateTime.UtcNow;
+			var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+			var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
+
+			var data = await _context.ChiTietHoaDons
+				.Include(ct => ct.SanPhamChiTiet)
+					.ThenInclude(spct => spct.SanPham)
+				.Include(ct => ct.HoaDon)
+				.Where(ct =>
+					CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai) &&
+					ct.HoaDon.TrangThaiHoaDon &&
+					ct.TrangThai &&
+					ct.HoaDon.NgayTao >= firstDayOfMonth &&
+					ct.HoaDon.NgayTao < firstDayOfNextMonth
+				)
+				.GroupBy(ct => new
+				{
+
+					ct.SanPhamChiTiet.SanPham.IDSanPham,
+					ct.SanPhamChiTiet.SanPham.TenSanPham
+				})
+				.Select(g => new
+				{
+
+					Id = g.Key.IDSanPham,
+					TenSanPham = g.Key.TenSanPham,
+					SoLuong = g.Sum(x => (int?)x.SoLuong) ?? 0
+				})
+				.OrderByDescending(x => x.SoLuong)
+				.Take(10)
+				.ToListAsync();
+
+			return Ok(data);
+		}
+		catch (Exception ex)
+		{
+			return StatusCode(500, ex.Message);
+		}
+	}
 }

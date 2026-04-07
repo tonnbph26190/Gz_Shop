@@ -1,11 +1,14 @@
-﻿<!-- SD-53/QuanView/Areas/Admin/Views/QuanLyDonHang/Invoice.cshtml -->
+<!-- SD-53/QuanView/Areas/Admin/Views/QuanLyDonHang/Invoice.cshtml -->
 @model QuanApi.Data.HoaDon
 @{
     Layout = null;
     var subTotal = Model.ChiTietHoaDons?.Sum(x => x.ThanhTien) ?? 0m;
     var discount = Model.TienGiam ?? 0m;
+    var usedPoints = Model.DiemDaDung;
+    var pointRate = Model.TyLeQuyDoiDiem;
+    var pointDiscount = Model.SoTienGiamTuDiem;
     var ship = Model.PhiVanChuyen ?? 0m;
-    var grand = subTotal - discount + ship;
+    var grand = Model.TongTien;
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -139,19 +142,30 @@
             <div class="col-6">
                 <table class="table totals">
                     <tr>
-                        <td class="text-right">Tạm tính</td>
+                        <td class="text-right">Tạm tính (tiền hàng)</td>
                         <td class="text-right" style="width: 180px;">@subTotal.ToString("N0") VNĐ</td>
                     </tr>
                     <tr>
                         <td class="text-right">Giảm giá</td>
                         <td class="text-right">-@discount.ToString("N0") VNĐ</td>
                     </tr>
+                    @if (usedPoints > 0)
+                    {
+                        <tr>
+                            <td class="text-right">Điểm đã dùng</td>
+                            <td class="text-right">@usedPoints.ToString("N0") điểm</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Quy đổi từ điểm</td>
+                            <td class="text-right">-@pointDiscount.ToString("N0") VNĐ (1 điểm = @pointRate.ToString("N0") VNĐ)</td>
+                        </tr>
+                    }
                     <tr>
                         <td class="text-right">Phí vận chuyển</td>
                         <td class="text-right">@ship.ToString("N0") VNĐ</td>
                     </tr>
                     <tr>
-                        <td class="text-right font-weight-bold">Tổng cộng</td>
+                        <td class="text-right font-weight-bold">Tổng tiền thanh toán</td>
                         <td class="text-right font-weight-bold text-primary">@grand.ToString("N0") VNĐ</td>
                     </tr>
                 </table>

@@ -42,11 +42,14 @@ namespace QuanView.Areas.Admin.Controllers
             decimal? priceTo = null,
             int? qtyFrom = null,
             int? qtyTo = null,
+
             DateTime? dateFrom = null,
-            DateTime? dateTo = null)
+            DateTime? dateTo = null,
+			string? sortDate = null)
         {
             // Cố định pageSize = 5
             int pageSize = 5;
+            var effectiveTrangThai = string.IsNullOrWhiteSpace(trangThai) ? "active" : trangThai;
 
             // Tạo query string cho API
             var queryParams = new List<string>();
@@ -55,8 +58,8 @@ namespace QuanView.Areas.Admin.Controllers
 
             if (!string.IsNullOrWhiteSpace(keyword))
                 queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
-            if (!string.IsNullOrWhiteSpace(trangThai))
-                queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+            if (!string.IsNullOrWhiteSpace(effectiveTrangThai))
+                queryParams.Add($"trangThai={Uri.EscapeDataString(effectiveTrangThai)}");
             if (priceFrom.HasValue)
                 queryParams.Add($"priceFrom={priceFrom.Value}");
             if (priceTo.HasValue)
@@ -69,8 +72,10 @@ namespace QuanView.Areas.Admin.Controllers
                 queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
             if (dateTo.HasValue)
                 queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
+			if (!string.IsNullOrEmpty(sortDate))
+				queryParams.Add($"sortDate={sortDate}");
 
-            var queryString = string.Join("&", queryParams);
+			var queryString = string.Join("&", queryParams);
             var response = await _http.GetAsync($"sanphams/paged?{queryString}");
 
             if (!response.IsSuccessStatusCode)
@@ -142,14 +147,15 @@ namespace QuanView.Areas.Admin.Controllers
                 PageSize = pageSize,
                 TotalItems = total,
                 Keyword = keyword,
-                TrangThai = trangThai,
+                TrangThai = effectiveTrangThai,
                 PriceFrom = priceFrom,
                 PriceTo = priceTo,
                 QtyFrom = qtyFrom,
                 QtyTo = qtyTo,
                 DateFrom = dateFrom,
-                DateTo = dateTo
-            };
+                DateTo = dateTo,
+				SortDate = sortDate
+			};
 
             return View(viewModel);
         }
@@ -295,131 +301,144 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(QuanView.Areas.Admin.Models.SanPhamDto dto)
-        {
-            // 🔍 Debug: Kiểm tra dữ liệu nhận được
-            System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
-            System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
-            // ❌ Xóa dòng biến thể trống (dòng thêm mới chưa chọn gì)
-            if (dto.ChiTietSanPhams != null)
-            {
-                dto.ChiTietSanPhams = dto.ChiTietSanPhams
-                    .Where(ct => ct != null &&
-                                 ct.IdKichCo != Guid.Empty &&
-                                 ct.IdMauSac != Guid.Empty &&
-                                 ct.SoLuong > 0 &&
-                                 ct.GiaBan > 0)
-                    .ToList();
-            }
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Edit(QuanView.Areas.Admin.Models.SanPhamDto dto)
+		{
+			// 🔍 Debug
+			System.Diagnostics.Debug.WriteLine($"📥 Received IDSanPham: {dto.IDSanPham}");
+			System.Diagnostics.Debug.WriteLine($"📥 ChiTietSanPhams count: {dto.ChiTietSanPhams?.Count ?? 0}");
 
-            if (dto.ChiTietSanPhams != null)
-            {
-                for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
-                {
-                    var ct = dto.ChiTietSanPhams[i];
-                    System.Diagnostics.Debug.WriteLine($"📦 [{i}] ID: {ct?.IdSanPhamChiTiet}, SL: {ct?.SoLuong}, Giá: {ct?.GiaBan}");
-                }
-            }
+			if (dto.ChiTietSanPhams != null)
+			{
+				// 1. First, remove completely empty new rows (no size + color)
+				dto.ChiTietSanPhams = dto.ChiTietSanPhams
+					.Where(ct => ct != null &&
+								 ct.IdKichCo != Guid.Empty &&
+								 ct.IdMauSac != Guid.Empty &&
+								 ct.SoLuong >= 0 &&
+								 ct.GiaBan > 0)
+					.ToList();
 
-            // Cập nhật sản phẩm chính
-            var response = await _http.PutAsJsonAsync($"sanphams/{dto.IDSanPham}", dto);
-            if (!response.IsSuccessStatusCode)
-            {
-                var msg = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
-                await LoadDropdownData();
-                return View(dto);
-            }
+				// 2. Then remove soft-deleted rows (this is important)
+				dto.ChiTietSanPhams = dto.ChiTietSanPhams
+					.Where(ct => !ct.IsDeleted)
+					.ToList();
+			}
 
-            // Lấy danh sách biến thể hiện có để xác định: xóa bớt / tạo mới / cập nhật
-            var existingCtRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
-            var existingIds = new HashSet<Guid>();
-            if (existingCtRes.IsSuccessStatusCode)
-            {
-                var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+			// Debug after filtering
+			if (dto.ChiTietSanPhams != null)
+			{
+				for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
+				{
+					var ct = dto.ChiTietSanPhams[i];
+					System.Diagnostics.Debug.WriteLine($"📦 [{i}] ID: {ct?.IdSanPhamChiTiet}, SL: {ct?.SoLuong}, Giá: {ct?.GiaBan}, IsDeleted: {ct?.IsDeleted}");
+				}
+			}
+
+			// Cập nhật sản phẩm chính
+			var response = await _http.PutAsJsonAsync($"sanphams/{dto.IDSanPham}", dto);
+			if (!response.IsSuccessStatusCode)
+			{
+				var msg = await response.Content.ReadAsStringAsync();
+				ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
+				await LoadDropdownData();
+				return View(dto);
+			}
+
+			// === SOFT DELETE LOGIC (this part is good, but now it will work because deleted items are filtered out) ===
+			var existingCtRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={dto.IDSanPham}");
+			var existingIds = new HashSet<Guid>();
+
+			if (existingCtRes.IsSuccessStatusCode)
+			{
+				var existingList = await existingCtRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(
+					new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
                 if (existingList != null)
-                    foreach (var x in existingList)
-                        if (x.IdSanPhamChiTiet != Guid.Empty)
-                            existingIds.Add(x.IdSanPhamChiTiet);
-            }
+					foreach (var x in existingList)
+                        if (x.TrangThai && x.IdSanPhamChiTiet != Guid.Empty)
+							existingIds.Add(x.IdSanPhamChiTiet);
+			}
 
-            var submittedIds = dto.ChiTietSanPhams?
-                .Where(ct => ct != null && ct.IdSanPhamChiTiet != Guid.Empty)
-                .Select(ct => ct.IdSanPhamChiTiet)
-                .ToHashSet() ?? new HashSet<Guid>();
+			var submittedIds = dto.ChiTietSanPhams?
+				.Where(ct => ct != null && ct.IdSanPhamChiTiet != Guid.Empty)
+				.Select(ct => ct.IdSanPhamChiTiet)
+				.ToHashSet() ?? new HashSet<Guid>();
 
-            // Xóa các biến thể bị bỏ khỏi form. API: nếu biến thể có trong đơn/giỏ thì chuyển sang ngưng bán (soft-delete).
-            var softDeleteMessage = (string?)null;
-            foreach (var id in existingIds.Except(submittedIds))
-            {
-                var delRes = await _http.DeleteAsync($"sanphamchitiets/{id}");
-                if (!delRes.IsSuccessStatusCode)
-                {
-                    var msg = await delRes.Content.ReadAsStringAsync();
-                    ModelState.AddModelError(string.Empty, $"Không thể xóa biến thể: {msg}");
-                }
-                else
-                {
-                    var body = await delRes.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(body) && body.Contains("softDelete", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            var json = JsonSerializer.Deserialize<JsonElement>(body);
-                            if (json.TryGetProperty("message", out var msgProp))
-                                softDeleteMessage = msgProp.GetString();
-                        }
-                        catch { /* ignore */ }
-                    }
-                }
-            }
-            if (softDeleteMessage != null)
-                TempData["Info"] = softDeleteMessage;
+			// Xóa các biến thể bị bỏ khỏi form (soft delete)
+			var softDeleteMessage = (string?)null;
+			foreach (var id in existingIds.Except(submittedIds))
+			{
+				var delRes = await _http.DeleteAsync($"sanphamchitiets/{id}");
+				if (delRes.IsSuccessStatusCode)
+				{
+					var body = await delRes.Content.ReadAsStringAsync();
+					if (!string.IsNullOrEmpty(body) && body.Contains("softDelete", StringComparison.OrdinalIgnoreCase))
+					{
+						try
+						{
+							var json = JsonSerializer.Deserialize<JsonElement>(body);
+							if (json.TryGetProperty("message", out var msgProp))
+								softDeleteMessage = msgProp.GetString();
+						}
+						catch { }
+					}
+				}
+				else
+				{
+					var msg = await delRes.Content.ReadAsStringAsync();
+					ModelState.AddModelError(string.Empty, $"Không thể xóa biến thể: {msg}");
+				}
+			}
 
-            // Cập nhật hoặc tạo mới từng biến thể trong form
-            if (dto.ChiTietSanPhams != null)
-            {
-                foreach (var ct in dto.ChiTietSanPhams)
-                {
-                    if (ct == null) continue;
-                    if (ct.IdSanPham == Guid.Empty) ct.IdSanPham = dto.IDSanPham;
+			if (softDeleteMessage != null)
+				TempData["Info"] = softDeleteMessage;
 
-                    if (ct.IdSanPhamChiTiet == Guid.Empty)
-                    {
-                        // Chỉ tạo mới khi đã chọn ít nhất Kích cỡ + Màu (bỏ qua dòng "biến thể mới" để trống)
-                        if (ct.IdKichCo == Guid.Empty || ct.IdMauSac == Guid.Empty)
-                            continue;
-                        var postRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
-                        if (!postRes.IsSuccessStatusCode)
-                        {
-                            var msg = await postRes.Content.ReadAsStringAsync();
-                            ModelState.AddModelError(string.Empty, $"Lỗi tạo biến thể mới: {msg}");
-                        }
-                    }
-                    else
-                    {
-                        var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct, ApiVariantJsonOptions);
-                        if (!putRes.IsSuccessStatusCode)
-                        {
-                            var msg = await putRes.Content.ReadAsStringAsync();
-                            ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
-                        }
-                    }
-                }
-            }
+			// Cập nhật / tạo mới các biến thể còn lại
+			if (dto.ChiTietSanPhams != null)
+			{
+				foreach (var ct in dto.ChiTietSanPhams)
+				{
+					if (ct == null) continue;
+					if (ct.IdSanPham == Guid.Empty) ct.IdSanPham = dto.IDSanPham;
 
-            if (!ModelState.IsValid)
-            {
-                await LoadDropdownData();
-                return View(dto);
-            }
-            return RedirectToAction("Index");
-        }
+					if (ct.IdSanPhamChiTiet == Guid.Empty)
+					{
+						// Tạo mới
+						if (ct.IdKichCo == Guid.Empty || ct.IdMauSac == Guid.Empty) continue;
 
-        /// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
-        [HttpPost]
+						var postRes = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+						if (!postRes.IsSuccessStatusCode)
+						{
+							var msg = await postRes.Content.ReadAsStringAsync();
+							ModelState.AddModelError(string.Empty, $"Lỗi tạo biến thể mới: {msg}");
+						}
+					}
+					else
+					{
+						// Cập nhật
+						var putRes = await _http.PutAsJsonAsync($"sanphamchitiets/{ct.IdSanPhamChiTiet}", ct, ApiVariantJsonOptions);
+						if (!putRes.IsSuccessStatusCode)
+						{
+							var msg = await putRes.Content.ReadAsStringAsync();
+							ModelState.AddModelError(string.Empty, $"Lỗi cập nhật biến thể: {msg}");
+						}
+					}
+				}
+			}
+
+			if (!ModelState.IsValid)
+			{
+				await LoadDropdownData();
+				return View(dto);
+			}
+
+			return RedirectToAction("Index");
+		}
+
+		/// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
+		[HttpPost]
         public async Task<IActionResult> ToggleStatus(Guid id)
         {
             var getRes = await _http.GetAsync($"sanphams/{id}");
@@ -1114,6 +1133,89 @@ namespace QuanView.Areas.Admin.Controllers
                 NguoiCapNhat = img.NguoiCapNhat,
                 TrangThai = img.TrangThai
             }).ToList() ?? new List<QuanView.Areas.Admin.Models.AnhSanPhamDto>();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateVariantQr(Guid id)
+        {
+            var response = await _http.PostAsync($"sanphamchitiets/{id}/generate-qr", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+                return Json(new { success = false, message });
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<JsonElement>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            var qrCode = payload.TryGetProperty("qrCode", out var qrCodeProp)
+                ? qrCodeProp.GetString()
+                : null;
+            var maSpChiTiet = payload.TryGetProperty("maSPChiTiet", out var maProp)
+                ? maProp.GetString()
+                : null;
+
+            return Json(new
+            {
+                success = true,
+                qrCode,
+                maSPChiTiet = maSpChiTiet
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateSelectedVariantQrs([FromForm] List<Guid> selectedVariantIds)
+        {
+            if (selectedVariantIds == null || !selectedVariantIds.Any())
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Vui lòng chọn ít nhất một biến thể để tạo QR."
+                });
+            }
+
+            var results = new List<object>();
+
+            foreach (var id in selectedVariantIds.Distinct())
+            {
+                var response = await _http.PostAsync($"sanphamchitiets/{id}/generate-qr", null);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Không thể tạo QR cho biến thể {id}: {message}"
+                    });
+                }
+
+                var payload = await response.Content.ReadFromJsonAsync<JsonElement>(
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var qrCode = payload.TryGetProperty("qrCode", out var qrCodeProp)
+                    ? qrCodeProp.GetString()
+                    : null;
+                var maSpChiTiet = payload.TryGetProperty("maSPChiTiet", out var maProp)
+                    ? maProp.GetString()
+                    : null;
+
+                results.Add(new
+                {
+                    id,
+                    qrCode,
+                    maSPChiTiet = maSpChiTiet
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                count = results.Count,
+                results
+            });
         }
 
         [HttpPost]
