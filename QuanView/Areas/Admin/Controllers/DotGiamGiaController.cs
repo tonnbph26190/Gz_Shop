@@ -45,9 +45,9 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            model.NgayBatDau = DateTime.SpecifyKind(model.NgayBatDau, DateTimeKind.Utc);
-            model.NgayKetThuc = DateTime.SpecifyKind(model.NgayKetThuc, DateTimeKind.Utc);
-            model.NgayTao = DateTime.UtcNow;
+			model.NgayBatDau = model.NgayBatDau.ToUniversalTime();
+			model.NgayKetThuc = model.NgayKetThuc.ToUniversalTime();
+			model.NgayTao = DateTime.UtcNow;
 
 
             if (string.IsNullOrWhiteSpace(selectedIds))
@@ -117,8 +117,9 @@ namespace QuanView.Areas.Admin.Controllers
                 return NotFound();
 
             var dot = await res.Content.ReadFromJsonAsync<DotGiamGia>();
-
-            var spRes = await _httpClient.GetAsync($"DotGiamGias/{id}/SanPhams");
+			dot.NgayBatDau = dot.NgayBatDau.ToLocalTime();
+			dot.NgayKetThuc = dot.NgayKetThuc.ToLocalTime();
+			var spRes = await _httpClient.GetAsync($"DotGiamGias/{id}/SanPhams");
             if (spRes.IsSuccessStatusCode)
             {
                 var sanPhams = await spRes.Content.ReadFromJsonAsync<List<SelectListItem>>();
@@ -140,15 +141,15 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid) return View(model);
             if (id != model.IDDotGiamGia) return BadRequest();
 
-            var ngayHienTai = DateTime.Today;
+			var now = DateTime.Now;
 
-            if (model.NgayBatDau.Date < ngayHienTai)
-            {
-                ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn ngày hiện tại!");
-                return View(model);
-            }
+			if (model.NgayBatDau < now)
+			{
+				ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn hiện tại!");
+				return View(model);
+			}
 
-            if (model.NgayKetThuc < model.NgayBatDau)
+			if (model.NgayKetThuc < model.NgayBatDau)
             {
                 ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
                 return View(model);
