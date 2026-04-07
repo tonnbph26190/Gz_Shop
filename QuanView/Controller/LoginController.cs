@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -80,7 +80,7 @@ namespace QuanView.Controllers
                     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                     await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
-                    return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
+                    return RedirectToAction("Index", "ThongKe", new { area = "Admin" });
 
                 }
                 else
@@ -182,8 +182,8 @@ namespace QuanView.Controllers
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-                return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
-            }
+				return RedirectToAction("Index", "ThongKe", new { area = "Admin" });
+			}
 
             var khachHang = await _context.KhachHang
                 .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
