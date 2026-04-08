@@ -343,6 +343,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var response = await _httpClient.PostAsJsonAsync("BanHangTaiQuay/xoa-khoi-gio-hang", dto);
             var result = await response.Content.ReadAsStringAsync();
+            Response.StatusCode = (int)response.StatusCode;
             return Content(result, "application/json");
         }
 

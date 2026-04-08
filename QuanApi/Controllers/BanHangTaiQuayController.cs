@@ -500,29 +500,51 @@ namespace QuanApi.Controllers
 			string phone = (dto.CustomerPhone ?? "").Trim();
 			string email = (dto.CustomerEmail ?? "").Trim();
 
-			// ❌ TÊN
-			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
-			{
-				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
-			}
+            if (dto.Shipping)
+            {
+			    // Đơn giao hàng: bắt buộc tên + SĐT + địa chỉ
+			    if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			    {
+				    return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			    }
 
-			// ❌ SĐT
-			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
-			{
-				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
-			}
+			    if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			    {
+				    return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			    }
 
-			// ❌ EMAIL (không bắt buộc nhưng nếu có phải đúng)
+			    if (string.IsNullOrWhiteSpace(dto.Address))
+			    {
+				    return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			    }
+            }
+            else
+            {
+                // Đơn tại quầy: cho phép khách vãng lai không cần tài khoản/SĐT.
+                if (string.IsNullOrEmpty(name))
+                {
+                    name = "Khách vãng lai";
+                }
+                else if (!nameRegex.IsMatch(name))
+                {
+                    return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+                }
+
+                if (!string.IsNullOrEmpty(phone) && !phoneRegex.IsMatch(phone))
+                {
+                    return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+                }
+            }
+
+			// Email không bắt buộc, nhưng nếu nhập thì phải đúng định dạng
 			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
 			{
 				return BadRequest(new { message = "Email không đúng định dạng." });
 			}
 
-			// ❌ ĐỊA CHỈ nếu giao hàng
-			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
-			{
-				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
-			}
+            dto.CustomerName = name;
+            dto.CustomerPhone = string.IsNullOrEmpty(phone) ? null : phone;
+            dto.CustomerEmail = string.IsNullOrEmpty(email) ? null : email;
 			
             await using var tx = await _context.Database.BeginTransactionAsync();
             // Map code sang ID phương thức thanh toán
@@ -1281,11 +1303,16 @@ namespace QuanApi.Controllers
 
             if (cthd.SoLuongDatCho > 0)
             {
-                var releaseResult = await _inventoryReservationService.ReleaseAsync(
-                    new[] { new InventoryLine(dto.IDSanPhamChiTiet, cthd.SoLuongDatCho) },
-                    dto.NguoiCapNhat ?? "System");
-                if (!releaseResult.Success)
-                    return BadRequest(new { message = releaseResult.ErrorMessage ?? "Không thể nhả giữ chỗ tồn kho." });
+                // Xóa khỏi giỏ phải luôn ưu tiên thành công; dữ liệu giữ chỗ có thể lệch khi tồn kho đã thay đổi.
+                var spct = await _context.SanPhamChiTiets
+                    .FirstOrDefaultAsync(x => x.IDSanPhamChiTiet == dto.IDSanPhamChiTiet);
+
+                if (spct != null)
+                {
+                    spct.SoLuongDatCho = Math.Max(spct.SoLuongDatCho - cthd.SoLuongDatCho, 0);
+                    spct.LanCapNhatCuoi = DateTime.UtcNow;
+                    spct.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
+                }
             }
 
             // Xóa sản phẩm khỏi giỏ
@@ -1424,29 +1451,51 @@ namespace QuanApi.Controllers
 			string phone = (dto.CustomerPhone ?? "").Trim();
 			string email = (dto.CustomerEmail ?? "").Trim();
 
-			// ❌ TÊN
-			if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
-			{
-				return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
-			}
+            if (dto.Shipping)
+            {
+			    // Đơn giao hàng: bắt buộc tên + SĐT + địa chỉ
+			    if (string.IsNullOrEmpty(name) || !nameRegex.IsMatch(name))
+			    {
+				    return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+			    }
 
-			// ❌ SĐT
-			if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
-			{
-				return BadRequest(new { message = "Số điện thoại không hợp lệ." });
-			}
+			    if (string.IsNullOrEmpty(phone) || !phoneRegex.IsMatch(phone))
+			    {
+				    return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+			    }
 
-			// ❌ EMAIL
+			    if (string.IsNullOrWhiteSpace(dto.Address))
+			    {
+				    return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
+			    }
+            }
+            else
+            {
+                // Đơn tại quầy: cho phép khách vãng lai không cần tài khoản/SĐT.
+                if (string.IsNullOrEmpty(name))
+                {
+                    name = "Khách vãng lai";
+                }
+                else if (!nameRegex.IsMatch(name))
+                {
+                    return BadRequest(new { message = "Tên không hợp lệ (không chứa số)." });
+                }
+
+                if (!string.IsNullOrEmpty(phone) && !phoneRegex.IsMatch(phone))
+                {
+                    return BadRequest(new { message = "Số điện thoại không hợp lệ." });
+                }
+            }
+
+			// Email không bắt buộc, nhưng nếu nhập thì phải đúng định dạng
 			if (!string.IsNullOrEmpty(email) && !emailRegex.IsMatch(email))
 			{
 				return BadRequest(new { message = "Email không đúng định dạng." });
 			}
 
-			// ❌ ĐỊA CHỈ nếu giao hàng
-			if (dto.Shipping && string.IsNullOrWhiteSpace(dto.Address))
-			{
-				return BadRequest(new { message = "Vui lòng nhập địa chỉ giao hàng." });
-			}
+            dto.CustomerName = name;
+            dto.CustomerPhone = string.IsNullOrEmpty(phone) ? null : phone;
+            dto.CustomerEmail = string.IsNullOrEmpty(email) ? null : email;
 			// Map code sang ID phương thức thanh toán
 			Guid paymentMethodId = Guid.Empty;
             if (!string.IsNullOrEmpty(dto.PaymentMethod))
