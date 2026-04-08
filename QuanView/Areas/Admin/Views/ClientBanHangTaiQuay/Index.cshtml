@@ -806,33 +806,13 @@
     </div>
 </div>
 
-<!-- Modal chọn địa chỉ (cũ - có thể xóa nếu không dùng) -->
-<div class="modal fade" id="selectAddressModal" tabindex="-1" style="display: none;">
+<!-- Modal chọn địa chỉ legacy đã được thay thế bằng modal mới bên dưới -->
+<div class="modal fade" id="selectAddressModalLegacy" tabindex="-1" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Chọn địa chỉ giao hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddAddressModal()">
-                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
-                    </button>
-                </div>
-                <div id="addressList">
-                    <!-- Danh sách địa chỉ sẽ được load ở đây -->
-                </div>
-                <div id="noAddressMessage" style="display:none;" class="text-center py-4">
-                    <i class="bi bi-geo-alt" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="mt-2 text-muted">Khách hàng chưa có địa chỉ nào</p>
-                    <button type="button" class="btn btn-primary" onclick="openAddAddressModal()">
-                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ đầu tiên
-                    </button>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <div id="addressListLegacy"></div>
+                <div id="noAddressMessageLegacy" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -2968,8 +2948,8 @@ function toggleShipping() {
         $('#addressList').html(html);
     }
 
-    // Chọn địa chỉ
-    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+    // Chọn địa chỉ (legacy - giữ lại để tham chiếu)
+    function selectAddressLegacy(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
 
         // ✅ Lưu ID
         selectedAddressId = addressId;
@@ -3165,8 +3145,12 @@ function toggleShipping() {
             if (addresses && addresses.length > 0) {
                 addresses.forEach(addr => {
                     const isDefault = addr.laMacDinh ? '<span class="badge bg-primary">Mặc định</span>' : '';
+                    const safeTenNguoiNhan = (addr.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeSdtNguoiNhan = (addr.sdtNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeDiaChiChiTiet = (addr.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const addrId = addr.id || addr.idDiaChi || '';
                     addressHtml += `
-                                    <div class="address-card card mb-3" onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
+                                    <div class="address-card card mb-3 address-item" onclick="selectAddress(event, '${addrId}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -3199,26 +3183,36 @@ function toggleShipping() {
 
     // Chọn địa chỉ từ modal
     function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+        // Lưu ID địa chỉ đã chọn để bind về form submit
+        selectedAddressId = addressId || null;
+        $('#selectedAddressId').val(addressId || '');
 
-        // ❌ Bỏ chọn tất cả
-        $('.address-item').removeClass('border-primary').addClass('border-light');
+        // Đồng bộ trạng thái chọn giữa các loại card cũ/mới
+        $('.address-item, .address-card').removeClass('active border-primary').addClass('border-light');
+        const selectedItem = event && event.currentTarget ? event.currentTarget : null;
+        if (selectedItem) {
+            $(selectedItem).removeClass('border-light').addClass('active border-primary');
+            $(selectedItem).find('.bi-check-circle-fill').show();
+        }
 
-        // ❌ Ẩn tất cả dấu tích
-        $('.address-item .bi-check-circle-fill').hide();
+        // Đổ dữ liệu lên form giao hàng
+        $('#shipName').val(tenNguoiNhan || '');
+        $('#shipPhone').val(sdtNguoiNhan || '');
+        $('#shipAddress').val(diaChiChiTiet || '');
 
-        // ✅ Lấy đúng item đang click
-        let selectedItem = event.currentTarget;
-
-        // ✅ Set lại UI
-        $(selectedItem).removeClass('border-light').addClass('border-primary');
-        $(selectedItem).find('.bi-check-circle-fill').show();
-
-        // ✅ Đổ dữ liệu
-        $('#shipName').val(tenNguoiNhan);
-        $('#shipPhone').val(sdtNguoiNhan);
-        $('#shipAddress').val(diaChiChiTiet);
+        // Cố gắng map thêm vào ô địa chỉ chi tiết/dropdown nếu parse được
+        const parsedAddress = parseAddressString(diaChiChiTiet || '');
+        if (parsedAddress && parsedAddress.success) {
+            $('#shipDiaChiChiTiet').val(parsedAddress.chiTiet || '');
+            if (typeof populateDropdownsFromParsedAddress === 'function') {
+                populateDropdownsFromParsedAddress(parsedAddress);
+            }
+        } else {
+            $('#shipDiaChiChiTiet').val(diaChiChiTiet || '');
+        }
 
         showSuccess('Đã chọn địa chỉ giao hàng!');
+        $('#selectAddressModal').modal('hide');
     }
 
     // Xóa form địa chỉ
@@ -3906,6 +3900,10 @@ function updateShippingFeeDisplay(shippingResponse) {
                         </div>
                         <p class="mt-2">Đang tải danh sách địa chỉ...</p>
                     </div>
+                </div>
+                <div id="noAddressMessage" style="display:none;" class="text-center py-4">
+                    <i class="bi bi-geo-alt" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="mt-2 text-muted">Khách hàng chưa có địa chỉ nào</p>
                 </div>
             </div>
             <div class="modal-footer">
