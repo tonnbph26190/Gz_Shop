@@ -70,9 +70,9 @@ namespace QuanApi.Services
             var model = _mapper.Map<PhieuGiamGia>(dto);
             model.IDPhieuGiamGia = Guid.NewGuid();
             model.NgayTao = DateTime.UtcNow;
-            model.NgayBatDau = dto.NgayBatDau.ToUniversalTime();
-            model.NgayKetThuc = dto.NgayKetThuc.ToUniversalTime();
-            model.LaCongKhai = true;   // mặc định công khai
+			model.NgayBatDau = DateTime.SpecifyKind(dto.NgayBatDau, DateTimeKind.Local).ToUniversalTime();
+			model.NgayKetThuc = DateTime.SpecifyKind(dto.NgayKetThuc, DateTimeKind.Local).ToUniversalTime();
+			model.LaCongKhai = true;   // mặc định công khai
             model.SoLuong = 1;        // mỗi khách hàng 1 phiếu
 
             _context.PhieuGiamGias.Add(model);
@@ -122,18 +122,38 @@ namespace QuanApi.Services
         }
         public async Task<bool> UpdateAsync(Guid id, UpdatePayload payload, string? nguoiCapNhat)
         {
-            var model = payload.Phieu;
+			var model = payload.Phieu;
 
-            if (id != model.IDPhieuGiamGia)
-                throw new ArgumentException("ID không khớp.");
+			if (id != model.IDPhieuGiamGia)
+				throw new ArgumentException("ID không khớp.");
 
-            // Luôn set là công khai và mỗi khách hàng 1 phiếu
-            model.LaCongKhai = true;
-            model.SoLuong = 1;
+			// 🔥 Lấy entity từ DB (QUAN TRỌNG)
+			var entity = await _context.PhieuGiamGias.FindAsync(id);
+			if (entity == null) return false;
 
-            _context.Entry(model).State = EntityState.Modified;
+			// 🔥 Gán lại từng field (tránh lỗi EF + DateTime)
+			entity.MaCode = model.MaCode;
+			entity.TenPhieu = model.TenPhieu;
+			entity.GiaTriGiam = model.GiaTriGiam;
+			entity.GiaTriGiamToiDa = model.GiaTriGiamToiDa;
+			entity.DonToiThieu = model.DonToiThieu;
 
-            try
+			// 🔥 FIX LỖI TIMEZONE (QUAN TRỌNG NHẤT)
+			entity.NgayBatDau = DateTime.SpecifyKind(model.NgayBatDau, DateTimeKind.Local).ToUniversalTime();
+			entity.NgayKetThuc = DateTime.SpecifyKind(model.NgayKetThuc, DateTimeKind.Local).ToUniversalTime();
+
+			// mặc định
+			entity.LaCongKhai = true;
+			entity.SoLuong = 1;
+
+			// cập nhật info
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = nguoiCapNhat ?? "System";
+
+			// lưu DB
+			await _context.SaveChangesAsync();
+
+			try
             {
                 await _context.SaveChangesAsync();
 
@@ -210,14 +230,16 @@ namespace QuanApi.Services
                 .ToListAsync();
 
             if (customerLinks.Any())
-                _context.KhachHangPhieuGiams.RemoveRange(customerLinks);
+                //_context.KhachHangPhieuGiams.RemoveRange(customerLinks);
 
-            // Xóa phiếu giảm giá
-            _context.PhieuGiamGias.Remove(entity);
-            await _context.SaveChangesAsync();
+			// Xóa phiếu giảm giá
+			entity.TrangThai = false; // NGỪNG ÁP DỤNG
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = "System";
 
-            return true;
-        }
+			await _context.SaveChangesAsync();
+			return true;
+		}
         public async Task<bool> RemoveCustomerAsync(Guid voucherId, Guid customerId)
         {
             var link = await _context.KhachHangPhieuGiams
