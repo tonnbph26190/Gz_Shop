@@ -1,4 +1,4 @@
-﻿@model List<QuanApi.Data.PhieuGiamGia>
+@model List<QuanApi.Data.PhieuGiamGia>
 
 @{
     ViewData["Title"] = "Danh sách phiếu giảm giá";
@@ -203,7 +203,9 @@
                         {
                             @foreach (var item in Model)
                             {
-                                var now = DateTime.Now;
+                                var now = DateTime.Now.ToLocalTime(); // giờ hiện tại local
+                                var start = item.NgayBatDau.ToLocalTime(); // giờ bắt đầu local
+                                var end = item.NgayKetThuc.ToLocalTime();  // giờ kết thúc local
                                 var status = "";
                                 var statusClass = "";
 
@@ -212,12 +214,12 @@
                                     status = "Ngưng áp dụng";
                                     statusClass = "badge-secondary";
                                 }
-                                else if (now < item.NgayBatDau)
+                                else if (now < start)
                                 {
                                     status = "Sắp diễn ra";
                                     statusClass = "badge-info";
                                 }
-                                else if (now >= item.NgayBatDau && now <= item.NgayKetThuc)
+                                else if (now >= start && now <= end)
                                 {
                                     status = "Đang hoạt động";
                                     statusClass = "badge-success";

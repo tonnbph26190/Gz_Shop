@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Services;
@@ -121,9 +121,9 @@ namespace QuanView.Areas.Admin.Controllers
                 DonToiThieu = model.DonToiThieu,
                 SoLuong = model.SoLuong,
                 LaCongKhai = model.LaCongKhai,
-                NgayBatDau = model.NgayBatDau.ToUniversalTime(),
-                NgayKetThuc = model.NgayKetThuc.ToUniversalTime(),
-                TrangThai = model.TrangThai,
+				NgayBatDau = model.NgayBatDau,
+				NgayKetThuc = model.NgayKetThuc,
+				TrangThai = model.TrangThai,
                 NguoiTao = model.NguoiTao
             };
 
@@ -163,9 +163,10 @@ namespace QuanView.Areas.Admin.Controllers
 
             model.LaCongKhai = true; // Luôn là công khai
             model.SoLuong = 1; // Mỗi khách hàng 1 phiếu
-            model.NgayKetThuc = model.NgayKetThuc.ToUniversalTime();
-            model.NgayBatDau = model.NgayBatDau.ToUniversalTime();
-            model.NguoiCapNhat = User.Identity?.Name ?? "Admin";
+							   // KHÔNG làm gì với giờ nữa
+			model.NgayBatDau = model.NgayBatDau;
+			model.NgayKetThuc = model.NgayKetThuc;
+			model.NguoiCapNhat = User.Identity?.Name ?? "Admin";
             model.LanCapNhatCuoi = DateTime.UtcNow;
 
             var payload = new
