@@ -1,10 +1,8 @@
 ﻿@model QuanApi.Data.HoaDon
 @using QuanView.Areas.Admin.Models
-
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
-
-    // ==================== STATUS LOGIC ====================
+    // Danh sách trạng thái rút gọn theo quy trình mới
     var statuses = new List<OrderStatus>
     {
         new OrderStatus { Name = "Chờ xác nhận", Icon = "fas fa-clock", Time = Model.NgayTao },
@@ -14,19 +12,19 @@
         new OrderStatus { Name = "Đã giao", Icon = "fas fa-clipboard-check", Time = null }
     };
 
+    // Xác định trạng thái hiện tại và các trạng thái đã hoàn thành
     var orderCurrentStatus = Model.TrangThai ?? string.Empty;
-
-    // Normalize status
     var normalizedStatus = orderCurrentStatus switch
     {
-        "Đã lấy hàng" or "Chờ giao hàng" or "Đang giao hàng" => "Đang giao",
+        "Đã lấy hàng" => "Đang giao",
+        "Chờ giao hàng" => "Đang giao",
+        "Đang giao hàng" => "Đang giao",
         "Giao hàng thành công" => "Đã giao",
         _ => orderCurrentStatus
     };
 
     var statusOrder = new List<string> { "Chờ xác nhận", "Đã xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao" };
     var completedStatuses = new List<string>();
-
     var currentStatusIndex = statusOrder.IndexOf(normalizedStatus);
     if (currentStatusIndex >= 0)
     {
@@ -37,120 +35,214 @@
         completedStatuses = new List<string> { "Chờ xác nhận" };
     }
 
-    // Next Action
-    string nextAction = "", nextActionText = "";
-    switch (normalizedStatus)
+    // Xác định trạng thái hiện tại và button tiếp theo
+    var currentStatus = normalizedStatus;
+    string nextAction = "";
+    string nextActionText = "";
+
+    switch (currentStatus)
     {
         case "Chờ xác nhận":
-            nextAction = "XacNhanDonHang"; nextActionText = "Xác nhận đơn hàng"; break;
+            nextAction = "XacNhanDonHang";
+            nextActionText = "Xác nhận";
+            break;
         case "Đã xác nhận":
-            nextAction = "XacNhanLayHang"; nextActionText = "Xác nhận lấy hàng"; break;
+            nextAction = "XacNhanLayHang";
+            nextActionText = "Xác nhận lấy hàng";
+            break;
         case "Chờ lấy hàng":
-            nextAction = "XacNhanGiaoHang"; nextActionText = "Xác nhận giao hàng"; break;
+            nextAction = "XacNhanGiaoHang";
+            nextActionText = "Xác nhận giao hàng";
+            break;
         case "Đang giao":
-            nextAction = "XacNhanDaGiaoHang"; nextActionText = "Xác nhận đã giao"; break;
+            nextAction = "XacNhanDaGiaoHang";
+            nextActionText = "Xác nhận đã giao hàng";
+            break;
+        case "Đã giao":
+            nextAction = "";
+            nextActionText = "";
+            break;
         default:
-            nextAction = "XacNhanDonHang"; nextActionText = "Xác nhận"; break;
+            nextAction = "XacNhanDonHang";
+            nextActionText = "Xác nhận";
+            break;
     }
 
-    // Rollback Logic
+    // Logic xác định trạng thái có thể rollback và tên hiển thị
     string rollbackText = "";
     bool canRollback = false;
-    switch (normalizedStatus)
+
+    switch (currentStatus)
     {
         case "Đã xác nhận":
-            rollbackText = "Quay về chờ xác nhận"; canRollback = true; break;
+            rollbackText = "Quay về chờ xác nhận";
+            canRollback = true;
+            break;
         case "Chờ lấy hàng":
-            rollbackText = "Quay về đã xác nhận"; canRollback = true; break;
+            rollbackText = "Quay về đã xác nhận";
+            canRollback = true;
+            break;
         case "Đang giao":
-            rollbackText = "Quay về chờ lấy hàng"; canRollback = true; break;
+            rollbackText = "Quay về chờ lấy hàng";
+            canRollback = true;
+            break;
         case "Đã giao":
-            rollbackText = "Quay về đang giao"; canRollback = true; break;
+            rollbackText = "Quay về đang giao";
+            canRollback = true;
+            break;
     }
 
-    var isBankTransferOrder = (Model.PhuongThucThanhToan?.TenPhuongThuc ?? "")
+    var isBankTransferOrder = (Model.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty)
         .Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
-
-    var canShowRefundButton = !Model.BanTaiQuay && Model.TrangThai == "Đã hủy" && isBankTransferOrder;
-    var orderCompleted = normalizedStatus == "Đã giao" || Model.TrangThai == "Đã hoàn tiền";
-
-    // Calculations
-    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>())
-                 .Sum(x => x.ThanhTien);
-
+    var canShowRefundButton = !Model.BanTaiQuay && currentStatus == "Đã hủy" && isBankTransferOrder;
+    // currentStatus đã normalize "Giao hàng thành công" → "Đã giao"
+    var orderCompleted = currentStatus == "Đã giao" || currentStatus == "Đã hoàn tiền";
+    // Chỉ dùng giá trị đã lưu trên hóa đơn (không suy từ cấu hình / bảng khác)
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
+    // Tạm tính = tiền hàng gốc (tổng thành tiền dòng); Tổng cộng = TongTien sau mọi cộng/trừ (voucher, điểm, ship…)
+    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
+    var tongCong = Model.TongTien;
     var stockSnapshots = ViewBag.StockSnapshots as Dictionary<Guid, QuanView.Areas.Admin.Controllers.QuanLyDonHangController.StockSnapshotDto>;
 }
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <style>
     .timeline {
         position: relative;
-        padding: 30px 0;
+        padding: 20px 0;
     }
-    .timeline::before {
-        content: '';
-        position: absolute;
-        top: 29px;
-        left: 15%;
-        right: 15%;
-        height: 4px;
-        background: #e9ecef;
-        z-index: 1;
-    }
-    .timeline-icon {
-        width: 58px; height: 58px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        color: white; font-size: 24px;
-        background: #6c757d;
-        border: 4px solid #fff;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
-        transition: all 0.3s ease;
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            @* background: #e9ecef; *@
+            z-index: 1;
+        }
+
+    .timeline-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
         z-index: 2;
     }
-    .timeline-icon.completed { background: #28a745; }
-    .timeline-icon.current { 
-        background: #007bff; 
-        animation: pulse 2s infinite; 
+
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        font-size: 16px;
+        color: white;
+        background: #6c757d;
+        transition: all 0.3s;
     }
-    @@keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(0,123,255,0.5); }
-        70% { box-shadow: 0 0 0 15px rgba(0,123,255,0); }
-        100% { box-shadow: 0 0 0 0 rgba(0,123,255,0); }
+
+        .timeline-icon.completed {
+            background: #28a745;
+        }
+
+        .timeline-icon.pending {
+            background: #6c757d;
+        }
+
+    .timeline-content {
+        flex: 1;
     }
-    .order-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
-    .card-header {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    }
-    .info-label { font-weight: 600; color: #495057; min-width: 140px; }
-    .status-badge {
-        padding: 8px 20px;
-        border-radius: 30px;
+
+    .timeline-title {
         font-weight: 600;
-        font-size: 15px;
+        margin-bottom: 5px;
+        color: #333;
     }
-    .product-table th { background: #f8f9fa; font-weight: 600; }
+
+    .timeline-time {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .order-info {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .order-header {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .order-body {
+        padding: 20px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+        .info-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .info-value {
+        color: #333;
+    }
+
+    .status-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        background: #ffc107;
+        color: #856404;
+    }
+
+    .product-table {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+        .product-table th {
+            background: #f8f9fa;
+            border: none;
+            font-weight: 600;
+        }
+
+        .product-table td {
+            vertical-align: middle;
+            border: none;
+            border-bottom: 1px solid #eee;
+        }
 </style>
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-receipt text-primary"></i> Chi tiết đơn hàng
-        </h1>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Chi tiết đơn hàng</h1>
         <div>
             <a href="@Url.Action("Index")" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Quay lại
             </a>
-            <a href="@Url.Action("XuatHoaDon", "QuanLyDonHang", new { area = "Admin", id = Model.IDHoaDon })" 
-               target="_blank" class="btn btn-info">
+            <a href="@Url.Action("XuatHoaDon", "QuanLyDonHang", new { area = "Admin", id = Model.IDHoaDon })" target="_blank" class="btn btn-info">
                 <i class="fas fa-file-invoice"></i> Xuất hóa đơn
             </a>
         </div>
@@ -160,80 +252,82 @@
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
         </div>
     }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
         </div>
     }
 
-    <!-- Timeline -->
+    <!-- Timeline - Chỉ hiển thị cho đơn hàng online có địa chỉ giao hàng -->
     @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
     {
-        <div class="card order-card shadow mb-4">
+        <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    <i class="fas fa-tasks"></i> Tiến trình đơn hàng
-                </h6>
+                <h6 class="m-0 font-weight-bold text-primary">Tiến trình đơn hàng</h6>
             </div>
-            <div class="card-body py-5">
+            <div class="card-body">
                 @if (Model.TrangThai == "Đã hủy")
                 {
-                    <div class="alert alert-danger text-center py-4">
-                        <i class="fas fa-ban fa-3x mb-3 text-danger"></i>
-                        <h4>Đơn hàng đã bị hủy</h4>
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-ban fa-2x mb-2"></i>
+                        <h5>Đơn hàng đã bị hủy</h5>
                         @if (!string.IsNullOrEmpty(Model.LyDoHuyDon))
                         {
-                            <p class="mb-0"><strong>Lý do:</strong> @Model.LyDoHuyDon</p>
+                            <p><strong>Lý do:</strong> @Model.LyDoHuyDon</p>
                         }
                     </div>
                 }
                 else if (Model.TrangThai == "Đã hoàn tiền")
                 {
-                    <div class="alert alert-success text-center py-4">
-                        <i class="fas fa-money-check-alt fa-3x mb-3"></i>
-                        <h4>Đơn hàng đã hoàn tiền thành công</h4>
+                    <div class="alert alert-success text-center">
+                        <i class="fas fa-money-check-alt fa-2x mb-2"></i>
+                        <h5>Đơn hàng đã hoàn tiền</h5>
                     </div>
                 }
                 else
                 {
-                    <div class="d-flex justify-content-between align-items-start position-relative px-4">
+                    <div class="timeline">
                         @for (int i = 0; i < statuses.Count; i++)
                         {
                             var status = statuses[i];
                             var isCompleted = completedStatuses.Contains(status.Name);
-                            var isCurrent = status.Name == normalizedStatus;
+                            var isCurrent = status.Name == currentStatus;
+                            var displayName = status.Name;
 
-                            <div class="text-center flex-grow-1 position-relative">
-                                <div class="mx-auto timeline-icon @(isCompleted ? "completed" : isCurrent ? "current" : "")">
+                            <div class="timeline-item">
+                                <div class="timeline-icon @(isCompleted ? "completed" : "")">
                                     <i class="@status.Icon"></i>
                                 </div>
-                                <div class="mt-3">
-                                    <div class="fw-semibold @(isCurrent ? "text-primary" : isCompleted ? "text-success" : "text-muted")">
-                                        @status.Name
-                                    </div>
-                                    <small class="d-block text-muted mt-1">
+                                <div class="timeline-content">
+                                    <div class="timeline-title">@displayName</div>
+                                    <div class="timeline-time">
                                         @if (isCompleted && status.Name == "Chờ xác nhận" && status.Time.HasValue)
                                         {
-                                            @status.Time.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm")
+                                            @(status.Time.Value.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy"))
                                         }
-                                        else if (isCompleted)
+                                        else if (isCompleted && status.Name != "Chờ xác nhận")
                                         {
-                                            <span class="text-success">@(Model.LanCapNhatCuoi?.AddHours(7).ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+                                            <span class="text-success">@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy")</span>
                                         }
                                         else if (isCurrent)
                                         {
-                                            <span class="text-primary fw-medium">Đang xử lý...</span>
+                                            <span class="text-primary">Đang xử lý...</span>
                                         }
                                         else
                                         {
                                             <span class="text-muted">Chưa thực hiện</span>
                                         }
-                                    </small>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -243,53 +337,51 @@
         </div>
     }
 
+    <!-- Order Information -->
     <div class="row">
-        <!-- Left Column - Info + Products -->
         <div class="col-lg-8">
-            <!-- Order Information -->
-            <div class="card order-card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-info-circle"></i> Thông tin đơn hàng</h6>
+            <div class="order-info">
+                <div class="order-header">
+                    <h5 class="mb-0">Thông tin đơn hàng</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row g-4">
+                <div class="order-body">
+                    <div class="row">
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="info-label">Mã đơn hàng:</span>
-                                <span class="fw-semibold">@Model.MaHoaDon</span>
+                            <div class="info-row">
+                                <span class="info-label">Mã:</span>
+                                <span class="info-value">@Model.MaHoaDon</span>
                             </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="info-label">Khách hàng:</span>
-                                <span>@(Model.KhachHang?.TenKhachHang ?? "Khách lẻ")</span>
+                            <div class="info-row">
+                                <span class="info-label">Tên khách hàng:</span>
+                                <span class="info-value">@(Model.KhachHang?.TenKhachHang ?? "Khách lẻ")</span>
                             </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
+                            <div class="info-row">
                                 <span class="info-label">Trạng thái:</span>
-                                <span class="status-badge bg-warning text-dark">@normalizedStatus</span>
+                                <span class="status-badge">@currentStatus</span>
                             </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
+                            <div class="info-row">
                                 <span class="info-label">Loại đơn:</span>
-                                <span>@(Model.BanTaiQuay ? "Mua tại quầy" : "Mua online")</span>
+                                <span class="info-value">@(Model.BanTaiQuay ? "Mua tại quầy" : "Mua online")</span>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="info-label">Người nhận:</span>
-                                <span>@Model.TenNguoiNhan</span>
+                            <div class="info-row">
+                                <span class="info-label">SĐT người nhận:</span>
+                                <span class="info-value">@Model.SoDienThoaiNguoiNhan</span>
                             </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="info-label">SĐT:</span>
-                                <span>@Model.SoDienThoaiNguoiNhan</span>
+                            <div class="info-row">
+                                <span class="info-label">Địa chỉ người nhận:</span>
+                                <span class="info-value">@Model.DiaChiGiaoHang</span>
                             </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="info-label">Địa chỉ giao:</span>
-                                <span class="text-end">@Model.DiaChiGiaoHang</span>
+                            <div class="info-row">
+                                <span class="info-label">Tên người nhận:</span>
+                                <span class="info-value">@Model.TenNguoiNhan</span>
                             </div>
                         </div>
                     </div>
-
                     @if (Model.TrangThai == "Đã hủy" && !string.IsNullOrEmpty(Model.LyDoHuyDon))
                     {
-                        <div class="alert alert-danger mt-4">
+                        <div class="alert alert-danger mt-3">
                             <strong>Lý do hủy đơn:</strong> @Model.LyDoHuyDon
                         </div>
                     }
@@ -297,45 +389,63 @@
             </div>
 
             <!-- Products -->
-            <div class="card order-card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-boxes"></i> Sản phẩm trong đơn hàng</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">Sản phẩm trong đơn hàng</h6>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table product-table mb-0">
+                        <table class="table product-table">
                             <thead>
                                 <tr>
                                     <th>Sản phẩm</th>
-                                    <th class="text-end">Đơn giá</th>
-                                    <th class="text-center">Số lượng</th>
-                                    <th class="text-end">Thành tiền</th>
+                                    <th>Đơn giá</th>
+                                    <th>Số lượng</th>
+                                    <th>Thành tiền</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var chiTiet in Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>())
                                 {
-                                    var stockSnapshot = stockSnapshots?.GetValueOrDefault(chiTiet.IDChiTietHoaDon);
-                                    var soLuongTonHienTai = stockSnapshot?.SoLuongTonHienTai ?? (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
-                                    var daTruKho = new[] { "Đã xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao" }.Contains(normalizedStatus);
-                                    var soLuongTonTruoc = stockSnapshot?.SoLuongTonTruocXacNhan ?? (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                    QuanView.Areas.Admin.Controllers.QuanLyDonHangController.StockSnapshotDto? stockSnapshot = null;
+                                    if (stockSnapshots != null)
+                                    {
+                                        stockSnapshots.TryGetValue(chiTiet.IDChiTietHoaDon, out stockSnapshot);
+                                    }
+                                    var hasStockSnapshot = stockSnapshot != null;
+                                    var soLuongTonHienTai = hasStockSnapshot ? stockSnapshot.SoLuongTonHienTai : (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
+                                    var daTruKho = currentStatus == "Đã xác nhận"
+                                        || currentStatus == "Chờ lấy hàng"
+                                        || currentStatus == "Đang giao"
+                                        || currentStatus == "Đã giao";
+                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
 
                                     <tr>
                                         <td>
-                                            <div class="fw-bold">@(chiTiet.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")</div>
-                                            <div class="small text-muted">
-                                                Màu: @(chiTiet.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-") | 
-                                                Size: @(chiTiet.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-") | 
-                                                Họa tiết: @(chiTiet.SanPhamChiTiet?.HoaTiet?.TenHoaTiet ?? "Không có")
+                                            <div class="font-weight-bold">
+                                                @(chiTiet.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")
                                             </div>
-                                            <div class="small mt-2">
-                                                <span class="badge bg-light border me-1">Tồn hiện tại: @soLuongTonHienTai</span>
-                                                <span class="badge bg-light border me-1">Trước xác nhận: @soLuongTonTruoc</span>
+                                            <div class="text-muted small">
+                                                Màu sắc: @(chiTiet.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Kích cỡ: @(chiTiet.SanPhamChiTiet?.KichCo?.TenKichCo ?? "-")
+                                                &nbsp;|&nbsp;
+                                                Họa tiết: @(chiTiet.SanPhamChiTiet?.HoaTiet?.TenHoaTiet ?? "Không có")
+                                                &nbsp;|&nbsp;
+                                                Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="badge badge-light text-dark border mr-1">Tồn hiện tại: @soLuongTonHienTai</span>
+                                                <span class="badge badge-light text-dark border mr-1">Tồn trước xác nhận: @soLuongTonTruocXacNhan</span>
+                                                <span class="badge badge-light text-dark border">Tồn dự kiến sau hủy: @soLuongTonDuKienSauHuy</span>
                                             </div>
                                         </td>
-                                        <td class="text-end">@chiTiet.DonGia.ToString("N0") VNĐ</td>
-                                        <td class="text-center fw-medium">@chiTiet.SoLuong</td>
-                                        <td class="text-end fw-bold text-primary">@chiTiet.ThanhTien.ToString("N0") VNĐ</td>
+                                        <td>@chiTiet.DonGia.ToString("N0") VNĐ</td>
+                                        <td>@chiTiet.SoLuong</td>
+                                        <td class="font-weight-bold text-primary">
+                                            @chiTiet.ThanhTien.ToString("N0") VNĐ
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -345,66 +455,74 @@
             </div>
         </div>
 
-        <!-- Right Column -->
         <div class="col-lg-4">
+            <!-- Action Buttons - Chỉ hiển thị cho đơn hàng có địa chỉ giao hàng -->
             @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
             {
-                <div class="card order-card shadow mb-4">
+                <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-cogs"></i> Cập nhật trạng thái</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Cập nhật trạng thái</h6>
                     </div>
                     <div class="card-body">
-                        @if (Model.TrangThai == "Đã hủy" || Model.TrangThai == "Đã hoàn tiền")
+                        @if (Model.TrangThai == "Đã hủy")
                         {
-                            <div class="alert alert-@(Model.TrangThai == "Đã hủy" ? "danger" : "success") text-center py-4">
-                                <i class="fas fa-@(Model.TrangThai == "Đã hủy" ? "ban" : "money-check-alt") fa-2x mb-3"></i>
-                                <h5>@(Model.TrangThai == "Đã hủy" ? "Đơn hàng đã bị hủy" : "Đơn hàng đã hoàn tiền")</h5>
+                            <div class="alert alert-danger text-center">
+                                <i class="fas fa-ban"></i> Đơn hàng đã bị hủy
+                            </div>
+                        }
+                        else if (Model.TrangThai == "Đã hoàn tiền")
+                        {
+                            <div class="alert alert-success text-center">
+                                <i class="fas fa-money-check-alt"></i> Đơn hàng đã hoàn tiền
                             </div>
                         }
                         else if (!orderCompleted)
                         {
-                            <form method="post" asp-action="@nextAction" asp-route-id="@Model.IDHoaDon">
-                                <button type="submit" class="btn btn-primary btn-lg w-100 mb-2">
+                            <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
+                                <button type="submit" class="btn btn-primary btn-block">
                                     <i class="fas fa-arrow-right"></i> @nextActionText
                                 </button>
                             </form>
                         }
                         else
                         {
-                            <div class="alert alert-success text-center py-4">
-                                <i class="fas fa-check-circle fa-2x mb-3"></i>
-                                <h5>Đơn hàng đã hoàn thành!</h5>
+                            <div class="alert alert-success text-center">
+                                <i class="fas fa-check-circle"></i> Đơn hàng đã hoàn thành!
                             </div>
                         }
 
-                        @if (canRollback && !orderCompleted)
+                        @if (canRollback)
                         {
-                            <form method="post" asp-action="Rollback" asp-route-id="@Model.IDHoaDon" class="mt-2">
-                                <button type="submit" class="btn btn-warning w-100" 
-                                        onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
-                                    <i class="fas fa-undo-alt"></i> @rollbackText
-                                </button>
-                            </form>
+                            @if (!orderCompleted)
+                            {
+                                <form method="post" action="@Url.Action("Rollback", new { id = Model.IDHoaDon })" class="mt-2">
+                                    <button type="submit" class="btn btn-warning btn-block" onclick="return confirm('Bạn có chắc chắn muốn rollback trạng thái đơn hàng này?')">
+                                        <i class="fas fa-undo-alt"></i> @rollbackText
+                                    </button>
+                                </form>
+                            } 
                         }
 
                         @if (canShowRefundButton)
                         {
-                            <form method="post" asp-action="HoanTien" asp-route-id="@Model.IDHoaDon" class="mt-2">
-                                <button type="submit" class="btn btn-success w-100" 
-                                        onclick="return confirm('Bạn có chắc chắn đã hoàn tiền cho đơn hàng này?')">
+                            <form method="post" action="@Url.Action("HoanTien", new { id = Model.IDHoaDon })" class="mt-2">
+                                <button type="submit" class="btn btn-success btn-block" onclick="return confirm('Bạn có chắc chắn đã hoàn tiền cho đơn hàng này?')">
                                     <i class="fas fa-money-check-alt"></i> Hoàn tiền
                                 </button>
                             </form>
                         }
 
-                        @if (!Model.BanTaiQuay && Model.TrangThai != "Đã hủy" && Model.TrangThai != "Đã hoàn tiền" && !orderCompleted)
+                        @if (orderCompleted)
                         {
-                            var cancelMsg = Model.TrangThai == "Chờ xác nhận" 
-                                ? "Bạn có chắc chắn muốn hủy đơn online này?" 
-                                : "Hủy đơn sẽ hoàn lại số lượng sản phẩm vào kho. Xác nhận hủy?";
+                        }
+                        else if (!Model.BanTaiQuay && Model.TrangThai != "Đã hủy" && Model.TrangThai != "Đã hoàn tiền")
+                        {
+                            var cancelMessage = Model.TrangThai == "Chờ xác nhận"
+                                ? "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy."
+                                : "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy và số lượng sản phẩm sẽ được hoàn lại kho.";
 
-                            <form method="post" asp-action="HuyDonHang" asp-route-id="@Model.IDHoaDon" class="mt-3">
-                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('@cancelMsg')">
+                            <form method="post" action="@Url.Action("HuyDonHang", new { id = Model.IDHoaDon })" class="mt-2">
+                                <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('@cancelMessage')">
                                     <i class="fas fa-times-circle"></i> Hủy đơn hàng
                                 </button>
                             </form>
@@ -414,47 +532,46 @@
             }
 
             <!-- Order Summary -->
-            <div class="card order-card shadow">
+            <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-calculator"></i> Tổng quan đơn hàng
-                    </h6>
+                    <h6 class="m-0 font-weight-bold text-primary">Tổng quan đơn hàng</h6>
                 </div>
-                <div class="card-body py-3">
-                    <div class="d-flex justify-content-between py-2">
+                <div class="card-body">
+                    <div class="info-row">
                         <span class="info-label">Tạm tính (tiền hàng):</span>
-                        <span>@tamTinh.ToString("N0") VNĐ</span>
+                        <span class="info-value">@tamTinh.ToString("N0") VNĐ</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
+                    <div class="info-row">
                         <span class="info-label">Phí vận chuyển:</span>
-                        <span class="text-danger">+@((Model.PhiVanChuyen ?? 0).ToString("N0")) VNĐ</span>
+                        <span class="info-value">@(((Model.PhiVanChuyen ?? 0).ToString("N0"))) VNĐ</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
+                    <div class="info-row">
                         <span class="info-label">Giảm giá:</span>
-                        <span class="text-success">-@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
+                        <span class="info-value">@((Model.TienGiam ?? 0).ToString("N0")) VNĐ</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
+                    <div class="info-row">
                         <span class="info-label">Điểm đã dùng:</span>
-                        <span>@Model.DiemDaDung.ToString("N0") điểm</span>
+                        <span class="info-value">@Model.DiemDaDung.ToString("N0") điểm</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
-                        <span class="info-label">Giảm từ điểm:</span>
-                        <span class="text-success">-@Model.SoTienGiamTuDiem.ToString("N0") VNĐ</span>
-                    </div>
-                    <div class="border-top border-bottom py-3 my-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="info-label fw-bold fs-5">Tổng cộng:</span>
-                            <span class="fw-bold text-primary fs-5">@Model.TongTien.ToString("N0") VNĐ</span>
+                    @if (Model.DiemCong > 0)
+                    {
+                        <div class="info-row">
+                            <span class="info-label">Quy đổi từ điểm:</span>
+                            <span class="info-value text-success">-@soTienGiamTuDiem.ToString("N0") VNĐ (1 điểm = @Model.TyLeQuyDoiDiem.ToString("N0") VNĐ)</span>
                         </div>
+                    }
+                    <div class="info-row">
+                        <span class="info-label font-weight-bold">Tổng cộng:</span>
+                        <span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
                     </div>
-
-                    <div class="d-flex justify-content-between py-2">
+                    <hr>
+                    <div class="info-row">
                         <span class="info-label">Phương thức thanh toán:</span>
-                        <span>@(Model.PhuongThucThanhToan?.TenPhuongThuc ?? "N/A")</span>
+                        <span class="info-value">@(Model.PhuongThucThanhToan?.TenPhuongThuc ?? "N/A")</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
+                    <div class="info-row">
                         <span class="info-label">Ngày tạo:</span>
-                        <span>@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="info-value">@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
                     </div>
                 </div>
             </div>
