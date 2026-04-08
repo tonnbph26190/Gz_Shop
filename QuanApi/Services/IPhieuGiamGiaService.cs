@@ -230,14 +230,16 @@ namespace QuanApi.Services
                 .ToListAsync();
 
             if (customerLinks.Any())
-                _context.KhachHangPhieuGiams.RemoveRange(customerLinks);
+                //_context.KhachHangPhieuGiams.RemoveRange(customerLinks);
 
-            // Xóa phiếu giảm giá
-            _context.PhieuGiamGias.Remove(entity);
-            await _context.SaveChangesAsync();
+			// Xóa phiếu giảm giá
+			entity.TrangThai = false; // NGỪNG ÁP DỤNG
+			entity.LanCapNhatCuoi = DateTime.UtcNow;
+			entity.NguoiCapNhat = "System";
 
-            return true;
-        }
+			await _context.SaveChangesAsync();
+			return true;
+		}
         public async Task<bool> RemoveCustomerAsync(Guid voucherId, Guid customerId)
         {
             var link = await _context.KhachHangPhieuGiams
