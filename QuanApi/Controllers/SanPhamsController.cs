@@ -730,5 +730,40 @@ namespace QuanApi.Controllers
                 anhSanPham.LaAnhChinh
             });
         }
-    }
-}
+		[HttpGet("thong-ke")]
+		public async Task<IActionResult> GetThongKeSanPham()
+		{
+			try
+			{
+				// ✅ Chỉ tính sản phẩm active
+				var tongSanPham = await _context.SanPhams
+					.Where(x => x.TrangThai)
+					.CountAsync();
+
+				// ✅ Biến thể của sản phẩm active
+				var tongBienThe = await _context.SanPhamChiTiets
+					.Where(x => x.SanPham.TrangThai)
+					.CountAsync();
+
+				// ✅ Sản phẩm hết hàng (chỉ tính active)
+				var sanPhamHetHang = await _context.SanPhamChiTiets
+					.Where(x => x.SanPham.TrangThai)
+					.GroupBy(x => x.IDSanPham)
+					.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
+					.CountAsync();
+
+				return Ok(new
+				{
+					tongSanPham,
+					tongBienThe,
+					sanPhamHetHang
+				});
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+	}
+	}
+
