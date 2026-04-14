@@ -267,6 +267,9 @@ keyframes blink-warning {
 .card-stats {
     transition: all 0.3s ease;
 }
+.card-stats {
+    height: 100%;
+}
     </style>
 }
 
@@ -374,17 +377,16 @@ keyframes blink-warning {
 </div>
 <div class="row mb-3">
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-left-primary shadow card-stats" data-type="all">
             <div class="card-body">
                 <h6 class="text-primary">Tổng sản phẩm</h6>
-                <!-- ✅ FIX Ở ĐÂY -->
                 <h4>@Model.TotalItems</h4>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-left-success shadow card-stats" data-type="variant">
             <div class="card-body">
                 <h6 class="text-success">Tổng biến thể</h6>
@@ -393,7 +395,7 @@ keyframes blink-warning {
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-left-danger shadow card-stats" data-type="out">
             <div class="card-body">
                 <h6 class="text-danger">Sản phẩm hết hàng</h6>
@@ -401,6 +403,17 @@ keyframes blink-warning {
             </div>
         </div>
     </div>
+
+   <div class="col-md-3">
+    <a href="/Admin/SanPham?filter=variant-out" style="text-decoration:none">
+        <div class="card border-left-warning shadow card-stats">
+            <div class="card-body">
+                <h6 class="text-warning">Biến thể hết hàng</h6>
+                <h4>@ViewBag.BienTheHetHang</h4>
+            </div>
+        </div>
+    </a>
+</div>
 
 </div>
 <!-- Thông tin kết quả -->

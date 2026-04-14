@@ -163,20 +163,19 @@ namespace QuanView.Areas.Admin.Controllers
 				var thongKeJson = await thongKeRes.Content.ReadAsStringAsync();
 				var thongKe = JsonSerializer.Deserialize<JsonElement>(thongKeJson);
 
-				// ❌ bỏ dòng này
-				// ViewBag.TongSanPham = thongKe.GetProperty("tongSanPham").GetInt32();
-
-				// ✅ dùng cùng nguồn với bảng
-				ViewBag.TongSanPham = total;
-
+				ViewBag.TongSanPham = thongKe.GetProperty("tongSanPham").GetInt32();
 				ViewBag.TongBienThe = thongKe.GetProperty("tongBienThe").GetInt32();
 				ViewBag.SanPhamHetHang = thongKe.GetProperty("sanPhamHetHang").GetInt32();
+
+				// 🔥 NEW
+				ViewBag.BienTheHetHang = thongKe.GetProperty("bienTheHetHang").GetInt32();
 			}
 			else
 			{
-				ViewBag.TongSanPham = total;
+				ViewBag.TongSanPham = 0;
 				ViewBag.TongBienThe = 0;
 				ViewBag.SanPhamHetHang = 0;
+				ViewBag.BienTheHetHang = 0; // 👈 thêm
 			}
 
 			return View(viewModel);
