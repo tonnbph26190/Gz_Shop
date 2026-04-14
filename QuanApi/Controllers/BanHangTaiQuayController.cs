@@ -252,7 +252,8 @@ namespace QuanApi.Controllers
                 .Select(x => new
                 {
                     id = x.IDSanPhamChiTiet,
-                    name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
+					ma = x.SanPham.MaSanPham,
+					name = x.SanPham.TenSanPham + $" [{x.KichCo.TenKichCo} - {x.MauSac.TenMauSac}" + (x.HoaTiet != null ? $" - {x.HoaTiet.TenHoaTiet}" : "") + "]",
                     qrCode = x.QRCode,
                     // Giá gốc
                     originalPrice = x.GiaBan,
@@ -1372,7 +1373,9 @@ namespace QuanApi.Controllers
                 sanPhams = gioHang.ChiTietGioHangs.Select(ct => new
                 {
                     id = ct.IDSanPhamChiTiet,
-                    ten = ct.SanPhamChiTiet.SanPham.TenSanPham,
+					ma = ct.SanPhamChiTiet.SanPham.MaSanPham,
+
+					ten = ct.SanPhamChiTiet.SanPham.TenSanPham,
                     kichCo = ct.SanPhamChiTiet.KichCo.TenKichCo,
                     mauSac = ct.SanPhamChiTiet.MauSac.TenMauSac,
                     hoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? ct.SanPhamChiTiet.HoaTiet.TenHoaTiet : null,

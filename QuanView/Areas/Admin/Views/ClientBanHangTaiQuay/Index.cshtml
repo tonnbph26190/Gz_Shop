@@ -550,12 +550,37 @@
 <div class="modal fade" id="productModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Chọn sản phẩm</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="productList">
-                <!-- Danh sách sản phẩm sẽ được load ở đây -->
+            
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-3">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAll">
+                            Chọn sản phẩm
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDiscount">
+                            Chọn sản phẩm giảm giá
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Nội dung -->
+                <div class="tab-content">
+
+                    <!-- Tab tất cả -->
+                    <div class="tab-pane fade show active" id="tabAll">
+                        <div id="productList"></div>
+                    </div>
+
+                    <!-- Tab giảm giá -->
+                    <div class="tab-pane fade" id="tabDiscount">
+                        <div id="discountProductList"></div>
+                    </div>
+
+                </div>
+
             </div>
         </div>
     </div>
@@ -996,6 +1021,13 @@
     function loadProducts(callback) {
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-san-pham', function (data) {
             products = data;
+
+            // Tab tất cả
+            renderProductList(products, "productList");
+
+            // Tab giảm giá
+            renderDiscountProducts();
+
             if (callback) callback();
         });
     }
@@ -1702,6 +1734,7 @@
                     <tr>
                         <td class="text-center">${i + 1}</td>
                         <td class="text-center"><img src="${p.anh}" width="60" class="rounded"/></td>
+                            <td class="text-center fw-bold">${p.ma}</td>
                         <td>
                             <div class="fw-bold">${p.ten}</div>
                             <small class="text-muted">
@@ -1712,7 +1745,7 @@
                         </td>
                         <td class="text-end">
                             ${p.giaGoc && p.giaGoc > p.giaBan ? `<div><small class="text-muted text-decoration-line-through">${p.giaGoc.toLocaleString()} VND</small></div>` : ''}
-                            <div class="fw-bold text-danger">${p.giaBan.toLocaleString()} VND</div>
+                                <div class="fw-bold text-danger">${(p.giaBan || 0).toLocaleString()} VND</div>
                         </td>
                         <td class="text-center">
                             <div class="input-group input-group-sm" style="width: 120px;">
@@ -1742,6 +1775,7 @@
                             <tr>
                                 <th class="text-center" style="width: 60px;">STT</th>
                                 <th class="text-center" style="width: 80px;">Ảnh</th>
+                                <th style="width: 120px;">Mã</th>
                                 <th style="width: 300px;">Sản phẩm</th>
                                 <th class="text-end" style="width: 120px;">Giá bán</th>
                                 <th class="text-center" style="width: 140px;">Số lượng</th>
@@ -1959,14 +1993,15 @@
         let html = `<table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Họa tiết</th><th>Tồn kho</th><th>Hành động</th>
+                                <th>Ảnh</th><th>Mã SP</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Họa tiết</th><th>Tồn kho</th><th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${availableProducts.map(p => `
                             <tr>
-                                <td><img src="${p.img}" width="60"/></td>
-                                <td>${p.name}</td>
+                                    <td><img src="${p.img}" width="60"/></td>
+            <td><b style="color:#0d6efd">${p.ma}</b></td>
+    <td>${p.name}</td>
                                 <td>
             ${(p.originalPrice && p.originalPrice > p.price)
                 ? `<span style="display:inline-flex;align-items:center;gap:8px;">
@@ -1996,7 +2031,101 @@
                 </table>`;
         $('#productList').html(html);
     }
+    function renderDiscountProducts() {
 
+        const discountProducts = products.filter(p =>
+            p.originalPrice && p.price && p.originalPrice > p.price
+        );
+
+        if (discountProducts.length === 0) {
+            document.getElementById("discountProductList").innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    Không có sản phẩm giảm giá
+                </div>
+            `;
+            return;
+        }
+
+        renderProductList(discountProducts, "discountProductList");
+    }
+    function renderProductList(list, elementId) {
+        let html = `<table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Ảnh</th>
+                    <th>Mã SP</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Giá bán</th>
+                    <th>Kích cỡ</th>
+                    <th>Màu sắc</th>
+                    <th>Họa tiết</th>
+                    <th>Tồn kho</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        list.forEach(p => {
+
+            // tránh lỗi undefined
+            const price = p.price || 0;
+            const originalPrice = p.originalPrice || 0;
+
+            html += `
+            <tr>
+                <td>
+                    <img src="${p.img || ''}" width="50"/>
+                </td>
+                     
+                    <td><b style="color:#0d6efd">${p.ma || ''}</b></td>
+
+                <td>
+                    ${p.name || ''}
+                    ${originalPrice > price ? '<span class="badge bg-danger ms-1">SALE</span>' : ''}
+                </td>
+
+                <td>
+                    ${(originalPrice > price)
+                    ? `
+                            <div class="text-muted text-decoration-line-through">
+                                ${originalPrice.toLocaleString()} VND
+                            </div>
+                            <div class="text-danger fw-bold">
+                                ${price.toLocaleString()} VND
+                            </div>
+                          `
+                    : `<div class="fw-bold">${price.toLocaleString()} VND</div>`
+                }
+                </td>
+
+                <td>${p.size || p.kichCo || ''}</td>
+                <td>${p.color || p.mauSac || ''}</td>
+                <td>${p.pattern || p.hoaTiet || ''}</td>
+
+                <td>
+                    <span class="badge bg-dark">
+                        ${p.stock || 0}
+                    </span>
+                </td>
+
+                               <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-success btn-sm" onclick="addProductQuick('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Thêm nhanh (SL: 1)">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Chọn số lượng">
+                                                <i class="bi bi-123"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+            </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+
+        document.getElementById(elementId).innerHTML = html;
+    }
     // Thêm sản phẩm vào giỏ hàng với tùy chọn số lượng
     function addProductToGioHang(productId, quantity = null) {
         if (gioHangs.length === 0) {
