@@ -222,6 +222,54 @@
         .variant-section table td, .variant-section table th {
             vertical-align: middle !important;
         }
+		.card-stats {
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 12px;
+}
+
+/* Hover nhẹ */
+.card-stats:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Khi click */
+.card-stats.active {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    border: 2px solid #007bff;
+}
+.card-stats:active {
+    transform: scale(0.97);
+}
+.border-left-primary {
+    border-left: 5px solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 5px solid #1cc88a !important;
+}
+
+.border-left-danger {
+    border-left: 5px solid #e74a3b !important;
+}
+keyframes blink-warning {
+    0% { box-shadow: 0 0 0px rgba(255,0,0,0); }
+    50% { box-shadow: 0 0 20px rgba(255,0,0,0.8); }
+    100% { box-shadow: 0 0 0px rgba(255,0,0,0); }
+}
+
+.low-stock {
+    animation: blink-warning 1.2s infinite;
+    border: 2px solid red !important;
+}
+.card-stats {
+    transition: all 0.3s ease;
+}
+.card-stats {
+    height: 100%;
+}
     </style>
 }
 
@@ -327,7 +375,47 @@
         </form>
     </div>
 </div>
+<div class="row mb-3">
 
+    <div class="col-md-3">
+        <div class="card border-left-primary shadow card-stats" data-type="all">
+            <div class="card-body">
+                <h6 class="text-primary">Tổng sản phẩm</h6>
+                <h4>@Model.TotalItems</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-left-success shadow card-stats" data-type="variant">
+            <div class="card-body">
+                <h6 class="text-success">Tổng biến thể</h6>
+                <h4>@ViewBag.TongBienThe</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-left-danger shadow card-stats" data-type="out">
+            <div class="card-body">
+                <h6 class="text-danger">Sản phẩm hết hàng</h6>
+                <h4>@ViewBag.SanPhamHetHang</h4>
+            </div>
+        </div>
+    </div>
+
+   <div class="col-md-3">
+    <a href="/Admin/SanPham?filter=variant-out" style="text-decoration:none">
+        <div class="card border-left-warning shadow card-stats">
+            <div class="card-body">
+                <h6 class="text-warning">Biến thể hết hàng</h6>
+                <h4>@ViewBag.BienTheHetHang</h4>
+            </div>
+        </div>
+    </a>
+</div>
+
+</div>
 <!-- Thông tin kết quả -->
 <div class="result-info">
     <div class="row">
@@ -358,12 +446,15 @@
     {
         @foreach (var item in Model.SanPhams)
         {
+
+             var totalQty = item.ChiTietSanPhams?.Sum(x => x.SoLuongKhaDung) ?? 0;
+
             var targetId = "collapse-variant-" + item.IDSanPham;
             var activeVariants = item.ChiTietSanPhams?
                 .Where(ct => ct.TrangThai)
                 .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
 
-            <div class="product-group">
+           <div class="product-group" data-qty="@totalQty">
                 <!-- Sản phẩm chính -->
                 <table class="table table-bordered table-hover mb-0 text-center">
                     <thead class="table-secondary">
@@ -1067,6 +1158,55 @@
 			var modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
 			modal.show();
 		}
+		
+    const cards = document.querySelectorAll('.card-stats');
+
+    cards.forEach(card => {
+        card.addEventListener('click', function () {
+
+            // Remove active của tất cả
+            cards.forEach(c => c.classList.remove('active'));
+
+            // Thêm active cho cái vừa click
+            this.classList.add('active');
+
+        });
+    });
+	document.querySelectorAll('.card-stats').forEach(card => {
+    card.addEventListener('click', function () {
+
+        // Active UI
+        document.querySelectorAll('.card-stats')
+            .forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+
+        const type = this.dataset.type;
+        const products = document.querySelectorAll('.product-group');
+
+        products.forEach(p => {
+            const qty = parseInt(p.dataset.qty || 0);
+
+            if (type === 'all') {
+                p.style.display = 'block';
+            }
+            else if (type === 'out') {
+                // hết hàng
+                p.style.display = qty === 0 ? 'block' : 'none';
+            }
+            else if (type === 'variant') {
+                // còn hàng
+                p.style.display = qty > 0 ? 'block' : 'none';
+            }
+        });
+    });
+});
+document.querySelectorAll('.product-group').forEach(p => {
+    const qty = parseInt(p.dataset.qty || 0);
+
+    if (qty > 0 && qty <= 5) {
+        p.classList.add('low-stock'); // sắp hết
+    }
+});
 
     </script>
 }

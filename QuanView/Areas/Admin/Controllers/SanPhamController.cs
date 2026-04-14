@@ -156,8 +156,29 @@ namespace QuanView.Areas.Admin.Controllers
                 DateTo = dateTo,
 				SortDate = sortDate
 			};
+			// Gọi API thống kê
+			var thongKeRes = await _http.GetAsync("sanphams/thong-ke");
+			if (thongKeRes.IsSuccessStatusCode)
+			{
+				var thongKeJson = await thongKeRes.Content.ReadAsStringAsync();
+				var thongKe = JsonSerializer.Deserialize<JsonElement>(thongKeJson);
 
-            return View(viewModel);
+				ViewBag.TongSanPham = thongKe.GetProperty("tongSanPham").GetInt32();
+				ViewBag.TongBienThe = thongKe.GetProperty("tongBienThe").GetInt32();
+				ViewBag.SanPhamHetHang = thongKe.GetProperty("sanPhamHetHang").GetInt32();
+
+				// 🔥 NEW
+				ViewBag.BienTheHetHang = thongKe.GetProperty("bienTheHetHang").GetInt32();
+			}
+			else
+			{
+				ViewBag.TongSanPham = 0;
+				ViewBag.TongBienThe = 0;
+				ViewBag.SanPhamHetHang = 0;
+				ViewBag.BienTheHetHang = 0; // 👈 thêm
+			}
+
+			return View(viewModel);
         }
 
         public async Task<IActionResult> Create()
