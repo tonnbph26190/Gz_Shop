@@ -548,7 +548,7 @@
 
 <!-- Modal chọn sản phẩm -->
 <div class="modal fade" id="productModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog" style="max-width: 70%;">
         <div class="modal-content">
             
 
@@ -570,11 +570,31 @@
                 <div class="tab-content">
 
                     <!-- Tab tất cả -->
-                    <div class="tab-pane fade show active" id="tabAll">
-                        <div id="productList"></div>
+                 <div class="tab-pane fade show active" id="tabAll">
+
+                    <!-- FILTER -->
+                    <div class="d-flex gap-2 mb-3 align-items-center">
+
+                        <input type="text" id="searchName"
+                               class="form-control"
+                               placeholder="Tìm theo tên hoặc mã..."
+                               style="max-width: 400px; margin-left:20px;" />
+
+                        <button class="btn btn-primary" onclick="applyFilter()">
+                            Áp dụng
+                        </button>
+
+                        <button class="btn btn-outline-secondary" onclick="resetFilter()">
+                            Xóa lọc
+                        </button>
+
                     </div>
 
-                    <!-- Tab giảm giá -->
+                    <!-- QUAN TRỌNG: PHẢI CÓ -->
+                    <div id="productList"></div>
+
+                </div> 
+                 <!-- Tab giảm giá -->
                     <div class="tab-pane fade" id="tabDiscount">
                         <div id="discountProductList"></div>
                     </div>
@@ -1717,7 +1737,10 @@
             showError('Lỗi khi tải thông tin giỏ hàng!');
         });
     }
-
+    function resetFilter() {
+        document.getElementById("searchName").value = "";
+        renderProductModal(); // load lại toàn bộ sản phẩm
+    }
     // Render danh sách sản phẩm trong giỏ hàng
     function renderGioHang() {
         let gh = gioHangs[currentGioHang];
@@ -1934,6 +1957,17 @@
         });
     }
 
+    function applyFilter() {
+        const keyword = document.getElementById("searchName").value.toLowerCase();
+
+        const filtered = products.filter(p =>
+            (p.name && p.name.toLowerCase().includes(keyword)) ||
+            (p.ma && p.ma.toLowerCase().includes(keyword))
+        );
+
+        renderProductList(filtered, "productList");
+    }
+    
     // Xóa sản phẩm khỏi giỏ hàng
     function removeProduct(productId) {
         const gh = gioHangs[currentGioHang];
@@ -2846,7 +2880,13 @@ function toggleShipping() {
         }
         return false; // Không khôi phục được
     }
+    $('#productModal').on('shown.bs.modal', function () {
+        const input = document.getElementById("searchName");
 
+        if (input) {
+            input.addEventListener("input", applyFilter);
+        }
+    });
     // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function () {
         $('#shippingSwitch').prop('checked', false);
