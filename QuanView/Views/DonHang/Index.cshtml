@@ -280,12 +280,12 @@
                                             <i class="bi bi-eye"></i>
                                         </a>
 
-                                        @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
+                                        @* @if (hoaDon.TrangThai == "Chờ xác nhận" || hoaDon.TrangThai == "Đã xác nhận" || hoaDon.TrangThai == "Chờ lấy hàng")
                                         {
                                             <button class="action-btn btn-cancel" onclick="cancelOrder('@hoaDon.IDHoaDon')">
                                                 <i class="bi bi-x"></i>
                                             </button>
-                                        }
+                                        } *@
 
                                         @if (hoaDon.TrangThai == "Đang giao hàng")
                                         {

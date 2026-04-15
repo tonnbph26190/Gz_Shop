@@ -6,6 +6,20 @@
 }
 
 <style>
+    .apply-qty-btn, .apply-price-btn {
+        width: 32px;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    .input-group-sm .form-control {
+        height: 38px;
+    }
+
+    .input-group .btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
     /* Slider animation for the variant selection checkboxes */
     .variant-selector .form-check {
         display: flex;
@@ -450,8 +464,8 @@
             elements.tbody.querySelectorAll('tr').forEach(row => {
                 const key = `${row.dataset.kc}-${row.dataset.ms}-${row.dataset.ht}`;
                 existingData[key] = {
-                    qty: row.querySelector('.quantity-input').value,
-                    price: row.querySelector('.price-input').value
+                    qty: row.querySelector('.quantity-input')?.value || 0,
+                    price: row.querySelector('.price-input')?.value || 0
                 };
             });
 
@@ -463,18 +477,113 @@
                     hoaTiets.forEach(ht => {
                         const key = `${kc.id}-${ms.id}-${ht.id}`;
                         const old = existingData[key] || { qty: 0, price: 0 };
-                        
+
                         const row = `
                             <tr data-kc="${kc.id}" data-ms="${ms.id}" data-ht="${ht.id}">
                                 <td><input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kc.id}" />${kc.text}</td>
                                 <td><input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${ms.id}" />${ms.text}</td>
                                 <td><input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${ht.id}" />${ht.text}</td>
-                                <td><input name="ChiTietSanPhams[${index}].SoLuong" type="number" class="form-control quantity-input" min="0" value="${old.qty}" /></td>
-                                <td><input name="ChiTietSanPhams[${index}].GiaBan" type="number" class="form-control price-input" min="0" value="${old.price}" /></td>
+                                
+                                <!-- Số lượng với nút Apply All -->
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input name="ChiTietSanPhams[${index}].SoLuong" 
+                                            type="number" 
+                                            class="form-control quantity-input" 
+                                            min="0" 
+                                            value="${old.qty}" />
+                                        <button type="button" 
+                                                class="btn btn-outline-success apply-qty-btn"
+                                                title="Áp dụng số lượng này cho tất cả biến thể">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </div>
+                                </td>
+
+                                <!-- Giá bán với nút Apply All -->
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input name="ChiTietSanPhams[${index}].GiaBan" 
+                                            type="number" 
+                                            class="form-control price-input" 
+                                            min="0" 
+                                            value="${old.price}" />
+                                        <button type="button" 
+                                                class="btn btn-outline-primary apply-price-btn"
+                                                title="Áp dụng giá này cho tất cả biến thể">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </div>
+                                </td>
+
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Xóa dòng">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
                             </tr>`;
+
                         elements.tbody.insertAdjacentHTML("beforeend", row);
                         index++;
                     });
+                });
+            });
+
+            // Attach event listeners for Apply buttons AFTER generating the table
+            attachApplyButtons();
+        }
+
+        function attachApplyButtons() {
+            // Apply Quantity to all
+            document.querySelectorAll('.apply-qty-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const input = this.previousElementSibling; // the quantity input
+                    const value = parseFloat(input.value) || 0;
+
+                    if (value < 0) {
+                        alert("Số lượng không được âm!");
+                        return;
+                    }
+
+                    const allQtyInputs = document.querySelectorAll('.quantity-input');
+                    allQtyInputs.forEach(qtyInput => {
+                        qtyInput.value = value;
+                    });
+
+                    // Visual feedback
+                    btn.style.backgroundColor = '#d4edda';
+                    setTimeout(() => btn.style.backgroundColor = '', 300);
+                });
+            });
+
+            // Apply Price to all
+            document.querySelectorAll('.apply-price-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const input = this.previousElementSibling; // the price input
+                    const value = parseFloat(input.value) || 0;
+
+                    if (value <= 0) {
+                        alert("Giá bán phải lớn hơn 0!");
+                        return;
+                    }
+
+                    const allPriceInputs = document.querySelectorAll('.price-input');
+                    allPriceInputs.forEach(priceInput => {
+                        priceInput.value = value;
+                    });
+
+                    // Visual feedback
+                    btn.style.backgroundColor = '#cce5ff';
+                    setTimeout(() => btn.style.backgroundColor = '', 300);
+                });
+            });
+
+            // Optional: Add remove row functionality
+            document.querySelectorAll('.remove-row-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    if (confirm("Xóa biến thể này?")) {
+                        this.closest('tr').remove();
+                    }
                 });
             });
         }
@@ -671,7 +780,7 @@
         });
     </script>
 
-    <style>
+    <style lang="sass">
     .spinner {
         display: inline-block;
         width: 1rem;
@@ -687,7 +796,6 @@
         to { transform: rotate(360deg); }
     }
 
-    /* Custom Modal Header Styling */
     .modal-header.bg-primary {
         background-color: #0d6efd !important;
         color: white;
@@ -710,7 +818,6 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
-        /* Container: ensure flex and remove default Bootstrap padding */
         .variant-selector .form-check.form-switch {
             display: flex;
             align-items: center;
@@ -718,24 +825,22 @@
             margin-bottom: 12px;
         }
 
-        /* The Slider: remove absolute positioning and fixed margins */
         .variant-selector .form-switch .form-check-input {
-            position: static; /* This is the "magic" line that prevents overlapping */
+            position: static;
             width: 2.5rem;   
             height: 1.25rem;
-            margin-top: 0;    /* Resets Bootstrap's alignment offset */
+            margin-top: 0;  
             margin-left: 0;
             margin-right: 12px;
-            flex-shrink: 0;   /* Prevents the slider from squishing if text is long */
+            flex-shrink: 0;  
             cursor: pointer;
         }
 
-        /* The Label: ensure it sits nicely next to the slider */
         .variant-selector .form-check-label {
             margin-bottom: 0;
             cursor: pointer;
             user-select: none;
-            line-height: 1.25rem; /* Matches the height of the slider for perfect centering */
+            line-height: 1.25rem;
         }
     </style>
 
