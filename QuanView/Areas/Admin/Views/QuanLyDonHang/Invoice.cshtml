@@ -6,9 +6,9 @@
     var discount = Model.TienGiam ?? 0m;
     var usedPoints = Model.DiemDaDung;
     var pointRate = Model.TyLeQuyDoiDiem;
-    var pointDiscount = Model.SoTienGiamTuDiem > 0 ? Model.SoTienGiamTuDiem : (usedPoints * pointRate);
+    var pointDiscount = Model.SoTienGiamTuDiem;
     var ship = Model.PhiVanChuyen ?? 0m;
-    var grand = subTotal - discount + ship;
+    var grand = Model.TongTien;
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -142,7 +142,7 @@
             <div class="col-6">
                 <table class="table totals">
                     <tr>
-                        <td class="text-right">Tạm tính</td>
+                        <td class="text-right">Tạm tính (tiền hàng)</td>
                         <td class="text-right" style="width: 180px;">@subTotal.ToString("N0") VNĐ</td>
                     </tr>
                     <tr>
@@ -165,7 +165,7 @@
                         <td class="text-right">@ship.ToString("N0") VNĐ</td>
                     </tr>
                     <tr>
-                        <td class="text-right font-weight-bold">Tổng cộng</td>
+                        <td class="text-right font-weight-bold">Tổng tiền thanh toán</td>
                         <td class="text-right font-weight-bold text-primary">@grand.ToString("N0") VNĐ</td>
                     </tr>
                 </table>

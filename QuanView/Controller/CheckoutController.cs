@@ -119,6 +119,7 @@ namespace QuanView.Controllers
                                 TenSanPham = spct.TenSanPham
                             },
                             GiaBan = spct.price,
+                            SoLuong = spct.SoLuongKhaDung,
                             AnhSanPhams = new List<AnhSanPham>
                             {
                                 new AnhSanPham
@@ -161,6 +162,21 @@ namespace QuanView.Controllers
                 // Cập nhật số điện thoại đã được format
                 checkoutData.SoDienThoaiNguoiNhan = formattedPhone;
 
+                if (string.IsNullOrWhiteSpace(checkoutData.DiaChiGiaoHang))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán" });
+                }
+
+                var hasProvince = !string.IsNullOrWhiteSpace(checkoutData.Province);
+                var hasDistrict = !string.IsNullOrWhiteSpace(checkoutData.District);
+                var hasDistrictId = checkoutData.ToDistrictId.GetValueOrDefault() > 0;
+                var hasWardCode = !string.IsNullOrWhiteSpace(checkoutData.ToWardCode);
+
+                if (!hasProvince || !hasDistrict || !hasDistrictId || !hasWardCode)
+                {
+                    return Json(new { success = false, message = "Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã trước khi thanh toán" });
+                }
+
                 // Lấy giỏ hàng từ session
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
 
@@ -178,6 +194,14 @@ namespace QuanView.Controllers
                         var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
                         if (spct != null && spct.price > 0)
                         {
+                            if (item.SoLuong > spct.SoLuongKhaDung)
+                            {
+                                return Json(new
+                                {
+                                    success = false,
+                                    message = $"Sản phẩm {spct.TenSanPham} chỉ còn {spct.SoLuongKhaDung} sản phẩm khả dụng."
+                                });
+                            }
                             item.GiaBan = spct.price;
                         }
                         else
@@ -772,6 +796,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham
@@ -812,6 +837,7 @@ namespace QuanView.Controllers
                                         TenSanPham = spct.TenSanPham
                                     },
                                     GiaBan = spct.price,
+                                    SoLuong = spct.SoLuongKhaDung,
                                     AnhSanPhams = new List<AnhSanPham>
                                     {
                                         new AnhSanPham

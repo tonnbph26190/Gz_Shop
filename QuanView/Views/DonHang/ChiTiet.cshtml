@@ -1,13 +1,13 @@
-@model QuanApi.Data.HoaDon
+﻿@model QuanApi.Data.HoaDon
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
-    var tamTinh = Math.Max(0, (Model.TongTien + (Model.TienGiam ?? 0) - (Model.PhiVanChuyen ?? 0)));
-    var soTienGiamTuDiem = Model.SoTienGiamTuDiem > 0
-        ? Model.SoTienGiamTuDiem
-        : (Model.DiemDaDung * Model.TyLeQuyDoiDiem);
+    var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
+    var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
 <style>
     :root {
@@ -217,7 +217,7 @@
                     <div class="">
                         <div class="summary-box">
                             <div class="summary-row text-muted">
-                                <span>Tạm tính</span>
+                                <span>Tạm tính (tiền hàng)</span>
                                 <span>@tamTinh.ToString("N0") ₫</span>
                             </div>
                             @if (Model.TienGiam > 0)
@@ -248,7 +248,7 @@
                                 <span>@(Model.PhiVanChuyen > 0 ? Model.PhiVanChuyen?.ToString("N0") + " ₫" : "Miễn phí")</span>
                             </div>
                             <div class="summary-row summary-total">
-                                <span>Tổng cộng</span>
+                                <span>Tổng tiền thanh toán</span>
                                 <span>@Model.TongTien.ToString("N0") ₫</span>
                             </div>
                         </div>
@@ -277,6 +277,7 @@
                     </div>
                 </div>
             </div>
+            
         </div>
     }
 </div>

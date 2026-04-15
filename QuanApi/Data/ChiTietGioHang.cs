@@ -21,6 +21,7 @@ namespace QuanApi.Data
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn 0.")]
         public int SoLuong { get; set; }
+        public int SoLuongDatCho { get; set; } = 0;
         public decimal GiaBan { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;

@@ -164,8 +164,8 @@ namespace QuanView.Controllers
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-                return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
-            }
+				return RedirectToAction("Index", "ThongKe", new { area = "Admin" });
+			}
 
             var khachHang = await _context.KhachHang
                 .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);

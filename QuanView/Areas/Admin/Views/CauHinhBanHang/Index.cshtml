@@ -254,7 +254,7 @@
                             <label>Trạng thái</label>
                             <select id="tierStatus" class="form-control" name="TrangThai">
                                 <option value="true">Hoạt động</option>
-                                <option value="false">Ngừng</option>
+                               @*  <option value="false">Ngừng</option> *@
                             </select>
                         </div>
                     </div>
@@ -291,7 +291,7 @@
         document.getElementById('tierFrom').value = fromPoint || 0;
         document.getElementById('tierTo').value = (toPoint === null || toPoint === undefined || toPoint === "null") ? '' : toPoint;
         document.getElementById('tierDiscount').value = discount || 0;
-        document.getElementById('tierStatus').value = active === 'true' ? 'true' : 'false';
+       document.getElementById('tierStatus').value = 'true';
         
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }

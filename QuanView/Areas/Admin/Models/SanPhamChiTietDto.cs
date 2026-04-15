@@ -8,6 +8,9 @@ namespace QuanView.Areas.Admin.Models
         public Guid IdMauSac { get; set; }
         public Guid IdHoaTiet { get; set; }
         public int SoLuong { get; set; }
+        public int SoLuongVatLy { get; set; }
+        public int SoLuongDatCho { get; set; }
+        public int SoLuongKhaDung { get; set; }
         public decimal GiaBan { get; set; }
         public decimal originalPrice { get; set; }
         public decimal price { get; set; }
