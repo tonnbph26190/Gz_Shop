@@ -883,29 +883,29 @@ namespace QuanView.Controllers
             }
         }
 
-		[HttpGet]
-		public async Task<IActionResult> GetCustomerVouchers(decimal tongTien)
-		{
-			try
-			{
-				var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cong-khai?tongTien={tongTien}");
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerVouchers(decimal tongTien)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cong-khai?tongTien={tongTien}");
 
-				if (response.IsSuccessStatusCode)
-				{
-					var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
-					return Json(vouchers);
-				}
+                if (response.IsSuccessStatusCode)
+                {
+                    var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
+                    return Json(vouchers);
+                }
 
-				return Json(new List<object>());
-			}
-			catch
-			{
-				return Json(new List<object>());
-			}
-		}
+                return Json(new List<object>());
+            }
+            catch
+            {
+                return Json(new List<object>());
+            }
+        }
 
 
-		[HttpGet]
+        [HttpGet]
         public async Task<IActionResult> GetCustomerPersonalVouchers()
         {
             try
@@ -1012,6 +1012,11 @@ namespace QuanView.Controllers
                     {
                         // Parse CheckoutDto và tạo lại format cho API HoaDons
                         var checkoutInfo = JsonSerializer.Deserialize<CheckoutDto>(orderInfoJson);
+                        if (checkoutInfo == null)
+                        {
+                            TempData["ErrorMessage"] = "Không đọc được dữ liệu đơn hàng tạm. Vui lòng thử lại.";
+                            return RedirectToAction("Index", "GioHang");
+                        }
 
                         // Lấy chi tiết hóa đơn từ giỏ hàng
                         var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
@@ -1033,6 +1038,7 @@ namespace QuanView.Controllers
                             tongTien = checkoutInfo.TongTien,
                             tienGiam = checkoutInfo.TienGiam,
                             usePoint = checkoutInfo.UsePoint,
+                            xacNhanNgaySauThanhToan = true,
                             requestedUsedPoints = checkoutInfo.RequestedUsedPoints,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
                             phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
