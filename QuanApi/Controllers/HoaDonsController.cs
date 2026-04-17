@@ -303,6 +303,7 @@ namespace QuanApi.Controllers
 		public async Task<ActionResult<HoaDon>> CreateHoaDon([FromBody] CreateHoaDonDto dto)
 		{
 			var reservationLines = new List<InventoryLine>();
+			var shouldAutoConfirmAfterPayment = dto.XacNhanNgaySauThanhToan;
 			try
 			{
 				await using var tx = await _context.Database.BeginTransactionAsync();
@@ -436,6 +437,19 @@ namespace QuanApi.Controllers
 				if (!reserveResult.Success)
 				{
 					return BadRequest(reserveResult.ErrorMessage ?? "Không thể giữ chỗ tồn kho cho đơn hàng.");
+				}
+
+				if (shouldAutoConfirmAfterPayment)
+				{
+					var commitResult = await _inventoryReservationService.CommitReservedAsync(reservationLines, "VNPay");
+					if (!commitResult.Success)
+					{
+						return BadRequest(commitResult.ErrorMessage ?? "Không thể trừ tồn kho cho đơn đã thanh toán VNPay.");
+					}
+
+					hoaDon.TrangThai = "Đã xác nhận";
+					hoaDon.DaDatChoTonKho = false;
+					hoaDon.DaTruTonKho = true;
 				}
 
 				await _context.SaveChangesAsync();
@@ -919,6 +933,7 @@ namespace QuanApi.Controllers
 		public decimal? PhiVanChuyen { get; set; }
 		public bool PhiVanChuyenDaGiam { get; set; }
 		public bool UsePoint { get; set; }
+		public bool XacNhanNgaySauThanhToan { get; set; } = false;
 		public bool BanTaiQuay { get; set; } = false;
 		public string TenNguoiNhan { get; set; }
 		public string SoDienThoaiNguoiNhan { get; set; }
