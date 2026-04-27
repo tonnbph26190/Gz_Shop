@@ -208,13 +208,17 @@ namespace QuanView.Areas.Admin.Controllers
         }
 		[HttpGet]
 		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
-		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid? customerId, decimal tongTien)
 		{
 			try
 			{
-				var response = await _httpClient.GetAsync(
-					$"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?customerId={customerId}&tongTien={tongTien.ToString(CultureInfo.InvariantCulture)}"
-				);
+				var query = $"BanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang?tongTien={tongTien.ToString(CultureInfo.InvariantCulture)}";
+				if (customerId.HasValue)
+				{
+					query += $"&customerId={customerId.Value}";
+				}
+
+				var response = await _httpClient.GetAsync(query);
 
 				if (response.IsSuccessStatusCode)
 				{

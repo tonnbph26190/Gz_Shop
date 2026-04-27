@@ -921,7 +921,7 @@ namespace QuanView.Controllers
                 var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cua-khach-hang/{customerId}");
                 if (response.IsSuccessStatusCode)
                 {
-                    var vouchers = await response.Content.ReadFromJsonAsync<object>();
+                    var vouchers = await response.Content.ReadFromJsonAsync<List<object>>();
                     return Ok(vouchers);
                 }
                 return StatusCode((int)response.StatusCode, "Lỗi khi lấy danh sách phiếu giảm giá của khách hàng");

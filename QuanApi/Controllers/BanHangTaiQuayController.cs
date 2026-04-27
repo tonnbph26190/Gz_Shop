@@ -644,34 +644,58 @@ namespace QuanApi.Controllers
             // 3. Áp dụng mã giảm giá nếu có
             if (!string.IsNullOrEmpty(dto.DiscountCode))
             {
-                var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
+                var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode);
                 if (discount != null)
                 {
+                    var now = DateTime.UtcNow;
+                    if (!discount.TrangThai || discount.NgayBatDau > now || discount.NgayKetThuc < now)
+                    {
+                        return BadRequest(new { message = "Mã giảm giá không còn hiệu lực." });
+                    }
+
+                    if (discount.DonToiThieu.HasValue && hoaDon.TongTien < discount.DonToiThieu.Value)
+                    {
+                        return BadRequest(new { message = $"Đơn hàng chưa đạt giá trị tối thiểu {discount.DonToiThieu.Value:n0}." });
+                    }
+
                     // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
                     if (dto.CustomerId.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == dto.CustomerId.Value &&
-                                                     x.TrangThai &&
-                                                     x.SoLuongDaSuDung < x.SoLuong);
+                                                     x.IDKhachHang == dto.CustomerId.Value);
 
-                        if (customerVoucher != null)
+                        if (customerVoucher == null)
                         {
-                            // Tăng số lượng đã sử dụng
-                            customerVoucher.SoLuongDaSuDung++;
-                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
-                            customerVoucher.NguoiCapNhat = "System";
-
-                            // Nếu đã sử dụng hết, vô hiệu hóa
-                            if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                            customerVoucher = new KhachHangPhieuGiam
                             {
-                                customerVoucher.TrangThai = false;
-                            }
+                                IDKhachHangPhieuGiam = Guid.NewGuid(),
+                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{dto.CustomerId.Value.ToString().Substring(0, 8)}",
+                                IDKhachHang = dto.CustomerId.Value,
+                                IDPhieuGiamGia = discount.IDPhieuGiamGia,
+                                SoLuong = discount.SoLuong > 0 ? discount.SoLuong : (short)1,
+                                SoLuongDaSuDung = 0,
+                                NgayTao = DateTime.UtcNow,
+                                NguoiTao = "System",
+                                TrangThai = true
+                            };
 
+                            _context.KhachHangPhieuGiams.Add(customerVoucher);
                         }
-                        else
+
+                        if (!customerVoucher.TrangThai || customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
                             return BadRequest(new { message = "Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết." });
+
+                        // Tăng số lượng đã sử dụng
+                        customerVoucher.SoLuongDaSuDung++;
+                        customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                        customerVoucher.NguoiCapNhat = "System";
+
+                        // Nếu đã sử dụng hết, vô hiệu hóa
+                        if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                        {
+                            customerVoucher.TrangThai = false;
+                        }
                     }
 
                     // Tính số tiền giảm theo phần trăm
@@ -752,31 +776,53 @@ namespace QuanApi.Controllers
         }
 
 		[HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
-		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid customerId, decimal tongTien)
+		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid? customerId, decimal tongTien)
 		{
 			var now = DateTime.UtcNow;
+			IQueryable<KhachHangPhieuGiam> customerVoucherQuery = _context.KhachHangPhieuGiams
+				.AsNoTracking()
+				.Where(x => false);
 
-			var raw = await _context.KhachHangPhieuGiams
-				.Include(k => k.PhieuGiamGia)
-				.Where(x => x.IDKhachHang == customerId &&
-							x.TrangThai &&
-							x.PhieuGiamGia.TrangThai &&
-							x.SoLuongDaSuDung < x.SoLuong &&
-							x.PhieuGiamGia.NgayBatDau <= now &&
-							x.PhieuGiamGia.NgayKetThuc >= now)
+			if (customerId.HasValue)
+			{
+				customerVoucherQuery = _context.KhachHangPhieuGiams
+					.AsNoTracking()
+					.Where(x => x.IDKhachHang == customerId.Value);
+			}
+
+			var raw = await _context.PhieuGiamGias
+				.AsNoTracking()
+				.Where(p => p.TrangThai &&
+							p.NgayBatDau <= now &&
+							p.NgayKetThuc >= now)
+				.GroupJoin(
+					customerVoucherQuery,
+					p => p.IDPhieuGiamGia,
+					x => x.IDPhieuGiamGia,
+					(p, links) => new
+					{
+						Voucher = p,
+						CustomerVoucher = links.FirstOrDefault()
+					})
+				.Where(x => x.Voucher.LaCongKhai ||
+							(x.CustomerVoucher != null &&
+							 x.CustomerVoucher.TrangThai &&
+							 x.CustomerVoucher.SoLuongDaSuDung < x.CustomerVoucher.SoLuong))
 				.Select(x => new
 				{
-					id = x.IDPhieuGiamGia,
-					maCode = x.PhieuGiamGia.MaCode,
-					tenPhieu = x.PhieuGiamGia.TenPhieu,
-					giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
-					giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
-					donToiThieu = x.PhieuGiamGia.DonToiThieu,
-					ngayBatDau = x.PhieuGiamGia.NgayBatDau,
-					ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
-					soLuong = x.SoLuong,
-					soLuongDaSuDung = x.SoLuongDaSuDung,
-					soLuongConLai = x.SoLuong - x.SoLuongDaSuDung
+					id = x.Voucher.IDPhieuGiamGia,
+					maCode = x.Voucher.MaCode,
+					tenPhieu = x.Voucher.TenPhieu,
+					giaTriGiam = x.Voucher.GiaTriGiam,
+					giaTriGiamToiDa = x.Voucher.GiaTriGiamToiDa,
+					donToiThieu = x.Voucher.DonToiThieu,
+					ngayBatDau = x.Voucher.NgayBatDau,
+					ngayKetThuc = x.Voucher.NgayKetThuc,
+					soLuong = x.CustomerVoucher != null ? x.CustomerVoucher.SoLuong : x.Voucher.SoLuong,
+					soLuongDaSuDung = x.CustomerVoucher != null ? x.CustomerVoucher.SoLuongDaSuDung : 0,
+					soLuongConLai = x.CustomerVoucher != null
+						? x.CustomerVoucher.SoLuong - x.CustomerVoucher.SoLuongDaSuDung
+						: x.Voucher.SoLuong
 				})
 				.ToListAsync(); // 🔥 lấy về trước
 
@@ -1585,34 +1631,59 @@ namespace QuanApi.Controllers
             // Áp dụng mã giảm giá nếu có
             if (!string.IsNullOrEmpty(dto.DiscountCode))
             {
-                var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode && x.TrangThai);
+                var discount = await _context.PhieuGiamGias.FirstOrDefaultAsync(x => x.MaCode == dto.DiscountCode);
                 if (discount != null)
                 {
+                    var now = DateTime.UtcNow;
+                    if (!discount.TrangThai || discount.NgayBatDau > now || discount.NgayKetThuc < now)
+                    {
+                        return BadRequest(new { message = "Mã giảm giá không còn hiệu lực." });
+                    }
+
+                    if (discount.DonToiThieu.HasValue && hoaDon.TongTien < discount.DonToiThieu.Value)
+                    {
+                        return BadRequest(new { message = $"Đơn hàng chưa đạt giá trị tối thiểu {discount.DonToiThieu.Value:n0}." });
+                    }
+
                     // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không (dùng registeredCustomerId: khớp khách đang chọn trên POS)
                     if (registeredCustomerId.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == registeredCustomerId.Value &&
-                                                     x.TrangThai &&
-                                                     x.SoLuongDaSuDung < x.SoLuong);
+                                                     x.IDKhachHang == registeredCustomerId.Value);
 
-                        if (customerVoucher != null)
+                        if (customerVoucher == null)
                         {
-                            // Tăng số lượng đã sử dụng
-                            customerVoucher.SoLuongDaSuDung++;
-                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
-                            customerVoucher.NguoiCapNhat = "System";
-
-                            // Nếu đã sử dụng hết, vô hiệu hóa
-                            if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                            customerVoucher = new KhachHangPhieuGiam
                             {
-                                customerVoucher.TrangThai = false;
-                            }
+                                IDKhachHangPhieuGiam = Guid.NewGuid(),
+                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{registeredCustomerId.Value.ToString().Substring(0, 8)}",
+                                IDKhachHang = registeredCustomerId.Value,
+                                IDPhieuGiamGia = discount.IDPhieuGiamGia,
+                                SoLuong = discount.SoLuong > 0 ? discount.SoLuong : (short)1,
+                                SoLuongDaSuDung = 0,
+                                NgayTao = DateTime.UtcNow,
+                                NguoiTao = "System",
+                                TrangThai = true
+                            };
+
+                            _context.KhachHangPhieuGiams.Add(customerVoucher);
                         }
-                        else
+
+                        if (!customerVoucher.TrangThai || customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
                         {
                             return BadRequest(new { message = "Phiếu giảm giá không hợp lệ hoặc đã được sử dụng hết." });
+                        }
+
+                        // Tăng số lượng đã sử dụng
+                        customerVoucher.SoLuongDaSuDung++;
+                        customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                        customerVoucher.NguoiCapNhat = "System";
+
+                        // Nếu đã sử dụng hết, vô hiệu hóa
+                        if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
+                        {
+                            customerVoucher.TrangThai = false;
                         }
                     }
 

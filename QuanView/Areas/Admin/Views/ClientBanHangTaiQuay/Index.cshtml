@@ -754,7 +754,7 @@
                 </div>
                 <div id="noVoucherMessage" style="display:none;" class="text-center py-4">
                     <i class="bi bi-ticket-perforated" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="mt-2 text-muted">Khách hàng chưa có phiếu giảm giá nào</p>
+                    <p class="mt-2 text-muted">Không có phiếu giảm giá phù hợp cho đơn hiện tại</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1279,14 +1279,6 @@
 
     // Áp dụng mã giảm giá
     function applyDiscount() {
-        if (!selectedCustomer) {
-            showWarning('Vui lòng chọn khách hàng trước khi chọn phiếu giảm giá!');
-            return;
-        }
-        if (selectedCustomer.isGuest) {
-            showWarning('Khách vãng lai không có phiếu giảm giá. Chọn khách có tài khoản để dùng phiếu.');
-            return;
-        }
         loadCustomerDiscountVouchers();
     }
     function tinhTienGiam(v, tongTien) {
@@ -1333,8 +1325,6 @@
     }
 
     function loadCustomerDiscountVouchers() {
-
-        if (!selectedCustomer || selectedCustomer.isGuest || !selectedCustomer.id) return;
         if (isLoadingVoucher) return;
 
         let gh = gioHangs[currentGioHang];
@@ -1346,10 +1336,12 @@
 
         isLoadingVoucher = true;
 
-        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', {
-            customerId: selectedCustomer.id,
-            tongTien: tongTien
-        }, function (data) {
+        const query = { tongTien: tongTien };
+        if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
+            query.customerId = selectedCustomer.id;
+        }
+
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', query, function (data) {
 
             console.log("Voucher response:", data);
 

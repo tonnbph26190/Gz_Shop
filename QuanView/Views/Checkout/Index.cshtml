@@ -495,9 +495,9 @@
 							<h6><i class="fa fa-info-circle"></i> Thông báo</h6>
 							<div class="alert alert-info">
 								<i class="fa fa-user-lock"></i>
-								<strong>Vui lòng đăng nhập để sử dụng phiếu giảm giá!</strong>
+								<strong>Khách vãng lai cũng có thể sử dụng phiếu giảm giá công khai.</strong>
 								<br>
-								<small>Khách hàng vãng lai vẫn có thể mua hàng bình thường.</small>
+								<small>Đăng nhập vẫn giúp bạn dùng thêm các ưu đãi cá nhân hóa.</small>
 								<br>
 								<a href="/Login/Index" class="btn btn-primary btn-sm mt-2">
 									<i class="fa fa-sign-in"></i> Đăng nhập ngay
@@ -970,14 +970,10 @@
 				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
 				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
 
-				// Nếu chưa đăng nhập, không cho phép sử dụng phiếu giảm giá
-				if (!isLoggedIn && discountValue > 0) {
-					showNotification('Khách hàng vãng lai không thể sử dụng phiếu giảm giá!', 'warning');
-					return;
-				}
-
 				// Tạo dữ liệu đặt hàng
 				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
+				const voucherInput = document.getElementById('maGiamGia').value || '';
+				const voucherCode = voucherInput.split(' - ')[0].trim() || null;
 				const checkoutData = {
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
@@ -996,7 +992,7 @@
 				toDistrictId: getSelectedToDistrictId(),
 				toWardCode: getSelectedToWardCode(),
 				weight: calculateShippingWeight(),
-				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
+				maGiamGia: voucherCode
 				};
 
 			console.log('checkoutData being sent:', checkoutData);
@@ -1748,16 +1744,6 @@
 
 			// Load thông tin giảm giá từ sessionStorage
 			function loadDiscountFromSession() {
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				if (!isLoggedIn) {
-					console.log('User not logged in, skipping discount loading');
-					discountValue = 0;
-					return;
-				}
-
 				const discountInfo = sessionStorage.getItem('appliedDiscount');
 				if (discountInfo) {
 					try {
@@ -1780,15 +1766,6 @@
 
 			// Mở modal chọn phiếu giảm giá
 			function openVoucherModal() {
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				if (!isLoggedIn) {
-					showNotification('Vui lòng đăng nhập để sử dụng phiếu giảm giá!', 'warning');
-					return;
-				}
-
 				console.log('Opening voucher modal...');
 
 				// Hiển thị loading state
@@ -2101,13 +2078,9 @@
 				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
 				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
 
-				// Nếu chưa đăng nhập, không cho phép sử dụng phiếu giảm giá
-				if (!isLoggedIn && discountValue > 0) {
-					showNotification('Khách hàng vãng lai không thể sử dụng phiếu giảm giá!', 'warning');
-					return;
-				}
-
 				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
+				const voucherInput = document.getElementById('maGiamGia').value || '';
+				const voucherCode = voucherInput.split(' - ')[0].trim() || null;
 
 				// Tạo dữ liệu đặt hàng
 				const checkoutData = {
@@ -2128,7 +2101,7 @@
 				toDistrictId: getSelectedToDistrictId(),
 				toWardCode: getSelectedToWardCode(),
 				weight: calculateShippingWeight(),
-				maGiamGia: isLoggedIn ? (document.getElementById('maGiamGia').value || null) : null
+				maGiamGia: voucherCode
 				};
 
 			console.log('checkoutData being sent:', checkoutData);
@@ -2815,16 +2788,6 @@
 
 			// Load thông tin giảm giá từ sessionStorage
 			function loadDiscountFromSession() {
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				if (!isLoggedIn) {
-					console.log('User not logged in, skipping discount loading');
-					discountValue = 0;
-					return;
-				}
-
 				const discountInfo = sessionStorage.getItem('appliedDiscount');
 				if (discountInfo) {
 					try {
@@ -2891,20 +2854,13 @@
 
 			// Mở modal chọn phiếu giảm giá
 			function openVoucherModal() {
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
 				// Thêm kiểm tra số lượng sản phẩm trong giỏ hàng
 				let hasProductsInCart = false;
 				if (gioHangData && gioHangData.chiTietGioHangs && gioHangData.chiTietGioHangs.length > 0) {
 					hasProductsInCart = true;
 				}
 
-				if (!isLoggedIn) {
-					showNotification('Vui lòng đăng nhập để sử dụng phiếu giảm giá!', 'warning');
-					return;
-				} else if (!hasProductsInCart) {
+				if (!hasProductsInCart) {
 					showNotification('Giỏ hàng của bạn hiện đang trống. Vui lòng thêm sản phẩm vào giỏ hàng trước khi sử dụng phiếu giảm giá.', 'warning');
 					return;
 				}
@@ -3099,16 +3055,6 @@
 		}
 				// Chọn phiếu giảm giá
 			function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				if (!isLoggedIn) {
-					showNotification('Vui lòng đăng nhập để sử dụng phiếu giảm giá!', 'warning');
-					$('#discountVoucherModal').modal('hide');
-					return;
-				}
-
 				// Tính tổng tiền từ giỏ hàng
 				let total = 0;
 
@@ -3558,34 +3504,9 @@
 
 			// Kiểm tra trạng thái đăng nhập và hiển thị section phiếu giảm giá phù hợp
 			function checkLoginStatusAndShowCouponSection() {
-				// Kiểm tra xem user có đăng nhập không bằng cách kiểm tra claims
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				console.log('Login status check:', {
-					customerIdClaim: customerIdClaim,
-					isLoggedIn: isLoggedIn
-				});
-
-				if (isLoggedIn) {
-					// User đã đăng nhập - hiển thị section phiếu giảm giá
-					$('#couponSection').show();
-					$('#loginRequiredSection').hide();
-					console.log('User is logged in, showing coupon section');
-				} else {
-					// User chưa đăng nhập - hiển thị thông báo yêu cầu đăng nhập
-					$('#couponSection').hide();
-					$('#loginRequiredSection').show();
-					console.log('User is not logged in, showing login required message');
-
-					// Xóa phiếu giảm giá nếu có trong sessionStorage
-					sessionStorage.removeItem('appliedDiscount');
-					discountValue = 0;
-
-					// Cập nhật UI để xóa phiếu giảm giá
-					$('#maGiamGia').val('');
-					updatePaymentInfo();
-				}
+				// Phiếu giảm giá công khai luôn hiển thị cho cả khách chưa đăng nhập.
+				$('#couponSection').show();
+				$('#loginRequiredSection').hide();
 			}
 
 			// Test session cart để debug

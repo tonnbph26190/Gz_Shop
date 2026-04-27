@@ -78,41 +78,6 @@ namespace QuanApi.Services
             _context.PhieuGiamGias.Add(model);
             await _context.SaveChangesAsync();
 
-            // Phân phối cho tất cả khách hàng đang hoạt động
-            var allCustomers = await _context.KhachHang
-                .Where(kh => kh.TrangThai)
-                .ToListAsync();
-
-            var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
-
-            foreach (var customer in allCustomers)
-            {
-                var khachHangPhieuGiam = new KhachHangPhieuGiam
-                {
-                    IDKhachHangPhieuGiam = Guid.NewGuid(),
-                    MaKhachHangPhieuGiam =
-                        $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
-
-                    IDKhachHang = customer.IDKhachHang,
-                    IDPhieuGiamGia = model.IDPhieuGiamGia,
-                    SoLuong = 1,
-                    SoLuongDaSuDung = 0,
-                    NgayTao = DateTime.UtcNow,
-                    NguoiTao = nguoiTao ?? "System",
-                    LanCapNhatCuoi = null,
-                    NguoiCapNhat = null,
-                    TrangThai = true
-                };
-
-                khachHangPhieuGiamList.Add(khachHangPhieuGiam);
-            }
-
-            if (khachHangPhieuGiamList.Any())
-            {
-                _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
-                await _context.SaveChangesAsync();
-            }
-
             return model;
         }
         public class UpdatePayload
@@ -150,60 +115,9 @@ namespace QuanApi.Services
 			entity.LanCapNhatCuoi = DateTime.UtcNow;
 			entity.NguoiCapNhat = nguoiCapNhat ?? "System";
 
-			// lưu DB
-			await _context.SaveChangesAsync();
-
 			try
             {
                 await _context.SaveChangesAsync();
-
-                // Lấy tất cả khách hàng đang hoạt động
-                var allCustomers = await _context.KhachHang
-                    .Where(kh => kh.TrangThai)
-                    .ToListAsync();
-
-                // Xóa toàn bộ liên kết hiện tại
-                var existingLinks = await _context.KhachHangPhieuGiams
-                    .Where(x => x.IDPhieuGiamGia == id)
-                    .ToListAsync();
-
-                if (existingLinks.Any())
-                {
-                    _context.KhachHangPhieuGiams.RemoveRange(existingLinks);
-                    await _context.SaveChangesAsync();
-                }
-
-                // Tạo lại liên kết cho tất cả khách hàng
-                var khachHangPhieuGiamList = new List<KhachHangPhieuGiam>();
-
-                foreach (var customer in allCustomers)
-                {
-                    var khachHangPhieuGiam = new KhachHangPhieuGiam
-                    {
-                        IDKhachHangPhieuGiam = Guid.NewGuid(),
-                        MaKhachHangPhieuGiam =
-                            $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customer.IDKhachHang.ToString().Substring(0, 8)}",
-
-                        IDKhachHang = customer.IDKhachHang,
-                        IDPhieuGiamGia = id,
-                        SoLuong = 1,
-                        SoLuongDaSuDung = 0,
-                        NgayTao = DateTime.UtcNow,
-                        NguoiTao = nguoiCapNhat ?? "System",
-                        LanCapNhatCuoi = null,
-                        NguoiCapNhat = null,
-                        TrangThai = true
-                    };
-
-                    khachHangPhieuGiamList.Add(khachHangPhieuGiam);
-                }
-
-                if (khachHangPhieuGiamList.Any())
-                {
-                    _context.KhachHangPhieuGiams.AddRange(khachHangPhieuGiamList);
-                    await _context.SaveChangesAsync();
-                }
-
                 return true;
             }
             catch (DbUpdateConcurrencyException)
@@ -343,29 +257,47 @@ namespace QuanApi.Services
     Guid customerId,
     string? nguoiCapNhat)
         {
+            var voucher = await _context.PhieuGiamGias
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == voucherId);
+
+            if (voucher == null)
+                return (false, "Không tìm thấy phiếu giảm giá.", null);
+
+            var now = DateTime.UtcNow;
+            if (!voucher.TrangThai || voucher.NgayBatDau > now || voucher.NgayKetThuc < now)
+                return (false, "Phiếu giảm giá này không còn hiệu lực.", null);
+
             var customerVoucher = await _context.KhachHangPhieuGiams
                 .Include(x => x.KhachHang)
-                .Include(x => x.PhieuGiamGia)
                 .FirstOrDefaultAsync(x =>
                     x.IDPhieuGiamGia == voucherId &&
                     x.IDKhachHang == customerId);
 
             if (customerVoucher == null)
-                return (false, "Không tìm thấy phiếu giảm giá cho khách hàng này.", null);
+            {
+                customerVoucher = new KhachHangPhieuGiam
+                {
+                    IDKhachHangPhieuGiam = Guid.NewGuid(),
+                    MaKhachHangPhieuGiam =
+                        $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customerId.ToString().Substring(0, 8)}",
+                    IDKhachHang = customerId,
+                    IDPhieuGiamGia = voucherId,
+                    SoLuong = voucher.SoLuong > 0 ? voucher.SoLuong : 1,
+                    SoLuongDaSuDung = 0,
+                    NgayTao = now,
+                    NguoiTao = nguoiCapNhat ?? "System",
+                    TrangThai = true
+                };
+
+                _context.KhachHangPhieuGiams.Add(customerVoucher);
+            }
 
             if (!customerVoucher.TrangThai)
                 return (false, "Phiếu giảm giá này đã bị vô hiệu hóa.", null);
 
             if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
                 return (false, "Phiếu giảm giá này đã được sử dụng hết.", null);
-
-            var now = DateTime.UtcNow;
-
-            if (now < customerVoucher.PhieuGiamGia.NgayBatDau ||
-                now > customerVoucher.PhieuGiamGia.NgayKetThuc)
-            {
-                return (false, "Phiếu giảm giá này không còn hiệu lực.", null);
-            }
 
             customerVoucher.SoLuongDaSuDung++;
             customerVoucher.LanCapNhatCuoi = now;
@@ -382,10 +314,10 @@ namespace QuanApi.Services
             {
                 soLuongConLai = customerVoucher.SoLuong - customerVoucher.SoLuongDaSuDung,
                 daSuDungHet = customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong,
-                isPublic = customerVoucher.PhieuGiamGia.LaCongKhai
+                isPublic = voucher.LaCongKhai
             };
 
-            var message = customerVoucher.PhieuGiamGia.LaCongKhai
+            var message = voucher.LaCongKhai
                 ? "Sử dụng phiếu giảm giá công khai thành công."
                 : "Sử dụng phiếu giảm giá thành công.";
 

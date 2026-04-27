@@ -103,30 +103,45 @@ namespace QuanApi.Services
 
             var now = DateTime.UtcNow;
 
-            return await _context.KhachHangPhieuGiams
-                .Include(k => k.PhieuGiamGia)
-                .Where(x => x.IDKhachHang == customerId &&
-                            x.TrangThai &&
-                            x.PhieuGiamGia.TrangThai &&
-                            x.SoLuongDaSuDung < x.SoLuong &&
-                            x.PhieuGiamGia.NgayBatDau <= now &&
-                            x.PhieuGiamGia.NgayKetThuc >= now)
+            var vouchers = await _context.PhieuGiamGias
+                .AsNoTracking()
+                .Where(p => p.TrangThai &&
+                            p.NgayBatDau <= now &&
+                            p.NgayKetThuc >= now)
+                .GroupJoin(
+                    _context.KhachHangPhieuGiams.AsNoTracking()
+                        .Where(x => x.IDKhachHang == customerId),
+                    p => p.IDPhieuGiamGia,
+                    x => x.IDPhieuGiamGia,
+                    (p, links) => new
+                    {
+                        Voucher = p,
+                        CustomerVoucher = links.FirstOrDefault()
+                    })
+                .Where(x => x.Voucher.LaCongKhai ||
+                            (x.CustomerVoucher != null &&
+                             x.CustomerVoucher.TrangThai &&
+                             x.CustomerVoucher.SoLuongDaSuDung < x.CustomerVoucher.SoLuong))
                 .Select(x => new
                 {
-                    id = x.IDPhieuGiamGia,
-                    maCode = x.PhieuGiamGia.MaCode,
-                    tenPhieu = x.PhieuGiamGia.TenPhieu,
-                    giaTriGiam = x.PhieuGiamGia.GiaTriGiam,
-                    giaTriGiamToiDa = x.PhieuGiamGia.GiaTriGiamToiDa,
-                    donToiThieu = x.PhieuGiamGia.DonToiThieu,
-                    ngayBatDau = x.PhieuGiamGia.NgayBatDau,
-                    ngayKetThuc = x.PhieuGiamGia.NgayKetThuc,
-                    soLuong = x.SoLuong,
-                    soLuongDaSuDung = x.SoLuongDaSuDung,
-                    soLuongConLai = x.SoLuong - x.SoLuongDaSuDung,
-                    loaiPhieu = x.PhieuGiamGia.LaCongKhai ? "Công khai" : "Riêng tư"
+                    id = x.Voucher.IDPhieuGiamGia,
+                    maCode = x.Voucher.MaCode,
+                    tenPhieu = x.Voucher.TenPhieu,
+                    giaTriGiam = x.Voucher.GiaTriGiam,
+                    giaTriGiamToiDa = x.Voucher.GiaTriGiamToiDa,
+                    donToiThieu = x.Voucher.DonToiThieu,
+                    ngayBatDau = x.Voucher.NgayBatDau,
+                    ngayKetThuc = x.Voucher.NgayKetThuc,
+                    soLuong = x.CustomerVoucher != null ? x.CustomerVoucher.SoLuong : x.Voucher.SoLuong,
+                    soLuongDaSuDung = x.CustomerVoucher != null ? x.CustomerVoucher.SoLuongDaSuDung : 0,
+                    soLuongConLai = x.CustomerVoucher != null
+                        ? x.CustomerVoucher.SoLuong - x.CustomerVoucher.SoLuongDaSuDung
+                        : x.Voucher.SoLuong,
+                    loaiPhieu = x.Voucher.LaCongKhai ? "Công khai" : "Riêng tư"
                 })
                 .ToListAsync<object>();
+
+            return vouchers;
         }
 
         public async Task<KhachHangPhieuGiam> CreateAsync(KhachHangPhieuGiam model)
