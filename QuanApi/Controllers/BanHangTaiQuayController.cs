@@ -658,20 +658,20 @@ namespace QuanApi.Controllers
                         return BadRequest(new { message = $"Đơn hàng chưa đạt giá trị tối thiểu {discount.DonToiThieu.Value:n0}." });
                     }
 
-                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không
-                    if (dto.CustomerId.HasValue)
+                    // Ưu tiên giới hạn theo khách hàng có tài khoản; fallback theo số điện thoại khách vãng lai.
+                    if (customerIdForInvoice.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == dto.CustomerId.Value);
+                                                     x.IDKhachHang == customerIdForInvoice.Value);
 
                         if (customerVoucher == null)
                         {
                             customerVoucher = new KhachHangPhieuGiam
                             {
                                 IDKhachHangPhieuGiam = Guid.NewGuid(),
-                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{dto.CustomerId.Value.ToString().Substring(0, 8)}",
-                                IDKhachHang = dto.CustomerId.Value,
+                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customerIdForInvoice.Value.ToString().Substring(0, 8)}",
+                                IDKhachHang = customerIdForInvoice.Value,
                                 IDPhieuGiamGia = discount.IDPhieuGiamGia,
                                 SoLuong = discount.SoLuong > 0 ? discount.SoLuong : (short)1,
                                 SoLuongDaSuDung = 0,
@@ -695,6 +695,20 @@ namespace QuanApi.Controllers
                         if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
                         {
                             customerVoucher.TrangThai = false;
+                        }
+                    }
+                    else
+                    {
+                        var normalizedGuestPhone = NormalizePhoneForVoucherLimit(dto.CustomerPhone);
+                        if (string.IsNullOrWhiteSpace(normalizedGuestPhone))
+                        {
+                            return BadRequest(new { message = "Vui lòng nhập số điện thoại để dùng mã giảm giá cho khách vãng lai." });
+                        }
+
+                        var usedBefore = await HasGuestUsedVoucherAsync(discount.IDPhieuGiamGia, normalizedGuestPhone);
+                        if (usedBefore)
+                        {
+                            return BadRequest(new { message = "Số điện thoại này đã sử dụng mã giảm giá này trước đó." });
                         }
                     }
 
@@ -1645,20 +1659,20 @@ namespace QuanApi.Controllers
                         return BadRequest(new { message = $"Đơn hàng chưa đạt giá trị tối thiểu {discount.DonToiThieu.Value:n0}." });
                     }
 
-                    // Kiểm tra xem khách hàng có phiếu này không và còn số lượng không (dùng registeredCustomerId: khớp khách đang chọn trên POS)
-                    if (registeredCustomerId.HasValue)
+                    // Ưu tiên giới hạn theo khách hàng có tài khoản; fallback theo số điện thoại khách vãng lai.
+                    if (customerIdForInvoice.HasValue)
                     {
                         var customerVoucher = await _context.KhachHangPhieuGiams
                             .FirstOrDefaultAsync(x => x.IDPhieuGiamGia == discount.IDPhieuGiamGia &&
-                                                     x.IDKhachHang == registeredCustomerId.Value);
+                                                     x.IDKhachHang == customerIdForInvoice.Value);
 
                         if (customerVoucher == null)
                         {
                             customerVoucher = new KhachHangPhieuGiam
                             {
                                 IDKhachHangPhieuGiam = Guid.NewGuid(),
-                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{registeredCustomerId.Value.ToString().Substring(0, 8)}",
-                                IDKhachHang = registeredCustomerId.Value,
+                                MaKhachHangPhieuGiam = $"KHPG_{DateTime.UtcNow:yyyyMMddHHmmss}_{customerIdForInvoice.Value.ToString().Substring(0, 8)}",
+                                IDKhachHang = customerIdForInvoice.Value,
                                 IDPhieuGiamGia = discount.IDPhieuGiamGia,
                                 SoLuong = discount.SoLuong > 0 ? discount.SoLuong : (short)1,
                                 SoLuongDaSuDung = 0,
@@ -1684,6 +1698,20 @@ namespace QuanApi.Controllers
                         if (customerVoucher.SoLuongDaSuDung >= customerVoucher.SoLuong)
                         {
                             customerVoucher.TrangThai = false;
+                        }
+                    }
+                    else
+                    {
+                        var normalizedGuestPhone = NormalizePhoneForVoucherLimit(dto.CustomerPhone);
+                        if (string.IsNullOrWhiteSpace(normalizedGuestPhone))
+                        {
+                            return BadRequest(new { message = "Vui lòng nhập số điện thoại để dùng mã giảm giá cho khách vãng lai." });
+                        }
+
+                        var usedBefore = await HasGuestUsedVoucherAsync(discount.IDPhieuGiamGia, normalizedGuestPhone);
+                        if (usedBefore)
+                        {
+                            return BadRequest(new { message = "Số điện thoại này đã sử dụng mã giảm giá này trước đó." });
                         }
                     }
 
@@ -1762,6 +1790,36 @@ namespace QuanApi.Controllers
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
+        }
+
+        private static string NormalizePhoneForVoucherLimit(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+                return string.Empty;
+
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("84") && digits.Length == 11)
+                return "0" + digits.Substring(2);
+
+            return digits;
+        }
+
+        private async Task<bool> HasGuestUsedVoucherAsync(Guid voucherId, string normalizedPhone)
+        {
+            if (string.IsNullOrWhiteSpace(normalizedPhone))
+                return false;
+
+            var usedPhones = await _context.HoaDons
+                .AsNoTracking()
+                .Where(h =>
+                    h.IDPhieuGiamGia == voucherId &&
+                    h.IDKhachHang == null &&
+                    h.TrangThaiHoaDon &&
+                    h.TrangThai != "Đã hủy")
+                .Select(h => h.SoDienThoaiNguoiNhan)
+                .ToListAsync();
+
+            return usedPhones.Any(phone => NormalizePhoneForVoucherLimit(phone) == normalizedPhone);
         }
 
         private class ShippingCheckoutResult
