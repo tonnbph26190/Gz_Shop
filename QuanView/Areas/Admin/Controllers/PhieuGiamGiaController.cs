@@ -203,7 +203,31 @@ namespace QuanView.Areas.Admin.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+		[HttpGet]
+		public async Task<IActionResult> GetKhachHangsByPhieuGiamGia(Guid phieuGiamGiaId)
+		{
+			try
+			{
+				// GỌI API THẬT
+				var response = await _http.GetAsync(
+					$"PhieuGiamGia/customers/{phieuGiamGiaId}"
+				);
 
+				if (!response.IsSuccessStatusCode)
+				{
+					var error = await response.Content.ReadAsStringAsync();
+					return StatusCode((int)response.StatusCode, error);
+				}
 
-    }
+				var data = await response.Content.ReadFromJsonAsync<object>();
+
+				return Json(data);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, "Lỗi server: " + ex.Message);
+			}
+		}
+
+	}
 }
