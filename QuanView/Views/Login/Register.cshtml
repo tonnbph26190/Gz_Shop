@@ -107,10 +107,9 @@
         </form>
 
         <div class="text-center mb-3">Hoặc</div>
-        <a href="@Url.Action("Login", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
+        <a href="@Url.Action("GoogleSignUp", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
             <i class="fab fa-google"></i> Đăng ký bằng Google
         </a>
-
         <p class="text-center mt-3">
             Đã có tài khoản? <a href="@Url.Action("Index", "Login")">Đăng nhập</a>
         </p>
@@ -123,19 +122,18 @@
 
     <script>
         $(document).ready(function () {
-            // Validation cho số điện thoại
             $.validator.addMethod("phoneFormat", function (value, element) {
                 return this.optional(element) || /^[0-9]{10,11}$/.test(value);
             }, "Số điện thoại phải có 10-11 số");
 
-            $("#SoDienThoai").rules("add", {
-                phoneFormat: true
-            });
-
-            // Validation cho mật khẩu
             $.validator.addMethod("passwordStrength", function (value, element) {
                 return this.optional(element) || value.length >= 6;
             }, "Mật khẩu phải có ít nhất 6 ký tự");
+            var validator = $("#registerForm").validate();
+
+            $("#SoDienThoai").rules("add", {
+                phoneFormat: true
+            });
 
             $("#Password").rules("add", {
                 passwordStrength: true

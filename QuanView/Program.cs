@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(options =>
 	options.LogoutPath = "/Login/Logout";
 	options.AccessDeniedPath = "/Login/AccessDenied";
 	options.Cookie.Name = "BanQuanGZ_Auth";
-})
+}).AddCookie("ExternalCookie")
 .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
 {
 	// 1. Replace these with your actual keys from the Google Console
@@ -73,8 +73,7 @@ builder.Services.AddAuthentication(options =>
 
 	// 2. THIS IS CRITICAL: Tells Google to temporarily save the 
 	// login info into the Cookie scheme so your Controller can read it.
-	options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
+	options.SignInScheme = "ExternalCookie";
 	options.CallbackPath = "/signin-google";
 	options.Scope.Add("profile");
 	options.ClaimActions.MapJsonKey("picture", "picture", "url");

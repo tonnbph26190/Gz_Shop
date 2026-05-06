@@ -36,10 +36,22 @@ namespace QuanView.Controllers
 			return Challenge(props, GoogleDefaults.AuthenticationScheme);
 		}
 
-		public async Task<IActionResult> GoogleResponse(string? returnUrl = "/")
+		public IActionResult GoogleSignUp(string? returnUrl = "/")
 		{
-			// 1. Get the external login info (The 'Google' cookie)
-			var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+			var props = new AuthenticationProperties
+			{
+				RedirectUri = Url.Action("GoogleResponse", new { returnUrl, isSignUp = true })
+			};
+
+			props.Items.Add("prompt", "select_account");
+
+			return Challenge(props, GoogleDefaults.AuthenticationScheme);
+		}
+
+		public async Task<IActionResult> GoogleResponse(string? returnUrl = "/", bool isSignUp = false)
+		{
+			// 1. Get the external login info
+			var result = await HttpContext.AuthenticateAsync("ExternalCookie");
 
 			if (!result.Succeeded || result.Principal == null)
 			{
@@ -47,7 +59,7 @@ namespace QuanView.Controllers
 				return RedirectToAction("Index");
 			}
 
-			// 2. Extract claims from the Google Principal
+			// 2. Extract claims
 			var email = result.Principal.FindFirstValue(ClaimTypes.Email)?.ToLower().Trim();
 			var name = result.Principal.FindFirstValue(ClaimTypes.Name);
 
@@ -57,7 +69,17 @@ namespace QuanView.Controllers
 				return RedirectToAction("Index");
 			}
 
-			// 3. Check Database for NhanVien (Admin/Staff)
+			// 3. Logic for Registration vs Login
+			var existingUser = await _context.KhachHang.AnyAsync(kh => kh.Email == email);
+
+			if (isSignUp && existingUser)
+			{
+				TempData["Error"] = "Email này đã được đăng ký. Vui lòng đăng nhập.";
+				await HttpContext.SignOutAsync("ExternalCookie");
+				return RedirectToAction("Index");
+			}
+
+			// 4. Check Database for NhanVien (Admin/Staff)
 			var nhanVien = await _context.NhanViens
 				.Include(nv => nv.VaiTro)
 				.FirstOrDefaultAsync(nv => nv.Email.ToLower() == email && nv.TrangThai);
@@ -73,10 +95,11 @@ namespace QuanView.Controllers
 		};
 
 				await SignInUser(claims);
+				await HttpContext.SignOutAsync("ExternalCookie"); // Cleanup
 				return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
 			}
 
-			// 4. Check/Create KhachHang (Customer)
+			// 5. Check/Create KhachHang (Customer)
 			var khachHang = await _context.KhachHang
 				.FirstOrDefaultAsync(kh => kh.Email.ToLower() == email && kh.TrangThai);
 
@@ -97,15 +120,18 @@ namespace QuanView.Controllers
 			}
 
 			var khachClaims = new List<Claim>
-			{
-				new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
-				new Claim(ClaimTypes.Email, khachHang.Email),
-				new Claim(ClaimTypes.Role, "KhachHang"),
-				new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
-			};
+	{
+		new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
+		new Claim(ClaimTypes.Email, khachHang.Email),
+		new Claim(ClaimTypes.Role, "KhachHang"),
+		new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
+	};
 
 			await SignInUser(khachClaims);
 			HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+
+			// Always sign out of the temporary cookie at the end
+			await HttpContext.SignOutAsync("ExternalCookie");
 
 			return LocalRedirect(returnUrl ?? "/");
 		}
