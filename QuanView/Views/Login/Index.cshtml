@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = null;
 }
 <!DOCTYPE html>
@@ -40,11 +40,39 @@
         .alert {
             margin-bottom: 1rem;
         }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 73%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            padding: 0;
+            color: #6c757d;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+            .password-toggle:hover {
+                color: #000;
+            }
+
+        #password {
+            padding-right: 40px;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h2 class="text-center mb-4">Đăng nhập</h2>
+
+        @if (ViewData.ModelState["LoginError"]?.Errors.Count > 0)
+        {
+            <div class="alert alert-danger" role="alert">
+                @ViewData.ModelState["LoginError"].Errors[0].ErrorMessage
+            </div>
+        }
 
         @if (ViewBag.Error != null)
         {
@@ -59,16 +87,34 @@
                 @ViewBag.SuccessMessage
             </div>
         }
-
         <form method="post" action="@Url.Action("FormLogin", "Login")">
             @Html.AntiForgeryToken()
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="Email" placeholder="Nhập email của bạn" required>
+                <input type="email"
+                       class="form-control"
+                       id="email"
+                       name="Email"
+                       value="@Model?.Email"
+                       placeholder="Nhập email của bạn"
+                       required>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 position-relative">
                 <label for="password" class="form-label">Mật khẩu</label>
-                <input type="password" class="form-control" id="password" name="Password" placeholder="Nhập mật khẩu" required>
+
+                <input type="password"
+                       class="form-control pe-5"
+                       id="password"
+                       name="Password"
+                       placeholder="Nhập mật khẩu"
+                       required>
+
+                <button type="button"
+                        id="togglePassword"
+                        class="password-toggle">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+                   
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe">
@@ -97,6 +143,19 @@
             </text>
         }
                 });
+        const passwordInput = document.getElementById("password");
+        const togglePassword = document.getElementById("togglePassword");
+        const icon = togglePassword.querySelector("i");
+
+        togglePassword.addEventListener("click", function () {
+
+            const isPassword = passwordInput.type === "password";
+
+            passwordInput.type = isPassword ? "text" : "password";
+
+            icon.classList.toggle("fa-eye");
+            icon.classList.toggle("fa-eye-slash");
+        });
     </script>
 </body>
 </html>

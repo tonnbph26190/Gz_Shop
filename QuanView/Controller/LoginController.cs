@@ -224,8 +224,8 @@ namespace QuanView.Controllers
             }
 
             Console.WriteLine("❌ Đăng nhập thất bại - Email hoặc mật khẩu không đúng");
-            ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
-            return View("Index", model);
+			ModelState.AddModelError("LoginError", "Email hoặc mật khẩu không đúng.");
+			return View("Index", model);
         }
 
         [HttpGet]
