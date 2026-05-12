@@ -7,19 +7,26 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using QuanView.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
+using System.Net;
+using System.Net.Mail;
 
 namespace QuanView.Controllers
 {
     public class LoginController : Controller
     {
         private readonly BanQuanAu1DbContext _context;
+		private readonly IMemoryCache _cache;
 
-        public LoginController(BanQuanAu1DbContext context)
-        {
-            _context = context;
-        }
+		public LoginController(
+	BanQuanAu1DbContext context,
+	IMemoryCache cache)
+		{
+			_context = context;
+			_cache = cache;
+		}
 
-        public IActionResult Index()
+		public IActionResult Index()
         {
             ViewBag.Error = TempData["Error"];
             ViewBag.SuccessMessage = TempData["SuccessMessage"];
@@ -325,6 +332,158 @@ namespace QuanView.Controllers
 
             return Json(result);
         }
-    }
+		[HttpGet]
+		public IActionResult ForgotPassword()
+		{
+			return View();
+		}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ForgotPassword(string email)
+		{
+			var user = await _context.KhachHang
+				.FirstOrDefaultAsync(x => x.Email == email);
+
+			if (user == null)
+			{
+				ViewBag.Error = "Email không tồn tại.";
+				return View();
+			}
+
+			var token = Guid.NewGuid().ToString();
+
+			// lưu token 15 phút
+			_cache.Set(
+				token,
+				email,
+				TimeSpan.FromMinutes(15));
+
+			var resetLink = Url.Action(
+				"ResetPassword",
+				"Login",
+				new { token },
+				Request.Scheme);
+			if (string.IsNullOrEmpty(resetLink))
+			{
+				ViewBag.Error = "Không tạo được link reset mật khẩu.";
+				return View();
+			}
+			SendResetEmail(email, resetLink);
+
+			ViewBag.Success =
+				"Đã gửi link đổi mật khẩu qua email.";
+
+			return View();
+		}
+		private void SendResetEmail(string toEmail, string resetLink)
+		{
+			// Gmail của bạn
+			var fromEmail = "ph889127@gmail.com";
+
+			// App Password của Google
+			var password = "vkzi dqnh sztw sikl";
+
+			using var smtp = new SmtpClient("smtp.gmail.com", 587);
+
+			smtp.EnableSsl = true;
+
+			smtp.UseDefaultCredentials = false;
+
+			smtp.Credentials =
+				new NetworkCredential(fromEmail, password);
+
+			smtp.DeliveryMethod =
+				SmtpDeliveryMethod.Network;
+
+			smtp.Timeout = 20000;
+
+			var message = new MailMessage();
+
+			message.From = new MailAddress(fromEmail);
+
+			message.To.Add(toEmail);
+
+			message.Subject = "Đặt lại mật khẩu";
+
+			message.IsBodyHtml = true;
+
+			message.Body = $@"
+        <h2>Quên mật khẩu</h2>
+
+        <p>Nhấn nút bên dưới để đổi mật khẩu:</p>
+
+        <a href='{resetLink}'
+           style='padding:10px 20px;
+                  background:#0d6efd;
+                  color:white;
+                  text-decoration:none;
+                  border-radius:5px;'>
+
+            Đổi mật khẩu
+
+        </a>
+
+        <p>Link hết hạn sau 15 phút.</p>
+    ";
+
+			smtp.Send(message);
+		}
+		[HttpGet]
+		public IActionResult ResetPassword(string token)
+		{
+			if (!_cache.TryGetValue(token, out string email))
+			{
+				TempData["Error"] = "Link đã hết hạn.";
+
+				return RedirectToAction("FormLogin");
+			}
+
+			ViewBag.Token = token;
+
+			return View();
+		}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ResetPassword(
+	string token,
+	string newPassword,
+	string confirmPassword)
+		{
+			if (!_cache.TryGetValue(token, out string email))
+			{
+				TempData["Error"] = "Link không hợp lệ.";
+
+				return RedirectToAction("FormLogin");
+			}
+			if (newPassword != confirmPassword)
+			{
+				ViewBag.Token = token;
+				ViewBag.Error = "Mật khẩu xác nhận không khớp.";
+
+				return View();
+			}
+			var user = await _context.KhachHang
+				.FirstOrDefaultAsync(x => x.Email == email);
+
+			if (user == null)
+			{
+				TempData["Error"] = "Không tìm thấy tài khoản.";
+
+				return RedirectToAction("Index");
+			}
+
+			user.MatKhau = newPassword;
+
+			await _context.SaveChangesAsync();
+
+			// xóa token sau khi dùng
+			_cache.Remove(token);
+
+			TempData["SuccessMessage"] =
+				"Đổi mật khẩu thành công.";
+
+			return RedirectToAction("Index");
+		}
+	}
 }
 

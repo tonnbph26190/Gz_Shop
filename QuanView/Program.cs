@@ -130,7 +130,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 // 6️⃣ ĐĂNG KÝ HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddMemoryCache();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
