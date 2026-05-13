@@ -146,7 +146,12 @@
                                 {
                                     foreach (var sp in ViewBag.SanPhams as List<SelectListItem>)
                                     {
-                                        <option value="@sp.Value">@sp.Text</option>
+                                        <option value="@sp.Value"
+                                                selected="@(ViewBag.SelectedSanPhamDaCoId != null
+        && ViewBag.SelectedSanPhamDaCoId.ToString() == sp.Value
+        ? "selected" : null)">
+                                            @sp.Text
+                                        </option>
                                     }
                                 }
                             </select>

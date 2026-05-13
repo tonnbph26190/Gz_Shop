@@ -217,11 +217,19 @@ namespace QuanView.Areas.Admin.Controllers
 				ModelState.Remove(nameof(dto.CoGian));
 				ModelState.Remove(nameof(dto.TrangThai));
 			}
-
+			if (dto.ChiTietSanPhams == null || !dto.ChiTietSanPhams.Any())
+			{
+				ModelState.AddModelError("ChiTietSanPhams",
+					"Vui lòng chọn kích cỡ, màu sắc, họa tiết và bấm 'Tạo bảng biến thể'.");
+			}
 			if (!ModelState.IsValid)
 			{
 				await LoadDropdownData();
 				ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+
+				// GIỮ LẠI SẢN PHẨM ĐÃ CHỌN
+				ViewBag.SelectedSanPhamDaCoId = SanPhamDaCoId;
+
 				return View(dto);
 			}
 
