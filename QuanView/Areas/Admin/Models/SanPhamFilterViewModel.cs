@@ -20,9 +20,10 @@ namespace QuanView.ViewModels
         public int? QtyTo { get; set; }
         public DateTime? DateFrom { get; set; }
         public DateTime? DateTo { get; set; }
+		public string? StockFilter { get; set; }
 
-        // Dropdown data
-        public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> TrangThaiOptions { get; set; } = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+		// Dropdown data
+		public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> TrangThaiOptions { get; set; } = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
         {
             new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = "", Text = "Tất cả trạng thái" },
             new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = "active", Text = "Hoạt động" },

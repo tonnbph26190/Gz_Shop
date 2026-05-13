@@ -45,7 +45,8 @@ namespace QuanView.Areas.Admin.Controllers
 
             DateTime? dateFrom = null,
             DateTime? dateTo = null,
-			string? sortDate = null)
+			string? sortDate = null,
+	string? stockFilter = null)
         {
             // Cố định pageSize = 5
             int pageSize = 5;
@@ -74,7 +75,12 @@ namespace QuanView.Areas.Admin.Controllers
                 queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
 			if (!string.IsNullOrEmpty(sortDate))
 				queryParams.Add($"sortDate={sortDate}");
-
+			if (stockFilter == "out")
+			{
+				queryParams.Add("qtyFrom=0");
+				queryParams.Add("qtyTo=0");
+				page = 1;
+			}
 			var queryString = string.Join("&", queryParams);
             var response = await _http.GetAsync($"sanphams/paged?{queryString}");
 
@@ -154,7 +160,8 @@ namespace QuanView.Areas.Admin.Controllers
                 QtyTo = qtyTo,
                 DateFrom = dateFrom,
                 DateTo = dateTo,
-				SortDate = sortDate
+				SortDate = sortDate,
+				StockFilter = stockFilter
 			};
 			// Gọi API thống kê
 			var thongKeRes = await _http.GetAsync("sanphams/thong-ke");

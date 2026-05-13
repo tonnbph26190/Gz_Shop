@@ -178,15 +178,24 @@ namespace QuanApi.Controllers
                 baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.GiaBan <= priceTo.Value));
             }
 
-            // Filter by variant quantity range
-            if (qtyFrom.HasValue)
-            {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom.Value));
-            }
-            if (qtyTo.HasValue)
-            {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => (ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value));
-            }
+			// Filter by total available quantity of product
+			if (qtyFrom.HasValue)
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets
+						.Where(ct => ct.TrangThai)
+						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom.Value
+				);
+			}
+
+			if (qtyTo.HasValue)
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets
+						.Where(ct => ct.TrangThai)
+						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value
+				);
+			}
 			// ✅ SORT NGÀY TẠO
 			if (!string.IsNullOrEmpty(sortDate))
 			{

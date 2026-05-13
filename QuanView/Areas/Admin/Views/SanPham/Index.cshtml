@@ -378,30 +378,53 @@ keyframes blink-warning {
 <div class="row mb-3">
 
     <div class="col-md-3">
-        <div class="card border-left-primary shadow card-stats" data-type="all">
-            <div class="card-body">
-                <h6 class="text-primary">Tổng sản phẩm</h6>
-                <h4>@Model.TotalItems</h4>
+        <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "active"
+    })" style="text-decoration:none">
+            <div class="card border-left-primary shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-primary">Tổng sản phẩm</h6>
+                    <h4>@ViewBag.TongSanPham</h4>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="card border-left-success shadow card-stats" data-type="variant">
-            <div class="card-body">
-                <h6 class="text-success">Tổng biến thể</h6>
-                <h4>@ViewBag.TongBienThe</h4>
+        <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "active"
+    })" style="text-decoration:none">
+            <div class="card border-left-success shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-success">Tổng biến thể</h6>
+                    <h4>@ViewBag.TongBienThe</h4>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="card border-left-danger shadow card-stats" data-type="out">
-            <div class="card-body">
-                <h6 class="text-danger">Sản phẩm hết hàng</h6>
-                <h4>@ViewBag.SanPhamHetHang</h4>
+        <a href="@Url.Action("Index", new {
+    page = 1,
+    keyword = Model.Keyword,
+    trangThai = Model.TrangThai,
+    priceFrom = Model.PriceFrom,
+    priceTo = Model.PriceTo,
+    qtyFrom = 0,
+    qtyTo = 0,
+    dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
+    dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+    sortDate = Model.SortDate
+})" style="text-decoration:none">
+            <div class="card border-left-danger shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-danger">Sản phẩm hết hàng</h6>
+                    <h4>@ViewBag.SanPhamHetHang</h4>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
 @*    <div class="col-md-3">
@@ -1172,34 +1195,34 @@ keyframes blink-warning {
 
         });
     });
-	document.querySelectorAll('.card-stats').forEach(card => {
-    card.addEventListener('click', function () {
+// 	document.querySelectorAll('.card-stats').forEach(card => {
+//     card.addEventListener('click', function () {
 
-        // Active UI
-        document.querySelectorAll('.card-stats')
-            .forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
+//         // Active UI
+//         document.querySelectorAll('.card-stats')
+//             .forEach(c => c.classList.remove('active'));
+//         this.classList.add('active');
 
-        const type = this.dataset.type;
-        const products = document.querySelectorAll('.product-group');
+//         const type = this.dataset.type;
+//         const products = document.querySelectorAll('.product-group');
 
-        products.forEach(p => {
-            const qty = parseInt(p.dataset.qty || 0);
+//         products.forEach(p => {
+//             const qty = parseInt(p.dataset.qty || 0);
 
-            if (type === 'all') {
-                p.style.display = 'block';
-            }
-            else if (type === 'out') {
-                // hết hàng
-                p.style.display = qty === 0 ? 'block' : 'none';
-            }
-            else if (type === 'variant') {
-                // còn hàng
-                p.style.display = qty > 0 ? 'block' : 'none';
-            }
-        });
-    });
-});
+//             if (type === 'all') {
+//                 p.style.display = 'block';
+//             }
+//             else if (type === 'out') {
+//                 // hết hàng
+//                 p.style.display = qty === 0 ? 'block' : 'none';
+//             }
+//             else if (type === 'variant') {
+//                 // còn hàng
+//                 p.style.display = qty > 0 ? 'block' : 'none';
+//             }
+//         });
+//     });
+// });
 document.querySelectorAll('.product-group').forEach(p => {
     const qty = parseInt(p.dataset.qty || 0);
 
