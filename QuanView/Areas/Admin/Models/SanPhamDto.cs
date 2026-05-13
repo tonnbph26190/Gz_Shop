@@ -7,6 +7,7 @@ namespace QuanView.Areas.Admin.Models
 	{
 		public Guid IDSanPham { get; set; }
 		public string MaSanPham { get; set; }
+		[Required(ErrorMessage = "Vui lòng nhập tên sản phẩm.")]
 		public string TenSanPham { get; set; }
 		public Guid IDChatLieu { get; set; }
 		public Guid IDDanhMuc { get; set; }
