@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+
+
 namespace QuanApi.Dtos
 {
     public class SanPhamDto
@@ -26,6 +29,8 @@ namespace QuanApi.Dtos
         public string? AnhChinh { get; set; }
         public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
 
-        public List<SanPhamChiTietDto> ChiTietSanPhams { get; set; }
+		[Required(ErrorMessage = "Vui lòng tạo ít nhất một biến thể sản phẩm.")]
+		[MinLength(1, ErrorMessage = "Vui lòng tạo ít nhất một biến thể sản phẩm.")]
+		public List<SanPhamChiTietDto> ChiTietSanPhams { get; set; } = new();
 	}
 }

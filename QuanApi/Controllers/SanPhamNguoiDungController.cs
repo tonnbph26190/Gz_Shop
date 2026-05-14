@@ -26,6 +26,7 @@ namespace QuanApi.Controllers
 			try
 			{
 				var query = _gioHangRepo.ListSPCT(1, int.MaxValue);
+				
 
 				if (!string.IsNullOrEmpty(search))
 					query = query.Where(x => x.TenSanPham.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -110,8 +111,9 @@ namespace QuanApi.Controllers
 		public IActionResult GetDetail(Guid id)
 		{
 			var result = _gioHangRepo.detailSpct(id);
-			if (result == null)
-				return NotFound(new { message = "Không tìm thấy sản phẩm." });
+
+			if (result == null || result.TrangThai == false)
+				return NotFound(new { message = "Không tìm thấy sản phẩm hoặc sản phẩm đã ngưng hoạt động." });
 
 			return Ok(result);
 		}

@@ -118,6 +118,14 @@
 </style>
 
 <div class="container py-5">
+
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show">
+            @TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
     <div class="row">
         <div class="col-lg-3">
             <div class="sidebar-section shadow-sm">
@@ -213,12 +221,17 @@
                     var giaGoc = minBienThe?.GiaGoc ?? 0;
                     var giaSauGiam = minBienThe?.GiaSauGiam ?? 0;
                     var totalStock = sp.BienThes?.Sum(b => b.SoLuong) ?? 0;
-                    var detailUrl = (sp.BienThes != null && sp.BienThes.Any()) 
-                                    ? $"/SanPhamNguoiDung/Detail/{sp.BienThes.First().IDSanPhamChiTiet}" 
-                                    : "#";
+                    var firstAvailableVariant = sp.BienThes?
+                    .Where(b => b.SoLuong > 0)
+                    .FirstOrDefault();
+
+                    var detailUrl = firstAvailableVariant != null
+                    ? $"/SanPhamNguoiDung/Detail/{firstAvailableVariant.IDSanPhamChiTiet}"
+                    : "#";
 
                     <div class="col-6 col-md-4">
-                        <div class="product-card h-100 d-flex flex-column" onclick="location.href='@detailUrl'">
+                        <div class="product-card h-100 d-flex flex-column"
+                             onclick="if('@detailUrl' !== '#') location.href='@detailUrl'">
                             <div class="product-img-container">
                                 <img src="@sp.UrlAnh" class="product-img" alt="@sp.TenSanPham" loading="lazy" />
                                 @if (giaGoc > 0 && giaSauGiam > 0 && giaSauGiam < giaGoc)

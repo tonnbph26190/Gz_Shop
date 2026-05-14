@@ -80,14 +80,14 @@ namespace QuanView.Controllers
 			var bienTheRes = await _http.GetAsync($"SanPhamNguoiDungs/{id}");
 			if (!bienTheRes.IsSuccessStatusCode)
 			{
-				ViewData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
-				return View("Error");
+				TempData["Warning"] = "Sản phẩm đã ngưng hoạt động hoặc không còn tồn tại.";
+				return RedirectToAction("Index");
 			}
 			var bienThe = await bienTheRes.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
 			if (bienThe == null)
 			{
-				ViewData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
-				return View("Error");
+				TempData["Warning"] = "Sản phẩm đã ngưng hoạt động hoặc không còn tồn tại.";
+				return RedirectToAction("Index");
 			}
 
 			return await RenderDetailByProductId(bienThe.IdSanPham, bienThe.TenSanPham, bienThe.TenDanhMuc);
@@ -105,19 +105,49 @@ namespace QuanView.Controllers
 			if (!detailRes.IsSuccessStatusCode)
 			{
 				ViewData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
-				return View("Error");
+				TempData["Warning"] = "Sản phẩm đã ngưng hoạt động hoặc không còn tồn tại.";
+				return RedirectToAction("Index");
 			}
 
 			var spDetail = await detailRes.Content.ReadFromJsonAsync<SanPhamDetailDto>();
-			if (spDetail == null || !spDetail.BienThes.Any())
+
+			if (spDetail == null || spDetail.BienThes == null)
 			{
 				ViewData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
-				return View("Error");
+				TempData["Warning"] = "Sản phẩm đã ngưng hoạt động hoặc không còn tồn tại.";
+				return RedirectToAction("Index");
 			}
 
-			string urlAnh = spDetail.DanhSachAnh?.FirstOrDefault()
-							?? spDetail.BienThes.SelectMany(b => new[] { b.AnhDaiDien }).FirstOrDefault(s => !string.IsNullOrEmpty(s))
-							?? "/img/default-product.jpg";
+			spDetail.BienThes = spDetail.BienThes
+				.Where(x => x.TrangThai == true)
+				.ToList();
+
+			if (!spDetail.BienThes.Any())
+			{
+				ViewData["ErrorMessage"] = "Sản phẩm đã ngưng hoạt động hoặc không còn biến thể.";
+				TempData["Warning"] = "Sản phẩm đã ngưng hoạt động hoặc không còn tồn tại.";
+				return RedirectToAction("Index");
+			}
+
+			var danhSachAnhHopLe = spDetail.BienThes
+	.Where(b => !string.IsNullOrWhiteSpace(b.AnhDaiDien))
+	.Select(b => b.AnhDaiDien)
+	.ToList();
+
+			if (!danhSachAnhHopLe.Any())
+			{
+				var anhDauTien = spDetail.DanhSachAnh?
+					.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+
+				if (!string.IsNullOrWhiteSpace(anhDauTien))
+				{
+					danhSachAnhHopLe.Add(anhDauTien);
+				}
+			}
+
+			string urlAnh = danhSachAnhHopLe.FirstOrDefault()
+				?? "/img/default-product.jpg";
+			spDetail.DanhSachAnh = danhSachAnhHopLe;
 
 			var firstBienThe = spDetail.BienThes.First();
 			var model = new SanPhamKhachHangViewModel

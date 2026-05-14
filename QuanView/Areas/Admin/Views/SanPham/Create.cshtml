@@ -1,4 +1,4 @@
-﻿@model QuanView.Areas.Admin.Models.SanPhamDto
+@model QuanView.Areas.Admin.Models.SanPhamDto
 
 @{
     ViewData["Title"] = "Thêm sản phẩm";
@@ -47,14 +47,20 @@
         border-color: #dc3545 !important;
         box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
     }
-    
+
     input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
 
     .add-btn {
         width: 42px;
-        height: 100%;                    
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -66,19 +72,19 @@
         font-size: 18px;
         cursor: pointer;
         transition: all 0.2s ease;
-        margin-left: -1px;             
+        margin-left: -1px;
         flex-shrink: 0;
         padding: 2.5% 0%;
     }
 
-    .add-btn:hover {
-        background-color: #0b5ed7;
-        border-color: #0b5ed7;
-    }
+        .add-btn:hover {
+            background-color: #0b5ed7;
+            border-color: #0b5ed7;
+        }
 
-    .add-btn:active {
-        background-color: #0a58ca;
-    }
+        .add-btn:active {
+            background-color: #0a58ca;
+        }
 
     /* Container for label + button */
     .d-flex.align-items-center.gap-2 {
@@ -93,10 +99,10 @@
         margin-bottom: 6px;
     }
 
-    .field-with-add .form-label {
-        margin-bottom: 0;
-        flex-grow: 1;
-    }
+        .field-with-add .form-label {
+            margin-bottom: 0;
+            flex-grow: 1;
+        }
 
     @@media (max-width: 768px) {
         .add-btn {
@@ -124,9 +130,9 @@
             </div>
         }
 
-        <form asp-area="Admin" asp-controller="SanPham" asp-action="Create" method="post">
+        <form asp-area="Admin" asp-controller="SanPham" asp-action="Create" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-            
+
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <div class="row mb-4">
@@ -140,7 +146,12 @@
                                 {
                                     foreach (var sp in ViewBag.SanPhams as List<SelectListItem>)
                                     {
-                                        <option value="@sp.Value">@sp.Text</option>
+                                        <option value="@sp.Value"
+                                                selected="@(ViewBag.SelectedSanPhamDaCoId != null
+        && ViewBag.SelectedSanPhamDaCoId.ToString() == sp.Value
+        ? "selected" : null)">
+                                            @sp.Text
+                                        </option>
                                     }
                                 }
                             </select>
@@ -250,7 +261,7 @@
                     <h5 class="text-primary mb-0"><i class="fas fa-cog me-2"></i>Cấu hình chung</h5>
                     <div class="flex-grow-1 ms-3"><hr class="my-0 opacity-25"></div>
                 </div>
-                
+
                 <div class="row g-3">
                     <div class="col-6 col-md-4 col-lg-3">
                         <div class="p-3 border rounded bg-white shadow-sm h-100">
@@ -291,12 +302,14 @@
                                     Kích cỡ <i class="fas fa-ruler ms-1 text-muted"></i>
                                 </label>
                                 @* <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" id="btnAddKichCo" style="width: 28px; height: 28px; padding: 0;" title="Thêm kích cỡ">
-                                    <i class="fas fa-plus small"></i>
+                                <i class="fas fa-plus small"></i>
                                 </button> *@
                             </div>
                             <div id="kichCoSelect" style="max-height: 200px; overflow-y: auto;" class="pe-2">
-                                @if (ViewBag.KichCos != null) {
-                                    foreach (var item in ViewBag.KichCos as List<SelectListItem>) {
+                                @if (ViewBag.KichCos != null)
+                                {
+                                    foreach (var item in ViewBag.KichCos as List<SelectListItem>)
+                                    {
                                         <div class="form-check form-switch mb-2">
                                             <input class="form-check-input kichCoCheckbox" type="checkbox" role="switch" value="@item.Value" id="kc_@item.Value">
                                             <label class="form-check-label" for="kc_@item.Value">@item.Text</label>
@@ -306,7 +319,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <div class="bg-white p-3 border rounded h-100 shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -318,8 +331,10 @@
                                 </button>
                             </div>
                             <div id="mauSacSelect" style="max-height: 200px; overflow-y: auto;" class="pe-2">
-                                @if (ViewBag.MauSacs != null) {
-                                    foreach (var item in ViewBag.MauSacs as List<SelectListItem>) {
+                                @if (ViewBag.MauSacs != null)
+                                {
+                                    foreach (var item in ViewBag.MauSacs as List<SelectListItem>)
+                                    {
                                         <div class="form-check form-switch mb-2">
                                             <input class="form-check-input mauSacCheckbox" type="checkbox" role="switch" value="@item.Value" id="ms_@item.Value">
                                             <label class="form-check-label" for="ms_@item.Value">@item.Text</label>
@@ -329,7 +344,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <div class="bg-white p-3 border rounded h-100 shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -341,8 +356,10 @@
                                 </button>
                             </div>
                             <div id="hoaTietSelect" style="max-height: 200px; overflow-y: auto;" class="pe-2">
-                                @if (ViewBag.HoaTiets != null) {
-                                    foreach (var item in ViewBag.HoaTiets as List<SelectListItem>) {
+                                @if (ViewBag.HoaTiets != null)
+                                {
+                                    foreach (var item in ViewBag.HoaTiets as List<SelectListItem>)
+                                    {
                                         <div class="form-check form-switch mb-2">
                                             <input class="form-check-input hoaTietCheckbox" type="checkbox" role="switch" value="@item.Value" id="ht_@item.Value">
                                             <label class="form-check-label" for="ht_@item.Value">@item.Text</label>
@@ -371,6 +388,7 @@
                                 <th>Họa tiết</th>
                                 <th style="width: 150px;">Số lượng</th>
                                 <th style="width: 220px;">Giá bán (VNĐ)</th>
+                                <th style="width: 220px;">Ảnh</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
                         </thead>
@@ -382,7 +400,7 @@
             <div class="mt-4 text-end">
                 <a asp-action="Index" class="btn btn-secondary px-4 me-2">Quay lại</a>
                 <button type="submit" class="btn btn-success px-5">Lưu sản phẩm</button>
-            </div> 
+            </div>
         </form>
     </div>
 </div>
@@ -408,7 +426,7 @@
 
 @section Scripts {
     <script>
-        $(document).on('click', '[data-bs-dismiss="modal"]', function() {
+        $(document).on('click', '[data-bs-dismiss="modal"]', function () {
             const modalElement = document.getElementById('createModal');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) {
@@ -479,49 +497,57 @@
                         const old = existingData[key] || { qty: 0, price: 0 };
 
                         const row = `
-                            <tr data-kc="${kc.id}" data-ms="${ms.id}" data-ht="${ht.id}">
-                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kc.id}" />${kc.text}</td>
-                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${ms.id}" />${ms.text}</td>
-                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${ht.id}" />${ht.text}</td>
-                                
-                                <!-- Số lượng với nút Apply All -->
-                                <td>
-                                    <div class="input-group input-group-sm">
-                                        <input name="ChiTietSanPhams[${index}].SoLuong" 
-                                            type="number" 
-                                            class="form-control quantity-input" 
-                                            min="0" 
-                                            value="${old.qty}" />
-                                        <button type="button" 
-                                                class="btn btn-outline-success apply-qty-btn"
-                                                title="Áp dụng số lượng này cho tất cả biến thể">
-                                            <i class="fas fa-arrow-down"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                <tr data-kc="${kc.id}" data-ms="${ms.id}" data-ht="${ht.id}">
+                                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdKichCo" value="${kc.id}" />${kc.text}</td>
+                                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdMauSac" value="${ms.id}" />${ms.text}</td>
+                                                <td><input type="hidden" name="ChiTietSanPhams[${index}].IdHoaTiet" value="${ht.id}" />${ht.text}</td>
 
-                                <!-- Giá bán với nút Apply All -->
-                                <td>
-                                    <div class="input-group input-group-sm">
-                                        <input name="ChiTietSanPhams[${index}].GiaBan" 
-                                            type="number" 
-                                            class="form-control price-input" 
-                                            min="0" 
-                                            value="${old.price}" />
-                                        <button type="button" 
-                                                class="btn btn-outline-primary apply-price-btn"
-                                                title="Áp dụng giá này cho tất cả biến thể">
-                                            <i class="fas fa-arrow-down"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                                <!-- Số lượng với nút Apply All -->
+                                                <td>
+                                                    <div class="input-group input-group-sm">
+                                                        <input name="ChiTietSanPhams[${index}].SoLuong"
+                                                            type="number"
+                                                            class="form-control quantity-input"
+                                                            min="0"
+                                                            value="${old.qty}" />
+                                                        <button type="button"
+                                                                class="btn btn-outline-success apply-qty-btn"
+                                                                title="Áp dụng số lượng này cho tất cả biến thể">
+                                                            <i class="fas fa-arrow-down"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
 
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Xóa dòng">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                                                       <!-- Giá bán với nút Apply All -->
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input name="ChiTietSanPhams[${index}].GiaBan"
+                                    type="number"
+                                    class="form-control price-input"
+                                    min="0"
+                                    value="${old.price}" />
+                                <button type="button"
+                                        class="btn btn-outline-primary apply-price-btn"
+                                        title="Áp dụng giá này cho tất cả biến thể">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </div>
+                        </td>
+
+                        <!-- Ảnh biến thể -->
+                        <td>
+                            <input type="file"
+                                   name="VariantImages"
+                                   class="form-control form-control-sm"
+                                   accept="image/*" />
+                        </td>
+
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Xóa dòng">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                                            </tr>`;
 
                         elements.tbody.insertAdjacentHTML("beforeend", row);
                         index++;
@@ -589,7 +615,7 @@
         }
 
         // --- Validation Logic ---
-        elements.form.addEventListener('submit', function(e) {
+        elements.form.addEventListener('submit', function (e) {
             let isValid = true;
             this.querySelectorAll('.price-input, .quantity-input').forEach(input => {
                 const val = parseFloat(input.value);
@@ -685,15 +711,15 @@
                 });
 
                 const attributeConfigs = {
-                    'btnAddDanhMuc':    { title: 'Thêm Danh Mục',    url: '@Url.Action("Create", "ProductManage", new { area = "Admin" })', selectId: 'IDDanhMuc' },
-                    'btnAddThuongHieu': { title: 'Thêm Thương Hiệu', url: '@Url.Action("Create", "ThuongHieu",    new { area = "Admin" })', selectId: 'IDThuongHieu' },
-                    'btnAddChatLieu':   { title: 'Thêm Chất Liệu',   url: '@Url.Action("Create", "ChatLieu",     new { area = "Admin" })', selectId: 'IDChatLieu' },
-                    'btnAddLoaiOng':    { title: 'Thêm Loại Ống',    url: '@Url.Action("Create", "LoaiOng",      new { area = "Admin" })', selectId: 'IDLoaiOng' },
-                    'btnAddKieuDang':   { title: 'Thêm Kiểu Dáng',   url: '@Url.Action("Create", "KieuDang",     new { area = "Admin" })', selectId: 'IDKieuDang' },
-                    'btnAddLungQuan':   { title: 'Thêm Lưng Quần',   url: '@Url.Action("Create", "LungQuan",     new { area = "Admin" })', selectId: 'IDLungQuan' },
-                    'btnAddKichCo':     { title: 'Thêm Kích Cỡ',     url: '@Url.Action("Create", "KichCo",       new { area = "Admin" })', containerId: 'kichCoSelect' },
-                    'btnAddMauSac':     { title: 'Thêm Màu Sắc',     url: '@Url.Action("Create", "MauSac",       new { area = "Admin" })', containerId: 'mauSacSelect' },
-                    'btnAddHoaTiet':    { title: 'Thêm Họa Tiết',    url: '@Url.Action("Create", "HoaTiet",      new { area = "Admin" })', containerId: 'hoaTietSelect' }
+                    'btnAddDanhMuc': { title: 'Thêm Danh Mục', url: '@Url.Action("Create", "ProductManage", new { area = "Admin" })', selectId: 'IDDanhMuc' },
+                    'btnAddThuongHieu': { title: 'Thêm Thương Hiệu', url: '@Url.Action("Create", "ThuongHieu", new { area = "Admin" })', selectId: 'IDThuongHieu' },
+                    'btnAddChatLieu': { title: 'Thêm Chất Liệu', url: '@Url.Action("Create", "ChatLieu", new { area = "Admin" })', selectId: 'IDChatLieu' },
+                    'btnAddLoaiOng': { title: 'Thêm Loại Ống', url: '@Url.Action("Create", "LoaiOng", new { area = "Admin" })', selectId: 'IDLoaiOng' },
+                    'btnAddKieuDang': { title: 'Thêm Kiểu Dáng', url: '@Url.Action("Create", "KieuDang", new { area = "Admin" })', selectId: 'IDKieuDang' },
+                    'btnAddLungQuan': { title: 'Thêm Lưng Quần', url: '@Url.Action("Create", "LungQuan", new { area = "Admin" })', selectId: 'IDLungQuan' },
+                    'btnAddKichCo': { title: 'Thêm Kích Cỡ', url: '@Url.Action("Create", "KichCo", new { area = "Admin" })', containerId: 'kichCoSelect' },
+                    'btnAddMauSac': { title: 'Thêm Màu Sắc', url: '@Url.Action("Create", "MauSac", new { area = "Admin" })', containerId: 'mauSacSelect' },
+                    'btnAddHoaTiet': { title: 'Thêm Họa Tiết', url: '@Url.Action("Create", "HoaTiet", new { area = "Admin" })', containerId: 'hoaTietSelect' }
                 };
 
                 let currentConfig = null;
@@ -720,7 +746,7 @@
                     currentConfig = attributeConfigs[btnId];
                     if (!currentConfig) return;
                     $('#createModalLabel').text(currentConfig.title);
-                    
+
                     // Store instance so we can close it later
                     window.currentModal = new bootstrap.Modal(document.getElementById('createModal'));
                     window.currentModal.show();
@@ -730,7 +756,7 @@
                 $('#saveCreateBtn').click(function () {
                     const form = $('#createForm');
                     if (!form.length || !form.valid()) return;
-                    
+
                     savePageState();
 
                     var formData = form.serializeArray();
@@ -774,32 +800,35 @@
                     });
                 });
 
-            } catch(e) {
+            } catch (e) {
                 console.error('INIT ERROR:', e.message, e.stack);
             }
         });
     </script>
 
     <style lang="sass">
-    .spinner {
-        display: inline-block;
-        width: 1rem;
-        height: 1rem;
-        vertical-align: text-bottom;
-        border: 0.25em solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner-border 0.75s linear infinite;
-    }
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            vertical-align: text-bottom;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
 
-    @@keyframes spinner-border {
-        to { transform: rotate(360deg); }
-    }
+        @@keyframes spinner-border {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
-    .modal-header.bg-primary {
-        background-color: #0d6efd !important;
-        color: white;
-    }
+        .modal-header.bg-primary {
+            background-color: #0d6efd !important;
+            color: white;
+        }
+
         .is-invalid {
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
@@ -818,21 +847,22 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+
         .variant-selector .form-check.form-switch {
             display: flex;
             align-items: center;
-            padding-left: 0; 
+            padding-left: 0;
             margin-bottom: 12px;
         }
 
         .variant-selector .form-switch .form-check-input {
             position: static;
-            width: 2.5rem;   
+            width: 2.5rem;
             height: 1.25rem;
-            margin-top: 0;  
+            margin-top: 0;
             margin-left: 0;
             margin-right: 12px;
-            flex-shrink: 0;  
+            flex-shrink: 0;
             cursor: pointer;
         }
 

@@ -23,8 +23,12 @@ namespace QuanApi.Repository
                 .Include(spct => spct.MauSac)
                 .Include(spct => spct.DotGiamGia)
                 .Include(spct => spct.AnhSanPhams)
-                .Where(spct => spct.TrangThai)
-                .ToList();
+			  .Where(spct =>
+	spct.TrangThai &&
+	spct.SanPham != null &&
+	spct.SanPham.TrangThai
+)
+				.ToList();
 
             var grouped = all
                 .GroupBy(spct => spct.IDSanPham)
@@ -56,8 +60,8 @@ namespace QuanApi.Repository
         }
 
 
-        public SanPhamChiTietDto detailSpct(Guid id)
-        {
+		public SanPhamChiTietDto? detailSpct(Guid id)
+		{
             var spct = _db.SanPhamChiTiets
                 .Include(ct => ct.SanPham)
                     .ThenInclude(sp => sp.DanhMuc)
@@ -65,12 +69,17 @@ namespace QuanApi.Repository
                 .Include(ct => ct.MauSac)
                 .Include(ct => ct.AnhSanPhams)
                 .Include(ct => ct.DotGiamGia)
-                .FirstOrDefault(ct => ct.IDSanPhamChiTiet == id);
+			   .FirstOrDefault(ct =>
+	ct.IDSanPhamChiTiet == id &&
+	ct.TrangThai &&
+	ct.SanPham != null &&
+	ct.SanPham.TrangThai
+);
 
-            if (spct == null)
-                throw new KeyNotFoundException("Không tìm thấy sản phẩm chi tiết.");
+			if (spct == null)
+				return null;
 
-            return new SanPhamChiTietDto
+			return new SanPhamChiTietDto
             {
                 IdSanPhamChiTiet = spct.IDSanPhamChiTiet,
                 IdSanPham = spct.IDSanPham,

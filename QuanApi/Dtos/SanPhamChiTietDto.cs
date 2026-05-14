@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace QuanApi.Dtos
 {
     public class SanPhamChiTietDto

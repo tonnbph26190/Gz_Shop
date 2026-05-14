@@ -272,10 +272,18 @@ namespace QuanApi.Controllers
 			if (!list.Any())
 				return NotFound();
 
-			// 👉 Gom toàn bộ ảnh của tất cả SPCT
+			// 👉 Chỉ lấy ảnh của biến thể đang hoạt động
 			var allImages = list
-				.SelectMany(ct => ct.AnhSanPhams)
-				.Where(a => a.TrangThai)
+				.Where(ct => ct.TrangThai)
+				.SelectMany(ct => ct.AnhSanPhams
+					.Where(a => a.TrangThai)
+					.Select(a => new
+					{
+						ct.IDSanPhamChiTiet,
+						a.UrlAnh,
+						a.LaAnhChinh,
+						a.NgayTao
+					}))
 				.OrderByDescending(a => a.LaAnhChinh)
 				.ThenBy(a => a.NgayTao)
 				.Select(a => a.UrlAnh)
@@ -290,8 +298,10 @@ namespace QuanApi.Controllers
 
 				DanhSachAnh = allImages,
 
-				BienThes = list.Select(ct => new SanPhamChiTietDto
-				{
+				BienThes = list
+	.Where(ct => ct.TrangThai)
+	.Select(ct => new SanPhamChiTietDto
+	{
 					IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
 					IdSanPham = ct.IDSanPham,
 					IdKichCo = ct.IDKichCo,
@@ -327,8 +337,18 @@ namespace QuanApi.Controllers
 							).FirstOrDefault() / 100.0m))
 						: ct.GiaBan
 					),
-					MaSPChiTiet = ct.MaSPChiTiet
-				}).ToList()
+		MaSPChiTiet = ct.MaSPChiTiet,
+
+		AnhDaiDien = ct.AnhSanPhams
+	.Where(a => a.TrangThai && a.LaAnhChinh)
+	.Select(a => a.UrlAnh)
+	.FirstOrDefault()
+	?? ct.AnhSanPhams
+		.Where(a => a.TrangThai)
+		.Select(a => a.UrlAnh)
+		.FirstOrDefault()
+	?? "/img/default-product.jpg"
+	}).ToList()
 			};
 
 			return Ok(result);
