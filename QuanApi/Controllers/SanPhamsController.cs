@@ -200,13 +200,13 @@ namespace QuanApi.Controllers
 			if (!string.IsNullOrEmpty(sortDate))
 			{
 				if (sortDate == "desc")
-					baseQuery = baseQuery.OrderByDescending(s => s.NgayTao);
+					baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenByDescending(s => s.NgayTao);
 				else if (sortDate == "asc")
-					baseQuery = baseQuery.OrderBy(s => s.NgayTao);
+					baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenBy(s => s.NgayTao);
 			}
 			else
 			{
-				baseQuery = baseQuery.OrderBy(s => s.TenSanPham); // mặc định
+				baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenBy(s => s.TenSanPham);
 			}
 			var total = await baseQuery.CountAsync();
 

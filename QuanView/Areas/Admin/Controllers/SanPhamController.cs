@@ -50,7 +50,7 @@ namespace QuanView.Areas.Admin.Controllers
 		{
 			// Cố định pageSize = 5
 			int pageSize = 5;
-			var effectiveTrangThai = string.IsNullOrWhiteSpace(trangThai) ? "active" : trangThai;
+			var effectiveTrangThai = string.IsNullOrWhiteSpace(trangThai) ? "all" : trangThai;
 
 			// Tạo query string cho API
 			var queryParams = new List<string>();
