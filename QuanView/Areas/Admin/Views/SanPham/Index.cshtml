@@ -473,9 +473,9 @@ keyframes blink-warning {
              var totalQty = item.ChiTietSanPhams?.Sum(x => x.SoLuongKhaDung) ?? 0;
 
             var targetId = "collapse-variant-" + item.IDSanPham;
-            var activeVariants = item.ChiTietSanPhams?
-                .Where(ct => ct.TrangThai)
-                .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+        var activeVariants = item.ChiTietSanPhams?
+         .Where(ct => ct.TrangThai)
+         .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
 
            <div class="product-group" data-qty="@totalQty">
                 <!-- Sản phẩm chính -->
@@ -624,31 +624,60 @@ keyframes blink-warning {
                                         <td class="text-center">
                                             <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                 <div class="images-preview">
-												@if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any(a => a.TrangThai))
-												{
-													var danhSachAnhPhu = ct.DanhSachAnh
-													.Where(a => !a.LaAnhChinh && a.TrangThai)
-													.ToList();
+                                                @if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any(a => a.TrangThai))
+                                                {
+                                                    var danhSachAnhHienThi = ct.DanhSachAnh
+                                                    .Where(a => a.TrangThai)
+                                                    .OrderByDescending(a => a.LaAnhChinh)
+                                                    .ThenBy(a => a.NgayTao)
+                                                    .ToList();
 
-													<div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                    <div class="d-flex flex-wrap gap-1 justify-content-center">
 
-														<!-- Ảnh phụ -->
-														@foreach (var img in danhSachAnhPhu)
-														{
-															<img src="@img.UrlAnh"
-																 class="img-thumbnail"
-																 style="max-width:40px;max-height:40px;cursor:pointer;"
-																 onclick="previewImage('@img.UrlAnh')"
-																 title="Ảnh phụ" />
-														}
-													</div>
-												}
-												else
-												{
-													<span class="text-muted small">
-														<i class="fas fa-image"></i> Chưa có ảnh
-													</span>
-												}
+                                                        @foreach (var img in danhSachAnhHienThi)
+                                                        {
+                                                            <div class="position-relative d-inline-block me-1 mb-1">
+
+                                                                <img src="@img.UrlAnh"
+                                                                     class="img-thumbnail"
+                                                                     style="width:45px;height:45px;object-fit:cover;cursor:pointer;"
+                                                                     onclick="previewImage('@img.UrlAnh')" />
+
+                                                                @if (img.LaAnhChinh)
+                                                                {
+                                                                    <span class="badge bg-success position-absolute top-0 start-0"
+                                                                          style="font-size:9px;">
+                                                                        Chính
+                                                                    </span>
+                                                                }
+
+                                                                <div class="d-flex mt-1 gap-1">
+
+                                                                    <button type="button"
+                                                                            class="btn btn-sm btn-outline-primary btn-set-main-image"
+                                                                            data-id="@img.IDAnhSanPham">
+                                                                        <i class="fas fa-star"></i>
+                                                                    </button>
+
+                                                                    <button type="button"
+                                                                            class="btn btn-sm btn-outline-danger btn-delete-image"
+                                                                            data-id="@img.IDAnhSanPham">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </button>
+
+                                                                </div>
+
+                                                            </div>
+                                                        }
+
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">
+                                                        <i class="fas fa-image"></i> Chưa có ảnh
+                                                    </span>
+                                                }
                                                 </div>
                                                 <div class="images-list" style="display:none;"></div>
                                             </div>
@@ -800,7 +829,13 @@ keyframes blink-warning {
 						<input type="hidden" id="sanPhamChiTietId" />
 						<div class="mb-3">
 							<label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
-							<input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
+                        <input type="file"
+                               class="form-control"
+                               id="imageFile"
+                               accept="image/*"
+                               multiple
+                               required
+                               onchange="previewImageFile()">
 							<div id="imagePreview" class="image-upload-preview" style="display:none;">
 								<img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
 							</div>
@@ -954,23 +989,42 @@ keyframes blink-warning {
 
         // Preview ảnh khi chọn file
         function previewImageFile() {
+
             const fileInput = document.getElementById('imageFile');
             const previewDiv = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
 
-            if (fileInput.files && fileInput.files[0]) {
+            previewDiv.innerHTML = '';
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                previewDiv.style.display = 'none';
+                return;
+            }
+
+            previewDiv.style.display = 'flex';
+            previewDiv.style.flexWrap = 'wrap';
+            previewDiv.style.gap = '10px';
+
+            Array.from(fileInput.files).forEach(file => {
+
                 const reader = new FileReader();
+
                 reader.onload = function (e) {
-                    previewImg.src = e.target.result;
-                    previewDiv.style.display = 'block';
-               
+
+                    const img = document.createElement('img');
+
+                    img.src = e.target.result;
+
+                    img.style.maxWidth = '100px';
+                    img.style.maxHeight = '100px';
+                    img.style.objectFit = 'cover';
+                    img.style.border = '1px solid #ddd';
+                    img.style.borderRadius = '6px';
+
+                    previewDiv.appendChild(img);
                 };
 
-                reader.readAsDataURL(fileInput.files[0]);
-                
-            } else {
-                previewDiv.style.display = 'none';
-            }
+                reader.readAsDataURL(file);
+            });
         }
         // Thêm ảnh mới
         function addImage() {
@@ -992,7 +1046,9 @@ keyframes blink-warning {
 
             // Tạo FormData để upload file
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('files', fileInput.files[i]);
+            }
             formData.append('sanPhamChiTietId', sanPhamChiTietId);
             formData.append('laAnhChinh', isMainImage);
 
@@ -1008,7 +1064,17 @@ keyframes blink-warning {
                    
                     $('#addImageModal').modal('hide');
 
-                        updateProductImageDisplay(sanPhamChiTietId, data.urlAnh, isMainImage);
+                        if (data.urls && data.urls.length > 0) {
+
+                            data.urls.forEach((url, index) => {
+
+                                updateProductImageDisplay(
+                                    sanPhamChiTietId,
+                                    url,
+                                    index === 0 && isMainImage
+                                );
+                            });
+                        }
                 } else {
                         showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
                 }
@@ -1138,24 +1204,32 @@ keyframes blink-warning {
 
         // Cập nhật hiển thị ảnh trong bảng chính
         function updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage) {
-            // Tìm container ảnh sản phẩm trong bảng
             const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) {
-                console.warn('Không tìm thấy container cho sanPhamChiTietId:', sanPhamChiTietId);
-                return;
-            }
+            if (!container) return;
 
             const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) {
-                console.warn('Không tìm thấy preview div');
-                return;
+            if (!previewDiv) return;
+
+            const emptyText = previewDiv.querySelector('span.text-muted');
+            if (emptyText) {
+                previewDiv.innerHTML = '';
             }
 
-            // Nếu là ảnh chính hoặc chưa có ảnh nào, cập nhật hiển thị
-            if (isMainImage || previewDiv.querySelector('span.text-muted')) {
-                previewDiv.innerHTML = `
-                            <img src="${imageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                        `;
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.className = 'img-thumbnail';
+            img.style.maxWidth = '40px';
+            img.style.maxHeight = '40px';
+            img.style.cursor = 'pointer';
+            img.title = isMainImage ? 'Ảnh chính' : 'Ảnh phụ';
+            img.onclick = function () {
+                previewImage(imageUrl);
+            };
+
+            if (isMainImage) {
+                previewDiv.prepend(img);
+            } else {
+                previewDiv.appendChild(img);
             }
         }
 
@@ -1230,6 +1304,44 @@ document.querySelectorAll('.product-group').forEach(p => {
         p.classList.add('low-stock'); // sắp hết
     }
 });
+        $(document).on('click', '.btn-delete-image', function () {
+            const imageId = $(this).data('id');
 
+            if (!confirm('Xóa ảnh này?')) return;
+
+            $.ajax({
+                url: '/Admin/SanPham/DeleteImage?imageId=' + imageId,
+                type: 'POST',
+                success: function (res) {
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message || 'Xóa ảnh thất bại');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi xóa ảnh');
+                }
+            });
+        });
+
+        $(document).on('click', '.btn-set-main-image', function () {
+            const imageId = $(this).data('id');
+
+            $.ajax({
+                url: '/Admin/SanPham/SetMainImage?imageId=' + imageId,
+                type: 'POST',
+                success: function (res) {
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message || 'Đặt ảnh chính thất bại');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi đặt ảnh chính');
+                }
+            });
+        });
     </script>
 }

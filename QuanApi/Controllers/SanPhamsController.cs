@@ -663,21 +663,32 @@ namespace QuanApi.Controllers
             return Ok(images);
         }
 
-        [HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
-        public async Task<IActionResult> UploadProductImage(Guid sanPhamChiTietId, IFormFile file, bool laAnhChinh = false)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("Không có file ảnh.");
+		[HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
+		public async Task<IActionResult> UploadProductImage(
+	Guid sanPhamChiTietId,
+	IFormFile file,
+	bool laAnhChinh = false)
+		{
+			if (file == null || file.Length == 0)
+				return BadRequest("Không có file ảnh.");
 
-			// Tạo tên file duy nhất
+			var sanPhamChiTiet = await _context.SanPhamChiTiets
+				.FirstOrDefaultAsync(x => x.IDSanPhamChiTiet == sanPhamChiTietId);
+
+			if (sanPhamChiTiet == null)
+				return NotFound("Không tìm thấy sản phẩm chi tiết.");
+
 			var viewProjectPath = Path.Combine(
-				Directory.GetParent(Directory.GetCurrentDirectory()).FullName,
+				Directory.GetParent(Directory.GetCurrentDirectory())!.FullName,
 				"QuanView",
 				"wwwroot",
 				"uploads"
 			);
 
-			var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+			if (!Directory.Exists(viewProjectPath))
+				Directory.CreateDirectory(viewProjectPath);
+
+			var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
 			var fullPath = Path.Combine(viewProjectPath, fileName);
 
 			using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -687,58 +698,53 @@ namespace QuanApi.Controllers
 
 			var urlAnh = $"/uploads/{fileName}";
 
-			var danhSachAnhCu = await _context.AnhSanPhams.Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai).ToListAsync();
+			var daCoAnh = await _context.AnhSanPhams
+				.AnyAsync(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai);
 
-			if (danhSachAnhCu.Any())
+			if (!daCoAnh)
+				laAnhChinh = true;
+
+			if (laAnhChinh)
 			{
-				foreach (var anh in danhSachAnhCu)
+				var anhChinhCu = await _context.AnhSanPhams
+					.Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId
+							 && a.LaAnhChinh
+							 && a.TrangThai)
+					.ToListAsync();
+
+				foreach (var anh in anhChinhCu)
 				{
-					anh.TrangThai = false; // hoặc = 1 nếu bạn dùng 1 là inactive
+					anh.LaAnhChinh = false;
 					anh.LanCapNhatCuoi = DateTime.UtcNow;
 					anh.NguoiCapNhat = User?.Identity?.Name ?? "System";
 				}
 			}
 
-			// Tạo bản ghi ảnh sản phẩm như logic cũ
 			var anhSanPham = new AnhSanPham
-            {
-                IDAnhSanPham = Guid.NewGuid(),
-                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
-                IDSanPhamChiTiet = sanPhamChiTietId,
-                UrlAnh = urlAnh,
-                LaAnhChinh = laAnhChinh,
-                NgayTao = DateTime.UtcNow,
-                NguoiTao = User?.Identity?.Name ?? "System",
-                TrangThai = true
-            };
+			{
+				IDAnhSanPham = Guid.NewGuid(),
+				MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+				IDSanPhamChiTiet = sanPhamChiTietId,
+				UrlAnh = urlAnh,
+				LaAnhChinh = laAnhChinh,
+				NgayTao = DateTime.UtcNow,
+				NguoiTao = User?.Identity?.Name ?? "System",
+				TrangThai = true
+			};
 
-            // Nếu đặt làm ảnh chính, bỏ ảnh chính cũ
-            if (laAnhChinh)
-            {
-                var anhChinhCu = await _context.AnhSanPhams
-                    .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.LaAnhChinh && a.TrangThai)
-                    .FirstOrDefaultAsync();
+			_context.AnhSanPhams.Add(anhSanPham);
+			await _context.SaveChangesAsync();
 
-                if (anhChinhCu != null)
-                {
-                    anhChinhCu.LaAnhChinh = false;
-                    anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
-                    anhChinhCu.NguoiCapNhat = User?.Identity?.Name ?? "System";
-                }
-            }
+			return Ok(new
+			{
+				message = "Upload ảnh thành công.",
+				urlAnh,
+				anhSanPham.IDAnhSanPham,
+				anhSanPham.MaAnh,
+				anhSanPham.LaAnhChinh
+			});
+		}
 
-            _context.AnhSanPhams.Add(anhSanPham);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "Upload ảnh thành công.",
-                urlAnh,
-                anhSanPham.IDAnhSanPham,
-                anhSanPham.MaAnh,
-                anhSanPham.LaAnhChinh
-            });
-        }
 		[HttpGet("thong-ke")]
 		public async Task<IActionResult> GetThongKeSanPham()
 		{

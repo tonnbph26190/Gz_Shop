@@ -129,33 +129,28 @@ namespace QuanView.Controllers
 				return RedirectToAction("Index");
 			}
 
-			var danhSachAnhHopLe = spDetail.BienThes
-	.Where(b => !string.IsNullOrWhiteSpace(b.AnhDaiDien))
-	.Select(b => b.AnhDaiDien)
-	.ToList();
+			var firstBienThe = spDetail.BienThes.First();
 
-			if (!danhSachAnhHopLe.Any())
+			var danhSachAnhBanDau = spDetail.BienThes
+				.SelectMany(x => x.DanhSachAnh != null && x.DanhSachAnh.Any()
+					? x.DanhSachAnh
+					: new List<string> { x.AnhDaiDien ?? "" })
+				.Where(x => !string.IsNullOrWhiteSpace(x))
+				.Distinct()
+				.ToList();
+
+			if (!danhSachAnhBanDau.Any())
 			{
-				var anhDauTien = spDetail.DanhSachAnh?
-					.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-
-				if (!string.IsNullOrWhiteSpace(anhDauTien))
-				{
-					danhSachAnhHopLe.Add(anhDauTien);
-				}
+				danhSachAnhBanDau.Add("/img/default-product.jpg");
 			}
 
-			string urlAnh = danhSachAnhHopLe.FirstOrDefault()
-				?? "/img/default-product.jpg";
-			spDetail.DanhSachAnh = danhSachAnhHopLe;
-
-			var firstBienThe = spDetail.BienThes.First();
+			string urlAnh = danhSachAnhBanDau.FirstOrDefault() ?? "/img/default-product.jpg";
 			var model = new SanPhamKhachHangViewModel
 			{
 				TenSanPham = spDetail.TenSanPham ?? fallbackProductName ?? "Sản phẩm",
 				DanhMuc = spDetail.TenDanhMuc ?? fallbackCategory ?? firstBienThe.TenDanhMuc ?? "",
 				UrlAnh = urlAnh,
-				DanhSachAnh = spDetail.DanhSachAnh ?? new List<string> { urlAnh },
+				DanhSachAnh = danhSachAnhBanDau,
 				BienThes = spDetail.BienThes.Select(b => new BienTheSanPhamViewModel
 				{
 					IDSanPhamChiTiet = b.IdSanPhamChiTiet,
@@ -165,7 +160,10 @@ namespace QuanView.Controllers
 					GiaGoc = b.GiaBan,
 					GiaSauGiam = b.price,
 					SoLuong = b.SoLuongKhaDung,
-					AnhDaiDien = b.AnhDaiDien
+					AnhDaiDien = b.AnhDaiDien,
+					DanhSachAnh = b.DanhSachAnh != null && b.DanhSachAnh.Any()
+		? b.DanhSachAnh
+		: new List<string> { b.AnhDaiDien ?? "/img/default-product.jpg" }
 				}).ToList()
 			};
 

@@ -18,7 +18,7 @@ namespace QuanApi.Dtos
         public decimal GiaGoc { get; set; }
 		public string? AnhDaiDien { get; set; }
 		public string HoaTiet { get; set; }
-
+		public List<string> DanhSachAnh { get; set; } = new();
 		public decimal GiaSauGiam { get; set; }
         public int SoLuong { get; set; }
     }

@@ -279,6 +279,7 @@
         // --- 1. GLOBAL VARIABLES & STATE ---
         let lang = "@lang";
         let bienThes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BienThes));
+        console.log("BIEN THES =", bienThes);
         let images = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachAnh));
         
         let selectedSize = '';
@@ -394,40 +395,49 @@
             $('#stockInfo').html(html);
         }
         function updateImageByVariant(bienThe) {
-            if (!bienThe || !bienThe.AnhDaiDien) return;
+            if (!bienThe) return;
 
-            const img = bienThe.AnhDaiDien;
+            let variantImages = [];
+
+            if (bienThe.DanhSachAnh && bienThe.DanhSachAnh.length > 0) {
+                variantImages = bienThe.DanhSachAnh;
+            } else if (bienThe.AnhDaiDien) {
+                variantImages = [bienThe.AnhDaiDien];
+            }
+
+            let allProductImages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DanhSachAnh));
+
+            images = [
+                ...variantImages,
+                ...allProductImages
+            ].filter((x, i, arr) => x && x.trim() !== "" && arr.indexOf(x) === i);
+
+            if (images.length === 0) {
+                images = ["/img/default-product.jpg"];
+            }
 
             stopAutoCycle();
 
-            $('#imageSlider')
-                .html(`
-                    <div style="min-width:100%; height:100%; flex-shrink:0;">
-                        <img src="${img}"
-                             class="product-detail-img-main"
-                             style="width:100%; height:100%; object-fit:contain;" />
-                    </div>
-                `)
-                .css('transform', 'translateX(0%)');
-
-            $('.thumb-item').removeClass('active');
-
-            let foundThumb = false;
-
-            $('.thumb-item').each(function () {
-                if ($(this).attr('src') === img) {
-                    $(this).addClass('active');
-                    foundThumb = true;
-                }
-            });
-
-            if (!foundThumb) {
-                $('.thumbnail-list').prepend(`
-                    <img src="${img}" class="thumb-item active" data-index="0" />
-                `);
-            }
-
+            totalImages = images.length;
             currentIndex = 0;
+
+            $('#imageSlider').html(images.map(img => `
+                <div style="min-width:100%;height:100%;flex-shrink:0;">
+                    <img src="${img}"
+                         class="product-detail-img-main"
+                         style="width:100%;height:100%;object-fit:contain;" />
+                </div>
+            `).join('')).css('transform', 'translateX(0%)');
+
+            $('.thumbnail-list').html(images.map((img, index) => `
+                <img src="${img}"
+                     class="thumb-item ${index === 0 ? 'active' : ''}"
+                     data-index="${index}" />
+            `).join(''));
+
+            if (totalImages > 1) {
+                startAutoCycle();
+            }
         }
         // --- 4. INITIALIZATION & EVENTS ---
         $(document).ready(function () {

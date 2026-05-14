@@ -347,7 +347,15 @@ namespace QuanApi.Controllers
 		.Where(a => a.TrangThai)
 		.Select(a => a.UrlAnh)
 		.FirstOrDefault()
-	?? "/img/default-product.jpg"
+	?? "/img/default-product.jpg",
+
+		DanhSachAnh = ct.AnhSanPhams
+	.Where(a => a.TrangThai)
+	.OrderByDescending(a => a.LaAnhChinh)
+	.ThenBy(a => a.NgayTao)
+	.Select(a => a.UrlAnh)
+	.Distinct()
+	.ToList()
 	}).ToList()
 			};
 

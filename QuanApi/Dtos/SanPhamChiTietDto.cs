@@ -26,5 +26,6 @@ namespace QuanApi.Dtos
         public bool TrangThai { get; set; } // Thêm trường này
         public string? MaSPChiTiet { get; set; } // Thêm trường này nếu cần
 		public List<string> DanhSachAnh { get; set; } = new List<string>();
+
 	}
 }

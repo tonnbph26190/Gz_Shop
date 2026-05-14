@@ -186,7 +186,45 @@ namespace QuanView.Areas.Admin.Controllers
 
 			return View(viewModel);
 		}
+		[HttpPost]
+		public async Task<IActionResult> DeleteImage(Guid imageId)
+		{
+			var response = await _http.DeleteAsync($"sanphams/images/{imageId}");
 
+			if (!response.IsSuccessStatusCode)
+			{
+				return Json(new
+				{
+					success = false,
+					message = "Xóa ảnh thất bại"
+				});
+			}
+
+			return Json(new
+			{
+				success = true
+			});
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> SetMainImage(Guid imageId)
+		{
+			var response = await _http.PutAsync($"sanphams/images/{imageId}/set-main", null);
+
+			if (!response.IsSuccessStatusCode)
+			{
+				return Json(new
+				{
+					success = false,
+					message = "Đặt ảnh chính thất bại"
+				});
+			}
+
+			return Json(new
+			{
+				success = true
+			});
+		}
 		public async Task<IActionResult> Create()
 		{
 			await LoadDropdownData();
