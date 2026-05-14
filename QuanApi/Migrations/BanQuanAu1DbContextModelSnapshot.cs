@@ -762,6 +762,11 @@ namespace QuanApi.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("TrangThaiThanhToan")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<bool>("TrangThaiHoaDon")
                         .HasColumnType("boolean");
 
