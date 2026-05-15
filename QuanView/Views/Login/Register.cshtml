@@ -7,137 +7,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký</title>
+    <title>Tạo tài khoản mới</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
     <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+        }
+
         body {
-            background-color: #f8f9fa;
-            height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
+            color: #1f2937;
         }
 
-        .register-container {
-            max-width: 400px;
+        .register-card {
+            background: var(--glass-bg);
             width: 100%;
-            padding: 2rem;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            max-width: 480px;
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header-section h2 {
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.025em;
+        }
+
+        .header-section p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
         .google-btn {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            color: #333;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 0.75rem;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-            .google-btn:hover {
-                background-color: #f8f9fa;
-            }
-
-        .validation-summary-errors {
-            color: #dc3545;
-            margin-bottom: 1rem;
+        .google-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            color: #111827;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .divider:not(:empty)::before { margin-right: .75rem; }
+        .divider:not(:empty)::after { margin-left: .75rem; }
 
         .field-validation-error {
-            color: #dc3545;
-            font-size: 0.875rem;
+            color: #dc3545; /* Bootstrap danger red */
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 5px;
+            display: block; /* Forces it to the bottom */
+            width: 100%;    /* Ensures it takes full width */
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .footer-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Group animations */
+        .register-card {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .input-validation-error {
+            border-color: #dc3545 !important;
+        }
+        .input-validation-error:focus {
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1) !important;
+        }
+        .input-group + .field-validation-error {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <h2 class="text-center mb-4">Đăng ký</h2>
 
-        @* @if (!ViewData.ModelState.IsValid)
+    <div class="register-card">
+        <div class="header-section">
+            <h2>Bắt đầu ngay</h2>
+            <p>Tạo tài khoản để trải nghiệm dịch vụ tốt nhất</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
         {
-            <div class="alert alert-danger">
-                @Html.ValidationSummary(false, "", new { @class = "validation-summary-errors" })
+            <div class="alert alert-danger py-2 px-3 rounded-3" style="font-size: 0.85rem;">
+                <i class="fas fa-exclamation-circle me-2"></i> Vui lòng kiểm tra lại thông tin.
+                @Html.ValidationSummary(true, "", new { @class = "list-unstyled mb-0 mt-1" })
             </div>
-        } *@
+        }
 
         <form method="post" action="@Url.Action("Register", "Login")" id="registerForm">
             @Html.AntiForgeryToken()
 
-            <div class="mb-3">
-                <label for="TenKhachHang" class="form-label">Tên khách hàng</label>
-                <input type="text" class="form-control" id="TenKhachHang" name="TenKhachHang"
-                       value="@Model?.TenKhachHang" placeholder="Nhập tên khách hàng" required>
-                @Html.ValidationMessageFor(m => m.TenKhachHang, "", new { @class = "field-validation-error" })
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="TenKhachHang" class="form-label">Họ và tên</label>
+                    <input type="text" class="form-control" id="TenKhachHang" name="TenKhachHang"
+                           value="@Model?.TenKhachHang" placeholder="Nguyễn Văn A" required>
+                    @Html.ValidationMessageFor(m => m.TenKhachHang, "", new { @class = "field-validation-error" })
+                </div>
             </div>
 
             <div class="mb-3">
                 <label for="Email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="Email" name="Email"
-                       value="@Model?.Email" placeholder="Nhập email của bạn" required>
-                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-validation-error" })
+                <div class="d-flex flex-column"> <!-- Wrapper to stack items vertically -->
+                    <input type="email" class="form-control" id="Email" name="Email"
+                        value="@Model?.Email" placeholder="example@gmail.com" required>
+                    
+                    @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-validation-error" })
+                </div>
             </div>
 
             <div class="mb-3">
                 <label for="SoDienThoai" class="form-label">Số điện thoại</label>
                 <input type="tel" class="form-control" id="SoDienThoai" name="SoDienThoai"
-                       value="@Model?.SoDienThoai" placeholder="Nhập số điện thoại" required>
+                       value="@Model?.SoDienThoai" placeholder="090 123 4567" required>
                 @Html.ValidationMessageFor(m => m.SoDienThoai, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
                 <label for="Password" class="form-label">Mật khẩu</label>
                 <input type="password" class="form-control" id="Password" name="Password"
-                       placeholder="Nhập mật khẩu (ít nhất 6 ký tự)" required>
+                    placeholder="••••••••" required minlength="6">
                 @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-validation-error" })
             </div>
 
             <div class="mb-3">
                 <label for="ConfirmPassword" class="form-label">Xác nhận mật khẩu</label>
                 <input type="password" class="form-control" id="ConfirmPassword" name="ConfirmPassword"
-                       placeholder="Xác nhận mật khẩu" required>
+                    placeholder="••••••••" required>
                 @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-validation-error" })
             </div>
 
-            <div class="mb-3 form-check">
+            <div class="col-12">
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-validation-error" })
+                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-validation-error" })
+            </div>
+            <div class="mb-4 form-check">
                 <input type="checkbox" class="form-check-input" id="agreeTerms" required>
-                <label class="form-check-label" for="agreeTerms">Đồng ý với các điều khoản dịch vụ</label>
+                <label class="form-check-label text-muted" for="agreeTerms" style="font-size: 0.85rem;">
+                    Tôi đồng ý với <a href="#" class="text-decoration-none">Điều khoản & Chính sách</a>
+                </label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 mb-3">Đăng ký</button>
+            <button type="submit" class="btn btn-primary btn-submit w-100 mb-2">Đăng ký tài khoản</button>
         </form>
 
-        <div class="text-center mb-3">Hoặc</div>
-        <a href="@Url.Action("GoogleSignUp", "Login")" class="btn google-btn w-100 d-flex align-items-center justify-content-center gap-2">
-            <i class="fab fa-google"></i> Đăng ký bằng Google
+        <div class="divider">Hoặc tiếp tục với</div>
+
+        <a href="@Url.Action("GoogleSignUp", "Login")" class="google-btn w-100">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Google
         </a>
-        <p class="text-center mt-3">
-            Đã có tài khoản? <a href="@Url.Action("Index", "Login")">Đăng nhập</a>
+
+        <p class="text-center mt-4 mb-0" style="font-size: 0.9rem;">
+            Đã có tài khoản? <a href="@Url.Action("Index", "Login")" class="footer-link">Đăng nhập</a>
         </p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
 
     <script>
         $(document).ready(function () {
+            $("#registerForm").validate({
+                rules: {
+                    Password: {
+                        required: true,
+                        minlength: 6
+                    },
+                    ConfirmPassword: {
+                        required: true,
+                        equalTo: "#Password" // This links to the ID of the password field
+                    },
+                    SoDienThoai: {
+                        phoneFormat: true
+                    }
+                },
+                messages: {
+                    Password: {
+                        required: "Vui lòng nhập mật khẩu",
+                        minlength: "Mật khẩu phải có ít nhất 6 ký tự"
+                    },
+                    ConfirmPassword: {
+                        required: "Vui lòng xác nhận mật khẩu",
+                        equalTo: "Mật khẩu xác nhận không trùng khớp" // Custom error message
+                    }
+                },
+                errorElement: 'span',
+                errorClass: 'field-validation-error',
+                errorPlacement: function(error, element) {
+                    error.insertAfter(element); // Ensures error stays at the bottom
+                }
+            });
+
+            // Custom phone validation (as you had before)
             $.validator.addMethod("phoneFormat", function (value, element) {
                 return this.optional(element) || /^[0-9]{10,11}$/.test(value);
-            }, "Số điện thoại phải có 10-11 số");
-
-            $.validator.addMethod("passwordStrength", function (value, element) {
-                return this.optional(element) || value.length >= 6;
-            }, "Mật khẩu phải có ít nhất 6 ký tự");
-            var validator = $("#registerForm").validate();
-
-            $("#SoDienThoai").rules("add", {
-                phoneFormat: true
-            });
-
-            $("#Password").rules("add", {
-                passwordStrength: true
-            });
+            }, "Số điện thoại không hợp lệ");
         });
     </script>
 </body>
