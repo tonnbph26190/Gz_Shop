@@ -313,6 +313,9 @@ namespace QuanView.Controllers
                             UsePoint = checkoutData.UsePoint,
                             RequestedUsedPoints = checkoutData.RequestedUsedPoints,
                             PhiVanChuyen = checkoutData.PhiVanChuyen,
+                            PhiVanChuyenGoc = checkoutData.PhiVanChuyenGoc,
+                            SoTienGiamPhiVanChuyen = checkoutData.SoTienGiamPhiVanChuyen,
+                            ShippingDiscountMessage = checkoutData.ShippingDiscountMessage,
                             PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
@@ -384,6 +387,9 @@ namespace QuanView.Controllers
                     decimal soTienGiamTuDiem = 0;
                     decimal tyLeQuyDoiDiem = 0;
                     int diemDaDung = checkoutData.RequestedUsedPoints ?? 0;
+                    decimal phiVanChuyenGoc = checkoutData.PhiVanChuyenGoc ?? checkoutData.PhiVanChuyen;
+                    decimal soTienGiamPhiVanChuyen = checkoutData.SoTienGiamPhiVanChuyen ?? Math.Max(phiVanChuyenGoc - checkoutData.PhiVanChuyen, 0);
+                    string shippingDiscountMessage = checkoutData.ShippingDiscountMessage ?? string.Empty;
 
                     try
                     {
@@ -421,6 +427,18 @@ namespace QuanView.Controllers
                         {
                             diemDaDung = diemDaDungElement.GetInt32();
                         }
+                        if (responseData.TryGetProperty("phiVanChuyen", out var phiVanChuyenElement))
+                        {
+                            checkoutData.PhiVanChuyen = phiVanChuyenElement.GetDecimal();
+                        }
+                        if (responseData.TryGetProperty("phiVanChuyenGoc", out var phiVanChuyenGocElement))
+                        {
+                            phiVanChuyenGoc = phiVanChuyenGocElement.GetDecimal();
+                        }
+                        if (responseData.TryGetProperty("soTienGiamPhiVanChuyen", out var soTienGiamPhiVanChuyenElement))
+                        {
+                            soTienGiamPhiVanChuyen = soTienGiamPhiVanChuyenElement.GetDecimal();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -437,6 +455,9 @@ namespace QuanView.Controllers
                     ViewBag.CustomerPhone = checkoutData.SoDienThoaiNguoiNhan;
                     ViewBag.CustomerAddress = checkoutData.DiaChiGiaoHang;
                     ViewBag.ShippingFee = checkoutData.PhiVanChuyen;
+                    ViewBag.ShippingOriginalFee = phiVanChuyenGoc;
+                    ViewBag.ShippingDiscountAmount = soTienGiamPhiVanChuyen;
+                    ViewBag.ShippingDiscountMessage = shippingDiscountMessage;
 
                     HttpContext.Session.Remove("Cart");
 
@@ -453,6 +474,9 @@ namespace QuanView.Controllers
                             customerPhone = checkoutData.SoDienThoaiNguoiNhan,
                             customerAddress = checkoutData.DiaChiGiaoHang,
                             shippingFee = checkoutData.PhiVanChuyen,
+                            shippingOriginalFee = phiVanChuyenGoc,
+                            shippingDiscountAmount = soTienGiamPhiVanChuyen,
+                            shippingDiscountMessage = shippingDiscountMessage,
                             usedPoints = diemDaDung,
                             pointDiscount = soTienGiamTuDiem,
                             pointRate = tyLeQuyDoiDiem
@@ -556,7 +580,8 @@ namespace QuanView.Controllers
         // GET: Trang thành công
         public IActionResult Success(string orderCode, decimal? total = null, string paymentMethod = null,
             string customerName = null, string customerPhone = null, string customerAddress = null,
-            decimal? shippingFee = null, int? usedPoints = null, decimal? pointDiscount = null, decimal? pointRate = null)
+            decimal? shippingFee = null, decimal? shippingOriginalFee = null, decimal? shippingDiscountAmount = null, string? shippingDiscountMessage = null,
+            int? usedPoints = null, decimal? pointDiscount = null, decimal? pointRate = null)
         {
             ViewBag.OrderCode = orderCode;
             ViewBag.OrderTotal = total ?? 0;
@@ -566,6 +591,9 @@ namespace QuanView.Controllers
             ViewBag.CustomerPhone = customerPhone;
             ViewBag.CustomerAddress = customerAddress;
             ViewBag.ShippingFee = shippingFee ?? 0;
+            ViewBag.ShippingOriginalFee = shippingOriginalFee ?? (shippingFee ?? 0);
+            ViewBag.ShippingDiscountAmount = shippingDiscountAmount ?? Math.Max((shippingOriginalFee ?? shippingFee ?? 0) - (shippingFee ?? 0), 0);
+            ViewBag.ShippingDiscountMessage = shippingDiscountMessage ?? string.Empty;
             ViewBag.UsedPoints = usedPoints ?? 0;
             ViewBag.PointDiscount = pointDiscount ?? 0;
             ViewBag.PointRate = pointRate ?? 0;
@@ -1071,6 +1099,15 @@ namespace QuanView.Controllers
                                 var tyLeQuyDoiDiem = root.TryGetProperty("tyLeQuyDoiDiem", out var tyLeQuyDoiDiemEl)
                                     ? tyLeQuyDoiDiemEl.GetDecimal()
                                     : 0m;
+                                var shippingFee = root.TryGetProperty("phiVanChuyen", out var shippingFeeEl)
+                                    ? shippingFeeEl.GetDecimal()
+                                    : checkoutInfo.PhiVanChuyen;
+                                var shippingOriginalFee = root.TryGetProperty("phiVanChuyenGoc", out var shippingOriginalFeeEl)
+                                    ? shippingOriginalFeeEl.GetDecimal()
+                                    : (checkoutInfo.PhiVanChuyenGoc ?? shippingFee);
+                                var shippingDiscountAmount = root.TryGetProperty("soTienGiamPhiVanChuyen", out var shippingDiscountAmountEl)
+                                    ? shippingDiscountAmountEl.GetDecimal()
+                                    : (checkoutInfo.SoTienGiamPhiVanChuyen ?? Math.Max(shippingOriginalFee - shippingFee, 0));
 
                                 // Chuẩn bị dữ liệu cho trang Success
                                 ViewBag.OrderCode = maHoaDon;
@@ -1080,7 +1117,10 @@ namespace QuanView.Controllers
                                 ViewBag.CustomerName = checkoutInfo.TenNguoiNhan;
                                 ViewBag.CustomerPhone = checkoutInfo.SoDienThoaiNguoiNhan;
                                 ViewBag.CustomerAddress = checkoutInfo.DiaChiGiaoHang;
-                                ViewBag.ShippingFee = checkoutInfo.PhiVanChuyen;
+                                ViewBag.ShippingFee = shippingFee;
+                                ViewBag.ShippingOriginalFee = shippingOriginalFee;
+                                ViewBag.ShippingDiscountAmount = shippingDiscountAmount;
+                                ViewBag.ShippingDiscountMessage = checkoutInfo.ShippingDiscountMessage ?? string.Empty;
                                 ViewBag.UsedPoints = diemDaDung;
                                 ViewBag.PointDiscount = soTienGiamTuDiem;
                                 ViewBag.PointRate = tyLeQuyDoiDiem;
@@ -1177,6 +1217,9 @@ namespace QuanView.Controllers
         public string GhiChu { get; set; }
         public string MaGiamGia { get; set; }
         public decimal PhiVanChuyen { get; set; } = 50000;
+        public decimal? PhiVanChuyenGoc { get; set; }
+        public decimal? SoTienGiamPhiVanChuyen { get; set; }
+        public string? ShippingDiscountMessage { get; set; }
         public bool PhiVanChuyenDaGiam { get; set; } = true;
         public int? ToDistrictId { get; set; }
         public string? ToWardCode { get; set; }

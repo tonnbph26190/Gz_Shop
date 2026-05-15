@@ -8,6 +8,9 @@
     var customerPhone = ViewBag.CustomerPhone as string;
     var customerAddress = ViewBag.CustomerAddress as string;
     var shippingFee = ViewBag.ShippingFee as decimal? ?? 0;
+    var shippingOriginalFee = ViewBag.ShippingOriginalFee as decimal? ?? shippingFee;
+    var shippingDiscountAmount = ViewBag.ShippingDiscountAmount as decimal? ?? Math.Max(shippingOriginalFee - shippingFee, 0);
+    var shippingDiscountMessage = ViewBag.ShippingDiscountMessage as string ?? string.Empty;
     var usedPoints = ViewBag.UsedPoints as int? ?? 0;
     var pointDiscount = ViewBag.PointDiscount as decimal? ?? 0;
     var pointRate = ViewBag.PointRate as decimal? ?? 0;
@@ -232,9 +235,26 @@
             </div>
 
             <div class="info-item">
-                <span class="info-label">Phí vận chuyển:</span>
+                <span class="info-label">Phí vận chuyển phải thu:</span>
                 <span class="info-value">@(shippingFee > 0 ? shippingFee.ToString("N0") + " VND" : "0 VND")</span>
             </div>
+            @if (shippingDiscountAmount > 0)
+            {
+                <div class="info-item">
+                    <span class="info-label">Phí vận chuyển gốc:</span>
+                    <span class="info-value">@shippingOriginalFee.ToString("N0") VND</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ưu đãi phí ship:</span>
+                    <span class="info-value text-success">-@shippingDiscountAmount.ToString("N0") VND</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(shippingDiscountMessage))
+                {
+                    <div class="alert alert-success py-2 px-3 mt-2 mb-0" style="font-size: 12px;">
+                        @shippingDiscountMessage
+                    </div>
+                }
+            }
         </div>
 
         <div class="action-buttons">

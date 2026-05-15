@@ -102,6 +102,18 @@ namespace QuanApi.Services
             _logger.LogInformation("Lấy phiếu giảm giá của khách hàng: {CustomerId}", customerId);
 
             var now = DateTime.UtcNow;
+            var usedVoucherIds = await _context.HoaDons
+                .AsNoTracking()
+                .Where(h =>
+                    h.IDKhachHang == customerId &&
+                    h.IDPhieuGiamGia.HasValue &&
+                    h.TrangThaiHoaDon &&
+                    h.TrangThai != "Đã hủy")
+                .Select(h => h.IDPhieuGiamGia!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            var usedVoucherSet = usedVoucherIds.ToHashSet();
 
             var vouchers = await _context.PhieuGiamGias
                 .AsNoTracking()
@@ -139,9 +151,12 @@ namespace QuanApi.Services
                         : x.Voucher.SoLuong,
                     loaiPhieu = x.Voucher.LaCongKhai ? "Công khai" : "Riêng tư"
                 })
-                .ToListAsync<object>();
+                .ToListAsync();
 
-            return vouchers;
+            return vouchers
+                .Where(x => !usedVoucherSet.Contains(x.id))
+                .Select(x => (object)x)
+                .ToList();
         }
 
         public async Task<KhachHangPhieuGiam> CreateAsync(KhachHangPhieuGiam model)

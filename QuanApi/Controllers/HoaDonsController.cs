@@ -218,6 +218,8 @@ namespace QuanApi.Controllers
 							DiemCong = h.DiemCong,
 							TyLeQuyDoiDiem = h.TyLeQuyDoiDiem,
 							PhiVanChuyen = h.PhiVanChuyen,
+							PhiVanChuyenGoc = h.PhiVanChuyenGoc,
+							SoTienGiamPhiVanChuyen = h.SoTienGiamPhiVanChuyen,
 							TrangThai = h.TrangThai,
 							NgayTao = h.NgayTao,
 							TenNguoiNhan = h.TenNguoiNhan,
@@ -319,6 +321,43 @@ namespace QuanApi.Controllers
 				if (dto.TongTien <= 0)
 				{
 					return BadRequest("Tổng tiền phải lớn hơn 0");
+				}
+
+				if (dto.PhieuGiamGiaId.HasValue)
+				{
+					var now = DateTime.UtcNow;
+					var voucher = await _context.PhieuGiamGias
+						.AsNoTracking()
+						.FirstOrDefaultAsync(x => x.IDPhieuGiamGia == dto.PhieuGiamGiaId.Value);
+
+					if (voucher == null || !voucher.TrangThai || voucher.NgayBatDau > now || voucher.NgayKetThuc < now)
+					{
+						return BadRequest("Phiếu giảm giá không hợp lệ hoặc đã hết hiệu lực.");
+					}
+
+					if (dto.KhachHangId.HasValue)
+					{
+						var usedByCustomer = await HasCustomerUsedVoucherAsync(dto.PhieuGiamGiaId.Value, dto.KhachHangId.Value);
+						if (usedByCustomer)
+						{
+							return BadRequest("Khách hàng này đã sử dụng phiếu giảm giá này trước đó.");
+						}
+					}
+					else
+					{
+						var normalizedPhone = NormalizePhoneForVoucherLimit(dto.SoDienThoaiNguoiNhan);
+						var normalizedEmail = NormalizeEmailForVoucherLimit(dto.EmailNguoiNhan);
+						if (string.IsNullOrWhiteSpace(normalizedPhone) && string.IsNullOrWhiteSpace(normalizedEmail))
+						{
+							return BadRequest("Vui lòng nhập số điện thoại hoặc email để sử dụng phiếu giảm giá.");
+						}
+
+						var usedByGuest = await HasGuestUsedVoucherAsync(dto.PhieuGiamGiaId.Value, normalizedPhone, normalizedEmail);
+						if (usedByGuest)
+						{
+							return BadRequest("Số điện thoại hoặc email này đã sử dụng phiếu giảm giá này trước đó.");
+						}
+					}
 				}
 
 				// Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
@@ -920,6 +959,79 @@ namespace QuanApi.Controllers
 				return StatusCode(500, "Lỗi nội bộ server");
 			}
 		}
+
+		private static string NormalizePhoneForVoucherLimit(string? phone)
+		{
+			if (string.IsNullOrWhiteSpace(phone))
+				return string.Empty;
+
+			var digits = new string(phone.Where(char.IsDigit).ToArray());
+			if (digits.StartsWith("84") && digits.Length == 11)
+				return "0" + digits.Substring(2);
+
+			return digits;
+		}
+
+		private static string NormalizeEmailForVoucherLimit(string? email)
+		{
+			return string.IsNullOrWhiteSpace(email)
+				? string.Empty
+				: email.Trim().ToLowerInvariant();
+		}
+
+		private async Task<bool> HasCustomerUsedVoucherAsync(Guid voucherId, Guid customerId)
+		{
+			return await _context.HoaDons
+				.AsNoTracking()
+				.AnyAsync(h =>
+					h.IDPhieuGiamGia == voucherId &&
+					h.IDKhachHang == customerId &&
+					h.TrangThaiHoaDon &&
+					h.TrangThai != "Đã hủy");
+		}
+
+		private async Task<bool> HasGuestUsedVoucherAsync(Guid voucherId, string normalizedPhone, string normalizedEmail)
+		{
+			if (string.IsNullOrWhiteSpace(normalizedPhone) && string.IsNullOrWhiteSpace(normalizedEmail))
+				return false;
+
+			if (!string.IsNullOrWhiteSpace(normalizedPhone))
+			{
+				var usedPhones = await _context.HoaDons
+					.AsNoTracking()
+					.Where(h =>
+						h.IDPhieuGiamGia == voucherId &&
+						h.TrangThaiHoaDon &&
+						h.TrangThai != "Đã hủy")
+					.Select(h => h.SoDienThoaiNguoiNhan)
+					.ToListAsync();
+
+				if (usedPhones.Any(phone => NormalizePhoneForVoucherLimit(phone) == normalizedPhone))
+					return true;
+			}
+
+			if (!string.IsNullOrWhiteSpace(normalizedEmail))
+			{
+				var usedEmails = await _context.HoaDons
+					.AsNoTracking()
+					.Where(h =>
+						h.IDPhieuGiamGia == voucherId &&
+						h.IDKhachHang.HasValue &&
+						h.TrangThaiHoaDon &&
+						h.TrangThai != "Đã hủy")
+					.Join(
+						_context.KhachHang.AsNoTracking(),
+						h => h.IDKhachHang!.Value,
+						kh => kh.IDKhachHang,
+						(_, kh) => kh.Email)
+					.ToListAsync();
+
+				if (usedEmails.Any(email => NormalizeEmailForVoucherLimit(email) == normalizedEmail))
+					return true;
+			}
+
+			return false;
+		}
 	}
 
 	public class CreateHoaDonDto
@@ -937,6 +1049,7 @@ namespace QuanApi.Controllers
 		public bool BanTaiQuay { get; set; } = false;
 		public string TenNguoiNhan { get; set; }
 		public string SoDienThoaiNguoiNhan { get; set; }
+		public string? EmailNguoiNhan { get; set; }
 		public string DiaChiGiaoHang { get; set; }
 		public string GhiChu { get; set; }
 		public List<ChiTietHoaDonDto> ChiTietHoaDons { get; set; } = new List<ChiTietHoaDonDto>();

@@ -105,6 +105,8 @@
         
         const tamTinh = (data.chiTietHoaDons || []).reduce((sum, ct) => sum + (ct.thanhTien || 0), 0);
         const phiShip = data.phiVanChuyen || 0;
+        const phiShipGoc = data.phiVanChuyenGoc || phiShip;
+        const giamPhiShip = data.soTienGiamPhiVanChuyen || Math.max((phiShipGoc || 0) - (phiShip || 0), 0);
         const giamGia = (data.tienGiam || 0) + (data.soTienGiamTuDiem || 0);
         const tongCong = data.tongTien || 0;
 
@@ -151,9 +153,18 @@
                     <span>${formatVN(tamTinh)}</span>
                 </div>
                 <div class="summary-row">
-                    <span>Phí vận chuyển</span>
+                    <span>Phí vận chuyển phải thu</span>
                     <span>${formatVN(phiShip)}</span>
                 </div>
+                ${(giamPhiShip > 0) ? `
+                <div class="summary-row">
+                    <span>Phí vận chuyển gốc</span>
+                    <span>${formatVN(phiShipGoc)}</span>
+                </div>
+                <div class="summary-row text-success">
+                    <span>Ưu đãi phí ship</span>
+                    <span>-${formatVN(giamPhiShip)}</span>
+                </div>` : ''}
                 <div class="summary-row text-danger">
                     <span>Giảm giá</span>
                     <span>-${formatVN(giamGia)}</span>

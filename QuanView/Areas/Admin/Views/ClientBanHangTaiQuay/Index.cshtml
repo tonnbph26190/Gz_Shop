@@ -505,8 +505,19 @@
                 </div>
 
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Phí vận chuyển:</span>
+                    <span class="text-secondary">Phí vận chuyển phải thu:</span>
                     <span class="fw-medium text-dark" id="shippingFeeContainer">+ 0 VND</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 d-none" id="shippingOriginalRow">
+                    <span class="text-secondary">Phí vận chuyển gốc:</span>
+                    <span class="text-muted" id="shippingOriginalAmount">0 VND</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 d-none" id="shippingDiscountRow">
+                    <span class="text-secondary">Ưu đãi phí ship:</span>
+                    <span class="text-success" id="shippingDiscountAmount">- 0 VND</span>
+                </div>
+                <div class="mb-2 d-none" id="shippingDiscountMessageRow">
+                    <small class="text-success" id="shippingDiscountMessage"></small>
                 </div>
 
                 <div class="d-flex justify-content-between mb-2">
@@ -881,6 +892,9 @@
     let maxPointsPerOrder = 0;
     let selectedPaymentCode;
     let shippingFee = 0;
+    let shippingOriginalFee = 0;
+    let shippingDiscountAmountValue = 0;
+    let shippingDiscountMessageValue = '';
     let isHandlingQrScan = false;
     let html5QrCodeInstance = null;
     let qrDecodeHandled = false;
@@ -2457,14 +2471,27 @@ function toggleShipping() {
         $('#shippingFormCard, #btnShowAddress, #btnAddAddress').hide();
 
         shippingFee = 0;
-        // Reset the container to the default text
-        $('#shippingFeeContainer').html('+ 0 VND');
+        resetShippingDisplayState();
         
         clearCustomerForm();
     }
 
     updatePaymentInfo();
 }
+
+    function resetShippingDisplayState() {
+        shippingOriginalFee = 0;
+        shippingDiscountAmountValue = 0;
+        shippingDiscountMessageValue = '';
+
+        $('#shippingFeeContainer').text('+ 0 VND');
+        $('#shippingOriginalAmount').text('0 VND');
+        $('#shippingDiscountAmount').text('- 0 VND');
+        $('#shippingDiscountMessage').text('');
+        $('#shippingOriginalRow').addClass('d-none');
+        $('#shippingDiscountRow').addClass('d-none');
+        $('#shippingDiscountMessageRow').addClass('d-none');
+    }
 
     // Load địa chỉ khách hàng (chỉ khi chọn khách có trong DB, không áp dụng cho khách vãng lai)
     function loadCustomerAddress() {
@@ -3537,36 +3564,43 @@ function toggleShipping() {
 
     // Hiển thị thông tin phí vận chuyển chi tiết
 function updateShippingFeeDisplay(shippingResponse) {
-    const originalFee = shippingResponse.originalFee || 0;
-    const finalFee = shippingResponse.finalFee || 0;
-    const discountAmount = shippingResponse.discountAmount || 0;
-    const discountMessage = shippingResponse.discountMessage || '';
+    const originalFeeRaw = shippingResponse?.originalFee ?? shippingResponse?.OriginalFee ?? 0;
+    const finalFeeRaw = shippingResponse?.finalFee ?? shippingResponse?.FinalFee ?? 0;
+    const discountAmountRaw = shippingResponse?.discountAmount ?? shippingResponse?.DiscountAmount ?? 0;
+    const discountMessageRaw = shippingResponse?.discountMessage ?? shippingResponse?.DiscountMessage ?? '';
 
-    let feeDisplayHtml = '';
+    const originalFee = Number(originalFeeRaw) || 0;
+    const finalFee = Number(finalFeeRaw) || 0;
+    const discountAmount = Number(discountAmountRaw) || 0;
+    const discountMessage = String(discountMessageRaw || '').trim();
 
-    if (discountAmount > 0) {
-        feeDisplayHtml = `
-            <div class="shipping-fee-details text-end">
-                <div class="original-fee text-muted">
-                    <small>Phí gốc: <span style="text-decoration: line-through;">${originalFee.toLocaleString()} VNĐ</span></small>
-                </div>
-                <div class="final-fee text-success fw-bold">
-                    <span>+ ${finalFee.toLocaleString()} VNĐ</span>
-                </div>
-                <div class="discount-info text-success">
-                    <small><i class="bi bi-tag"></i> ${discountMessage}</small>
-                </div>
-            </div>`;
-        showSuccess(`${discountMessage} - Tiết kiệm ${discountAmount.toLocaleString()} VNĐ!`);
+    shippingOriginalFee = Math.max(originalFee, 0);
+    shippingFee = Math.max(finalFee, 0);
+    shippingDiscountAmountValue = Math.max(discountAmount, 0);
+    shippingDiscountMessageValue = discountMessage;
+
+    $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
+
+    const hasShippingDiscount = shippingDiscountAmountValue > 0;
+    if (hasShippingDiscount) {
+        $('#shippingOriginalAmount').text(`${shippingOriginalFee.toLocaleString('vi-VN')} VND`);
+        $('#shippingDiscountAmount').text(`- ${shippingDiscountAmountValue.toLocaleString('vi-VN')} VND`);
+        $('#shippingOriginalRow').removeClass('d-none');
+        $('#shippingDiscountRow').removeClass('d-none');
+
+        if (shippingDiscountMessageValue.length > 0) {
+            $('#shippingDiscountMessage').text(`Luu y: ${shippingDiscountMessageValue}`);
+            $('#shippingDiscountMessageRow').removeClass('d-none');
+        } else {
+            $('#shippingDiscountMessage').text('');
+            $('#shippingDiscountMessageRow').addClass('d-none');
+        }
     } else {
-        feeDisplayHtml = `
-            <div class="final-fee fw-bold text-end">
-                <span>+ ${finalFee.toLocaleString()} VNĐ</span>
-            </div>`;
+        $('#shippingOriginalRow').addClass('d-none');
+        $('#shippingDiscountRow').addClass('d-none');
+        $('#shippingDiscountMessage').text('');
+        $('#shippingDiscountMessageRow').addClass('d-none');
     }
-
-    // This one line replaces EVERYTHING inside the container
-    $('#shippingFeeContainer').html(feeDisplayHtml);
 }
 
     // Tính phí vận chuyển động từ API
@@ -3588,7 +3622,8 @@ function updateShippingFeeDisplay(shippingResponse) {
         if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện' || (needWard && !hasWard)) {
             shippingFee = 0;
             $('#shippingFee').val(0);
-            $('#shippingFeeDisplay').html('');
+            resetShippingDisplayState();
+            updatePaymentInfoWithoutRecalculation();
             return;
         }
 
@@ -3601,6 +3636,9 @@ function updateShippingFeeDisplay(shippingResponse) {
             District: quanText,
             OrderValue: orderValue
         };
+        if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
+            requestData.CustomerId = selectedCustomer.id;
+        }
         // GHN: gửi thêm ToDistrictId, ToWardCode, Weight để API tính phí chính xác
         const shipQuanVal = $('#shipQuan').val();
         const shipPhuongVal = $('#shipPhuong').val();
@@ -3617,8 +3655,9 @@ function updateShippingFeeDisplay(shippingResponse) {
             data: JSON.stringify(requestData),
             success: function (response) {
                 console.log('Shipping calculation response:', response);
-                if (response && response.finalFee !== undefined) {
-                    shippingFee = response.finalFee;
+                const finalFeeResolved = response?.finalFee ?? response?.FinalFee;
+                if (response && finalFeeResolved !== undefined && finalFeeResolved !== null) {
+                    shippingFee = Number(finalFeeResolved) || 0;
                     $('#shippingFee').val(shippingFee);
 
                     // Hiển thị thông tin chi tiết phí vận chuyển
@@ -3630,6 +3669,8 @@ function updateShippingFeeDisplay(shippingResponse) {
                     console.error('Invalid shipping response:', response);
                     shippingFee = 50000; // Fallback phí mặc định
                     $('#shippingFee').val(shippingFee);
+                    resetShippingDisplayState();
+                    $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
                     updatePaymentInfoWithoutRecalculation();
                 }
             },
@@ -3644,6 +3685,7 @@ function updateShippingFeeDisplay(shippingResponse) {
                 // Fallback phí mặc định khi lỗi API
                 shippingFee = 50000;
                 $('#shippingFee').val(shippingFee);
+                resetShippingDisplayState();
 
                 // Hiển thị phí mặc định
                 updateShippingFeeDisplay({

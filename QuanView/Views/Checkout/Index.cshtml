@@ -556,8 +556,16 @@
 							<span id="tamTinh" style="font-weight: 500;">@ViewBag.TongTien.ToString("N0") VND</span>
 						</div>
 						<div class="order-item border-0 py-1">
-							<span class="text-secondary">Phí vận chuyển:</span>
+							<span class="text-secondary">Phí vận chuyển phải thu:</span>
 							<span id="phiVanChuyen" style="font-weight: 500;">0 VND</span>
+						</div>
+						<div class="order-item border-0 py-1" id="phiVanChuyenGocRow" style="display:none;">
+							<span class="text-secondary">Phí vận chuyển gốc:</span>
+							<span id="phiVanChuyenGoc" class="text-muted" style="font-weight: 500;">0 VND</span>
+						</div>
+						<div class="order-item border-0 py-1" id="giamPhiVanChuyenRow" style="display:none;">
+							<span class="text-secondary">Ưu đãi phí ship:</span>
+							<span id="giamPhiVanChuyen" class="text-success" style="font-weight: 600;">- 0 VND</span>
 						</div>
 
 						<hr style="opacity: 0.1; margin: 10px 0;">
@@ -724,6 +732,9 @@
 			// Chỉ cập nhật thông tin thanh toán nếu cần
 			// Tính phí vận chuyển ban đầu và cập nhật tổng cộng
 			window.currentShippingFee = 0;
+			window.currentShippingOriginalFee = 0;
+			window.currentShippingDiscountAmount = 0;
+			window.currentShippingDiscountMessage = '';
 			// Ẩn thông báo ưu đãi ship lúc đầu
 			const shipMsg = document.getElementById('shippingDiscountMsg');
 			if (shipMsg) shipMsg.style.display = 'none';
@@ -987,6 +998,9 @@
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
+				phiVanChuyenGoc: window.currentShippingOriginalFee || 0,
+				soTienGiamPhiVanChuyen: window.currentShippingDiscountAmount || 0,
+				shippingDiscountMessage: window.currentShippingDiscountMessage || '',
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
 				toDistrictId: getSelectedToDistrictId(),
@@ -2096,6 +2110,9 @@
 				tienGiam: discountValue || 0,
 				phiVanChuyen: window.currentShippingFee || 0,
 				phiVanChuyenDaGiam: true,
+				phiVanChuyenGoc: window.currentShippingOriginalFee || 0,
+				soTienGiamPhiVanChuyen: window.currentShippingDiscountAmount || 0,
+				shippingDiscountMessage: window.currentShippingDiscountMessage || '',
 				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
 				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
 				toDistrictId: getSelectedToDistrictId(),
@@ -3236,6 +3253,45 @@
 				return Math.max(500, totalQuantity * 500);
 			}
 
+			function updateShippingBreakdownUI() {
+				const finalFee = Number(window.currentShippingFee || 0);
+				const originalFeeRaw = Number(window.currentShippingOriginalFee || 0);
+				const originalFee = originalFeeRaw > 0 ? originalFeeRaw : finalFee;
+				const discountRaw = Number(window.currentShippingDiscountAmount || 0);
+				const discountAmount = discountRaw > 0 ? discountRaw : Math.max(originalFee - finalFee, 0);
+				const message = String(window.currentShippingDiscountMessage || '').trim();
+
+				const shipFinalEl = document.getElementById('phiVanChuyen');
+				if (shipFinalEl) {
+					shipFinalEl.textContent = finalFee.toLocaleString('vi-VN') + ' VND';
+				}
+
+				const originalRow = document.getElementById('phiVanChuyenGocRow');
+				const originalValue = document.getElementById('phiVanChuyenGoc');
+				const discountRow = document.getElementById('giamPhiVanChuyenRow');
+				const discountValue = document.getElementById('giamPhiVanChuyen');
+				if (discountAmount > 0) {
+					if (originalValue) originalValue.textContent = originalFee.toLocaleString('vi-VN') + ' VND';
+					if (discountValue) discountValue.textContent = '- ' + discountAmount.toLocaleString('vi-VN') + ' VND';
+					if (originalRow) originalRow.style.display = '';
+					if (discountRow) discountRow.style.display = '';
+				} else {
+					if (originalRow) originalRow.style.display = 'none';
+					if (discountRow) discountRow.style.display = 'none';
+				}
+
+				const shipMsgEl = document.getElementById('shippingDiscountMsg');
+				if (shipMsgEl) {
+					if (message && discountAmount > 0) {
+						shipMsgEl.textContent = message;
+						shipMsgEl.style.display = 'block';
+					} else {
+						shipMsgEl.textContent = '';
+						shipMsgEl.style.display = 'none';
+					}
+				}
+			}
+
 			// Cập nhật thông tin thanh toán
 			async function recalcShipping() {
 				try {
@@ -3300,35 +3356,31 @@
 						if (res.ok) {
 							const info = await res.json();
 							window.currentShippingFee = (info && (info.finalFee ?? info.FinalFee)) || 0;
-							const msg = (info && (info.discountMessage ?? info.DiscountMessage)) || '';
-							const shipMsgEl = document.getElementById('shippingDiscountMsg');
-							if (shipMsgEl) {
-								if (msg && window.currentShippingFee >= 0) {
-									shipMsgEl.textContent = msg;
-									shipMsgEl.style.display = 'block';
-								} else {
-									shipMsgEl.textContent = '';
-									shipMsgEl.style.display = 'none';
-								}
-							}
+							window.currentShippingOriginalFee = (info && (info.originalFee ?? info.OriginalFee)) || window.currentShippingFee;
+							window.currentShippingDiscountAmount = (info && (info.discountAmount ?? info.DiscountAmount)) || Math.max(window.currentShippingOriginalFee - window.currentShippingFee, 0);
+							window.currentShippingDiscountMessage = (info && (info.discountMessage ?? info.DiscountMessage)) || '';
 						} else {
 							window.currentShippingFee = 0;
-							const shipMsgEl = document.getElementById('shippingDiscountMsg');
-							if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+							window.currentShippingOriginalFee = 0;
+							window.currentShippingDiscountAmount = 0;
+							window.currentShippingDiscountMessage = '';
 						}
 					} else {
 						window.currentShippingFee = 0;
-						const shipMsgEl = document.getElementById('shippingDiscountMsg');
-						if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+						window.currentShippingOriginalFee = 0;
+						window.currentShippingDiscountAmount = 0;
+						window.currentShippingDiscountMessage = '';
 					}
 
-					document.getElementById('phiVanChuyen').textContent = (window.currentShippingFee || 0).toLocaleString('vi-VN') + ' VND';
+					updateShippingBreakdownUI();
 					updatePaymentInfo();
 				} catch (e) {
 					console.error('Error in recalcShipping:', e);
 					window.currentShippingFee = 0;
-					const shipMsgEl = document.getElementById('shippingDiscountMsg');
-					if (shipMsgEl) { shipMsgEl.textContent = ''; shipMsgEl.style.display = 'none'; }
+					window.currentShippingOriginalFee = 0;
+					window.currentShippingDiscountAmount = 0;
+					window.currentShippingDiscountMessage = '';
+					updateShippingBreakdownUI();
 					updatePaymentInfo();
 				}
 			}
