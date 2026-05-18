@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Đổi ảnh đại diện";
+}
+
+<div class="container py-5" style="max-width:600px;">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4">
+
+            <h3 class="fw-bold mb-4">
+                <i class="fa fa-image text-danger me-2"></i>
+                Đổi ảnh đại diện
+            </h3>
+
+            <div class="text-center mb-4">
+                <img src="~/img/avatar-default.png"
+                     style="width:140px;height:140px;border-radius:50%;object-fit:cover;" />
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+
+                <div class="mb-3">
+                    <label class="form-label">Chọn ảnh mới</label>
+
+                    <input type="file"
+                           class="form-control" />
+                </div>
+
+                <button class="btn btn-danger">
+                    Cập nhật ảnh
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+</div>

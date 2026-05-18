@@ -1,7 +1,26 @@
 @using Microsoft.AspNetCore.Mvc.Rendering
+@inject BanQuanAu1.Web.Data.BanQuanAu1DbContext DbContext
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var tenDangNhap = User.Identity?.Name;
+    var avatarUrl = "/img/avatar-default.png";
+
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var kh = DbContext.KhachHang.FirstOrDefault(x =>
+            x.TenKhachHang == tenDangNhap ||
+            x.Email == tenDangNhap ||
+            x.MaKhachHang == tenDangNhap);
+
+        if (kh != null && !string.IsNullOrEmpty(kh.AnhDaiDien))
+        {
+            avatarUrl = kh.AnhDaiDien;
+        }
+    }
 
     string IsActive(string ctrl, string act = "Index") =>
         (currentController == ctrl && currentAction == act) ? "active text-danger fw-bold" : "text-dark";
@@ -13,6 +32,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - QuanView</title>
     <style>
+        #toast-container > .toast-success {
+            background-color: #28a745 !important;
+            opacity: 1 !important;
+            color: #fff !important;
+        }
+
+        #toast-container > .toast-error {
+            background-color: #dc3545 !important;
+            opacity: 1 !important;
+            color: #fff !important;
+        }
+
+        #toast-container > div {
+            opacity: 1 !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25) !important;
+        }
+
+        .toast-title {
+            font-weight: 700 !important;
+            color: #fff !important;
+        }
+
+        .toast-message {
+            color: #fff !important;
+        }
+        .user-profile {
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #ddd;
+        }
+
+        .profile-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 45px;
+            width: 220px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.15);
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+            .profile-menu a {
+                display: block;
+                padding: 11px 15px;
+                color: #333;
+                text-decoration: none;
+                font-size: 14px;
+            }
+
+                .profile-menu a:hover {
+                    background: #f8f9fa;
+                    color: #dc3545;
+                }
         /* Target both html and body to be safe */
         html, body {
             -ms-overflow-style: none !important;  /* IE and Edge */
@@ -66,7 +147,7 @@
             align-items: center;
             height: 50px; /* Adjust this height to your liking to control the total header thickness */
         }
-        }
+        
     </style>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -125,8 +206,37 @@
                     <div class="d-flex align-items-center gap-3">
                         @if (User.Identity.IsAuthenticated)
                         {
-                            <span class="text-muted small">Xin chào, <b>@User.Identity.Name</b></span>
-                            <a asp-controller="Login" asp-action="Logout" class="btn btn-sm btn-outline-secondary">Đăng xuất</a>
+                            <div class="user-profile position-relative">
+                                <div class="profile-toggle d-flex align-items-center gap-2" onclick="toggleProfileMenu()">
+                                    <span class="text-muted small">
+                                        Xin chào, <b>@User.Identity.Name</b>
+                                    </span>
+
+                                    <img src="@avatarUrl"
+                                         class="user-avatar"
+                                         alt="Avatar" />
+                                </div>
+
+                                <div id="profileMenu" class="profile-menu">
+                                    <a asp-controller="User" asp-action="Profile">
+                                        <i class="fa fa-user me-2"></i> Thông tin tài khoản
+                                    </a>
+
+                                 @*    <a asp-controller="User" asp-action="ChangeAvatar">
+                                        <i class="fa fa-image me-2"></i> Đổi ảnh đại diện
+                                    </a> *@
+
+                                    <a asp-controller="User" asp-action="ChangePassword">
+                                        <i class="fa fa-lock me-2"></i> Đổi mật khẩu
+                                    </a>
+
+                                    <hr class="my-1" />
+
+                                    <a asp-controller="Login" asp-action="Logout" class="text-danger">
+                                        <i class="fa fa-sign-out-alt me-2"></i> Đăng xuất
+                                    </a>
+                                </div>
+                            </div>
                         }
                         else
                         {
@@ -215,6 +325,45 @@
                 else underline.style.width = "0";
             });
         });
+
+        function toggleProfileMenu() {
+            const menu = document.getElementById("profileMenu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
+        document.addEventListener("click", function (e) {
+            const profile = document.querySelector(".user-profile");
+            const menu = document.getElementById("profileMenu");
+
+            if (profile && menu && !profile.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
     </script>
 </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "timeOut": "3000"
+    };
+
+</script>
+
+@if (TempData["Success"] != null)
+{
+    <script>
+        toastr.success('@TempData["Success"]', 'Thành công');
+    </script>
+}
+
+@if (TempData["Error"] != null)
+{
+    <script>
+        toastr.error('@TempData["Error"]', 'Lỗi');
+    </script>
+}
 </html>
