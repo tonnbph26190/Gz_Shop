@@ -1,0 +1,441 @@
+@{
+    ViewData["Title"] = "Tin nhắn";
+}
+
+<div class="messenger-admin">
+    <aside class="conversation-list">
+        <div class="conversation-head">
+            <div>
+                <h1>Tin nhắn</h1>
+                <p>Hộp thoại khách hàng</p>
+            </div>
+            <button type="button" class="icon-btn" id="reloadRooms" title="Tải lại">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="conversation-search">
+            <i class="fas fa-search"></i>
+            <input type="search" id="roomSearch" placeholder="Tìm khách hàng...">
+        </div>
+        <div id="roomList" class="conversation-items">
+            <div class="empty-state">Đang tải hội thoại...</div>
+        </div>
+    </aside>
+
+    <section class="chat-panel">
+        <div class="chat-header">
+            <div class="avatar" id="roomAvatar">?</div>
+            <div>
+                <h2 id="roomTitle">Chọn một hội thoại</h2>
+                <p id="roomSubtitle">Tin nhắn sẽ hiển thị tại đây</p>
+            </div>
+        </div>
+
+        <div id="messageList" class="message-list">
+            <div class="empty-chat">
+                <i class="fas fa-comments"></i>
+                <p>Chọn khách hàng để bắt đầu trả lời.</p>
+            </div>
+        </div>
+
+        <form id="sendForm" class="message-composer">
+            <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" disabled>
+            <button type="submit" disabled id="sendButton">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </section>
+</div>
+
+<style>
+    .messenger-admin {
+        height: calc(100vh - 160px);
+        min-height: 620px;
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        background: #eef2f7;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+
+    .conversation-list,
+    .chat-panel {
+        background: #fff;
+        min-height: 0;
+    }
+
+    .conversation-list {
+        border-right: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .conversation-head {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .conversation-head h1 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0;
+    }
+
+    .conversation-head p,
+    .chat-header p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: .85rem;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    .conversation-search {
+        margin: 14px 16px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 999px;
+        padding: 0 14px;
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .conversation-search input {
+        border: 0;
+        outline: 0;
+        background: transparent;
+        width: 100%;
+        color: #111827;
+    }
+
+    .conversation-items {
+        overflow: auto;
+        padding: 4px 10px 14px;
+    }
+
+    .conversation-item {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    .conversation-item:hover,
+    .conversation-item.active {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex: 0 0 auto;
+    }
+
+    .conversation-name {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: #111827;
+        font-weight: 800;
+    }
+
+    .conversation-preview {
+        color: #64748b;
+        font-size: .84rem;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-time {
+        color: #94a3b8;
+        font-size: .72rem;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    .chat-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        height: 72px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .chat-header h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .message-list {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 22px;
+        background: #f8fafc;
+    }
+
+    .message-row {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .message-row.mine {
+        justify-content: flex-end;
+    }
+
+    .message-bubble {
+        max-width: min(620px, 76%);
+        padding: 10px 13px;
+        border-radius: 16px;
+        background: #fff;
+        color: #111827;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .message-row.mine .message-bubble {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .message-meta {
+        font-size: .72rem;
+        margin-top: 4px;
+        color: #94a3b8;
+    }
+
+    .message-row.mine .message-meta {
+        color: rgba(255,255,255,.78);
+        text-align: right;
+    }
+
+    .message-composer {
+        display: flex;
+        gap: 10px;
+        padding: 14px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .message-composer input {
+        flex: 1;
+        height: 46px;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0 16px;
+        outline: 0;
+    }
+
+    .message-composer button {
+        width: 46px;
+        height: 46px;
+        border: 0;
+        border-radius: 50%;
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .message-composer button:disabled,
+    .message-composer input:disabled {
+        opacity: .55;
+    }
+
+    .empty-state,
+    .empty-chat {
+        color: #64748b;
+        text-align: center;
+        padding: 24px;
+    }
+
+    .empty-chat {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .empty-chat i {
+        font-size: 3rem;
+        color: #cbd5e1;
+    }
+
+    @@media (max-width: 992px) {
+        .messenger-admin {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .conversation-list {
+            max-height: 360px;
+            border-right: 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .chat-panel {
+            min-height: 560px;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(function () {
+            let rooms = [];
+            let activeRoomId = null;
+            let messageTimer = null;
+
+            const $roomList = $('#roomList');
+            const $messageList = $('#messageList');
+            const $messageInput = $('#messageInput');
+            const $sendButton = $('#sendButton');
+
+            function initials(name) {
+                return (name || '?').trim().charAt(0).toUpperCase();
+            }
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>"']/g, function (ch) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+                });
+            }
+
+            function formatTime(value) {
+                if (!value) return '';
+                return new Date(value).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+            }
+
+            function renderRooms() {
+                const keyword = ($('#roomSearch').val() || '').toLowerCase().trim();
+                const filtered = rooms.filter(r => !keyword || (r.customerName || '').toLowerCase().includes(keyword) || (r.customerPhone || '').includes(keyword));
+
+                if (!filtered.length) {
+                    $roomList.html('<div class="empty-state">Chưa có hội thoại phù hợp.</div>');
+                    return;
+                }
+
+                $roomList.html(filtered.map(r => `
+                    <div class="conversation-item ${r.id === activeRoomId ? 'active' : ''}" data-id="${r.id}">
+                        <div class="avatar">${escapeHtml(initials(r.customerName))}</div>
+                        <div>
+                            <div class="conversation-name">
+                                <span>${escapeHtml(r.customerName)}</span>
+                                <small class="conversation-time">${formatTime(r.updatedAt)}</small>
+                            </div>
+                            <div class="conversation-preview">${escapeHtml(r.lastMessage || r.customerPhone || 'Chưa có tin nhắn')}</div>
+                        </div>
+                    </div>
+                `).join(''));
+            }
+
+            function loadRooms(selectFirst) {
+                $.get('@Url.Action("Rooms", "Chat", new { area = "Admin" })')
+                    .done(function (res) {
+                        rooms = res && res.success ? res.data || [] : [];
+                        if (!activeRoomId && selectFirst && rooms.length) {
+                            activeRoomId = rooms[0].id;
+                            loadMessages();
+                        }
+                        renderRooms();
+                    });
+            }
+
+            function loadMessages() {
+                if (!activeRoomId) return;
+                $.get('@Url.Action("Messages", "Chat", new { area = "Admin" })', { id: activeRoomId })
+                    .done(function (res) {
+                        if (!res || !res.success) return;
+                        $('#roomTitle').text(res.room.customerName);
+                        $('#roomSubtitle').text((res.room.customerPhone || 'Không có SĐT') + ' · Phụ trách: ' + res.room.staffName);
+                        $('#roomAvatar').text(initials(res.room.customerName));
+                        $messageInput.prop('disabled', false);
+                        $sendButton.prop('disabled', false);
+
+                        const messages = res.data || [];
+                        if (!messages.length) {
+                            $messageList.html('<div class="empty-chat"><i class="fas fa-comment-dots"></i><p>Chưa có tin nhắn trong hội thoại này.</p></div>');
+                            return;
+                        }
+
+                        $messageList.html(messages.map(m => `
+                            <div class="message-row ${m.senderType === 'admin' ? 'mine' : ''}">
+                                <div class="message-bubble">
+                                    <div>${escapeHtml(m.content)}</div>
+                                    <div class="message-meta">${escapeHtml(m.senderName)} · ${formatTime(m.createdAt)}</div>
+                                </div>
+                            </div>
+                        `).join(''));
+                        $messageList.scrollTop($messageList[0].scrollHeight);
+                    });
+            }
+
+            $(document).on('click', '.conversation-item', function () {
+                activeRoomId = $(this).data('id');
+                renderRooms();
+                loadMessages();
+                clearInterval(messageTimer);
+                messageTimer = setInterval(loadMessages, 5000);
+            });
+
+            $('#roomSearch').on('input', renderRooms);
+            $('#reloadRooms').on('click', function () { loadRooms(false); });
+
+            $('#sendForm').on('submit', function (e) {
+                e.preventDefault();
+                const content = $messageInput.val().trim();
+                if (!activeRoomId || !content) return;
+                $sendButton.prop('disabled', true);
+                $.post('@Url.Action("Send", "Chat", new { area = "Admin" })', { id: activeRoomId, content: content })
+                    .done(function () {
+                        $messageInput.val('');
+                        loadMessages();
+                        loadRooms(false);
+                    })
+                    .always(function () {
+                        $sendButton.prop('disabled', false);
+                    });
+            });
+
+            loadRooms(true);
+            setInterval(function () { loadRooms(false); }, 10000);
+        });
+    </script>
+}
