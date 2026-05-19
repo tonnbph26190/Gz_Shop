@@ -53,6 +53,10 @@ namespace QuanApi.Data
         [MaxLength(50)]
         public string TrangThai { get; set; }
 
+        [Required]
+        [MaxLength(50)]
+        public string TrangThaiThanhToan { get; set; } = "Chưa thanh toán";
+
 		public bool BanTaiQuay { get; set; } = false;
 
 		[MaxLength(100)]

@@ -543,5 +543,73 @@ namespace QuanApi.Controllers.Api
             var addressDto = _mapper.Map<DiaChiDto>(defaultAddress);
             return Ok(addressDto);
         }
+
+        // API endpoint để lấy lịch sử sử dụng điểm của khách hàng
+        [HttpGet("{id}/lich-su-diem")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLichSuDiem(Guid id)
+        {
+            _logger.LogInformation("Đang lấy lịch sử điểm của khách hàng ID: {CustomerId}", id);
+
+            var khachHang = await _context.KhachHang
+                .AsNoTracking()
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id && kh.TrangThai);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId} khi lấy lịch sử điểm", id);
+                return NotFound("Không tìm thấy khách hàng.");
+            }
+
+            var rank = await _context.HangKhachHangs
+                .AsNoTracking()
+                .Where(h => h.TrangThai
+                    && khachHang.SoDiemHienTai >= h.DiemTu
+                    && (!h.DiemDen.HasValue || khachHang.SoDiemHienTai <= h.DiemDen.Value))
+                .OrderByDescending(h => h.DiemTu)
+                .Select(h => new
+                {
+                    h.MaHang,
+                    h.TenHang
+                })
+                .FirstOrDefaultAsync();
+
+            var lichSuDiem = await _context.LichSuDiemKhachHangs
+                .AsNoTracking()
+                .Where(ls => ls.IDKhachHang == id && ls.TrangThai)
+                .Include(ls => ls.HoaDon)
+                .OrderByDescending(ls => ls.NgayTao)
+                .Select(ls => new
+                {
+                    IDLichSuDiemKhachHang = ls.IDLichSuDiemKhachHang,
+                    IDHoaDon = ls.IDHoaDon,
+                    MaHoaDon = ls.HoaDon != null ? ls.HoaDon.MaHoaDon : null,
+                    ThoiGianMua = ls.HoaDon != null ? ls.HoaDon.NgayTao : ls.NgayTao,
+                    SoDiemTru = ls.SoDiemBienDong < 0 ? -ls.SoDiemBienDong : 0,
+                    SoDiemCong = ls.SoDiemBienDong > 0 ? ls.SoDiemBienDong : 0,
+                    TongDiemSauGiaoDich = ls.SoDiemSau,
+                    SoDiemTruocGiaoDich = ls.SoDiemTruoc,
+                    LoaiBienDong = ls.LoaiBienDong,
+                    MoTa = ls.MoTa,
+                    NgayTao = ls.NgayTao
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                KhachHang = new
+                {
+                    khachHang.IDKhachHang,
+                    khachHang.MaKhachHang,
+                    khachHang.TenKhachHang,
+                    DiemHienTai = khachHang.SoDiemHienTai,
+                    TongDiemTichLuy = khachHang.TongDiemTichLuy,
+                    Rank = rank != null ? rank.TenHang : "Chưa xếp hạng",
+                    MaRank = rank != null ? rank.MaHang : null
+                },
+                LichSu = lichSuDiem
+            });
+        }
     }
 }

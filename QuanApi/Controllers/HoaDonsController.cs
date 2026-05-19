@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using System.Text;
 
 namespace QuanApi.Controllers
 {
@@ -64,7 +65,38 @@ namespace QuanApi.Controllers
 				// Áp dụng các bộ lọc
 				if (!string.IsNullOrEmpty(trangThai))
 				{
-					query = query.Where(h => h.TrangThai == trangThai);
+					if (string.Equals(trangThai, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
+					{
+						query = query.Where(h =>
+							h.TrangThai == "Chờ xác nhận" ||
+							(
+								(h.TrangThai == "DaThanhToan" || h.TrangThai == "Đã thanh toán")
+								&& (h.TrangThaiThanhToan == "Đã thanh toán"
+									|| h.TrangThai == "DaThanhToan"
+									|| h.TrangThai == "Đã thanh toán")
+								&& h.PhuongThucThanhToan != null
+								&& (
+									(h.PhuongThucThanhToan.MaPhuongThuc != null && (
+										h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("bank")
+										|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("transfer")
+										|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("vnpay")
+										|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("qr")
+									))
+									|| (h.PhuongThucThanhToan.TenPhuongThuc != null && (
+										h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyển khoản")
+										|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyen khoan")
+										|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("bank")
+										|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("transfer")
+										|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("vnpay")
+										|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("qr")
+									))
+								)
+							));
+					}
+					else
+					{
+						query = query.Where(h => h.TrangThai == trangThai);
+					}
 				}
 
 				if (!string.IsNullOrEmpty(tuNgay) && DateTime.TryParse(tuNgay, out var tuNgayDate))
@@ -118,9 +150,11 @@ namespace QuanApi.Controllers
 				var totalTaiQuayCount = await query.CountAsync(h => string.IsNullOrEmpty(h.DiaChiGiaoHang));
 				var totalPendingCount = await query.CountAsync(h => h.TrangThai == "Chờ xác nhận");
 
-				// Áp dụng phân trang
-				var hoaDons = await query
-					.OrderByDescending(h => h.NgayTao)
+				// Ưu tiên đơn đã chuyển khoản + đã thanh toán nhưng còn chờ xác nhận lên đầu danh sách.
+				var prioritizedQuery = OrderByTransferPendingPriority(query);
+
+				// Áp dụng phân trang sau khi đã ưu tiên.
+				var hoaDonsRaw = await prioritizedQuery
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
 					.Select(h => new
@@ -145,9 +179,54 @@ namespace QuanApi.Controllers
 							IDNhanVien = h.NhanVien.IDNhanVien,
 							TenNhanVien = h.NhanVien.TenNhanVien
 						} : null,
-						SoLuongSanPham = h.ChiTietHoaDons.Count
+						SoLuongSanPham = h.ChiTietHoaDons.Count,
+						TrangThaiThanhToan = h.TrangThaiThanhToan,
+						PhuongThucThanhToan = h.PhuongThucThanhToan != null
+							? new
+							{
+								MaPhuongThuc = h.PhuongThucThanhToan.MaPhuongThuc,
+								TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
+							}
+							: null
 					})
 					.ToListAsync();
+
+				var hoaDons = hoaDonsRaw
+					.Select(h =>
+					{
+						var canHighlight = IsPaidTransferPendingConfirmation(
+							h.TrangThai,
+							h.TrangThaiThanhToan,
+							h.PhuongThucThanhToan?.MaPhuongThuc,
+							h.PhuongThucThanhToan?.TenPhuongThuc);
+						var displayStatus = canHighlight
+							? "Đã thanh toán chờ xác nhận"
+							: h.TrangThai;
+
+						return new
+						{
+							h.IDHoaDon,
+							h.MaHoaDon,
+							h.TongTien,
+							h.TienGiam,
+							TrangThai = displayStatus,
+							TrangThaiGoc = h.TrangThai,
+							h.NgayTao,
+							h.TenNguoiNhan,
+							h.SoDienThoaiNguoiNhan,
+							h.DiaChiGiaoHang,
+							h.KhachHang,
+							h.NhanVien,
+							h.SoLuongSanPham,
+							h.TrangThaiThanhToan,
+							h.PhuongThucThanhToan,
+							CanHighlightChuyenKhoanChoXacNhan = canHighlight,
+							GhiChuChuyenKhoanChoXacNhan = canHighlight
+								? "Đơn đã thanh toán chuyển khoản, đang chờ quản lý xác nhận."
+								: null
+						};
+					})
+					.ToList();
 
 				// Thêm thông tin phân trang vào response headers
 				Response.Headers.Append("X-Total-Count", totalCount.ToString());
@@ -387,6 +466,7 @@ namespace QuanApi.Controllers
 					PhiVanChuyen = 0,
 					BanTaiQuay = dto.BanTaiQuay,
 					TrangThai = "Chờ xác nhận",
+					TrangThaiThanhToan = shouldAutoConfirmAfterPayment ? "Đã thanh toán" : "Chưa thanh toán",
 					DaDatChoTonKho = true,
 					DaTruTonKho = false,
 					TenNguoiNhan = dto.TenNguoiNhan ?? "",
@@ -859,26 +939,48 @@ namespace QuanApi.Controllers
 				{
 					page = totalPages;
 				}
-				var hoaDons = await query
+				var prioritizedQuery = OrderByTransferPendingPriority(query);
+				var hoaDons = await prioritizedQuery
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
-					.Select(h => new HoaDon
+					.Select(h => new
 					{
 						IDHoaDon = h.IDHoaDon,
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
 						TrangThai = h.TrangThai,
+						TrangThaiThanhToan = h.TrangThaiThanhToan,
+						PhuongThucThanhToanMa = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.MaPhuongThuc : null,
+						PhuongThucThanhToanTen = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.TenPhuongThuc : null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
 						NgayTao = h.NgayTao
 					})
 					.ToListAsync();
+
+				var hoaDonsView = hoaDons
+					.Select(h => new HoaDon
+					{
+						IDHoaDon = h.IDHoaDon,
+						MaHoaDon = h.MaHoaDon,
+						TongTien = h.TongTien,
+						TrangThai = IsPaidTransferPendingConfirmation(
+							h.TrangThai,
+							h.TrangThaiThanhToan,
+							h.PhuongThucThanhToanMa,
+							h.PhuongThucThanhToanTen)
+							? "Đã thanh toán chờ xác nhận"
+							: h.TrangThai,
+						DiaChiGiaoHang = h.DiaChiGiaoHang,
+						NgayTao = h.NgayTao
+					})
+					.ToList();
 
 				Response.Headers.Append("X-Total-Count", totalCount.ToString());
 				Response.Headers.Append("X-Total-Pages", totalPages.ToString());
 				Response.Headers.Append("X-Current-Page", page.ToString());
 				Response.Headers.Append("X-Page-Size", pageSize.ToString());
 
-				return Ok(hoaDons);
+				return Ok(hoaDonsView);
 			}
 			catch (Exception ex)
 			{
@@ -931,27 +1033,48 @@ namespace QuanApi.Controllers
 					page = totalPages;
 				}
 
-				var hoaDons = await query
-					.OrderByDescending(h => h.NgayTao)
+				var prioritizedQuery = OrderByTransferPendingPriority(query);
+				var hoaDons = await prioritizedQuery
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
-					.Select(h => new HoaDon
+					.Select(h => new
 					{
 						IDHoaDon = h.IDHoaDon,
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
 						TrangThai = h.TrangThai,
+						TrangThaiThanhToan = h.TrangThaiThanhToan,
+						PhuongThucThanhToanMa = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.MaPhuongThuc : null,
+						PhuongThucThanhToanTen = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.TenPhuongThuc : null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
 						NgayTao = h.NgayTao
 					})
 					.ToListAsync();
+
+				var hoaDonsView = hoaDons
+					.Select(h => new HoaDon
+					{
+						IDHoaDon = h.IDHoaDon,
+						MaHoaDon = h.MaHoaDon,
+						TongTien = h.TongTien,
+						TrangThai = IsPaidTransferPendingConfirmation(
+							h.TrangThai,
+							h.TrangThaiThanhToan,
+							h.PhuongThucThanhToanMa,
+							h.PhuongThucThanhToanTen)
+							? "Đã thanh toán chờ xác nhận"
+							: h.TrangThai,
+						DiaChiGiaoHang = h.DiaChiGiaoHang,
+						NgayTao = h.NgayTao
+					})
+					.ToList();
 
 				Response.Headers.Append("X-Total-Count", totalCount.ToString());
 				Response.Headers.Append("X-Total-Pages", totalPages.ToString());
 				Response.Headers.Append("X-Current-Page", page.ToString());
 				Response.Headers.Append("X-Page-Size", pageSize.ToString());
 
-				return Ok(hoaDons);
+				return Ok(hoaDonsView);
 			}
 			catch (Exception ex)
 			{
@@ -977,6 +1100,100 @@ namespace QuanApi.Controllers
 			return string.IsNullOrWhiteSpace(email)
 				? string.Empty
 				: email.Trim().ToLowerInvariant();
+		}
+
+		private static bool IsPaidTransferPendingConfirmation(
+			string? orderStatus,
+			string? paymentStatus,
+			string? paymentMethodCode,
+			string? paymentMethodName)
+		{
+			var isPendingConfirmationStatus =
+				string.Equals(orderStatus, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(orderStatus, "DaThanhToan", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(orderStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase);
+
+			if (!isPendingConfirmationStatus)
+			{
+				return false;
+			}
+
+			var isPaidByPaymentStatus =
+				string.Equals(paymentStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase);
+			var isPaidByOrderStatus =
+				string.Equals(orderStatus, "DaThanhToan", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(orderStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(orderStatus, "Đã thanh toán chờ xác nhận", StringComparison.OrdinalIgnoreCase);
+
+			if (!isPaidByPaymentStatus && !isPaidByOrderStatus)
+			{
+				return false;
+			}
+
+			return IsTransferPaymentMethod(paymentMethodCode, paymentMethodName);
+		}
+
+		private static bool IsTransferPaymentMethod(string? paymentMethodCode, string? paymentMethodName)
+		{
+			var normalized = RemoveDiacritics($"{paymentMethodCode} {paymentMethodName}")
+				.ToLowerInvariant();
+
+			return normalized.Contains("chuyenkhoan")
+				|| normalized.Contains("bank")
+				|| normalized.Contains("transfer")
+				|| normalized.Contains("vnpay")
+				|| normalized.Contains("qr");
+		}
+
+		private static string RemoveDiacritics(string value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return string.Empty;
+			}
+
+			var normalizedText = value.Normalize(NormalizationForm.FormD);
+			var builder = new StringBuilder(normalizedText.Length);
+
+			foreach (var ch in normalizedText)
+			{
+				if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+				{
+					builder.Append(ch);
+				}
+			}
+
+			return builder.ToString().Normalize(NormalizationForm.FormC);
+		}
+
+		private static IOrderedQueryable<HoaDon> OrderByTransferPendingPriority(IQueryable<HoaDon> source)
+		{
+			return source
+				.OrderByDescending(h =>
+					(h.TrangThai == "Chờ xác nhận"
+						|| h.TrangThai == "DaThanhToan"
+						|| h.TrangThai == "Đã thanh toán")
+					&& (h.TrangThaiThanhToan == "Đã thanh toán"
+						|| h.TrangThai == "DaThanhToan"
+						|| h.TrangThai == "Đã thanh toán")
+					&& h.PhuongThucThanhToan != null
+					&& (
+						(h.PhuongThucThanhToan.MaPhuongThuc != null && (
+							h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("bank")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("transfer")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("vnpay")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("qr")
+						))
+						|| (h.PhuongThucThanhToan.TenPhuongThuc != null && (
+							h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyển khoản")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyen khoan")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("bank")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("transfer")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("vnpay")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("qr")
+						))
+					))
+				.ThenByDescending(h => h.NgayTao);
 		}
 
 		private async Task<bool> HasCustomerUsedVoucherAsync(Guid voucherId, Guid customerId)
