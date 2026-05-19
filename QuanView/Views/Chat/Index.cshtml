@@ -39,39 +39,41 @@
 
 <style>
     .customer-chat-page {
-        min-height: calc(100vh - 120px);
-        background: #f1f5f9;
-        padding: 36px 16px;
+        min-height: calc(100vh - 250px);
+        background:
+            radial-gradient(circle at 20% 12%, rgba(37, 99, 235, .08), transparent 28%),
+            linear-gradient(180deg, #f4f7fb 0%, #eef2f7 100%);
+        padding: 28px 16px 44px;
     }
 
     .chat-shell {
-        width: min(920px, 100%);
-        height: min(720px, calc(100vh - 160px));
-        min-height: 560px;
+        width: min(540px, 100%);
+        height: min(640px, calc(100vh - 190px));
+        min-height: 520px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
         background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
     }
 
     .chat-hero {
-        height: 76px;
+        height: 64px;
         display: flex;
         align-items: center;
-        gap: 14px;
-        padding: 16px 20px;
+        gap: 12px;
+        padding: 12px 16px;
         border-bottom: 1px solid #e5e7eb;
         background: #0f172a;
         color: #fff;
     }
 
     .support-avatar {
-        width: 46px;
-        height: 46px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -83,7 +85,7 @@
 
     .chat-hero h1 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 800;
         letter-spacing: 0;
     }
@@ -108,7 +110,7 @@
         flex: 1;
         min-height: 0;
         overflow: auto;
-        padding: 22px;
+        padding: 18px;
         background: #f8fafc;
     }
 
@@ -122,8 +124,8 @@
     }
 
     .message-bubble {
-        max-width: min(560px, 78%);
-        padding: 10px 13px;
+        max-width: min(360px, 78%);
+        padding: 9px 12px;
         border-radius: 16px;
         background: #fff;
         color: #111827;
@@ -151,14 +153,14 @@
     .customer-composer {
         display: flex;
         gap: 10px;
-        padding: 14px;
+        padding: 12px;
         border-top: 1px solid #e5e7eb;
         background: #fff;
     }
 
     .customer-composer input {
         flex: 1;
-        height: 48px;
+        height: 42px;
         border: 1px solid #e5e7eb;
         border-radius: 999px;
         padding: 0 17px;
@@ -171,8 +173,8 @@
     }
 
     .customer-composer button {
-        width: 48px;
-        height: 48px;
+        width: 42px;
+        height: 42px;
         border: 0;
         border-radius: 50%;
         background: #2563eb;

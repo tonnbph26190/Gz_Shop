@@ -122,6 +122,179 @@
         .admin-chat-badge {
             display: none;
         }
+
+        .admin-chat-corner {
+            align-items: center;
+            background: #2563eb;
+            border: 0;
+            border-radius: 50%;
+            bottom: 26px;
+            box-shadow: 0 16px 38px rgba(37, 99, 235, .3);
+            color: #fff;
+            display: inline-flex;
+            height: 48px;
+            justify-content: center;
+            right: 26px;
+            position: fixed;
+            text-decoration: none;
+            width: 48px;
+            z-index: 1040;
+        }
+
+        .admin-chat-corner:hover {
+            background: #dc3545;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .admin-chat-corner .admin-chat-badge {
+            position: absolute;
+            right: -5px;
+            top: -6px;
+        }
+
+        .admin-chat-popup {
+            background: #fff;
+            border: 1px solid rgba(15,23,42,.12);
+            border-radius: 16px;
+            bottom: 76px;
+            box-shadow: 0 26px 80px rgba(15,23,42,.28);
+            display: none;
+            grid-template-columns: 230px minmax(0, 1fr);
+            height: min(520px, calc(100vh - 150px));
+            overflow: hidden;
+            position: fixed;
+            right: 26px;
+            width: min(760px, calc(100vw - 210px));
+            z-index: 1050;
+        }
+
+        .admin-chat-popup.open { display: grid; }
+
+        .admin-popup-rooms {
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .admin-popup-head {
+            align-items: center;
+            background: #0f172a;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 14px;
+        }
+
+        .admin-popup-close {
+            background: rgba(255,255,255,.12);
+            border: 0;
+            border-radius: 50%;
+            color: #fff;
+            height: 30px;
+            width: 30px;
+        }
+
+        .admin-popup-room-list {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .admin-popup-room {
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 9px;
+        }
+
+        .admin-popup-room.active,
+        .admin-popup-room:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .admin-popup-chat {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .admin-popup-chat-title {
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 800;
+            padding: 12px 14px;
+        }
+
+        .admin-popup-messages {
+            background: #f8fafc;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            padding: 14px;
+        }
+
+        .admin-popup-row { display: flex; margin-bottom: 9px; }
+        .admin-popup-row.mine { justify-content: flex-end; }
+
+        .admin-popup-bubble {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 15px;
+            box-shadow: 0 6px 16px rgba(15,23,42,.06);
+            max-width: 78%;
+            padding: 9px 11px;
+        }
+
+        .admin-popup-row.mine .admin-popup-bubble {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .admin-popup-meta { color: #94a3b8; font-size: 11px; margin-top: 4px; }
+        .admin-popup-row.mine .admin-popup-meta { color: rgba(255,255,255,.78); }
+
+        .admin-popup-form {
+            align-items: center;
+            border-top: 1px solid #e5e7eb;
+            background: #fff;
+            display: flex;
+            flex: 0 0 auto;
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .admin-popup-form input {
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            flex: 1;
+            height: 40px;
+            outline: 0;
+            padding: 0 14px;
+        }
+
+        .admin-popup-form button {
+            background: #2563eb;
+            border: 0;
+            border-radius: 50%;
+            color: #fff;
+            height: 40px;
+            width: 40px;
+        }
+
+        @@media (max-width: 900px) {
+            .admin-chat-popup {
+                grid-template-columns: 1fr;
+                width: min(420px, calc(100vw - 32px));
+            }
+            .admin-popup-rooms { max-height: 180px; border-right: 0; border-bottom: 1px solid #e5e7eb; }
+        }
     </style>
 </head>
 
@@ -164,14 +337,6 @@
                 <a class="nav-link" asp-controller="QuanLyDonHang" asp-action="Index">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Quản lý đơn hàng</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" asp-area="Admin" asp-controller="Chat" asp-action="Index">
-                    <i class="fas fa-comments"></i>
-                    <span>Tin nhắn</span>
-                    <span class="badge badge-danger ml-2 admin-chat-badge" data-admin-chat-badge></span>
                 </a>
             </li>
 
@@ -271,13 +436,6 @@
 
                     <ul class="navbar-nav ml-auto">
 
-                        <li class="nav-item mx-1">
-                            <a class="nav-link" asp-area="Admin" asp-controller="Chat" asp-action="Index" title="Tin nhắn khách hàng">
-                                <i class="fas fa-comments fa-fw"></i>
-                                <span class="badge badge-danger badge-counter admin-chat-badge" data-admin-chat-badge></span>
-                            </a>
-                        </li>
-
                         <!-- Notifications -->
                         <li class="nav-item dropdown no-arrow mx-1">
                             <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
@@ -341,6 +499,35 @@
     <a class="scroll-to-top rounded" href="#page-top">
         <i class="fas fa-angle-up"></i>
     </a>
+
+    <button type="button" class="admin-chat-corner" id="adminChatToggle" aria-label="Tin nhắn khách hàng" title="Tin nhắn khách hàng">
+        <i class="fas fa-comments"></i>
+        <span class="badge badge-danger admin-chat-badge" data-admin-chat-badge></span>
+    </button>
+
+    <div class="admin-chat-popup" id="adminChatPopup">
+        <aside class="admin-popup-rooms">
+            <div class="admin-popup-head">
+                <strong>Tin nhắn</strong>
+                <button type="button" class="admin-popup-close" id="adminChatClose" aria-label="Đóng">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-popup-room-list" id="adminPopupRooms">
+                <div class="text-muted text-center small py-4">Đang tải...</div>
+            </div>
+        </aside>
+        <section class="admin-popup-chat">
+            <div class="admin-popup-chat-title" id="adminPopupTitle">Chọn khách hàng</div>
+            <div class="admin-popup-messages" id="adminPopupMessages">
+                <div class="text-muted text-center small py-4">Chọn hội thoại để trả lời.</div>
+            </div>
+            <form class="admin-popup-form" id="adminPopupForm">
+                <input id="adminPopupInput" autocomplete="off" placeholder="Nhập tin nhắn..." disabled />
+                <button type="submit" id="adminPopupSend" disabled aria-label="Gửi"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </section>
+    </div>
 
     <!-- Logout Modal -->
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -452,6 +639,133 @@
         }
 
         window.refreshAdminChatNotifications = refreshAdminChatNotifications;
+
+        const adminChatPopup = document.getElementById('adminChatPopup');
+        const adminChatToggle = document.getElementById('adminChatToggle');
+        const adminChatClose = document.getElementById('adminChatClose');
+        const adminPopupRooms = document.getElementById('adminPopupRooms');
+        const adminPopupMessages = document.getElementById('adminPopupMessages');
+        const adminPopupTitle = document.getElementById('adminPopupTitle');
+        const adminPopupForm = document.getElementById('adminPopupForm');
+        const adminPopupInput = document.getElementById('adminPopupInput');
+        const adminPopupSend = document.getElementById('adminPopupSend');
+        let adminPopupRoomId = null;
+        let adminPopupTimer = null;
+
+        function adminEscape(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function adminChatTime(value) {
+            return value ? new Date(value).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
+        }
+
+        async function loadAdminPopupRooms(selectFirst = false) {
+            if (!adminPopupRooms) return;
+
+            let response;
+            try {
+                response = await fetch('/Admin/Chat/PopupRooms', { cache: 'no-store' });
+            } catch {
+                adminPopupRooms.innerHTML = '<div class="text-danger text-center small py-4 px-2">Không kết nối được dữ liệu tin nhắn.</div>';
+                return;
+            }
+
+            if (response.status === 401 || response.redirected) {
+                window.location.href = '/Login/Index';
+                return;
+            }
+
+            if (!response.ok) {
+                adminPopupRooms.innerHTML = '<div class="text-danger text-center small py-4 px-2">Không tải được hội thoại.</div>';
+                return;
+            }
+
+            const result = await response.json();
+            const rooms = result.data || [];
+            if (!rooms.length) {
+                adminPopupRooms.innerHTML = '<div class="text-muted text-center small py-4">Chưa có hội thoại.</div>';
+                return;
+            }
+            if (!adminPopupRoomId && selectFirst) adminPopupRoomId = rooms[0].id;
+            adminPopupRooms.innerHTML = rooms.map(room => `
+                <div class="admin-popup-room ${room.id === adminPopupRoomId ? 'active' : ''}" data-room-id="${room.id}">
+                    <div class="font-weight-bold text-truncate">${adminEscape(room.customerName)}</div>
+                    <div class="small text-muted text-truncate">${adminEscape(room.lastMessage || room.customerPhone || 'Chưa có tin nhắn')}</div>
+                </div>`).join('');
+            adminPopupRooms.querySelectorAll('[data-room-id]').forEach(item => {
+                item.addEventListener('click', () => {
+                    adminPopupRoomId = item.dataset.roomId;
+                    loadAdminPopupRooms(false);
+                    loadAdminPopupMessages();
+                });
+            });
+            if (adminPopupRoomId) await loadAdminPopupMessages();
+        }
+
+        async function loadAdminPopupMessages() {
+            if (!adminPopupRoomId || !adminPopupMessages) return;
+            const response = await fetch(`/Admin/Chat/Messages?id=${adminPopupRoomId}`, { cache: 'no-store' });
+            if (!response.ok) return;
+            const result = await response.json();
+            if (!result.success) return;
+            adminPopupTitle.textContent = result.room?.customerName || 'Khách hàng';
+            adminPopupInput.disabled = false;
+            adminPopupSend.disabled = false;
+            const messages = result.data || [];
+            if (!messages.length) {
+                adminPopupMessages.innerHTML = '<div class="text-muted text-center small py-4">Chưa có tin nhắn.</div>';
+                return;
+            }
+            adminPopupMessages.innerHTML = messages.map(m => `
+                <div class="admin-popup-row ${m.senderType === 'admin' ? 'mine' : ''}">
+                    <div class="admin-popup-bubble">
+                        <div>${adminEscape(m.content)}</div>
+                        <div class="admin-popup-meta">${adminEscape(m.senderName)} · ${adminChatTime(m.createdAt)}</div>
+                    </div>
+                </div>`).join('');
+            adminPopupMessages.scrollTop = adminPopupMessages.scrollHeight;
+            const last = messages[messages.length - 1];
+            if (last?.id) {
+                localStorage.setItem(`gz-chat-seen-${adminPopupRoomId}`, String(last.id));
+                refreshAdminChatNotifications();
+            }
+        }
+
+        adminChatToggle?.addEventListener('click', async () => {
+            adminChatPopup?.classList.toggle('open');
+            if (adminChatPopup?.classList.contains('open')) {
+                await loadAdminPopupRooms(true);
+                clearInterval(adminPopupTimer);
+                adminPopupTimer = setInterval(() => {
+                    loadAdminPopupRooms(false);
+                    loadAdminPopupMessages();
+                }, 5000);
+            } else {
+                clearInterval(adminPopupTimer);
+            }
+        });
+
+        adminChatClose?.addEventListener('click', () => {
+            adminChatPopup?.classList.remove('open');
+            clearInterval(adminPopupTimer);
+        });
+
+        adminPopupForm?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const content = adminPopupInput.value.trim();
+            if (!adminPopupRoomId || !content) return;
+            adminPopupInput.value = '';
+            const response = await fetch('/Admin/Chat/Send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ id: adminPopupRoomId, content })
+            });
+            if (response.ok) {
+                await loadAdminPopupMessages();
+                await loadAdminPopupRooms(false);
+            }
+        });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

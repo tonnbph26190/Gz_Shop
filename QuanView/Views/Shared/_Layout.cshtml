@@ -24,6 +24,8 @@
 
     string IsActive(string ctrl, string act = "Index") =>
         (currentController == ctrl && currentAction == act) ? "active text-danger fw-bold" : "text-dark";
+
+    var isCustomerLoggedIn = User.Identity?.IsAuthenticated == true;
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -148,10 +150,6 @@
             height: 50px; /* Adjust this height to your liking to control the total header thickness */
         }
 
-        .gz-chat-nav-link {
-            position: relative;
-        }
-
         .gz-chat-badge {
             align-items: center;
             background: #dc3545;
@@ -168,6 +166,148 @@
             position: absolute;
             right: -6px;
             top: -5px;
+        }
+
+        .gz-chat-corner {
+            align-items: center;
+            background: #2563eb;
+            border: 0;
+            border-radius: 50%;
+            bottom: 26px;
+            box-shadow: 0 16px 38px rgba(37, 99, 235, .28);
+            color: #fff;
+            display: inline-flex;
+            height: 48px;
+            justify-content: center;
+            right: 24px;
+            position: fixed;
+            text-decoration: none;
+            width: 48px;
+            z-index: 1040;
+        }
+
+        .gz-chat-corner:hover {
+            background: #dc3545;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .gz-chat-corner .gz-chat-badge {
+            right: -5px;
+            top: -6px;
+        }
+
+        .gz-chat-popup {
+            background: #fff;
+            border: 1px solid rgba(15,23,42,.12);
+            border-radius: 16px;
+            bottom: 86px;
+            box-shadow: 0 26px 80px rgba(15,23,42,.26);
+            display: none;
+            flex-direction: column;
+            height: min(620px, calc(100vh - 130px));
+            overflow: hidden;
+            position: fixed;
+            right: 24px;
+            width: min(390px, calc(100vw - 32px));
+            z-index: 1050;
+        }
+
+        .gz-chat-popup.open {
+            display: flex;
+        }
+
+        .gz-chat-popup-head {
+            align-items: center;
+            background: #0f172a;
+            color: #fff;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            padding: 12px 14px;
+        }
+
+        .gz-chat-popup-title {
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .gz-chat-popup-close {
+            background: rgba(255,255,255,.12);
+            border: 0;
+            border-radius: 50%;
+            color: #fff;
+            height: 30px;
+            width: 30px;
+        }
+
+        .gz-chat-popup-messages {
+            background: #f8fafc;
+            flex: 1;
+            overflow: auto;
+            padding: 14px;
+        }
+
+        .gz-popup-row {
+            display: flex;
+            margin-bottom: 9px;
+        }
+
+        .gz-popup-row.mine {
+            justify-content: flex-end;
+        }
+
+        .gz-popup-bubble {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 15px;
+            box-shadow: 0 6px 16px rgba(15,23,42,.06);
+            color: #111827;
+            max-width: 78%;
+            padding: 9px 11px;
+        }
+
+        .gz-popup-row.mine .gz-popup-bubble {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .gz-popup-meta {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .gz-popup-row.mine .gz-popup-meta {
+            color: rgba(255,255,255,.78);
+        }
+
+        .gz-chat-popup-form {
+            align-items: center;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .gz-chat-popup-form input {
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            flex: 1;
+            height: 40px;
+            outline: 0;
+            padding: 0 14px;
+        }
+
+        .gz-chat-popup-form button {
+            background: #2563eb;
+            border: 0;
+            border-radius: 50%;
+            color: #fff;
+            height: 40px;
+            width: 40px;
         }
         
     </style>
@@ -219,12 +359,6 @@
                         <li class="nav-item">
                             <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">
                                 <i class="fas fa-file-invoice me-1"></i> Đơn mua
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a asp-controller="Chat" asp-action="Index" class="nav-link gz-chat-nav-link @(IsActive("Chat"))">
-                                <i class="fas fa-comments me-1"></i> Tin nhắn
-                                <span class="gz-chat-badge" data-chat-badge></span>
                             </a>
                         </li>
                         <div class="nav-underline-bar"></div>
@@ -281,6 +415,30 @@
     <main class="flex-fill">
         @RenderBody()
     </main>
+
+    <button type="button" class="gz-chat-corner" id="gzChatToggle" aria-label="Mở tin nhắn" title="Tin nhắn">
+        <i class="fas fa-comments"></i>
+        <span class="gz-chat-badge" data-chat-badge></span>
+    </button>
+
+    <div class="gz-chat-popup" id="gzChatPopup" aria-label="Cửa sổ tin nhắn">
+        <div class="gz-chat-popup-head">
+            <div>
+                <div class="gz-chat-popup-title">GZ Shop</div>
+                <small id="gzChatStaff">Hỗ trợ khách hàng</small>
+            </div>
+            <button type="button" class="gz-chat-popup-close" id="gzChatClose" aria-label="Đóng tin nhắn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="gz-chat-popup-messages" id="gzChatMessages">
+            <div class="text-muted text-center small py-4">Đang tải tin nhắn...</div>
+        </div>
+        <form class="gz-chat-popup-form" id="gzChatForm">
+            <input id="gzChatInput" autocomplete="off" placeholder="Nhập tin nhắn..." />
+            <button type="submit" aria-label="Gửi"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-light mt-auto pt-5 pb-3">
@@ -391,6 +549,93 @@
         document.addEventListener('DOMContentLoaded', () => {
             refreshChatNotifications();
             setInterval(refreshChatNotifications, 15000);
+        });
+
+        const gzChatPopup = document.getElementById('gzChatPopup');
+        const gzChatToggle = document.getElementById('gzChatToggle');
+        const gzChatClose = document.getElementById('gzChatClose');
+        const gzChatMessages = document.getElementById('gzChatMessages');
+        const gzChatForm = document.getElementById('gzChatForm');
+        const gzChatInput = document.getElementById('gzChatInput');
+        const gzChatIsLoggedIn = @(isCustomerLoggedIn.ToString().ToLowerInvariant());
+        const gzChatLoginUrl = '@Url.Action("Index", "Login")';
+        let gzChatTimer = null;
+
+        function gzEscape(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function gzChatTime(value) {
+            return value ? new Date(value).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
+        }
+
+        async function loadPopupChat() {
+            if (!gzChatMessages) return;
+            const response = await fetch('/Chat/Messages', { cache: 'no-store' });
+            if (!response.ok) {
+                window.location.href = gzChatLoginUrl;
+                return;
+            }
+            const result = await response.json();
+            if (!result.success) return;
+            document.getElementById('gzChatStaff').textContent = result.room?.staffName || 'Hỗ trợ khách hàng';
+            const messages = result.data || [];
+            if (!messages.length) {
+                gzChatMessages.innerHTML = '<div class="text-muted text-center small py-4">Shop có thể hỗ trợ gì cho bạn?</div>';
+                return;
+            }
+            gzChatMessages.innerHTML = messages.map(m => `
+                <div class="gz-popup-row ${m.senderType === 'customer' ? 'mine' : ''}">
+                    <div class="gz-popup-bubble">
+                        <div>${gzEscape(m.content)}</div>
+                        <div class="gz-popup-meta">${gzEscape(m.senderName)} · ${gzChatTime(m.createdAt)}</div>
+                    </div>
+                </div>`).join('');
+            gzChatMessages.scrollTop = gzChatMessages.scrollHeight;
+            const last = messages[messages.length - 1];
+            if (result.room?.id && last?.id) {
+                localStorage.setItem(`gz-chat-seen-${result.room.id}`, String(last.id));
+                refreshChatNotifications();
+            }
+        }
+
+        gzChatToggle?.addEventListener('click', async () => {
+            if (!gzChatIsLoggedIn) {
+                window.location.href = gzChatLoginUrl;
+                return;
+            }
+
+            gzChatPopup?.classList.toggle('open');
+            if (gzChatPopup?.classList.contains('open')) {
+                await loadPopupChat();
+                clearInterval(gzChatTimer);
+                gzChatTimer = setInterval(loadPopupChat, 5000);
+                gzChatInput?.focus();
+            } else {
+                clearInterval(gzChatTimer);
+            }
+        });
+
+        gzChatClose?.addEventListener('click', () => {
+            gzChatPopup?.classList.remove('open');
+            clearInterval(gzChatTimer);
+        });
+
+        gzChatForm?.addEventListener('submit', async event => {
+            event.preventDefault();
+            const content = gzChatInput.value.trim();
+            if (!content) return;
+            gzChatInput.value = '';
+            const response = await fetch('/Chat/Send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ content })
+            });
+            if (response.status === 401 || response.redirected) {
+                window.location.href = gzChatLoginUrl;
+                return;
+            }
+            if (response.ok) await loadPopupChat();
         });
     </script>
 </body>

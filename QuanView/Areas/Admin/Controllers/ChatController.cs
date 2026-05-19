@@ -24,6 +24,54 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> PopupRooms()
+        {
+            var rooms = await _context.PhongTroChuyens
+                .AsNoTracking()
+                .Include(p => p.KhachHang)
+                .Include(p => p.NhanVien)
+                .Where(p => p.TrangThai)
+                .Select(p => new
+                {
+                    id = p.IDPhongTroChuyen,
+                    customerName = p.KhachHang != null ? p.KhachHang.TenKhachHang : "Khach hang",
+                    customerPhone = p.KhachHang != null ? p.KhachHang.SoDienThoai : "",
+                    staffName = p.NhanVien != null ? p.NhanVien.TenNhanVien : "Nhan vien",
+                    updatedAt = p.LanCapNhatCuoi ?? p.NgayTao
+                })
+                .OrderByDescending(p => p.updatedAt)
+                .ToListAsync();
+
+            var roomIds = rooms.Select(r => r.id).ToList();
+            var lastMessages = await _context.TinNhans
+                .AsNoTracking()
+                .Where(t => t.TrangThai && roomIds.Contains(t.IDPhongTroChuyen))
+                .OrderByDescending(t => t.NgayTao)
+                .Select(t => new
+                {
+                    roomId = t.IDPhongTroChuyen,
+                    content = t.NoiDung
+                })
+                .ToListAsync();
+
+            var lastMessageByRoom = lastMessages
+                .GroupBy(t => t.roomId)
+                .ToDictionary(g => g.Key, g => g.First().content);
+
+            var result = rooms.Select(room => new
+            {
+                room.id,
+                room.customerName,
+                room.customerPhone,
+                room.staffName,
+                room.updatedAt,
+                lastMessage = lastMessageByRoom.GetValueOrDefault(room.id)
+            });
+
+            return Json(new { success = true, data = result });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Rooms()
         {
             var rooms = await _context.PhongTroChuyens
@@ -139,7 +187,7 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpPost]
         public async Task<IActionResult> Send(Guid id, string content)
         {
-            var staffId = GetCurrentStaffId();
+            var staffId = await GetCurrentStaffIdAsync();
             if (staffId == null)
             {
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên đang đăng nhập." });
@@ -180,10 +228,45 @@ namespace QuanView.Areas.Admin.Controllers
             return Json(new { success = true });
         }
 
-        private Guid? GetCurrentStaffId()
+        private async Task<Guid?> GetCurrentStaffIdAsync()
         {
             var claimValue = User.FindFirst("custom:id_nhanvien")?.Value;
-            return Guid.TryParse(claimValue, out var id) ? id : null;
+            if (Guid.TryParse(claimValue, out var id))
+            {
+                return id;
+            }
+
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var staffByEmail = await _context.NhanViens
+                    .AsNoTracking()
+                    .Where(n => n.TrangThai && n.Email == email)
+                    .Select(n => n.IDNhanVien)
+                    .FirstOrDefaultAsync();
+
+                if (staffByEmail != Guid.Empty)
+                {
+                    return staffByEmail;
+                }
+            }
+
+            var name = User.Identity?.Name;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var staffByName = await _context.NhanViens
+                    .AsNoTracking()
+                    .Where(n => n.TrangThai && (n.TenNhanVien == name || n.MaNhanVien == name))
+                    .Select(n => n.IDNhanVien)
+                    .FirstOrDefaultAsync();
+
+                if (staffByName != Guid.Empty)
+                {
+                    return staffByName;
+                }
+            }
+
+            return null;
         }
     }
 }
