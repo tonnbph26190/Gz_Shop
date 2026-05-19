@@ -32,8 +32,9 @@
         border-color: #dee2e6 #dee2e6 #fff;
         color: #000;
         font-weight: 600;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        border-bottom: 2px solid #fff; /* blends with content */
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        border-bottom: 2px solid #fff;
+        /* blends with content */
     }
 
     .nav-tabs .nav-link:hover {
@@ -58,6 +59,7 @@
         opacity: 0.75;
         transition: all 0.2s;
     }
+
     .nav-link:hover .tab-close {
         opacity: 1;
     }
@@ -73,14 +75,17 @@
         gap: 3px;
         flex-wrap: wrap;
     }
+
     #btnAddInvoice {
         border: 1px solid #dee2e6;
         color: #6c757d;
     }
+
     #btnAddInvoice:hover {
         background: #e9ecef;
         color: #495057;
     }
+
     /* Toast styles (kept from your original) */
     .toast-container {
         position: fixed;
@@ -89,6 +94,7 @@
         z-index: 9999;
         max-width: 350px;
     }
+
     /* Toast Notification Styles */
     .toast-container {
         position: fixed;
@@ -101,7 +107,7 @@
     .custom-toast {
         background: white;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         margin-bottom: 10px;
         overflow: hidden;
         transform: translateX(400px);
@@ -109,25 +115,25 @@
         border-left: 4px solid #28a745;
     }
 
-        .custom-toast.show {
-            transform: translateX(0);
-        }
+    .custom-toast.show {
+        transform: translateX(0);
+    }
 
-        .custom-toast.success {
-            border-left-color: #28a745;
-        }
+    .custom-toast.success {
+        border-left-color: #28a745;
+    }
 
-        .custom-toast.error {
-            border-left-color: #dc3545;
-        }
+    .custom-toast.error {
+        border-left-color: #dc3545;
+    }
 
-        .custom-toast.warning {
-            border-left-color: #ffc107;
-        }
+    .custom-toast.warning {
+        border-left-color: #ffc107;
+    }
 
-        .custom-toast.info {
-            border-left-color: #17a2b8;
-        }
+    .custom-toast.info {
+        border-left-color: #17a2b8;
+    }
 
     .toast-header {
         padding: 12px 16px;
@@ -149,21 +155,21 @@
         font-size: 12px;
     }
 
-        .toast-icon.success {
-            background-color: #28a745;
-        }
+    .toast-icon.success {
+        background-color: #28a745;
+    }
 
-        .toast-icon.error {
-            background-color: #dc3545;
-        }
+    .toast-icon.error {
+        background-color: #dc3545;
+    }
 
-        .toast-icon.warning {
-            background-color: #ffc107;
-        }
+    .toast-icon.warning {
+        background-color: #ffc107;
+    }
 
-        .toast-icon.info {
-            background-color: #17a2b8;
-        }
+    .toast-icon.info {
+        background-color: #17a2b8;
+    }
 
     .toast-title {
         font-weight: 600;
@@ -186,9 +192,9 @@
         justify-content: center;
     }
 
-        .toast-close:hover {
-            color: #666;
-        }
+    .toast-close:hover {
+        color: #666;
+    }
 
     .toast-body {
         padding: 12px 16px;
@@ -199,7 +205,7 @@
 
     .toast-progress {
         height: 3px;
-        background-color: rgba(0,0,0,0.1);
+        background-color: rgba(0, 0, 0, 0.1);
         position: relative;
         overflow: hidden;
     }
@@ -247,16 +253,16 @@
         transition: border-color 0.3s;
     }
 
-        .css_select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-            outline: none;
-        }
+    .css_select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
 
-        .css_select:disabled {
-            background-color: #f8f9fa;
-            color: #6c757d;
-        }
+    .css_select:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
 
     @@media (max-width: 768px) {
         .css_select_div {
@@ -275,27 +281,27 @@
         cursor: pointer;
     }
 
-        .address-card:hover {
-            border-color: #007bff;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.15);
-            transform: translateY(-1px);
-        }
+    .address-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        transform: translateY(-1px);
+    }
 
-        .address-card.selected {
-            border-color: #007bff;
-            background-color: #f8f9ff;
-        }
-        
+    .address-card.selected {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+    }
+
     .voucher-ticket {
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border: 1px solid rgba(0,0,0,0.05) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
         background: #fff;
     }
-    
+
     .voucher-ticket:hover {
         transform: translateY(-5px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important;
-        border-color: rgba(0,0,0,0.1) !important;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
     }
 
     /* Reactive Badge Color Shifts */
@@ -306,18 +312,21 @@
 
     /* When the WHOLE card is hovered, change the badge colors */
     .voucher-ticket:hover .badge-reactive.bg-success {
-        background-color: #198754 !important; /* Deeper Green */
+        background-color: #198754 !important;
+        /* Deeper Green */
         box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
         transform: scale(1.1);
     }
 
     .voucher-ticket:hover .badge-reactive.bg-secondary {
-        background-color: #495057 !important; /* Darker Gray */
+        background-color: #495057 !important;
+        /* Darker Gray */
         transform: scale(1.1);
     }
 
     .voucher-ticket:hover .badge-reactive.bg-danger {
-        background-color: #bb2d3b !important; /* Deeper Red */
+        background-color: #bb2d3b !important;
+        /* Deeper Red */
         box-shadow: 0 0 10px rgba(187, 45, 59, 0.4);
         transform: scale(1.1);
     }
@@ -342,11 +351,11 @@
     <div class="d-flex align-items-end mb-3">
         <div class="invoice-tabs-container d-flex align-items-end flex-grow-1" style="gap: 3px;">
             <ul class="nav nav-tabs" id="invoiceTabs" style="border-bottom: none; background: transparent;"></ul>
-            
+
             <!-- Small + Button like Chrome -->
-            <button class="btn btn-light border shadow-sm d-flex align-items-center justify-content-center" 
-                    id="btnAddInvoice" 
-                    style="width: 42px; height: 38px; border-radius: 8px 8px 0 0; margin-bottom: 2px; font-size: 1.5rem; line-height: 1;">
+            <button class="btn btn-light border shadow-sm d-flex align-items-center justify-content-center"
+                id="btnAddInvoice"
+                style="width: 42px; height: 38px; border-radius: 8px 8px 0 0; margin-bottom: 2px; font-size: 1.5rem; line-height: 1;">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
@@ -376,12 +385,16 @@
                         <div><span class="fw-bold">Số điện thoại:</span> <span id="customerPhone"></span></div>
                         <div><span class="fw-bold">email:</span> <span id="customerEmail"></span></div>
                     </div>
-                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài khoản</button>
-                    <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;" onclick="clearCustomer()" title="Hủy chọn khách hàng">
+                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài
+                        khoản</button>
+                    <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;"
+                        onclick="clearCustomer()" title="Hủy chọn khách hàng">
                         <i class="bi bi-x-circle"></i> Hủy chọn
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress"
+                        style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress"
+                        style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
                 </div>
             </div>
 
@@ -408,40 +421,28 @@
 
                         <!-- Dropdown chọn tỉnh thành, quận huyện, phường xã cho form chính -->
                         <div class="css_select_div mb-3">
-                            <select class="css_select form-control" id="shipTinh" name="shipTinh" title="Chọn Tỉnh Thành">
+                            <select class="css_select form-control" id="shipTinh" name="shipTinh"
+                                title="Chọn Tỉnh Thành">
                                 <option value="0">Tỉnh Thành</option>
                             </select>
-                            <select class="css_select form-control" id="shipQuan" name="shipQuan" title="Chọn Quận Huyện">
+                            <select class="css_select form-control" id="shipQuan" name="shipQuan"
+                                title="Chọn Quận Huyện">
                                 <option value="0">Quận Huyện</option>
                             </select>
-                            <select class="css_select form-control" id="shipPhuong" name="shipPhuong" title="Chọn Phường Xã">
+                            <select class="css_select form-control" id="shipPhuong" name="shipPhuong"
+                                title="Chọn Phường Xã">
                                 <option value="0">Phường Xã</option>
                             </select>
                         </div>
 
                         <!-- Địa chỉ chi tiết -->
-                        <input type="text" class="form-control mb-2" id="shipDiaChiChiTiet" name="shipDiaChiChiTiet" placeholder="Số nhà, tên đường...">
+                        <input type="text" class="form-control mb-2" id="shipDiaChiChiTiet" name="shipDiaChiChiTiet"
+                            placeholder="Số nhà, tên đường...">
 
                         <!-- Địa chỉ đầy đủ (readonly) -->
-                        <textarea class="form-control" id="shipAddress" rows="3" readonly placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
+                        <textarea class="form-control" id="shipAddress" rows="3" readonly
+                            placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
                     </div>
-                    @*  <div class="row mb-2">
-                    <div class="col">
-                    <select class="form-select" id="shipProvince">
-                    <option>Chọn tỉnh</option>
-                    </select>
-                    </div>
-                    <div class="col">
-                    <select class="form-select" id="shipDistrict">
-                    <option>Chọn Quận</option>
-                    </select>
-                    </div>
-                    <div class="col">
-                    <select class="form-select" id="shipWard">
-                    <option>Chọn Phường xã</option>
-                    </select>
-                    </div>
-                    </div> *@
                     <div class="mb-2">
                         <input type="text" class="form-control" id="shipNote" placeholder="Ghi chú">
                     </div>
@@ -453,143 +454,148 @@
                 </div>
             </div>
         </div>
-<div class="col-md-5">
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white fw-bold py-3">
-            <i class="bi bi-bag-check-fill me-2"></i>Thông tin thanh toán
-        </div>
-        <div class="card-body">
 
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted">Mã giảm giá:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control border-end-0" id="discountCode" placeholder="Chọn phiếu giảm giá" readonly>
-                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="applyDiscount()">Chọn mã</button>
-                    <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()">
-                        <i class="bi bi-x-lg"></i>
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-bag-check-fill me-2"></i>Thông tin thanh toán
+                </div>
+                <div class="card-body">
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Mã giảm giá:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control border-end-0" id="discountCode"
+                                placeholder="Chọn phiếu giảm giá" readonly>
+                            <button class="btn btn-outline-secondary border-start-0" type="button"
+                                onclick="applyDiscount()">Chọn mã</button>
+                            <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
+                        <label class="form-check-label fw-medium" for="shippingSwitch">Giao Hàng</label>
+                    </div>
+
+                    <div class="p-3 rounded-3 mb-3" style="background-color: #f0f7ff; border: 1px solid #d0e3ff;">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                            <label class="form-check-label fw-bold text-primary" for="pointSwitch">
+                                Dùng điểm (<span id="customerPoint">0</span> điểm)
+                            </label>
+                        </div>
+                        <div class="small text-muted mb-2" id="pointRateLabel">
+                            1 điểm = 1,000 VND | Tối đa 200 điểm/đơn
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Số điểm muốn dùng:</label>
+                            <input type="number" class="form-control form-control-lg border-primary-subtle"
+                                id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="small fw-bold text-uppercase">Điểm quy đổi:</span>
+                            <span class="fw-bold text-primary" id="pointDiscountLabel">- 0 VND</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 opacity-10">
+
+                    <div class="payment-summary">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Tạm tính (tiền hàng):</span>
+                            <span class="fw-medium" id="goodsAmount">0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Phí vận chuyển phải thu:</span>
+                            <span class="fw-medium text-dark" id="shippingFeeContainer">+ 0 VND</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 d-none" id="shippingOriginalRow">
+                            <span class="text-secondary">Phí vận chuyển gốc:</span>
+                            <span class="text-muted" id="shippingOriginalAmount">0 VND</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 d-none" id="shippingDiscountRow">
+                            <span class="text-secondary">Ưu đãi phí ship:</span>
+                            <span class="text-success" id="shippingDiscountAmount">- 0 VND</span>
+                        </div>
+                        <div class="mb-2 d-none" id="shippingDiscountMessageRow">
+                            <small class="text-success" id="shippingDiscountMessage"></small>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Giảm từ phiếu giảm giá:</span>
+                            <span class="text-success" id="discountAmount">- 0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Tổng điểm giảm:</span>
+                            <span class="text-success" id="totalPointDiscount">- 0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                            <span class="text-secondary">Tiền thối lại:</span>
+                            <span class="fw-bold text-success" id="changeAmount">0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-3">
+                            <span class="h5 mb-0 fw-bold">Tổng tiền:</span>
+                            <span class="h4 mb-0 fw-bold text-danger" id="totalAmount">0 VND</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
+                        <span class="small text-muted">Hình thức: <span id="selectedPaymentMethod"
+                                class="text-dark fw-bold">Tiền mặt</span></span>
+                        <a href="javascript:void(0)" onclick="openPaymentModal()" class="text-decoration-none">
+                            <i class="bi bi-pencil-square"></i> Sửa
+                        </a>
+                    </div>
+
+                    <button class="btn btn-dark btn-lg w-100 fw-bold shadow-sm" onclick="payInvoice()">
+                        THANH TOÁN
                     </button>
                 </div>
             </div>
-
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
-                <label class="form-check-label fw-medium" for="shippingSwitch">Giao Hàng</label>
-            </div>
-
-            <div class="p-3 rounded-3 mb-3" style="background-color: #f0f7ff; border: 1px solid #d0e3ff;">
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
-                    <label class="form-check-label fw-bold text-primary" for="pointSwitch">
-                        Dùng điểm (<span id="customerPoint">0</span> điểm)
-                    </label>
-                </div>
-                <div class="small text-muted mb-2" id="pointRateLabel">
-                    1 điểm = 1,000 VND | Tối đa 200 điểm/đơn
-                </div>
-                <div class="mb-2">
-                    <label class="form-label small fw-bold">Số điểm muốn dùng:</label>
-                    <input type="number" class="form-control form-control-lg border-primary-subtle" id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="small fw-bold text-uppercase">Điểm quy đổi:</span>
-                    <span class="fw-bold text-primary" id="pointDiscountLabel">- 0 VND</span>
-                </div>
-            </div>
-
-            <hr class="my-4 opacity-10">
-
-            <div class="payment-summary">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Tạm tính (tiền hàng):</span>
-                    <span class="fw-medium" id="goodsAmount">0 VND</span>
-                </div>
-
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Phí vận chuyển phải thu:</span>
-                    <span class="fw-medium text-dark" id="shippingFeeContainer">+ 0 VND</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2 d-none" id="shippingOriginalRow">
-                    <span class="text-secondary">Phí vận chuyển gốc:</span>
-                    <span class="text-muted" id="shippingOriginalAmount">0 VND</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2 d-none" id="shippingDiscountRow">
-                    <span class="text-secondary">Ưu đãi phí ship:</span>
-                    <span class="text-success" id="shippingDiscountAmount">- 0 VND</span>
-                </div>
-                <div class="mb-2 d-none" id="shippingDiscountMessageRow">
-                    <small class="text-success" id="shippingDiscountMessage"></small>
-                </div>
-
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Giảm từ phiếu giảm giá:</span>
-                    <span class="text-success" id="discountAmount">- 0 VND</span>
-                </div>
-
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-secondary">Tổng điểm giảm:</span>
-                    <span class="text-success" id="totalPointDiscount">- 0 VND</span>
-                </div>
-                
-                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
-                    <span class="text-secondary">Tiền thối lại:</span>
-                    <span class="fw-bold text-success" id="changeAmount">0 VND</span>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center py-3">
-                    <span class="h5 mb-0 fw-bold">Tổng tiền:</span>
-                    <span class="h4 mb-0 fw-bold text-danger" id="totalAmount">0 VND</span>
-                </div>
-            </div>
-
-            <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
-                <span class="small text-muted">Hình thức: <span id="selectedPaymentMethod" class="text-dark fw-bold">Tiền mặt</span></span>
-                <a href="javascript:void(0)" onclick="openPaymentModal()" class="text-decoration-none">
-                    <i class="bi bi-pencil-square"></i> Sửa
-                </a>
-            </div>
-
-            <button class="btn btn-dark btn-lg w-100 fw-bold shadow-sm" onclick="payInvoice()">
-                THANH TOÁN
-            </button>
         </div>
     </div>
 </div>
-    </div>
 </div>
+
 
 <!-- Modal chọn sản phẩm -->
 <div class="modal fade" id="productModal" tabindex="-1">
     <div class="modal-dialog" style="max-width: 70%;">
         <div class="modal-content">
-            
 
-                <!-- Tabs -->
-                <ul class="nav nav-tabs mb-3">
-                    <li class="nav-item">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAll">
-                            Chọn sản phẩm
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDiscount">
-                            Chọn sản phẩm giảm giá
-                        </button>
-                    </li>
-                </ul>
 
-                <!-- Nội dung -->
-                <div class="tab-content">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAll">
+                        Chọn sản phẩm
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDiscount">
+                        Chọn sản phẩm giảm giá
+                    </button>
+                </li>
+            </ul>
 
-                    <!-- Tab tất cả -->
-                 <div class="tab-pane fade show active" id="tabAll">
+            <!-- Nội dung -->
+            <div class="tab-content">
+
+                <!-- Tab tất cả -->
+                <div class="tab-pane fade show active" id="tabAll">
 
                     <!-- FILTER -->
                     <div class="d-flex gap-2 mb-3 align-items-center">
 
-                        <input type="text" id="searchName"
-                               class="form-control"
-                               placeholder="Tìm theo tên hoặc mã..."
-                               style="max-width: 400px; margin-left:20px;" />
+                        <input type="text" id="searchName" class="form-control" placeholder="Tìm theo tên hoặc mã..."
+                            style="max-width: 400px; margin-left:20px;" />
 
                         <button class="btn btn-primary" onclick="applyFilter()">
                             Áp dụng
@@ -604,17 +610,17 @@
                     <!-- QUAN TRỌNG: PHẢI CÓ -->
                     <div id="productList"></div>
 
-                </div> 
-                 <!-- Tab giảm giá -->
-                    <div class="tab-pane fade" id="tabDiscount">
-                        <div id="discountProductList"></div>
-                    </div>
-
+                </div>
+                <!-- Tab giảm giá -->
+                <div class="tab-pane fade" id="tabDiscount">
+                    <div id="discountProductList"></div>
                 </div>
 
             </div>
+
         </div>
     </div>
+</div>
 </div>
 
 <!-- Modal quét QR -->
@@ -637,7 +643,8 @@
                 </div>
                 <div id="qrReader" class="mb-3"></div>
                 <label for="qrCodeInput" class="form-label">Hoặc nhập / máy quét cầm tay</label>
-                <input type="text" class="form-control" id="qrCodeInput" placeholder="Dán mã hoặc quét bằng máy quét, sau đó nhấn Enter">
+                <input type="text" class="form-control" id="qrCodeInput"
+                    placeholder="Dán mã hoặc quét bằng máy quét, sau đó nhấn Enter">
                 <div class="form-text">
                     Sau khi nhận mã hợp lệ, hệ thống mở cửa sổ nhập số lượng (từ 1 đến tồn kho).
                 </div>
@@ -645,7 +652,8 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button class="btn btn-primary" id="btnQrScan"><i class="bi bi-box-arrow-in-right me-1"></i>Tìm sản phẩm &amp; nhập số lượng</button>
+                <button class="btn btn-primary" id="btnQrScan"><i class="bi bi-box-arrow-in-right me-1"></i>Tìm sản phẩm
+                    &amp; nhập số lượng</button>
             </div>
         </div>
     </div>
@@ -664,7 +672,8 @@
                     <button type="button" class="btn btn-outline-secondary" onclick="selectGuestCustomer()">
                         <i class="bi bi-person-x"></i> Khách vãng lai
                     </button>
-                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addCustomerForm" aria-expanded="false">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse"
+                        data-bs-target="#addCustomerForm" aria-expanded="false">
                         <i class="bi bi-person-plus"></i> Thêm khách hàng mới
                     </button>
                 </div>
@@ -673,21 +682,26 @@
                         <h6 class="mb-2">Thêm khách hàng vào hệ thống</h6>
                         <div class="row g-2">
                             <div class="col-md-5">
-                                <input type="text" class="form-control form-control-sm" id="newCustomerName" placeholder="Tên khách hàng">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerName"
+                                    placeholder="Tên khách hàng">
                             </div>
                             <div class="col-md-4">
-                                <input type="text" class="form-control form-control-sm" id="newCustomerPhone" placeholder="Số điện thoại">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerPhone"
+                                    placeholder="Số điện thoại">
                             </div>
                             <div class="col-md-3">
-                                <button type="button" class="btn btn-success btn-sm w-100" onclick="submitNewCustomer()">Lưu & chọn</button>
+                                <button type="button" class="btn btn-success btn-sm w-100"
+                                    onclick="submitNewCustomer()">Lưu & chọn</button>
                             </div>
                         </div>
-                        <small class="text-muted">Sau khi lưu, khách hàng sẽ được chọn và có thể dùng phiếu giảm giá (nếu có).</small>
+                        <small class="text-muted">Sau khi lưu, khách hàng sẽ được chọn và có thể dùng phiếu giảm giá
+                            (nếu có).</small>
                     </div>
                 </div>
                 <hr class="my-2" />
                 <p class="small text-muted mb-2">Hoặc chọn khách có sẵn trong hệ thống:</p>
-                <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
+                <input type="text" class="form-control mb-2" id="searchCustomer"
+                    placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
                 <button class="btn btn-primary btn-sm mb-2" onclick="searchCustomer()">Tìm kiếm</button>
                 <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
                     <table class="table table-bordered table-sm text-center">
@@ -735,7 +749,8 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Tiền khách đưa</label>
-                    <input type="number" class="form-control" id="modalCustomerPaid" min="0" value="0" oninput="updateModalChangeAmount()" />
+                    <input type="number" class="form-control" id="modalCustomerPaid" min="0" value="0"
+                        oninput="updateModalChangeAmount()" />
                 </div>
                 <div class="mb-2">
                     <span>Tiền thối lại:</span>
@@ -800,9 +815,8 @@
                         <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)">
                             <i class="bi bi-dash"></i>
                         </button>
-                        <input type="number" class="form-control text-center" id="quantityInput"
-                               min="1" value="1" oninput="validateQuantityInput()"
-                               onkeypress="if(event.key==='Enter') confirmAddProduct()">
+                        <input type="number" class="form-control text-center" id="quantityInput" min="1" value="1"
+                            oninput="validateQuantityInput()" onkeypress="if(event.key==='Enter') confirmAddProduct()">
                         <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)">
                             <i class="bi bi-plus"></i>
                         </button>
@@ -842,7 +856,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Địa chỉ chi tiết</label>
-                        <textarea class="form-control" id="newAddressDetail" rows="3" placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, tỉnh/thành phố)"></textarea>
+                        <textarea class="form-control" id="newAddressDetail" rows="3"
+                            placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, tỉnh/thành phố)"></textarea>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -938,33 +953,33 @@
 
 
     function resetKhachHangForm() {
-    // Xóa input text
-    document.querySelectorAll('#khachHangForm input[type="text"], #khachHangForm input[type="email"]').forEach(el => el.value = '');
+        // Xóa input text
+        document.querySelectorAll('#khachHangForm input[type="text"], #khachHangForm input[type="email"]').forEach(el => el.value = '');
 
-    // Xóa textarea
-    document.querySelectorAll('#khachHangForm textarea').forEach(el => el.value = '');
+        // Xóa textarea
+        document.querySelectorAll('#khachHangForm textarea').forEach(el => el.value = '');
 
-    // Reset select
-    document.querySelectorAll('#khachHangForm select').forEach(el => el.selectedIndex = 0);
+        // Reset select
+        document.querySelectorAll('#khachHangForm select').forEach(el => el.selectedIndex = 0);
 
-    // Tắt checkbox giao hàng
-    const giaoHangCheckbox = document.querySelector('#GiaoHang');
-    if (giaoHangCheckbox) {
-        giaoHangCheckbox.checked = false;
+        // Tắt checkbox giao hàng
+        const giaoHangCheckbox = document.querySelector('#GiaoHang');
+        if (giaoHangCheckbox) {
+            giaoHangCheckbox.checked = false;
+        }
+
+        // Xóa địa chỉ hiển thị
+        const diaChiContainer = document.querySelector('#diaChiContainer');
+        if (diaChiContainer) {
+            diaChiContainer.innerHTML = '';
+        }
+
+        // Reset text hiển thị địa chỉ
+        const diaChiFull = document.querySelector('#DiaChiDayDu');
+        if (diaChiFull) {
+            diaChiFull.value = '';
+        }
     }
-
-    // Xóa địa chỉ hiển thị
-    const diaChiContainer = document.querySelector('#diaChiContainer');
-    if (diaChiContainer) {
-        diaChiContainer.innerHTML = '';
-    }
-
-    // Reset text hiển thị địa chỉ
-    const diaChiFull = document.querySelector('#DiaChiDayDu');
-    if (diaChiFull) {
-        diaChiFull.value = '';
-    }
-}
     // Toast Notification System
     function showToast(message, type = 'success', duration = 4000) {
         const toastContainer = document.getElementById('toastContainer');
@@ -1495,9 +1510,9 @@
                                         ${!meetsMinimum && isActive ? `
                                             <div class="badge bg-soft-danger text-danger border border-danger-subtle" style="font-size: 0.6rem;">
                                                 Cần thêm ${(voucher.donToiThieu - orderTotal).toLocaleString()}đ
-                                            </div>` : (isActive && meetsMinimum && typeof realDiscount !== 'undefined' ? 
-                                            `<div class="text-success fw-bold" style="font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Giảm ${realDiscount.toLocaleString()}đ</div>` : 
-                                            `<div class="text-muted" style="font-size: 0.65rem;">Hạn: ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`)}
+                                            </div>` : (isActive && meetsMinimum && typeof realDiscount !== 'undefined' ?
+                    `<div class="text-success fw-bold" style="font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Giảm ${realDiscount.toLocaleString()}đ</div>` :
+                    `<div class="text-muted" style="font-size: 0.65rem;">Hạn: ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`)}
                                     </div>
                                     
                                     <button class="btn btn-sm py-0 px-3 rounded-pill btn-voucher-apply ${isActive && meetsMinimum ? 'btn-outline-primary btn-voucher-active' : 'btn-outline-secondary btn-voucher-disabled'}"
@@ -1973,7 +1988,7 @@
 
         renderProductList(filtered, "productList");
     }
-    
+
     // Xóa sản phẩm khỏi giỏ hàng
     function removeProduct(productId) {
         const gh = gioHangs[currentGioHang];
@@ -2371,7 +2386,7 @@
         $('#btnAddAddress').show(); *@
 
         // Reset phiếu giảm giá khi chọn khách hàng mới
-        $('#discountCode').val('');
+            $('#discountCode').val('');
         discountValue = 0;
 
         // Nếu đang bật giao hàng thì tự động load địa chỉ
@@ -2457,27 +2472,27 @@
         }
     }
     // Toggle giao hàng
-function toggleShipping() {
-    useShipping = $('#shippingSwitch').is(':checked');
+    function toggleShipping() {
+        useShipping = $('#shippingSwitch').is(':checked');
 
-    if (useShipping) {
-        $('#shippingFormCard, #btnShowAddress, #btnAddAddress, #shippingFeeContainer').show();
-        
-        calculateShippingFee();
-        if (selectedCustomer && selectedCustomerId) {
-            loadCustomerAddress();
+        if (useShipping) {
+            $('#shippingFormCard, #btnShowAddress, #btnAddAddress, #shippingFeeContainer').show();
+
+            calculateShippingFee();
+            if (selectedCustomer && selectedCustomerId) {
+                loadCustomerAddress();
+            }
+        } else {
+            $('#shippingFormCard, #btnShowAddress, #btnAddAddress').hide();
+
+            shippingFee = 0;
+            resetShippingDisplayState();
+
+            clearCustomerForm();
         }
-    } else {
-        $('#shippingFormCard, #btnShowAddress, #btnAddAddress').hide();
 
-        shippingFee = 0;
-        resetShippingDisplayState();
-        
-        clearCustomerForm();
+        updatePaymentInfo();
     }
-
-    updatePaymentInfo();
-}
 
     function resetShippingDisplayState() {
         shippingOriginalFee = 0;
@@ -2529,7 +2544,7 @@ function toggleShipping() {
     // Toggle sử dụng điểm
     function togglePoint() {
         usePoint = $('#pointSwitch').is(':checked');
-        
+
         if (usePoint) {
             $('#requestedUsedPoints').closest('.mb-2').show();
             $('#requestedUsedPoints').val(0);
@@ -2537,7 +2552,7 @@ function toggleShipping() {
             $('#requestedUsedPoints').closest('.mb-2').hide();
             $('#requestedUsedPoints').val(0);
         }
-        
+
         updatePaymentInfo();
     }
 
@@ -2586,7 +2601,7 @@ function toggleShipping() {
                 return;
             }
             moneyPerPoint = rate;
- 
+
             const currentPoint = Number(selectedCustomer?.point || 0);
             $('#requestedUsedPoints').attr('max', getPointLimitByConfig(currentPoint));
             const gh = gioHangs[currentGioHang];
@@ -3563,45 +3578,45 @@ function toggleShipping() {
     }
 
     // Hiển thị thông tin phí vận chuyển chi tiết
-function updateShippingFeeDisplay(shippingResponse) {
-    const originalFeeRaw = shippingResponse?.originalFee ?? shippingResponse?.OriginalFee ?? 0;
-    const finalFeeRaw = shippingResponse?.finalFee ?? shippingResponse?.FinalFee ?? 0;
-    const discountAmountRaw = shippingResponse?.discountAmount ?? shippingResponse?.DiscountAmount ?? 0;
-    const discountMessageRaw = shippingResponse?.discountMessage ?? shippingResponse?.DiscountMessage ?? '';
+    function updateShippingFeeDisplay(shippingResponse) {
+        const originalFeeRaw = shippingResponse?.originalFee ?? shippingResponse?.OriginalFee ?? 0;
+        const finalFeeRaw = shippingResponse?.finalFee ?? shippingResponse?.FinalFee ?? 0;
+        const discountAmountRaw = shippingResponse?.discountAmount ?? shippingResponse?.DiscountAmount ?? 0;
+        const discountMessageRaw = shippingResponse?.discountMessage ?? shippingResponse?.DiscountMessage ?? '';
 
-    const originalFee = Number(originalFeeRaw) || 0;
-    const finalFee = Number(finalFeeRaw) || 0;
-    const discountAmount = Number(discountAmountRaw) || 0;
-    const discountMessage = String(discountMessageRaw || '').trim();
+        const originalFee = Number(originalFeeRaw) || 0;
+        const finalFee = Number(finalFeeRaw) || 0;
+        const discountAmount = Number(discountAmountRaw) || 0;
+        const discountMessage = String(discountMessageRaw || '').trim();
 
-    shippingOriginalFee = Math.max(originalFee, 0);
-    shippingFee = Math.max(finalFee, 0);
-    shippingDiscountAmountValue = Math.max(discountAmount, 0);
-    shippingDiscountMessageValue = discountMessage;
+        shippingOriginalFee = Math.max(originalFee, 0);
+        shippingFee = Math.max(finalFee, 0);
+        shippingDiscountAmountValue = Math.max(discountAmount, 0);
+        shippingDiscountMessageValue = discountMessage;
 
-    $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
+        $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
 
-    const hasShippingDiscount = shippingDiscountAmountValue > 0;
-    if (hasShippingDiscount) {
-        $('#shippingOriginalAmount').text(`${shippingOriginalFee.toLocaleString('vi-VN')} VND`);
-        $('#shippingDiscountAmount').text(`- ${shippingDiscountAmountValue.toLocaleString('vi-VN')} VND`);
-        $('#shippingOriginalRow').removeClass('d-none');
-        $('#shippingDiscountRow').removeClass('d-none');
+        const hasShippingDiscount = shippingDiscountAmountValue > 0;
+        if (hasShippingDiscount) {
+            $('#shippingOriginalAmount').text(`${shippingOriginalFee.toLocaleString('vi-VN')} VND`);
+            $('#shippingDiscountAmount').text(`- ${shippingDiscountAmountValue.toLocaleString('vi-VN')} VND`);
+            $('#shippingOriginalRow').removeClass('d-none');
+            $('#shippingDiscountRow').removeClass('d-none');
 
-        if (shippingDiscountMessageValue.length > 0) {
-            $('#shippingDiscountMessage').text(`Luu y: ${shippingDiscountMessageValue}`);
-            $('#shippingDiscountMessageRow').removeClass('d-none');
+            if (shippingDiscountMessageValue.length > 0) {
+                $('#shippingDiscountMessage').text(`Luu y: ${shippingDiscountMessageValue}`);
+                $('#shippingDiscountMessageRow').removeClass('d-none');
+            } else {
+                $('#shippingDiscountMessage').text('');
+                $('#shippingDiscountMessageRow').addClass('d-none');
+            }
         } else {
+            $('#shippingOriginalRow').addClass('d-none');
+            $('#shippingDiscountRow').addClass('d-none');
             $('#shippingDiscountMessage').text('');
             $('#shippingDiscountMessageRow').addClass('d-none');
         }
-    } else {
-        $('#shippingOriginalRow').addClass('d-none');
-        $('#shippingDiscountRow').addClass('d-none');
-        $('#shippingDiscountMessage').text('');
-        $('#shippingDiscountMessageRow').addClass('d-none');
     }
-}
 
     // Tính phí vận chuyển động từ API
     function calculateShippingFee() {
@@ -4086,7 +4101,8 @@ function updateShippingFeeDisplay(shippingResponse) {
 </script>
 
 <!-- Modal Chọn Địa Chỉ -->
-<div class="modal fade" id="selectAddressModal" tabindex="-1" aria-labelledby="selectAddressModalLabel" aria-hidden="true">
+<div class="modal fade" id="selectAddressModal" tabindex="-1" aria-labelledby="selectAddressModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -4143,22 +4159,27 @@ function updateShippingFeeDisplay(shippingResponse) {
 
                     <!-- Dropdown chọn tỉnh thành, quận huyện, phường xã cho modal -->
                     <div class="css_select_div mb-3">
-                        <select class="css_select form-control" id="saveAddressTinh" name="saveAddressTinh" title="Chọn Tỉnh Thành">
+                        <select class="css_select form-control" id="saveAddressTinh" name="saveAddressTinh"
+                            title="Chọn Tỉnh Thành">
                             <option value="0">Tỉnh Thành</option>
                         </select>
-                        <select class="css_select form-control" id="saveAddressQuan" name="saveAddressQuan" title="Chọn Quận Huyện">
+                        <select class="css_select form-control" id="saveAddressQuan" name="saveAddressQuan"
+                            title="Chọn Quận Huyện">
                             <option value="0">Quận Huyện</option>
                         </select>
-                        <select class="css_select form-control" id="saveAddressPhuong" name="saveAddressPhuong" title="Chọn Phường Xã">
+                        <select class="css_select form-control" id="saveAddressPhuong" name="saveAddressPhuong"
+                            title="Chọn Phường Xã">
                             <option value="0">Phường Xã</option>
                         </select>
                     </div>
 
                     <!-- Địa chỉ chi tiết -->
-                    <input type="text" class="form-control mb-2" id="saveAddressChiTiet" name="saveAddressChiTiet" placeholder="Số nhà, tên đường...">
+                    <input type="text" class="form-control mb-2" id="saveAddressChiTiet" name="saveAddressChiTiet"
+                        placeholder="Số nhà, tên đường...">
 
                     <!-- Địa chỉ đầy đủ (readonly) -->
-                    <textarea class="form-control" id="saveAddressDetail" rows="3" readonly placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
+                    <textarea class="form-control" id="saveAddressDetail" rows="3" readonly
+                        placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
                 </div>
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="saveAddressDefault">

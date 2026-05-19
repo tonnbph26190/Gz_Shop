@@ -34,8 +34,9 @@ public class KhachHang
 
     [MaxLength(100)]
     public string? NguoiTao { get; set; }
-
-    public DateTime? LanCapNhatCuoi { get; set; }
+	[MaxLength(255)]
+	public string? AnhDaiDien { get; set; }
+	public DateTime? LanCapNhatCuoi { get; set; }
 
     [MaxLength(100)]
     public string? NguoiCapNhat { get; set; }

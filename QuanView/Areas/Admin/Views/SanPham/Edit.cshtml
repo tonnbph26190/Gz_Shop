@@ -77,21 +77,23 @@
                     <label asp-for="IDLungQuan">Lưng quần</label>
                     <select asp-for="IDLungQuan" class="form-control" asp-items="ViewBag.LungQuans"></select>
                 </div>
-                <div class="col-3">
-                    <div class="form-group form-check">
-                        <input asp-for="CoXepLy" class="form-check-input" />
-                        <label asp-for="CoXepLy" class="form-check-label">Có xếp ly</label>
-                    </div>
-
-                    <div class="form-group form-check">
-                        <input asp-for="CoGian" class="form-check-input" />
-                        <label asp-for="CoGian" class="form-check-label">Co giãn</label>
-                    </div>
-
-                    <div class="form-group form-check">
-                        <input asp-for="TrangThai" class="form-check-input" />
-                        <label asp-for="TrangThai" class="form-check-label">
-                            Hoạt động</label>
+                <div class="col-12">
+                    <div class="d-flex flex-wrap gap-3">
+                        <!-- Item 1 -->
+                        <label class="list-group-item d-flex gap-3 p-3 align-items-center border rounded shadow-sm flex-fill flex-md-grow-0" style="min-width: 180px;">
+                            <input asp-for="CoXepLy" class="form-check-input m-0" type="checkbox" style="font-size: 1.2rem;" />
+                            <span class="fw-medium text-secondary ps-4">Có xếp ly</span>
+                        </label>
+                        <!-- Item 2 -->
+                        <label class="list-group-item d-flex gap-3 p-3 align-items-center border rounded shadow-sm flex-fill flex-md-grow-0" style="min-width: 180px;">
+                            <input asp-for="CoGian" class="form-check-input m-0" type="checkbox" style="font-size: 1.2rem;" />
+                            <span class="fw-medium text-secondary ps-4">Co giãn</span>
+                        </label>
+                        <!-- Item 3 (Status) -->
+                        <label class="list-group-item d-flex gap-3 p-3 align-items-center border rounded shadow-sm bg-light flex-fill flex-md-grow-0" style="min-width: 180px;">
+                            <input asp-for="TrangThai" class="form-check-input m-0" type="checkbox" style="font-size: 1.2rem;" />
+                            <span class="fw-bold text-success ps-4">Hoạt động</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -130,7 +132,70 @@
                             Ngưng hoạt động <span class="badge bg-secondary ms-1" id="inactiveVariantCountBadge">@inactiveVariantCount</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button type="button" class="nav-link variant-status-tab" data-variant-status="custom">
+                            Tuỳ chỉnh nhanh <span class="badge bg-secondary ms-1" id="customVariantCountBadge"></span>
+                        </button>
+                    </li>
                 </ul>
+                                <div id="quickEditPanel" style="display:none;" class="border rounded p-3 mb-3 bg-light">
+                    <h6 class="mb-3">Chỉnh sửa nhanh cho biến thể đã chọn</h6>
+                    <div class="row g-3 align-items-end">
+                        <!-- Giá bán quick set -->
+                        <div class="col-auto">
+                            <label class="form-label fw-semibold mb-1">
+                                <i class="fas fa-tag me-1"></i>Giá bán
+                            </label>
+                            <div class="input-group">
+                                <input type="number" id="quickPriceInput" class="form-control form-control-sm" 
+                                    placeholder="Nhập giá mới..." min="1" step="any" style="width:160px;" />
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnApplyPrice">
+                                    Áp dụng
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">Ghi đè giá bán cho các biến thể đã chọn</small>
+                        </div>
+
+                        <div class="col-auto align-self-center text-muted px-3" style="margin-top:1.2rem;">|</div>
+
+                        <!-- Số lượng quick adjust -->
+                        <div class="col-auto">
+                            <label class="form-label fw-semibold mb-1">
+                                <i class="fas fa-boxes me-1"></i>Số lượng
+                            </label>
+                            <div class="input-group">
+                                <select id="quickQtyMode" class="form-select form-select-sm" style="width:90px;">
+                                    <option value="set">Đặt (V)</option>
+                                    <option value="add">Thêm (+)</option>
+                                    <option value="sub">Trừ (−)</option>
+                                </select>
+                                <input type="number" id="quickQtyInput" class="form-control form-control-sm" 
+                                    placeholder="Nhập số..." min="0" step="1" style="width:120px;" />
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnApplyQty">
+                                    Áp dụng
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1" id="quickQtyHint">Đặt số lượng chính xác cho các biến thể đã chọn</small>
+                        </div>
+
+                        <div class="col-auto align-self-center text-muted px-3" style="margin-top:1.2rem;">|</div>
+
+                        <!-- Selected count indicator -->
+                        <div class="col-auto" style="margin-top:1.2rem;">
+                            <span class="badge bg-primary fs-6" id="quickEditSelectedCount">0 đã chọn</span>
+                            <div>
+                                <button type="button" class="btn btn-link btn-sm p-0 mt-1" id="btnQuickSelectAll">Chọn tất cả</button>
+                                &nbsp;·&nbsp;
+                                <button type="button" class="btn btn-link btn-sm p-0 mt-1" id="btnQuickDeselectAll">Bỏ chọn</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview of affected rows -->
+                    <div id="quickEditPreviewArea" class="mt-3" style="display:none;">
+                        <div class="alert alert-success py-2 px-3 mb-0 small" id="quickEditPreviewMsg"></div>
+                    </div>
+                </div>
                 <div class="alert alert-light border py-2 px-3 d-none" id="variantEmptyState"></div>
                 <table class="table table-bordered table-hover text-center" id="variantTable">
                     <thead class="table-light">
@@ -279,6 +344,34 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
+        // ==================== QUICK EDIT TAB ====================
+        const quickEditPanel = document.getElementById('quickEditPanel');
+        const quickPriceInput = document.getElementById('quickPriceInput');
+        const quickQtyInput = document.getElementById('quickQtyInput');
+        const quickQtyMode = document.getElementById('quickQtyMode');
+        const quickQtyHint = document.getElementById('quickQtyHint');
+        const quickEditSelectedCount = document.getElementById('quickEditSelectedCount');
+        const quickEditPreviewMsg = document.getElementById('quickEditPreviewMsg');
+        const quickEditPreviewArea = document.getElementById('quickEditPreviewArea');
+
+        function getQuickEditTargetRows() {
+            return Array.from(document.querySelectorAll('.variant-qr-selector'))
+                .filter(cb => {
+                    const row = cb.closest('tr.variant-row');
+                    return cb.checked && row && !row.classList.contains('deleted-row') && row.style.display !== 'none';
+                })
+                .map(cb => cb.closest('tr.variant-row'));
+        }
+
+        function updateQuickEditSelectedCount() {
+            if (!quickEditSelectedCount) return;
+            const count = getQuickEditTargetRows().length;
+            quickEditSelectedCount.textContent = `${count} đã chọn`;
+            quickEditSelectedCount.className = count > 0
+                ? 'badge bg-primary fs-6'
+                : 'badge bg-secondary fs-6';
+        }
+
         // === Validation functions (kept as you had) ===
         function addValidationToInput(input, fieldType) {
             const fieldName = fieldType === 'quantity' ? 'Số lượng' : 'Giá bán';
@@ -418,15 +511,36 @@
             function applyVariantTabFilter(status) {
                 currentVariantStatus = status;
 
+                if (quickEditPanel) quickEditPanel.style.display = status === 'custom' ? '' : 'none';
+                if (status === 'custom') updateQuickEditSelectedCount();
+
                 variantStatusTabs.forEach(tab => {
                     tab.classList.toggle('active', tab.dataset.variantStatus === status);
                 });
 
+                // Show/hide QR column
+                const qrColHeader = document.getElementById('colQr');
+                const isCustom = status === 'custom';
+                if (qrColHeader) qrColHeader.style.display = isCustom ? 'none' : '';
+                document.querySelectorAll('#variantTable thead tr th:nth-child(8)').forEach(th => {
+                    th.style.display = isCustom ? 'none' : '';
+                });
                 document.querySelectorAll('#variantTable tbody tr.variant-row').forEach(row => {
                     if (row.id === 'newVariantTemplateRow' || row.classList.contains('deleted-row')) return;
 
-                    const rowStatus = row.dataset.status || 'active';
-                    row.classList.toggle('variant-filter-hidden', rowStatus !== status);
+                    // QR cell is the 8th td (index 7)
+                    const qrTd = row.querySelectorAll('td')[7];
+                    if (qrTd) qrTd.style.display = isCustom ? 'none' : '';
+
+                    // Compact row height in custom tab
+                    row.classList.toggle('compact-row', isCustom);
+
+                    if (isCustom) {
+                        row.classList.remove('variant-filter-hidden');
+                    } else {
+                        const rowStatus = row.dataset.status || 'active';
+                        row.classList.toggle('variant-filter-hidden', rowStatus !== status);
+                    }
                 });
 
                 updateVariantCounts();
@@ -507,8 +621,8 @@
             }
 
             document.getElementById('variantTable').addEventListener('change', function(e) {
-                if (e.target.classList.contains('variant-qr-selector')) {
-                    syncSelectAllState();
+                if (e.target.classList.contains('variant-qr-selector') || e.target.id === 'selectAllVariantQr') {
+                    updateQuickEditSelectedCount();
                 }
 
                 if (e.target.matches('input[type="checkbox"][name*=".TrangThai"]')) {
@@ -520,6 +634,90 @@
                 }
             });
 
+            if (quickQtyMode) {
+                quickQtyMode.addEventListener('change', function() {
+                    const hints = {
+                        set: "Đặt số lượng cho biến thể đã chọn.",
+                        add: "Cộng thêm vào số lượng hiện tại (vd: +50, tối đa 9.999).",
+                        sub: "Trừ bớt khỏi số lượng hiện tại (vd: -25, tối thiểu 0)."
+                    };
+                    if (quickQtyHint) quickQtyHint.textContent = hints[this.value] || '';
+                    if (quickQtyInput) quickQtyInput.placeholder = this.value === 'set' ? 'Nhập số...' : 'Nhập số thay đổi...';
+                });
+            }
+
+            function showQuickPreview(msg, isError) {
+                if (!quickEditPreviewArea || !quickEditPreviewMsg) return;
+                quickEditPreviewMsg.textContent = msg;
+                quickEditPreviewMsg.className = isError
+                    ? 'alert alert-danger py-2 px-3 mb-0 small'
+                    : 'alert alert-success py-2 px-3 mb-0 small';
+                quickEditPreviewArea.style.display = '';
+                setTimeout(() => { quickEditPreviewArea.style.display = 'none'; }, 3000);
+            }
+
+
+            // Apply price
+            document.getElementById('btnApplyPrice')?.addEventListener('click', function() {
+                const rows = getQuickEditTargetRows();
+                if (!rows.length) { showQuickPreview('Chưa chọn biến thể nào!', true); return; }
+
+                const val = parseFloat(quickPriceInput.value);
+                if (isNaN(val) || val <= 0) { showQuickPreview('Giá bán phải lớn hơn 0!', true); return; }
+
+                rows.forEach(row => {
+                    const priceInput = row.querySelector('.price-input');
+                    if (priceInput) priceInput.value = val;
+                });
+
+                showQuickPreview(`Đã áp dụng giá ${val.toLocaleString('vi-VN')}₫ cho ${rows.length} biến thể.`, false);
+                quickPriceInput.value = '';
+            });
+
+            // Apply qty
+            document.getElementById('btnApplyQty')?.addEventListener('click', function() {
+                const rows = getQuickEditTargetRows();
+                if (!rows.length) { showQuickPreview('Chưa chọn biến thể nào!', true); return; }
+
+                const val = parseInt(quickQtyInput.value, 10);
+                if (isNaN(val) || val < 0) { showQuickPreview('Số lượng không hợp lệ!', true); return; }
+
+                const mode = quickQtyMode?.value || 'set';
+                rows.forEach(row => {
+                    const qtyInput = row.querySelector('.quantity-input');
+                    if (!qtyInput) return;
+                    const current = parseInt(qtyInput.value, 10) || 0;
+                    if (mode === 'set') qtyInput.value = val;
+                    else if (mode === 'add') qtyInput.value = current + val;
+                    else if (mode === 'sub') qtyInput.value = Math.max(0, current - val);
+                });
+
+                const modeLabel = { set: 'Đặt', add: 'Cộng +', sub: 'Trừ −' }[mode];
+                showQuickPreview(`${modeLabel}${val} số lượng cho ${rows.length} biến thể.`, false);
+                quickQtyInput.value = '';
+            });
+
+            // Select / deselect all (within visible rows)
+            document.getElementById('btnQuickSelectAll')?.addEventListener('click', function() {
+                document.querySelectorAll('.variant-qr-selector').forEach(cb => {
+                    const row = cb.closest('tr.variant-row');
+                    if (row && !row.classList.contains('deleted-row') && !row.classList.contains('variant-filter-hidden') && row.style.display !== 'none') {
+                        cb.checked = true;
+                    }
+                });
+                syncSelectAllState();
+                updateQuickEditSelectedCount();
+            });
+
+            document.getElementById('btnQuickDeselectAll')?.addEventListener('click', function() {
+                document.querySelectorAll('.variant-qr-selector').forEach(cb => { cb.checked = false; });
+                syncSelectAllState();
+                updateQuickEditSelectedCount();
+            });
+
+            // Show/hide quick edit panel based on active tab
+            const originalApplyVariantTabFilter = applyVariantTabFilter;
+            
             variantStatusTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     applyVariantTabFilter(this.dataset.variantStatus || 'active');
@@ -779,6 +977,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
+        .compact-row td {
+            padding: 4px 6px !important;
+            font-size: 0.85rem;
+        }
+        .compact-row .form-control,
+        .compact-row .form-select {
+            padding: 2px 6px;
+            height: 28px;
+            font-size: 0.82rem;
+        }
+        .compact-row .form-check-input.custom-slider {
+            width: 2em;
+            height: 1em;
+        }
         .is-invalid {
             border-color: #dc3545;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
