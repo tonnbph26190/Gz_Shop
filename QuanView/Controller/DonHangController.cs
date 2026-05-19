@@ -469,6 +469,44 @@ namespace QuanView.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra khi hủy đơn hàng" });
             }
         }
+
+        // GET: DonHang/LichSuDiem
+        [HttpGet]
+        public async Task<IActionResult> LichSuDiem()
+        {
+            try
+            {
+                if (User.Identity?.IsAuthenticated != true)
+                {
+                    return Unauthorized(new { message = "Vui lòng đăng nhập để xem lịch sử điểm." });
+                }
+
+                var customerId = ResolveCurrentCustomerId();
+                if (!customerId.HasValue)
+                {
+                    return BadRequest(new { message = "Không xác định được tài khoản khách hàng." });
+                }
+
+                var response = await _httpClient.GetAsync($"KhachHang/{customerId.Value}/lich-su-diem");
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return Content(content, "application/json");
+                }
+
+                _logger.LogWarning("Không lấy được lịch sử điểm của khách {CustomerId}: {Status} - {Body}",
+                    customerId, response.StatusCode, content);
+                return StatusCode((int)response.StatusCode, string.IsNullOrWhiteSpace(content)
+                    ? "{\"message\":\"Không tải được lịch sử điểm.\"}"
+                    : content);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception when loading point history");
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi tải lịch sử điểm." });
+            }
+        }
     }
 
     public class HuyDonRequest

@@ -11,6 +11,8 @@
     var totalOnlineCount = ViewBag.TotalOnlineCount ?? 0;
     var totalTaiQuayCount = ViewBag.TotalTaiQuayCount ?? 0;
     var totalPendingCount = ViewBag.TotalPendingCount ?? 0;
+    var highlightedOrderIds = ViewBag.HighlightedOrderIds as HashSet<Guid> ?? new HashSet<Guid>();
+    var highlightNotes = ViewBag.HighlightNotes as Dictionary<Guid, string> ?? new Dictionary<Guid, string>();
 }
 
 <style>
@@ -73,6 +75,15 @@
     .status-cancelled {
         background: #f8d7da;
         color: #721c24;
+    }
+
+    .status-transfer-pending {
+        background: #d4f2dd;
+        color: #0f5132;
+    }
+
+    .highlight-transfer-pending td {
+        background-color: #e8f8ee !important;
     }
 
     .btn-action {
@@ -439,7 +450,9 @@
                                             <tbody>
                             @foreach (var hoaDon in Model)
                                                 {
-                                                    <tr>
+                                                    var isHighlighted = highlightedOrderIds.Contains(hoaDon.IDHoaDon);
+                                                    var highlightNote = highlightNotes.ContainsKey(hoaDon.IDHoaDon) ? highlightNotes[hoaDon.IDHoaDon] : null;
+                                                    <tr class="@(isHighlighted ? "highlight-transfer-pending" : "")">
                                                         <td>
                                                             <strong>@hoaDon.MaHoaDon</strong>
                                                         </td>
@@ -459,6 +472,7 @@
                                                                 var statusClass = hoaDon.TrangThai switch
                                                                 {
                                                                     "Chờ xác nhận" => "status-pending",
+                                                                    "Đã thanh toán chờ xác nhận" => "status-transfer-pending",
                                                                     "Đã xác nhận" => "status-confirmed",
                                                                     "Chờ lấy hàng" => "status-pending",
                                                                     "Đã lấy hàng" => "status-confirmed",
@@ -474,6 +488,12 @@
                                                             <span class="status-badge @statusClass">
                                                                 @hoaDon.TrangThai
                                                             </span>
+                                                            @if (isHighlighted && !string.IsNullOrWhiteSpace(highlightNote))
+                                                            {
+                                                                <div>
+                                                                    <small class="text-success font-weight-bold">@highlightNote</small>
+                                                                </div>
+                                                            }
                                                         </td>
                                                         <td>
                                                             <small class="text-muted">

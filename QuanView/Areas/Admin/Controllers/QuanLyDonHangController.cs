@@ -30,6 +30,7 @@ namespace QuanView.Areas.Admin.Controllers
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
             public string TrangThai { get; set; }
+            public string? TrangThaiGoc { get; set; }
             public DateTime NgayTao { get; set; }
             public string TenNguoiNhan { get; set; }
             public string SoDienThoaiNguoiNhan { get; set; }
@@ -37,6 +38,8 @@ namespace QuanView.Areas.Admin.Controllers
             public KhachHangDto KhachHang { get; set; }
             public NhanVienDto NhanVien { get; set; }
             public int SoLuongSanPham { get; set; }
+            public bool CanHighlightChuyenKhoanChoXacNhan { get; set; }
+            public string? GhiChuChuyenKhoanChoXacNhan { get; set; }
         }
 
         public class KhachHangDto
@@ -246,6 +249,8 @@ namespace QuanView.Areas.Admin.Controllers
                         var pagination = result.Pagination ?? new PaginationInfo();
 
                         var hoaDons = new List<HoaDon>();
+                        var highlightedOrderIds = new HashSet<Guid>();
+                        var highlightNotes = new Dictionary<Guid, string>();
 
                         // Convert DTO data to HoaDon objects for View compatibility
                         foreach (var hoaDonData in hoaDonsData)
@@ -284,6 +289,15 @@ namespace QuanView.Areas.Admin.Controllers
                                 };
                             }
 
+                            if (hoaDonData.CanHighlightChuyenKhoanChoXacNhan)
+                            {
+                                highlightedOrderIds.Add(hoaDonData.IDHoaDon);
+                                if (!string.IsNullOrWhiteSpace(hoaDonData.GhiChuChuyenKhoanChoXacNhan))
+                                {
+                                    highlightNotes[hoaDonData.IDHoaDon] = hoaDonData.GhiChuChuyenKhoanChoXacNhan!;
+                                }
+                            }
+
                             hoaDons.Add(hoaDon);
                         }
 
@@ -297,6 +311,8 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalOnlineCount = result.Statistics?.TotalOnlineCount ?? 0;
                         ViewBag.TotalTaiQuayCount = result.Statistics?.TotalTaiQuayCount ?? 0;
                         ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
+                        ViewBag.HighlightedOrderIds = highlightedOrderIds;
+                        ViewBag.HighlightNotes = highlightNotes;
 						// ✅ SORT LOCAL (nếu API không xử lý)
 						if (sapXep == "asc")
 						{

@@ -58,6 +58,7 @@ namespace QuanApi.Controllers
                 IDPhuongThucThanhToan = Guid.Empty, // Chưa chọn
                 TongTien = 0,
                 TrangThai = "ChuaThanhToan",
+                TrangThaiThanhToan = "Chưa thanh toán",
                 BanTaiQuay = true,
                 NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true
@@ -594,6 +595,7 @@ namespace QuanApi.Controllers
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
                 TrangThai = trangThaiHoaDon,
+                TrangThaiThanhToan = "Đã thanh toán",
                 DaDatChoTonKho = false,
                 DaTruTonKho = true,
                 BanTaiQuay = true,
@@ -1627,6 +1629,7 @@ namespace QuanApi.Controllers
                 DiaChiGiaoHang = dto.Address,
                 TongTien = 0,
                 TrangThai = trangThaiHoaDon,
+                TrangThaiThanhToan = "Đã thanh toán",
                 BanTaiQuay = true,
                 NgayTao = DateTime.UtcNow,
                 TrangThaiHoaDon = true,
