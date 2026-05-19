@@ -81,6 +81,55 @@ namespace QuanView.Controllers
             });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> UnreadSummary()
+        {
+            var customer = await GetCurrentCustomerAsync();
+            if (customer == null)
+            {
+                return Json(new { success = true, data = Array.Empty<object>() });
+            }
+
+            var rooms = await _context.PhongTroChuyens
+                .AsNoTracking()
+                .Where(p => p.IDKhachHang == customer.IDKhachHang && p.TrangThai)
+                .Select(p => new
+                {
+                    roomId = p.IDPhongTroChuyen,
+                    customerName = p.KhachHang != null ? p.KhachHang.TenKhachHang : "Khach hang",
+                    lastMessage = p.TinNhans != null
+                        ? p.TinNhans
+                            .Where(t => t.TrangThai)
+                            .OrderByDescending(t => t.NgayTao)
+                            .Select(t => new
+                            {
+                                id = t.IDTinNhan,
+                                content = t.NoiDung,
+                                createdAt = t.NgayTao,
+                                senderType = t.IDNhanVien != null ? "admin" : "customer"
+                            })
+                            .FirstOrDefault()
+                        : null
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                success = true,
+                data = rooms
+                    .Where(r => r.lastMessage != null && r.lastMessage.senderType == "admin")
+                    .Select(r => new
+                    {
+                        r.roomId,
+                        r.customerName,
+                        r.lastMessage!.id,
+                        r.lastMessage.content,
+                        r.lastMessage.createdAt,
+                        r.lastMessage.senderType
+                    })
+            });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Send(string content)
         {

@@ -403,8 +403,19 @@
                                 </div>
                             </div>
                         `).join(''));
+                        markRoomSeen(activeRoomId, messages);
                         $messageList.scrollTop($messageList[0].scrollHeight);
                     });
+            }
+
+            function markRoomSeen(roomId, messages) {
+                if (!roomId || !messages || !messages.length) return;
+                const lastMessage = messages[messages.length - 1];
+                if (!lastMessage || !lastMessage.id) return;
+                localStorage.setItem(`gz-chat-seen-${roomId}`, String(lastMessage.id));
+                if (typeof window.refreshAdminChatNotifications === 'function') {
+                    window.refreshAdminChatNotifications();
+                }
             }
 
             $(document).on('click', '.conversation-item', function () {

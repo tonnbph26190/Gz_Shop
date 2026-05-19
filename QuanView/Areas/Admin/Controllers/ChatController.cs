@@ -52,6 +52,49 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> UnreadSummary()
+        {
+            var rooms = await _context.PhongTroChuyens
+                .AsNoTracking()
+                .Where(p => p.TrangThai)
+                .Select(p => new
+                {
+                    roomId = p.IDPhongTroChuyen,
+                    customerName = p.KhachHang != null ? p.KhachHang.TenKhachHang : "Khach hang",
+                    lastMessage = p.TinNhans != null
+                        ? p.TinNhans
+                            .Where(t => t.TrangThai)
+                            .OrderByDescending(t => t.NgayTao)
+                            .Select(t => new
+                            {
+                                id = t.IDTinNhan,
+                                content = t.NoiDung,
+                                createdAt = t.NgayTao,
+                                senderType = t.IDNhanVien != null ? "admin" : "customer"
+                            })
+                            .FirstOrDefault()
+                        : null
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                success = true,
+                data = rooms
+                    .Where(r => r.lastMessage != null && r.lastMessage.senderType == "customer")
+                    .Select(r => new
+                    {
+                        r.roomId,
+                        r.customerName,
+                        r.lastMessage!.id,
+                        r.lastMessage.content,
+                        r.lastMessage.createdAt,
+                        r.lastMessage.senderType
+                    })
+            });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Messages(Guid id)
         {
             var room = await _context.PhongTroChuyens
