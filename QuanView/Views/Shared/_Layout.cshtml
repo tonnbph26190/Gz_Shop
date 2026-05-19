@@ -147,6 +147,28 @@
             align-items: center;
             height: 50px; /* Adjust this height to your liking to control the total header thickness */
         }
+
+        .gz-chat-nav-link {
+            position: relative;
+        }
+
+        .gz-chat-badge {
+            align-items: center;
+            background: #dc3545;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            color: #fff;
+            display: none;
+            font-size: 11px;
+            font-weight: 900;
+            height: 20px;
+            justify-content: center;
+            min-width: 20px;
+            padding: 0 6px;
+            position: absolute;
+            right: -6px;
+            top: -5px;
+        }
         
     </style>
     <!-- Google Font -->
@@ -197,6 +219,12 @@
                         <li class="nav-item">
                             <a asp-controller="DonHang" asp-action="Index" class="nav-link @(IsActive("DonHang"))">
                                 <i class="fas fa-file-invoice me-1"></i> Đơn mua
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a asp-controller="Chat" asp-action="Index" class="nav-link gz-chat-nav-link @(IsActive("Chat"))">
+                                <i class="fas fa-comments me-1"></i> Tin nhắn
+                                <span class="gz-chat-badge" data-chat-badge></span>
                             </a>
                         </li>
                         <div class="nav-underline-bar"></div>
@@ -338,6 +366,31 @@
             if (profile && menu && !profile.contains(e.target)) {
                 menu.style.display = "none";
             }
+        });
+
+        async function refreshChatNotifications() {
+            try {
+                const response = await fetch('/Chat/UnreadSummary', { cache: 'no-store' });
+                if (!response.ok) return;
+                const result = await response.json();
+                const unreadRooms = (result.data || []).filter(room => {
+                    const roomId = room.roomId || room.RoomId;
+                    const messageId = room.id || room.Id;
+                    return roomId && messageId && localStorage.getItem(`gz-chat-seen-${roomId}`) !== String(messageId);
+                });
+                const count = unreadRooms.length;
+                document.querySelectorAll('[data-chat-badge]').forEach(badge => {
+                    badge.textContent = count > 99 ? '99+' : String(count);
+                    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+                });
+            } catch {
+            }
+        }
+
+        window.refreshChatNotifications = refreshChatNotifications;
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshChatNotifications();
+            setInterval(refreshChatNotifications, 15000);
         });
     </script>
 </body>
