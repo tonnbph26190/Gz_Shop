@@ -1,4 +1,4 @@
-﻿using BanQuanAu1.Web.Data;
+using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -7,139 +7,154 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using QuanView.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
+using System.Net;
+using System.Net.Mail;
 
 namespace QuanView.Controllers
 {
     public class LoginController : Controller
     {
         private readonly BanQuanAu1DbContext _context;
+		private readonly IMemoryCache _cache;
 
-        public LoginController(BanQuanAu1DbContext context)
-        {
-            _context = context;
-        }
+		public LoginController(
+	BanQuanAu1DbContext context,
+	IMemoryCache cache)
+		{
+			_context = context;
+			_cache = cache;
+		}
 
-        public IActionResult Index()
+		public IActionResult Index()
         {
             ViewBag.Error = TempData["Error"];
             ViewBag.SuccessMessage = TempData["SuccessMessage"];
             return View();
         }
 
-        public IActionResult Login(string? returnUrl = "/")
-        {
-            var props = new AuthenticationProperties
-            {
-                RedirectUri = Url.Action("GoogleResponse", new { returnUrl })
-            };
-            return Challenge(props, GoogleDefaults.AuthenticationScheme);
-        }
+		// Fixed code
+		public IActionResult GoogleLogin(string? returnUrl = "/")
+		{
+			var props = new AuthenticationProperties
+			{
+				RedirectUri = Url.Action("GoogleResponse", new { returnUrl })
+			};
+			return Challenge(props, GoogleDefaults.AuthenticationScheme);
+		}
 
-        public async Task<IActionResult> GoogleResponse(string? returnUrl = "/")
-        {
-            var name = User.FindFirst(ClaimTypes.Name)?.Value;
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            var avatar = User.FindFirst("picture")?.Value;
+		public IActionResult GoogleSignUp(string? returnUrl = "/")
+		{
+			var props = new AuthenticationProperties
+			{
+				RedirectUri = Url.Action("GoogleResponse", new { returnUrl, isSignUp = true })
+			};
 
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            if (!result.Succeeded || result.Principal == null)
-            {
-                TempData["Error"] = "Đăng nhập thất bại hoặc bị hủy. Vui lòng thử lại.";
-                return RedirectToAction("Index");
-            }
+			props.Items.Add("prompt", "select_account");
 
-            email = result.Principal.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                TempData["Error"] = "Không thể lấy email từ tài khoản Google.";
-                return RedirectToAction("Index");
-            }
+			return Challenge(props, GoogleDefaults.AuthenticationScheme);
+		}
 
-            email = email.Trim().ToLower();
-            Console.WriteLine($"Email Google: {email}");
+		public async Task<IActionResult> GoogleResponse(string? returnUrl = "/", bool isSignUp = false)
+		{
+			// 1. Get the external login info
+			var result = await HttpContext.AuthenticateAsync("ExternalCookie");
 
-            var nhanVien = await _context.NhanViens
-                .Include(nv => nv.VaiTro)
-                .FirstOrDefaultAsync(nv => nv.Email != null && nv.Email.Trim().ToLower() == email && nv.TrangThai);
+			if (!result.Succeeded || result.Principal == null)
+			{
+				TempData["Error"] = "Đăng nhập Google thất bại.";
+				return RedirectToAction("Index");
+			}
 
-            if (nhanVien != null)
-            {
-                Console.WriteLine($"Tìm thấy NhanVien: {nhanVien.Email}, IDVaiTro: {nhanVien.IDVaiTro}, VaiTro: {(nhanVien.VaiTro != null ? nhanVien.VaiTro.MaVaiTro : "null")}");
+			// 2. Extract claims
+			var email = result.Principal.FindFirstValue(ClaimTypes.Email)?.ToLower().Trim();
+			var name = result.Principal.FindFirstValue(ClaimTypes.Name);
 
-                if (nhanVien.VaiTro != null &&
-                    (nhanVien.VaiTro.MaVaiTro?.ToLower() == "admin" || nhanVien.VaiTro.MaVaiTro?.ToLower() == "nhanvien"))
-                {
-                    var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, nhanVien.TenNhanVien ?? email.Split('@')[0]),
-                        new Claim(ClaimTypes.Email, nhanVien.Email),
-                        new Claim(ClaimTypes.Role, nhanVien.VaiTro.MaVaiTro),
-                        new Claim("custom:id_nhanvien", nhanVien.IDNhanVien.ToString())
-                    };
+			if (string.IsNullOrEmpty(email))
+			{
+				TempData["Error"] = "Không lấy được email từ Google.";
+				return RedirectToAction("Index");
+			}
 
-                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+			// 3. Logic for Registration vs Login
+			var existingUser = await _context.KhachHang.AnyAsync(kh => kh.Email == email);
 
-                    return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
+			if (isSignUp && existingUser)
+			{
+				TempData["Error"] = "Email này đã được đăng ký. Vui lòng đăng nhập.";
+				await HttpContext.SignOutAsync("ExternalCookie");
+				return RedirectToAction("Index");
+			}
 
-                }
-                else
-                {
-                    Console.WriteLine($"NhanVien không có vai trò admin. VaiTro: {(nhanVien.VaiTro != null ? nhanVien.VaiTro.MaVaiTro : "null")}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Không tìm thấy NhanVien cho email: {email}");
-            }
+			// 4. Check Database for NhanVien (Admin/Staff)
+			var nhanVien = await _context.NhanViens
+				.Include(nv => nv.VaiTro)
+				.FirstOrDefaultAsync(nv => nv.Email.ToLower() == email && nv.TrangThai);
 
-            // Tìm hoặc tạo khách hàng
-            var khachHang = await _context.KhachHang
-                .FirstOrDefaultAsync(kh => kh.Email != null && kh.Email.Trim().ToLower() == email && kh.TrangThai);
+			if (nhanVien != null && nhanVien.VaiTro != null)
+			{
+				var claims = new List<Claim>
+		{
+			new Claim(ClaimTypes.Name, nhanVien.TenNhanVien ?? name),
+			new Claim(ClaimTypes.Email, nhanVien.Email),
+			new Claim(ClaimTypes.Role, nhanVien.VaiTro.MaVaiTro),
+			new Claim("custom:id_nhanvien", nhanVien.IDNhanVien.ToString())
+		};
 
-            if (khachHang == null)
-            {
-                khachHang = new KhachHang
-                {
-                    MaKhachHang = $"KH{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
-                    Email = email,
-                    TenKhachHang = result.Principal.FindFirst(ClaimTypes.Name)?.Value ?? email.Split('@')[0],
-                    SoDienThoai = "0000000000",
-                    NgayTao = DateTime.UtcNow,
-                    TrangThai = true
-                };
-                _context.KhachHang.Add(khachHang);
-                await _context.SaveChangesAsync();
-            }
+				await SignInUser(claims);
+				await HttpContext.SignOutAsync("ExternalCookie"); // Cleanup
+				return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
+			}
 
-            var khachClaims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
-                new Claim(ClaimTypes.Email, khachHang.Email),
-                new Claim(ClaimTypes.Role, "KhachHang"),
-                new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
-            };
+			// 5. Check/Create KhachHang (Customer)
+			var khachHang = await _context.KhachHang
+				.FirstOrDefaultAsync(kh => kh.Email.ToLower() == email && kh.TrangThai);
 
-            var khachIdentity = new ClaimsIdentity(khachClaims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = false, // Không lưu trữ lâu dài
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) // Hết hạn sau 2 giờ
-            };
+			if (khachHang == null)
+			{
+				khachHang = new KhachHang
+				{
+					IDKhachHang = Guid.NewGuid(),
+					MaKhachHang = $"KH{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+					Email = email,
+					TenKhachHang = name ?? email.Split('@')[0],
+					SoDienThoai = "0000000000",
+					NgayTao = DateTime.UtcNow,
+					TrangThai = true
+				};
+				_context.KhachHang.Add(khachHang);
+				await _context.SaveChangesAsync();
+			}
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(khachIdentity), authProperties);
+			var khachClaims = new List<Claim>
+	{
+		new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
+		new Claim(ClaimTypes.Email, khachHang.Email),
+		new Claim(ClaimTypes.Role, "KhachHang"),
+		new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
+	};
 
-            // Lưu thông tin khách hàng vào session
-            HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
+			await SignInUser(khachClaims);
+			HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
 
-            Console.WriteLine($"Đăng nhập thành công: {khachHang.TenKhachHang} - {khachHang.Email}");
-            Console.WriteLine($"Claims: {string.Join(", ", khachClaims.Select(c => $"{c.Type}={c.Value}"))}");
+			// Always sign out of the temporary cookie at the end
+			await HttpContext.SignOutAsync("ExternalCookie");
 
-            return LocalRedirect(returnUrl ?? "/");
-        }
+			return LocalRedirect(returnUrl ?? "/");
+		}
 
-        // Đăng nhập bằng form (GET)
-        [HttpGet]
+		// Helper method to sign into the local cookie
+		private async Task SignInUser(List<Claim> claims)
+		{
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+			var principal = new ClaimsPrincipal(identity);
+			var authProperties = new AuthenticationProperties { IsPersistent = true };
+
+			await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+		}
+
+		// Đăng nhập bằng form (GET)
+		[HttpGet]
         public IActionResult FormLogin()
         {
             ViewBag.Error = TempData["Error"];
@@ -182,8 +197,8 @@ namespace QuanView.Controllers
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-                return RedirectToAction("Index", "ProductManage", new { area = "Admin" });
-            }
+				return RedirectToAction("Index", "ThongKe", new { area = "Admin" });
+			}
 
             var khachHang = await _context.KhachHang
                 .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
@@ -216,8 +231,8 @@ namespace QuanView.Controllers
             }
 
             Console.WriteLine("❌ Đăng nhập thất bại - Email hoặc mật khẩu không đúng");
-            ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
-            return View("Index", model);
+			ModelState.AddModelError("LoginError", "Email hoặc mật khẩu không đúng.");
+			return View("Index", model);
         }
 
         [HttpGet]
@@ -317,6 +332,158 @@ namespace QuanView.Controllers
 
             return Json(result);
         }
-    }
+		[HttpGet]
+		public IActionResult ForgotPassword()
+		{
+			return View();
+		}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ForgotPassword(string email)
+		{
+			var user = await _context.KhachHang
+				.FirstOrDefaultAsync(x => x.Email == email);
+
+			if (user == null)
+			{
+				ViewBag.Error = "Email không tồn tại.";
+				return View();
+			}
+
+			var token = Guid.NewGuid().ToString();
+
+			// lưu token 15 phút
+			_cache.Set(
+				token,
+				email,
+				TimeSpan.FromMinutes(15));
+
+			var resetLink = Url.Action(
+				"ResetPassword",
+				"Login",
+				new { token },
+				Request.Scheme);
+			if (string.IsNullOrEmpty(resetLink))
+			{
+				ViewBag.Error = "Không tạo được link reset mật khẩu.";
+				return View();
+			}
+			SendResetEmail(email, resetLink);
+
+			ViewBag.Success =
+				"Đã gửi link đổi mật khẩu qua email.";
+
+			return View();
+		}
+		private void SendResetEmail(string toEmail, string resetLink)
+		{
+			// Gmail của bạn
+			var fromEmail = "ph889127@gmail.com";
+
+			// App Password của Google
+			var password = "vkzi dqnh sztw sikl";
+
+			using var smtp = new SmtpClient("smtp.gmail.com", 587);
+
+			smtp.EnableSsl = true;
+
+			smtp.UseDefaultCredentials = false;
+
+			smtp.Credentials =
+				new NetworkCredential(fromEmail, password);
+
+			smtp.DeliveryMethod =
+				SmtpDeliveryMethod.Network;
+
+			smtp.Timeout = 20000;
+
+			var message = new MailMessage();
+
+			message.From = new MailAddress(fromEmail);
+
+			message.To.Add(toEmail);
+
+			message.Subject = "Đặt lại mật khẩu";
+
+			message.IsBodyHtml = true;
+
+			message.Body = $@"
+        <h2>Quên mật khẩu</h2>
+
+        <p>Nhấn nút bên dưới để đổi mật khẩu:</p>
+
+        <a href='{resetLink}'
+           style='padding:10px 20px;
+                  background:#0d6efd;
+                  color:white;
+                  text-decoration:none;
+                  border-radius:5px;'>
+
+            Đổi mật khẩu
+
+        </a>
+
+        <p>Link hết hạn sau 15 phút.</p>
+    ";
+
+			smtp.Send(message);
+		}
+		[HttpGet]
+		public IActionResult ResetPassword(string token)
+		{
+			if (!_cache.TryGetValue(token, out string email))
+			{
+				TempData["Error"] = "Link đã hết hạn.";
+
+				return RedirectToAction("FormLogin");
+			}
+
+			ViewBag.Token = token;
+
+			return View();
+		}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ResetPassword(
+	string token,
+	string newPassword,
+	string confirmPassword)
+		{
+			if (!_cache.TryGetValue(token, out string email))
+			{
+				TempData["Error"] = "Link không hợp lệ.";
+
+				return RedirectToAction("FormLogin");
+			}
+			if (newPassword != confirmPassword)
+			{
+				ViewBag.Token = token;
+				ViewBag.Error = "Mật khẩu xác nhận không khớp.";
+
+				return View();
+			}
+			var user = await _context.KhachHang
+				.FirstOrDefaultAsync(x => x.Email == email);
+
+			if (user == null)
+			{
+				TempData["Error"] = "Không tìm thấy tài khoản.";
+
+				return RedirectToAction("Index");
+			}
+
+			user.MatKhau = newPassword;
+
+			await _context.SaveChangesAsync();
+
+			// xóa token sau khi dùng
+			_cache.Remove(token);
+
+			TempData["SuccessMessage"] =
+				"Đổi mật khẩu thành công.";
+
+			return RedirectToAction("Index");
+		}
+	}
 }
 

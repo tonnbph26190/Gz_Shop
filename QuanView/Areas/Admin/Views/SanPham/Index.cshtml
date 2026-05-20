@@ -2,7 +2,8 @@
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
 }
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-product-images.css" />
     <style>
@@ -10,90 +11,43 @@
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             color: black;
         }
+
+        /* MISSING: Filter Card & Search UI */
         .filter-card {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 8px;
         }
-        
-        .pagination .page-link {
-            color: #007bff;
-            border-color: #dee2e6;
-        }
-        
-        .pagination .page-item.active .page-link {
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-        
-        .pagination .page-link:hover {
-            color: #0056b3;
-            background-color: #e9ecef;
-            border-color: #dee2e6;
-        }
-        
-        .result-info {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-        
+
         .filter-form .form-label {
             font-weight: 600;
             color: #495057;
         }
-        
+
         .btn-filter {
             background: linear-gradient(45deg, #007bff, #0056b3);
             border: none;
             color: white;
             transition: all 0.3s ease;
         }
-        
+
         .btn-filter:hover {
             background: linear-gradient(45deg, #0056b3, #004085);
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,123,255,0.3);
         }
 
-        /* Styling cho sản phẩm chính */
-        .product-main-row {
-            background-color: #ffffff;
-            border-bottom: 3px solid #007bff;
+        .result-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 500;
         }
 
-        .product-main-row:hover {
-            background-color: #f8f9fa;
-        }
-
-        /* Styling cho phần biến thể */
-        .variant-section {
-            background-color: #f8f9fa;
-            border-left: 4px solid #28a745;
-            margin: 0;
-        }
-
-        .variant-header {
-            background: linear-gradient(135deg, #d6ffe0 0%, #adffe7 100%);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            padding: 8px 12px !important;
-        }
-
-        .variant-row {
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .variant-row:last-child {
-            border-bottom: none;
-        }
-
-        .variant-row:hover {
-            background-color: #e9ecef;
-        }
-
-        /* Khoảng cách giữa các sản phẩm */
+        /* Container & Layout */
         .product-group {
             margin-bottom: 20px;
             border: 1px solid #dee2e6;
@@ -102,109 +56,224 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* Badge cho số lượng biến thể */
-        .variant-count-badge {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
+        /* MAIN PRODUCT TABLE - Fixed Layout */
+        .product-group > table {
+            table-layout: fixed;
+            width: 100% !important;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+        /* 1. General styles for both Header and Body cells */
+        .product-group > table > thead > tr > th,
+        .product-group > table > tbody > tr > td {
+            vertical-align: middle;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
-            display: inline-block;
+            padding: 10px 5px !important;
         }
 
-        button[data-bs-toggle="collapse"][aria-expanded="true"] .toggle-icon {
-            transform: rotate(90deg);
+        /* 2. Specific font size for Header */
+        .product-group > table > thead > tr > th {
+            font-size: 1rem;
+            font-weight: bold;
         }
 
-        /* Cải thiện hiển thị ảnh */
-        .product-image-cell img {
-            border-radius: 6px;
-            border: 2px solid #dee2e6;
-            transition: transform 0.2s;
+        /* 3. Specific font size for Body cells */
+        .product-group > table > tbody > tr > td {
+            font-size: 0.85rem;
         }
 
-        .product-image-cell img:hover {
-            transform: scale(1.1);
-            border-color: #007bff;
+        /* Column Width Definitions */
+        .product-group > table > thead > tr > th:nth-child(1), .product-group > table > tbody > tr > td:nth-child(1) { width: 45px; } 
+        .product-group > table > thead > tr > th:nth-child(2), .product-group > table > tbody > tr > td:nth-child(2) { width: 70px; }
+        .product-group > table > thead > tr > th:nth-child(3), .product-group > table > tbody > tr > td:nth-child(3) { width: 175px; }
+        .product-group > table > thead > tr > th:nth-child(4), .product-group > table > tbody > tr > td:nth-child(4) { width: 225px; white-space: normal; }
+        .product-group > table > thead > tr > th:nth-child(5), .product-group > table > thead > tr > th:nth-child(6),
+        .product-group > table > thead > tr > th:nth-child(7), .product-group > table > thead > tr > th:nth-child(8),
+        .product-group > table > thead > tr > th:nth-child(9), .product-group > table > thead > tr > th:nth-child(10) { width: 110px; }
+        .product-group > table > thead > tr > th:nth-child(11), .product-group > table > tbody > tr > td:nth-child(11),
+        .product-group > table > thead > tr > th:nth-child(12), .product-group > table > tbody > tr > td:nth-child(12) { width: 80px; }
+        .product-group > table > thead > tr > th:nth-child(13), .product-group > table > tbody > tr > td:nth-child(13) { width: 120px; }
+        .product-group > table > thead > tr > th:nth-child(14), .product-group > table > tbody > tr > td:nth-child(14) { width: 100px; }
+
+        /* VARIANT SECTION */
+        .variant-section {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
         }
 
-        /* Table trong variant section */
-        .variant-section .table {
+        .variant-section table {
+            table-layout: auto !important;
+            width: 100% !important;
             margin-bottom: 0;
         }
 
-        .variant-section td {
-            padding: 12px 8px;
-            vertical-align: middle;
-        }
-        #btnCreateProduct {
-            color: white;
-            background-color: green;
-        }
-        #btnCreateProduct:hover {
-            transition: transform 0.5s;
-            color: black;
-            background-color: lightgreen;
-        }
-        .toggle-btn {
-            color: #6c757d;
-            transition: transform 0.35s ease;
+        .variant-header {
+            background: linear-gradient(135deg, #d6ffe0 0%, #adffe7 100%);
+            font-weight: 600;
+            color: #155724;
         }
 
-        .product-main-row[aria-expanded="true"] .toggle-btn {
-            transform: rotate(90deg);
-        }
-
-        .product-main-row:hover {
-            background-color: rgba(0,0,0,0.03);
-        }
-
-        /* Helps smooth appearance in some cases */
+        /* MISSING: Collapse Smoothness Fix */
         .variant-section.collapse:not(.show) {
             display: none !important;
         }
-        .variant-section.collapse.show {
-            display: block !important;
-        }
-        /* Custom Yellow Button Styles for both Edit and Add Image */
-        .btn-yellow-custom {
-            background-color: #ccac00 !important; /* Darker yellow/gold */ 
-            color: white !important;
-            border: none;
-            transition: all 0.3s ease;
-            display: inline-flex;
+
+        /* Image Handling & MISSING Hover Effects */
+        .product-images-container {
+            display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 5px;
         }
 
+        .images-preview {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .images-preview img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover; 
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .images-preview img:hover {
+            transform: scale(1.2);
+            border-color: #007bff;
+            z-index: 10;
+        }
+
+        /* Buttons & Badges */
+        .btn-yellow-custom {
+            background-color: #ccac00 !important;
+            color: white !important;
+            border: none;
+            white-space: nowrap;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            @* gap: 5px; *@
+            justify-content: center; /* Add this to center icon/text inside button */
+            vertical-align: middle;
+        }
+        .variant-row td {
+            padding: 8px 5px !important; /* Adjust padding for better look */
+        }
         .btn-yellow-custom:hover {
-            background-color: #ffdb00 !important; /* Bright yellow */
-            color: #000 !important;   /* Text turns black on hover */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            background-color: #ffdb00 !important;
+            color: black !important;
             transform: translateY(-1px);
         }
 
-        /* Icon rotation fix (removed the dash in 90deg) */
-        .toggle-icon {
-            transition: transform 0.3s ease;
+        #btnCreateProduct {
+            color: white;
+            background-color: green;
         }
 
-        .main-row[aria-expanded="true"] .toggle-icon {
+        #btnCreateProduct:hover {
+            background-color: lightgreen;
+            color: black;
+        }
+
+        .variant-count-badge {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Interactive Icons */
+        .toggle-btn {
+            color: #6c757d;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        tr[aria-expanded="true"] .toggle-btn {
             transform: rotate(90deg);
         }
 
-        /* Optional: Subtle background for the expanded area */
-        .collapse-container {
-            background-color: #fcfcfc;
-            border-left: 4px solid #ccac00;
+        .product-status-toggle {
+            cursor: pointer;
         }
+
+        /* Pagination */
+        .pagination .page-link {
+            color: #007bff;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+        .variant-section table td, .variant-section table th {
+            vertical-align: middle !important;
+        }
+		.card-stats {
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 12px;
+}
+
+/* Hover nhẹ */
+.card-stats:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Khi click */
+.card-stats.active {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    border: 2px solid #007bff;
+}
+.card-stats:active {
+    transform: scale(0.97);
+}
+.border-left-primary {
+    border-left: 5px solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 5px solid #1cc88a !important;
+}
+
+.border-left-danger {
+    border-left: 5px solid #e74a3b !important;
+}
+keyframes blink-warning {
+    0% { box-shadow: 0 0 0px rgba(255,0,0,0); }
+    50% { box-shadow: 0 0 20px rgba(255,0,0,0.8); }
+    100% { box-shadow: 0 0 0px rgba(255,0,0,0); }
+}
+
+.low-stock {
+    animation: blink-warning 1.2s infinite;
+    border: 2px solid red !important;
+}
+.card-stats {
+    transition: all 0.3s ease;
+}
+.card-stats {
+    height: 100%;
+}
     </style>
 }
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
     <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn" id="btnCreateProduct">
         + Thêm sản phẩm mới
@@ -235,6 +304,15 @@
     </div>
     <div class="card-body">
         <form method="get" asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="row g-3 filter-form">
+            <select name="sortDate" class="form-select">
+                <option value="">Sắp xếp theo ngày</option>
+                <option value="asc" selected="@(Model.SortDate == "asc")">
+                    Ngày tạo tăng dần
+                </option>
+                <option value="desc" selected="@(Model.SortDate == "desc")">
+                    Ngày tạo giảm dần
+                </option>
+            </select>
             <!-- Từ khóa tìm kiếm -->
             <div class="col-md-3">
                 <label for="keyword" class="form-label">Tìm kiếm: </label>
@@ -265,12 +343,12 @@
             
             <!-- Khoảng số lượng -->
             <div class="col-md-3">
-                <label for="qtyFrom" class="form-label">SL từ</label>
+                <label for="qtyFrom" class="form-label">SL khả dụng từ</label>
                 <input type="number" class="form-control" id="qtyFrom" name="qtyFrom" value="@Model.QtyFrom" placeholder="0" min="0">
             </div>
             
             <div class="col-md-3">
-                <label for="qtyTo" class="form-label">SL đến</label>
+                <label for="qtyTo" class="form-label">SL khả dụng đến</label>
                 <input type="number" class="form-control" id="qtyTo" name="qtyTo" value="@Model.QtyTo" placeholder="9999" min="0">
             </div>
             
@@ -286,12 +364,10 @@
             </div> *@
             
             <!-- Nút tìm kiếm -->
-            <div class="col-md-3 pt-4 mt-2">
+            <div class="col-md-3" style="padding-top: 2rem">
                 <button type="submit" class="btn btn-primary me-2 btn-filter">
                     <i class="fas fa-search"></i> Tìm kiếm
                 </button>
-                &nbsp;
-                &nbsp;
                 <a asp-area="Admin" asp-controller="SanPham" asp-action="Index" class="btn btn-secondary">
                     <i class="fas fa-refresh"></i> Làm mới
                 </a>
@@ -299,7 +375,70 @@
         </form>
     </div>
 </div>
+<div class="row mb-3">
 
+    <div class="col-md-3">
+        <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "active"
+    })" style="text-decoration:none">
+            <div class="card border-left-primary shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-primary">Tổng sản phẩm</h6>
+                    <h4>@ViewBag.TongSanPham</h4>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-3">
+        <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "active"
+    })" style="text-decoration:none">
+            <div class="card border-left-success shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-success">Tổng biến thể</h6>
+                    <h4>@ViewBag.TongBienThe</h4>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-3">
+        <a href="@Url.Action("Index", new {
+    page = 1,
+    keyword = Model.Keyword,
+    trangThai = Model.TrangThai,
+    priceFrom = Model.PriceFrom,
+    priceTo = Model.PriceTo,
+    qtyFrom = 0,
+    qtyTo = 0,
+    dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
+    dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+    sortDate = Model.SortDate
+})" style="text-decoration:none">
+            <div class="card border-left-danger shadow card-stats">
+                <div class="card-body">
+                    <h6 class="text-danger">Sản phẩm hết hàng</h6>
+                    <h4>@ViewBag.SanPhamHetHang</h4>
+                </div>
+            </div>
+        </a>
+    </div>
+
+@*    <div class="col-md-3">
+    <a href="/Admin/SanPham?filter=variant-out" style="text-decoration:none">
+        <div class="card border-left-warning shadow card-stats">
+            <div class="card-body">
+                <h6 class="text-warning">Biến thể hết hàng</h6>
+                <h4>@ViewBag.BienTheHetHang</h4>
+            </div>
+        </div>
+    </a>
+</div> *@
+
+</div>
 <!-- Thông tin kết quả -->
 <div class="result-info">
     <div class="row">
@@ -330,17 +469,23 @@
     {
         @foreach (var item in Model.SanPhams)
         {
-            var targetId = "collapse-variant-" + item.IDSanPham;
 
-            <div class="product-group">
+             var totalQty = item.ChiTietSanPhams?.Sum(x => x.SoLuongKhaDung) ?? 0;
+
+            var targetId = "collapse-variant-" + item.IDSanPham;
+        var activeVariants = item.ChiTietSanPhams?
+         .Where(ct => ct.TrangThai)
+         .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+
+           <div class="product-group" data-qty="@totalQty">
                 <!-- Sản phẩm chính -->
-                <table class="table table-bordered mb-0 text-center">
+                <table class="table table-bordered table-hover mb-0 text-center">
                     <thead class="table-secondary">
                         <tr>
                             <th><i class="fa-solid fa-gear"></i></th>
                             <th>Ảnh</th>
-                            <th>Mã SP</th>
-                            <th>Tên SP</th>
+                            <th>Mã sản phẩm</th>
+                            <th>Tên sản phẩm</th>
                             <th>Chất liệu</th>
                             <th>Danh mục</th>
                             <th>Thương hiệu</th>
@@ -369,13 +514,13 @@
                                 <img src="@(item.AnhChinh ?? "/img/default-product.jpg")" style="max-width:60px;max-height:60px" />
                             </td>
                             <td><strong>@item.MaSanPham</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center justify-content-between">
+                            <td class="align-middle"> 
+                                <div class="d-flex align-items-center justify-content-center">
                                     <strong class="me-2">@item.TenSanPham</strong>
-                                    @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                                    @if (activeVariants.Any())
                                     {
                                         <span class="variant-count-badge flex-shrink-0 text-dark">
-                                            <i class="fas fa-layer-group"></i> @item.ChiTietSanPhams.Count
+                                            <i class="fas fa-layer-group"></i> @activeVariants.Count
                                         </span>
                                     }
                                 </div>
@@ -426,30 +571,34 @@
                 </table>
 
                 <!-- Biến thể - collapsible -->
-                @if (item.ChiTietSanPhams != null && item.ChiTietSanPhams.Any())
+                @if (activeVariants.Any())
                 {
                     <div id="@targetId" class="collapse variant-section">
-                        <table class="table table-sm table-bordered mb-0">
+                        <table class="table table-sm table-bordered table-hover mb-0">
                             <thead>
                                 <tr class="variant-header text-center">
                                     <th><i class="fas fa-ruler"></i> Kích cỡ</th>
                                     <th><i class="fas fa-palette"></i> Màu sắc</th>
                                     <th><i class="fas fa-paint-brush"></i> Họa tiết</th>
-                                    <th><i class="fas fa-boxes"></i> Số lượng</th>
+                                    <th><i class="fas fa-warehouse"></i> Tồn vật lý</th>
+                                    <th><i class="fas fa-boxes"></i> Tồn khả dụng</th>
                                     <th><i class="fas fa-tag"></i> Giá bán</th>
                                     <th><i class="fas fa-image"></i> Ảnh SP</th>
                                     <th><i class="fas fa-cog"></i> Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var ct in item.ChiTietSanPhams)
+                                @foreach (var ct in activeVariants)
                                 {
                                     <tr class="variant-row text-center">
                                         <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
                                         <td class="text-light"><span class="badge bg-primary p-2">@ct.TenMauSac</span></td>
                                         <td>@(ct.TenHoaTiet ?? "-")</td>
                                         <td class="text-center">
-                                            <strong class="text-primary">@ct.SoLuong</strong>
+                                            <strong class="text-secondary">@ct.SoLuongVatLy</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <strong class="text-primary">@ct.SoLuongKhaDung</strong>
                                         </td>
                                         <td>
                                             @if (ct.originalPrice > ct.price)
@@ -475,31 +624,60 @@
                                         <td class="text-center">
                                             <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                 <div class="images-preview">
-												@if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any(a => a.TrangThai))
-												{
-													var danhSachAnhPhu = ct.DanhSachAnh
-													.Where(a => !a.LaAnhChinh && a.TrangThai)
-													.ToList();
+                                                @if (ct.DanhSachAnh != null && ct.DanhSachAnh.Any(a => a.TrangThai))
+                                                {
+                                                    var danhSachAnhHienThi = ct.DanhSachAnh
+                                                    .Where(a => a.TrangThai)
+                                                    .OrderByDescending(a => a.LaAnhChinh)
+                                                    .ThenBy(a => a.NgayTao)
+                                                    .ToList();
 
-													<div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                    <div class="d-flex flex-wrap gap-1 justify-content-center">
 
-														<!-- Ảnh phụ -->
-														@foreach (var img in danhSachAnhPhu)
-														{
-															<img src="@img.UrlAnh"
-																 class="img-thumbnail"
-																 style="max-width:40px;max-height:40px;cursor:pointer;"
-																 onclick="previewImage('@img.UrlAnh')"
-																 title="Ảnh phụ" />
-														}
-													</div>
-												}
-												else
-												{
-													<span class="text-muted small">
-														<i class="fas fa-image"></i> Chưa có ảnh
-													</span>
-												}
+                                                        @foreach (var img in danhSachAnhHienThi)
+                                                        {
+                                                            <div class="position-relative d-inline-block me-1 mb-1">
+
+                                                                <img src="@img.UrlAnh"
+                                                                     class="img-thumbnail"
+                                                                     style="width:45px;height:45px;object-fit:cover;cursor:pointer;"
+                                                                     onclick="previewImage('@img.UrlAnh')" />
+
+                                                                @if (img.LaAnhChinh)
+                                                                {
+                                                                    <span class="badge bg-success position-absolute top-0 start-0"
+                                                                          style="font-size:9px;">
+                                                                        Chính
+                                                                    </span>
+                                                                }
+
+                                                                <div class="d-flex mt-1 gap-1">
+
+                                                                    <button type="button"
+                                                                            class="btn btn-sm btn-outline-primary btn-set-main-image"
+                                                                            data-id="@img.IDAnhSanPham">
+                                                                        <i class="fas fa-star"></i>
+                                                                    </button>
+
+                                                                    <button type="button"
+                                                                            class="btn btn-sm btn-outline-danger btn-delete-image"
+                                                                            data-id="@img.IDAnhSanPham">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </button>
+
+                                                                </div>
+
+                                                            </div>
+                                                        }
+
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">
+                                                        <i class="fas fa-image"></i> Chưa có ảnh
+                                                    </span>
+                                                }
                                                 </div>
                                                 <div class="images-list" style="display:none;"></div>
                                             </div>
@@ -538,7 +716,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-double-left"></i>
                             </a>
@@ -558,7 +737,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-left"></i>
                             </a>
@@ -583,7 +763,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">@i</a>
                         </li>
                     }
@@ -601,7 +782,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-right"></i>
                             </a>
@@ -621,7 +803,8 @@
                                 qtyFrom = Model.QtyFrom,
                                 qtyTo = Model.QtyTo,
                                 dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd")
+                                dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
+                                sortDate = Model.SortDate
                             })">
                                 <i class="fas fa-angle-double-right"></i>
                             </a>
@@ -646,7 +829,13 @@
 						<input type="hidden" id="sanPhamChiTietId" />
 						<div class="mb-3">
 							<label for="imageFile" class="form-label">Chọn ảnh từ máy</label>
-							<input type="file" class="form-control" id="imageFile" accept="image/*" required onchange="previewImageFile()">
+                        <input type="file"
+                               class="form-control"
+                               id="imageFile"
+                               accept="image/*"
+                               multiple
+                               required
+                               onchange="previewImageFile()">
 							<div id="imagePreview" class="image-upload-preview" style="display:none;">
 								<img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
 							</div>
@@ -794,27 +983,48 @@
 				var modal = new bootstrap.Modal(modalElement);
 				modal.show();
 			}
+
+            updateMainImageDisplay()
 		}
 
         // Preview ảnh khi chọn file
         function previewImageFile() {
+
             const fileInput = document.getElementById('imageFile');
             const previewDiv = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
 
-            if (fileInput.files && fileInput.files[0]) {
+            previewDiv.innerHTML = '';
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                previewDiv.style.display = 'none';
+                return;
+            }
+
+            previewDiv.style.display = 'flex';
+            previewDiv.style.flexWrap = 'wrap';
+            previewDiv.style.gap = '10px';
+
+            Array.from(fileInput.files).forEach(file => {
+
                 const reader = new FileReader();
+
                 reader.onload = function (e) {
-                    previewImg.src = e.target.result;
-                    previewDiv.style.display = 'block';
-               
+
+                    const img = document.createElement('img');
+
+                    img.src = e.target.result;
+
+                    img.style.maxWidth = '100px';
+                    img.style.maxHeight = '100px';
+                    img.style.objectFit = 'cover';
+                    img.style.border = '1px solid #ddd';
+                    img.style.borderRadius = '6px';
+
+                    previewDiv.appendChild(img);
                 };
 
-                reader.readAsDataURL(fileInput.files[0]);
-                
-            } else {
-                previewDiv.style.display = 'none';
-            }
+                reader.readAsDataURL(file);
+            });
         }
         // Thêm ảnh mới
         function addImage() {
@@ -836,7 +1046,9 @@
 
             // Tạo FormData để upload file
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('files', fileInput.files[i]);
+            }
             formData.append('sanPhamChiTietId', sanPhamChiTietId);
             formData.append('laAnhChinh', isMainImage);
 
@@ -852,7 +1064,17 @@
                    
                     $('#addImageModal').modal('hide');
 
-                        updateProductImageDisplay(sanPhamChiTietId, data.urlAnh, isMainImage);
+                        if (data.urls && data.urls.length > 0) {
+
+                            data.urls.forEach((url, index) => {
+
+                                updateProductImageDisplay(
+                                    sanPhamChiTietId,
+                                    url,
+                                    index === 0 && isMainImage
+                                );
+                            });
+                        }
                 } else {
                         showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
                 }
@@ -982,24 +1204,32 @@
 
         // Cập nhật hiển thị ảnh trong bảng chính
         function updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage) {
-            // Tìm container ảnh sản phẩm trong bảng
             const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) {
-                console.warn('Không tìm thấy container cho sanPhamChiTietId:', sanPhamChiTietId);
-                return;
-            }
+            if (!container) return;
 
             const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) {
-                console.warn('Không tìm thấy preview div');
-                return;
+            if (!previewDiv) return;
+
+            const emptyText = previewDiv.querySelector('span.text-muted');
+            if (emptyText) {
+                previewDiv.innerHTML = '';
             }
 
-            // Nếu là ảnh chính hoặc chưa có ảnh nào, cập nhật hiển thị
-            if (isMainImage || previewDiv.querySelector('span.text-muted')) {
-                previewDiv.innerHTML = `
-                            <img src="${imageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                        `;
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.className = 'img-thumbnail';
+            img.style.maxWidth = '40px';
+            img.style.maxHeight = '40px';
+            img.style.cursor = 'pointer';
+            img.title = isMainImage ? 'Ảnh chính' : 'Ảnh phụ';
+            img.onclick = function () {
+                previewImage(imageUrl);
+            };
+
+            if (isMainImage) {
+                previewDiv.prepend(img);
+            } else {
+                previewDiv.appendChild(img);
             }
         }
 
@@ -1025,6 +1255,93 @@
 			var modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
 			modal.show();
 		}
+		
+    const cards = document.querySelectorAll('.card-stats');
 
+    cards.forEach(card => {
+        card.addEventListener('click', function () {
+
+            // Remove active của tất cả
+            cards.forEach(c => c.classList.remove('active'));
+
+            // Thêm active cho cái vừa click
+            this.classList.add('active');
+
+        });
+    });
+// 	document.querySelectorAll('.card-stats').forEach(card => {
+//     card.addEventListener('click', function () {
+
+//         // Active UI
+//         document.querySelectorAll('.card-stats')
+//             .forEach(c => c.classList.remove('active'));
+//         this.classList.add('active');
+
+//         const type = this.dataset.type;
+//         const products = document.querySelectorAll('.product-group');
+
+//         products.forEach(p => {
+//             const qty = parseInt(p.dataset.qty || 0);
+
+//             if (type === 'all') {
+//                 p.style.display = 'block';
+//             }
+//             else if (type === 'out') {
+//                 // hết hàng
+//                 p.style.display = qty === 0 ? 'block' : 'none';
+//             }
+//             else if (type === 'variant') {
+//                 // còn hàng
+//                 p.style.display = qty > 0 ? 'block' : 'none';
+//             }
+//         });
+//     });
+// });
+document.querySelectorAll('.product-group').forEach(p => {
+    const qty = parseInt(p.dataset.qty || 0);
+
+    if (qty > 0 && qty <= 5) {
+        p.classList.add('low-stock'); // sắp hết
+    }
+});
+        $(document).on('click', '.btn-delete-image', function () {
+            const imageId = $(this).data('id');
+
+            if (!confirm('Xóa ảnh này?')) return;
+
+            $.ajax({
+                url: '/Admin/SanPham/DeleteImage?imageId=' + imageId,
+                type: 'POST',
+                success: function (res) {
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message || 'Xóa ảnh thất bại');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi xóa ảnh');
+                }
+            });
+        });
+
+        $(document).on('click', '.btn-set-main-image', function () {
+            const imageId = $(this).data('id');
+
+            $.ajax({
+                url: '/Admin/SanPham/SetMainImage?imageId=' + imageId,
+                type: 'POST',
+                success: function (res) {
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message || 'Đặt ảnh chính thất bại');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi đặt ảnh chính');
+                }
+            });
+        });
     </script>
 }

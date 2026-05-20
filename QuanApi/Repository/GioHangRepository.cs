@@ -23,8 +23,12 @@ namespace QuanApi.Repository
                 .Include(spct => spct.MauSac)
                 .Include(spct => spct.DotGiamGia)
                 .Include(spct => spct.AnhSanPhams)
-                .Where(spct => spct.TrangThai)
-                .ToList();
+			  .Where(spct =>
+	spct.TrangThai &&
+	spct.SanPham != null &&
+	spct.SanPham.TrangThai
+)
+				.ToList();
 
             var grouped = all
                 .GroupBy(spct => spct.IDSanPham)
@@ -47,7 +51,7 @@ namespace QuanApi.Repository
                         GiaSauGiam = spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.UtcNow && spct.DotGiamGia.NgayKetThuc >= DateTime.UtcNow
                             ? spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100m)
                             : spct.GiaBan,
-                        SoLuong = spct.SoLuong
+                        SoLuong = Math.Max(0, spct.SoLuong - spct.SoLuongDatCho)
                     }).ToList()
                 })
                 .ToList();
@@ -56,8 +60,8 @@ namespace QuanApi.Repository
         }
 
 
-        public SanPhamChiTietDto detailSpct(Guid id)
-        {
+		public SanPhamChiTietDto? detailSpct(Guid id)
+		{
             var spct = _db.SanPhamChiTiets
                 .Include(ct => ct.SanPham)
                     .ThenInclude(sp => sp.DanhMuc)
@@ -65,12 +69,17 @@ namespace QuanApi.Repository
                 .Include(ct => ct.MauSac)
                 .Include(ct => ct.AnhSanPhams)
                 .Include(ct => ct.DotGiamGia)
-                .FirstOrDefault(ct => ct.IDSanPhamChiTiet == id);
+			   .FirstOrDefault(ct =>
+	ct.IDSanPhamChiTiet == id &&
+	ct.TrangThai &&
+	ct.SanPham != null &&
+	ct.SanPham.TrangThai
+);
 
-            if (spct == null)
-                throw new KeyNotFoundException("Không tìm thấy sản phẩm chi tiết.");
+			if (spct == null)
+				return null;
 
-            return new SanPhamChiTietDto
+			return new SanPhamChiTietDto
             {
                 IdSanPhamChiTiet = spct.IDSanPhamChiTiet,
                 IdSanPham = spct.IDSanPham,
@@ -83,7 +92,10 @@ namespace QuanApi.Repository
                 price = (spct.DotGiamGia != null && spct.DotGiamGia.NgayBatDau <= DateTime.UtcNow && spct.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                     ? spct.GiaBan * (1 - spct.DotGiamGia.PhanTramGiam / 100m)
                     : spct.GiaBan,
-                SoLuong = spct.SoLuong,
+                SoLuong = Math.Max(0, spct.SoLuong - spct.SoLuongDatCho),
+                SoLuongVatLy = spct.SoLuong,
+                SoLuongDatCho = spct.SoLuongDatCho,
+                SoLuongKhaDung = Math.Max(0, spct.SoLuong - spct.SoLuongDatCho),
                 TrangThai = spct.TrangThai
             };
         }
@@ -114,9 +126,10 @@ namespace QuanApi.Repository
 
             var existingLine = nguoidung.ChiTietGioHangs?.FirstOrDefault(ghct => ghct.IDSanPhamChiTiet == idsp);
             var soLuongHienCo = (existingLine != null ? existingLine.SoLuong : 0) + soluong;
-            if (soLuongHienCo > sp.SoLuong)
+            var soLuongKhaDung = Math.Max(0, sp.SoLuong - sp.SoLuongDatCho);
+            if (soLuongHienCo > soLuongKhaDung)
             {
-                throw new InvalidOperationException($"Số lượng vượt quá tồn kho. Tồn kho: {sp.SoLuong}");
+                throw new InvalidOperationException($"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");
             }
 
             // Tính giá sau khi áp dụng giảm giá
@@ -193,8 +206,12 @@ namespace QuanApi.Repository
 
             if (soluong <= 0)
                 throw new ArgumentException("Số lượng không hợp lệ");
-            if (ghct.SanPhamChiTiet != null && soluong > ghct.SanPhamChiTiet.SoLuong)
-                throw new InvalidOperationException($"Số lượng vượt quá tồn kho. Tồn kho: {ghct.SanPhamChiTiet.SoLuong}");
+            if (ghct.SanPhamChiTiet != null)
+            {
+                var soLuongKhaDung = Math.Max(0, ghct.SanPhamChiTiet.SoLuong - ghct.SanPhamChiTiet.SoLuongDatCho);
+                if (soluong > soLuongKhaDung)
+                    throw new InvalidOperationException($"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");
+            }
 
             ghct.SoLuong = soluong;
             ghct.GiaBan = TinhGiaSauGiam(ghct.SanPhamChiTiet);

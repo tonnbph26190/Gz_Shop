@@ -54,37 +54,71 @@ namespace QuanView.Areas.Admin.Controllers
 		[HttpPost]
 		public async Task<IActionResult> AddImage(
 		Guid sanPhamChiTietId,
-		[FromForm] IFormFile file,
+		[FromForm] List<IFormFile> files,
 		[FromForm] bool laAnhChinh)
 		{
 			try
 			{
-				if (file == null || file.Length == 0)
+				if (files == null || !files.Any())
 				{
-					return Json(new { success = false, message = "File không hợp lệ" });
+					return Json(new
+					{
+						success = false,
+						message = "File không hợp lệ"
+					});
 				}
 
-				var formData = new MultipartFormDataContent();
-				formData.Add(new StreamContent(file.OpenReadStream()), "file", file.FileName);
-				formData.Add(new StringContent(laAnhChinh.ToString()), "laAnhChinh");
+				var uploadedUrls = new List<string>();
 
-				var response = await _http.PostAsync(
-					$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
-					formData
-				);
-
-				if (!response.IsSuccessStatusCode)
+				for (int i = 0; i < files.Count; i++)
 				{
-					var error = await response.Content.ReadAsStringAsync();
-					return Json(new { success = false, message = error });
-				}
+					var file = files[i];
 
-				var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+					if (file == null || file.Length == 0)
+						continue;
+
+					var formData = new MultipartFormDataContent();
+
+					formData.Add(
+						new StreamContent(file.OpenReadStream()),
+						"file",
+						file.FileName
+					);
+
+					// Chỉ ảnh đầu tiên được set ảnh chính
+					formData.Add(
+						new StringContent((i == 0 && laAnhChinh).ToString()),
+						"laAnhChinh"
+					);
+
+					var response = await _http.PostAsync(
+						$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
+						formData
+					);
+
+					if (!response.IsSuccessStatusCode)
+					{
+						var error = await response.Content.ReadAsStringAsync();
+
+						return Json(new
+						{
+							success = false,
+							message = error
+						});
+					}
+
+					var result = await response.Content.ReadFromJsonAsync<UploadImageResponse>();
+
+					if (result != null && !string.IsNullOrEmpty(result.UrlAnh))
+					{
+						uploadedUrls.Add(result.UrlAnh);
+					}
+				}
 
 				return Json(new
 				{
 					success = true,
-					urlAnh = result.UrlAnh
+					urls = uploadedUrls
 				});
 			}
 			catch (Exception ex)
@@ -96,7 +130,6 @@ namespace QuanView.Areas.Admin.Controllers
 				});
 			}
 		}
-
 		// DELETE: Xóa ảnh
 		[HttpDelete]
         public async Task<IActionResult> DeleteImage(Guid imageId)

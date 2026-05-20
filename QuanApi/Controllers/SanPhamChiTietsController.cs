@@ -48,8 +48,12 @@ namespace QuanApi.Controllers
                         IdMauSac = ct.IDMauSac,
                         IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                         SoLuong = ct.SoLuong,
+                        SoLuongVatLy = ct.SoLuong,
+                        SoLuongDatCho = ct.SoLuongDatCho,
+                        SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                         GiaBan = ct.GiaBan,
                         MaSPChiTiet = ct.MaSPChiTiet,
+                        QrCode = ct.QRCode,
                         TenKichCo = ct.KichCo.TenKichCo,
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
@@ -119,8 +123,12 @@ namespace QuanApi.Controllers
                         IdMauSac = ct.IDMauSac,
                         IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                         SoLuong = ct.SoLuong,
+                        SoLuongVatLy = ct.SoLuong,
+                        SoLuongDatCho = ct.SoLuongDatCho,
+                        SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                         GiaBan = ct.GiaBan,
                         MaSPChiTiet = ct.MaSPChiTiet,
+                        QrCode = ct.QRCode,
                         TenKichCo = ct.KichCo.TenKichCo,
                         TenMauSac = ct.MauSac.TenMauSac,
                         TenHoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "N/A",
@@ -202,8 +210,12 @@ namespace QuanApi.Controllers
                     IdMauSac = ct.IDMauSac,
                     IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                     SoLuong = ct.SoLuong,
+                    SoLuongVatLy = ct.SoLuong,
+                    SoLuongDatCho = ct.SoLuongDatCho,
+                    SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                     GiaBan = ct.GiaBan,
                     MaSPChiTiet = ct.MaSPChiTiet,
+                    QrCode = ct.QRCode,
                     TenKichCo = ct.KichCo?.TenKichCo ?? "N/A",
                     TenMauSac = ct.MauSac?.TenMauSac ?? "N/A",
                     TenHoaTiet = ct.HoaTiet?.TenHoaTiet ?? "N/A",
@@ -260,10 +272,18 @@ namespace QuanApi.Controllers
 			if (!list.Any())
 				return NotFound();
 
-			// 👉 Gom toàn bộ ảnh của tất cả SPCT
+			// 👉 Chỉ lấy ảnh của biến thể đang hoạt động
 			var allImages = list
-				.SelectMany(ct => ct.AnhSanPhams)
-				.Where(a => a.TrangThai)
+				.Where(ct => ct.TrangThai)
+				.SelectMany(ct => ct.AnhSanPhams
+					.Where(a => a.TrangThai)
+					.Select(a => new
+					{
+						ct.IDSanPhamChiTiet,
+						a.UrlAnh,
+						a.LaAnhChinh,
+						a.NgayTao
+					}))
 				.OrderByDescending(a => a.LaAnhChinh)
 				.ThenBy(a => a.NgayTao)
 				.Select(a => a.UrlAnh)
@@ -278,15 +298,21 @@ namespace QuanApi.Controllers
 
 				DanhSachAnh = allImages,
 
-				BienThes = list.Select(ct => new SanPhamChiTietDto
-				{
+				BienThes = list
+	.Where(ct => ct.TrangThai)
+	.Select(ct => new SanPhamChiTietDto
+	{
 					IdSanPhamChiTiet = ct.IDSanPhamChiTiet,
 					IdSanPham = ct.IDSanPham,
 					IdKichCo = ct.IDKichCo,
 					IdMauSac = ct.IDMauSac,
 					IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
 					SoLuong = ct.SoLuong,
+                    SoLuongVatLy = ct.SoLuong,
+                    SoLuongDatCho = ct.SoLuongDatCho,
+                    SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
 					GiaBan = ct.GiaBan,
+					QrCode = ct.QRCode,
 					TenKichCo = ct.KichCo?.TenKichCo,
 					TenMauSac = ct.MauSac?.TenMauSac,
 					TenHoaTiet = ct.HoaTiet?.TenHoaTiet,
@@ -311,8 +337,26 @@ namespace QuanApi.Controllers
 							).FirstOrDefault() / 100.0m))
 						: ct.GiaBan
 					),
-					MaSPChiTiet = ct.MaSPChiTiet
-				}).ToList()
+		MaSPChiTiet = ct.MaSPChiTiet,
+
+		AnhDaiDien = ct.AnhSanPhams
+	.Where(a => a.TrangThai && a.LaAnhChinh)
+	.Select(a => a.UrlAnh)
+	.FirstOrDefault()
+	?? ct.AnhSanPhams
+		.Where(a => a.TrangThai)
+		.Select(a => a.UrlAnh)
+		.FirstOrDefault()
+	?? "/img/default-product.jpg",
+
+		DanhSachAnh = ct.AnhSanPhams
+	.Where(a => a.TrangThai)
+	.OrderByDescending(a => a.LaAnhChinh)
+	.ThenBy(a => a.NgayTao)
+	.Select(a => a.UrlAnh)
+	.Distinct()
+	.ToList()
+	}).ToList()
 			};
 
 			return Ok(result);
@@ -353,6 +397,9 @@ namespace QuanApi.Controllers
                     // Merge quantities for existing variant
                     existingVariant.SoLuong += dto.SoLuong;
                     existingVariant.GiaBan = dto.GiaBan; // Update price
+                    existingVariant.QRCode = string.IsNullOrWhiteSpace(dto.QrCode)
+                        ? BuildVariantQrCode(existingVariant.MaSPChiTiet, existingVariant.IDSanPhamChiTiet)
+                        : dto.QrCode;
                     _context.Entry(existingVariant).State = EntityState.Modified;
                     await _context.SaveChangesAsync();
 
@@ -377,8 +424,13 @@ namespace QuanApi.Controllers
                     SoLuong = dto.SoLuong,
                     GiaBan = dto.GiaBan,
                     MaSPChiTiet = dto.MaSPChiTiet ?? $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}",
+                    QRCode = dto.QrCode,
                     TrangThai = true // Biến thể mới luôn ở trạng thái hoạt động (đang bán)
                 };
+
+                entity.QRCode = string.IsNullOrWhiteSpace(entity.QRCode)
+                    ? BuildVariantQrCode(entity.MaSPChiTiet, entity.IDSanPhamChiTiet)
+                    : entity.QRCode;
 
                 _context.SanPhamChiTiets.Add(entity);
                 await _context.SaveChangesAsync();
@@ -432,6 +484,9 @@ namespace QuanApi.Controllers
                 entity.SoLuong = dto.SoLuong;
                 entity.GiaBan = dto.GiaBan;
                 entity.MaSPChiTiet = string.IsNullOrEmpty(dto.MaSPChiTiet) ? entity.MaSPChiTiet : dto.MaSPChiTiet;
+                entity.QRCode = string.IsNullOrWhiteSpace(dto.QrCode)
+                    ? BuildVariantQrCode(entity.MaSPChiTiet, entity.IDSanPhamChiTiet)
+                    : dto.QrCode;
                 entity.TrangThai = dto.TrangThai; // Cho phép cập nhật trạng thái (hoạt động / ngưng bán)
                 entity.LanCapNhatCuoi = DateTime.UtcNow;
                 entity.NguoiCapNhat = User.Identity?.Name ?? "System";
@@ -456,6 +511,38 @@ namespace QuanApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[PUT] Exception khi update sản phẩm chi tiết: {Message}", ex.Message);
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
+
+        [HttpPost("{id}/generate-qr")]
+        public async Task<IActionResult> GenerateQr(Guid id)
+        {
+            try
+            {
+                var entity = await _context.SanPhamChiTiets.FindAsync(id);
+                if (entity == null)
+                    return NotFound("Không tìm thấy sản phẩm chi tiết.");
+
+                if (string.IsNullOrWhiteSpace(entity.MaSPChiTiet))
+                    entity.MaSPChiTiet = $"CT_{DateTime.UtcNow.Ticks.ToString()[^6..]}";
+
+                entity.QRCode = BuildVariantQrCode(entity.MaSPChiTiet, entity.IDSanPhamChiTiet);
+                entity.LanCapNhatCuoi = DateTime.UtcNow;
+                entity.NguoiCapNhat = User.Identity?.Name ?? "System";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    id = entity.IDSanPhamChiTiet,
+                    maSPChiTiet = entity.MaSPChiTiet,
+                    qrCode = entity.QRCode
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[POST generate-qr] Exception khi tạo QR: {Message}", ex.Message);
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
@@ -529,6 +616,15 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        private static string BuildVariantQrCode(string? maSpChiTiet, Guid idSanPhamChiTiet)
+        {
+            var variantCode = string.IsNullOrWhiteSpace(maSpChiTiet)
+                ? $"SPCT-{idSanPhamChiTiet:N}"
+                : maSpChiTiet.Trim();
+
+            return $"SPCT|{variantCode}|{idSanPhamChiTiet:D}";
         }
     }
 }

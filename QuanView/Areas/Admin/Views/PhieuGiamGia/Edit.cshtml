@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.PhieuGiamGia
+@model QuanApi.Data.PhieuGiamGia
 
 @{
     ViewData["Title"] = "Sửa phiếu giảm giá";
@@ -140,14 +140,18 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                        <input asp-for="NgayBatDau" class="form-control" type="datetime-local" />
+                        <input class="form-control" type="datetime-local"
+                               name="NgayBatDau"
+                               value="@Model.NgayBatDau.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
                         <span asp-validation-for="NgayBatDau" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                        <input asp-for="NgayKetThuc" class="form-control" type="datetime-local" />
+                        <input class="form-control" type="datetime-local"
+                               name="NgayKetThuc"
+                               value="@Model.NgayKetThuc.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
                         <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
                     </div>
                 </div>

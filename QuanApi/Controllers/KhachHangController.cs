@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BanQuanAu1.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -37,58 +37,90 @@ namespace QuanApi.Controllers.Api
         [HttpGet]
         [HttpGet("Index")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<KhachHangDto>>> GetKhachHang(
-            string? search = null,
-            int pageNumber = 1,
-            int pageSize = 10,
-            string? sortBy = "NgayTao",
-            bool sortAscending = false)
-        {
-            _logger.LogInformation("Đang lấy danh sách khách hàng với tìm kiếm: {Search}, trang: {PageNumber}, kích thước trang: {PageSize}", search, pageNumber, pageSize);
+		public async Task<ActionResult<IEnumerable<KhachHangDto>>> GetKhachHang(
+	string? search = null,
+	int pageNumber = 1,
+	int pageSize = 10,
+	string? sortBy = "NgayTao",
+	bool sortAscending = false)
+		{
+			_logger.LogInformation("Đang lấy danh sách khách hàng với tìm kiếm: {Search}, trang: {PageNumber}, kích thước trang: {PageSize}", search, pageNumber, pageSize);
 
-            var query = _context.KhachHang.Include(kh => kh.DiaChis).AsQueryable();
+			var query = _context.KhachHang
+				.Include(kh => kh.DiaChis)
+				.AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
-            {
-                var searchLower = search.ToLower();
-                query = query.Where(kh =>
-                    kh.MaKhachHang.ToLower().Contains(searchLower) ||
-                    kh.TenKhachHang.ToLower().Contains(searchLower) ||
-                    (kh.Email != null && kh.Email.ToLower().Contains(searchLower)) ||
-                    kh.SoDienThoai.Contains(searchLower));
-            }
+			// 🔍 Search
+			if (!string.IsNullOrEmpty(search))
+			{
+				var searchLower = search.ToLower();
+				query = query.Where(kh =>
+					kh.MaKhachHang.ToLower().Contains(searchLower) ||
+					kh.TenKhachHang.ToLower().Contains(searchLower) ||
+					(kh.Email != null && kh.Email.ToLower().Contains(searchLower)) ||
+					kh.SoDienThoai.Contains(searchLower));
+			}
 
-            switch (sortBy?.ToLower())
-            {
-                case "makhachhang":
-                    query = sortAscending ? query.OrderBy(kh => kh.MaKhachHang) : query.OrderByDescending(kh => kh.MaKhachHang);
-                    break;
-                case "tenkhachhang":
-                    query = sortAscending ? query.OrderBy(kh => kh.TenKhachHang) : query.OrderByDescending(kh => kh.TenKhachHang);
-                    break;
-                case "ngaytao":
-                    query = sortAscending ? query.OrderBy(kh => kh.NgayTao) : query.OrderByDescending(kh => kh.NgayTao);
-                    break;
-                default:
-                    query = query.OrderByDescending(kh => kh.NgayTao);
-                    break;
-            }
+			// 🔽 Sort
+			switch (sortBy?.ToLower())
+			{
+				case "makhachhang":
+					query = sortAscending ? query.OrderBy(kh => kh.MaKhachHang) : query.OrderByDescending(kh => kh.MaKhachHang);
+					break;
+				case "tenkhachhang":
+					query = sortAscending ? query.OrderBy(kh => kh.TenKhachHang) : query.OrderByDescending(kh => kh.TenKhachHang);
+					break;
+				case "ngaytao":
+					query = sortAscending ? query.OrderBy(kh => kh.NgayTao) : query.OrderByDescending(kh => kh.NgayTao);
+					break;
+				case "rank": // 🔥 THÊM ĐOẠN NÀY
+					query = sortAscending
+						? query.OrderBy(kh => kh.TongDiemTichLuy)
+						: query.OrderByDescending(kh => kh.TongDiemTichLuy);
+					break;
+				default:
+					query = query.OrderByDescending(kh => kh.TongDiemTichLuy);
+					break;
+			}
 
-            var totalCount = await query.CountAsync();
-            var khachHangs = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+			// 📊 Count
+			var totalCount = await query.CountAsync();
 
-            Response.Headers.Append("X-Total-Count", totalCount.ToString());
-            Response.Headers.Append("X-Page-Size", pageSize.ToString());
-            Response.Headers.Append("X-Current-Page", pageNumber.ToString());
-            Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling((double)totalCount / pageSize)).ToString());
+			// 🚀 Data + Rank
+			var khachHangs = await query
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.Select(kh => new KhachHangDto
+				{
+					IDKhachHang = kh.IDKhachHang,
+					MaKhachHang = kh.MaKhachHang,
+					TenKhachHang = kh.TenKhachHang,
+					Email = kh.Email,
+					SoDienThoai = kh.SoDienThoai,
+					SoDiemHienTai = kh.SoDiemHienTai,
+					TongDiemTichLuy = kh.TongDiemTichLuy,
+					NgayTao = kh.NgayTao,
+					NguoiTao = kh.NguoiTao,
+					TrangThai = kh.TrangThai,
+					Rank = _context.HangKhachHangs
+	.Where(h => h.TrangThai == true
+		&& kh.TongDiemTichLuy >= h.DiemTu
+		&& (h.DiemDen == null || kh.TongDiemTichLuy <= h.DiemDen))
+	.Select(h => h.TenHang)
+	.FirstOrDefault(),
+				})
+				.ToListAsync();
 
-            return Ok(_mapper.Map<IEnumerable<KhachHangDto>>(khachHangs));
-        }
+			// 📦 Pagination headers
+			Response.Headers.Append("X-Total-Count", totalCount.ToString());
+			Response.Headers.Append("X-Page-Size", pageSize.ToString());
+			Response.Headers.Append("X-Current-Page", pageNumber.ToString());
+			Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling((double)totalCount / pageSize)).ToString());
 
-        [HttpGet("{id}")]
+			return Ok(khachHangs);
+		}
+
+		[HttpGet("{id}")]
         [HttpGet("Details/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -207,7 +239,7 @@ namespace QuanApi.Controllers.Api
 
                 if (!string.IsNullOrEmpty(khachHang.Email))
                 {
-                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần áo GZ!";
+                    var subject = "Chào mừng bạn đến với Cửa hàng bán quần GZ!";
                     var emailBody = new StringBuilder();
                     emailBody.AppendLine($"<p>Xin chào <strong>{khachHang.TenKhachHang}</strong>,</p>");
                     emailBody.AppendLine("<p>Bạn đã đăng ký tài khoản thành công tại Hệ thống Quản lý Bán Quần Áo của chúng tôi.</p>");
@@ -246,8 +278,7 @@ namespace QuanApi.Controllers.Api
 
                     emailBody.AppendLine("<p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>");
                     emailBody.AppendLine("<p>Trân trọng,</p>");
-                    emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
-
+					emailBody.AppendLine("<p><strong>Cửa hàng bán quần áo GZ</strong></p>");
                     try
                     {
                         await _emailService.SendEmailAsync(khachHang.Email, subject, emailBody.ToString());
@@ -511,6 +542,74 @@ namespace QuanApi.Controllers.Api
 
             var addressDto = _mapper.Map<DiaChiDto>(defaultAddress);
             return Ok(addressDto);
+        }
+
+        // API endpoint để lấy lịch sử sử dụng điểm của khách hàng
+        [HttpGet("{id}/lich-su-diem")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLichSuDiem(Guid id)
+        {
+            _logger.LogInformation("Đang lấy lịch sử điểm của khách hàng ID: {CustomerId}", id);
+
+            var khachHang = await _context.KhachHang
+                .AsNoTracking()
+                .FirstOrDefaultAsync(kh => kh.IDKhachHang == id && kh.TrangThai);
+
+            if (khachHang == null)
+            {
+                _logger.LogWarning("Không tìm thấy khách hàng với ID: {CustomerId} khi lấy lịch sử điểm", id);
+                return NotFound("Không tìm thấy khách hàng.");
+            }
+
+            var rank = await _context.HangKhachHangs
+                .AsNoTracking()
+                .Where(h => h.TrangThai
+                    && khachHang.SoDiemHienTai >= h.DiemTu
+                    && (!h.DiemDen.HasValue || khachHang.SoDiemHienTai <= h.DiemDen.Value))
+                .OrderByDescending(h => h.DiemTu)
+                .Select(h => new
+                {
+                    h.MaHang,
+                    h.TenHang
+                })
+                .FirstOrDefaultAsync();
+
+            var lichSuDiem = await _context.LichSuDiemKhachHangs
+                .AsNoTracking()
+                .Where(ls => ls.IDKhachHang == id && ls.TrangThai)
+                .Include(ls => ls.HoaDon)
+                .OrderByDescending(ls => ls.NgayTao)
+                .Select(ls => new
+                {
+                    IDLichSuDiemKhachHang = ls.IDLichSuDiemKhachHang,
+                    IDHoaDon = ls.IDHoaDon,
+                    MaHoaDon = ls.HoaDon != null ? ls.HoaDon.MaHoaDon : null,
+                    ThoiGianMua = ls.HoaDon != null ? ls.HoaDon.NgayTao : ls.NgayTao,
+                    SoDiemTru = ls.SoDiemBienDong < 0 ? -ls.SoDiemBienDong : 0,
+                    SoDiemCong = ls.SoDiemBienDong > 0 ? ls.SoDiemBienDong : 0,
+                    TongDiemSauGiaoDich = ls.SoDiemSau,
+                    SoDiemTruocGiaoDich = ls.SoDiemTruoc,
+                    LoaiBienDong = ls.LoaiBienDong,
+                    MoTa = ls.MoTa,
+                    NgayTao = ls.NgayTao
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                KhachHang = new
+                {
+                    khachHang.IDKhachHang,
+                    khachHang.MaKhachHang,
+                    khachHang.TenKhachHang,
+                    DiemHienTai = khachHang.SoDiemHienTai,
+                    TongDiemTichLuy = khachHang.TongDiemTichLuy,
+                    Rank = rank != null ? rank.TenHang : "Chưa xếp hạng",
+                    MaRank = rank != null ? rank.MaHang : null
+                },
+                LichSu = lichSuDiem
+            });
         }
     }
 }

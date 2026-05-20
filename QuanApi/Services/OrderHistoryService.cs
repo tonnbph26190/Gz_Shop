@@ -8,17 +8,19 @@ namespace QuanApi.Services
     {
         private readonly BanQuanAu1DbContext _context;
         private readonly ILogger<OrderHistoryService> _logger;
+        private readonly IInventoryReservationService _inventoryReservationService;
 
         // Định nghĩa luồng trạng thái hợp lệ
         private readonly Dictionary<string, List<string>> _statusFlow = new()
         {
             ["Chờ xác nhận"] = new List<string> { "Đã xác nhận", "Đã hủy" },
             ["Đã xác nhận"] = new List<string> { "Chờ lấy hàng", "Đã hủy" },
-            ["Chờ lấy hàng"] = new List<string> { "Đã lấy hàng", "Đã hủy" },
-            ["Đã lấy hàng"] = new List<string> { "Chờ giao hàng", "Đã hủy" },
-            ["Chờ giao hàng"] = new List<string> { "Đang giao hàng", "Đã hủy" },
+            ["Chờ lấy hàng"] = new List<string> { "Đang giao", "Đã hủy" },
+            ["Đang giao"] = new List<string> { "Đã giao", "Đã hủy" },
+            ["Đã giao"] = new List<string> { "Đã hủy" },
+            ["Đã lấy hàng"] = new List<string> { "Đang giao", "Đã hủy" },
+            ["Chờ giao hàng"] = new List<string> { "Đang giao", "Đã hủy" },
             ["Đang giao hàng"] = new List<string> { "Đã giao", "Đã hủy" },
-            ["Đã giao"] = new List<string> { "Giao hàng thành công", "Đã hủy" },
             ["Giao hàng thành công"] = new List<string>(), // Không thể chuyển sang trạng thái khác
             ["Đã hủy"] = new List<string>() // Không thể chuyển sang trạng thái khác
         };
@@ -28,18 +30,23 @@ namespace QuanApi.Services
         {
             ["Đã xác nhận"] = new List<string> { "Chờ xác nhận" },
             ["Chờ lấy hàng"] = new List<string> { "Đã xác nhận" },
+            ["Đang giao"] = new List<string> { "Chờ lấy hàng" },
+            ["Đã giao"] = new List<string> { "Đang giao" },
             ["Đã lấy hàng"] = new List<string> { "Chờ lấy hàng" },
             ["Chờ giao hàng"] = new List<string> { "Đã lấy hàng" },
             ["Đang giao hàng"] = new List<string> { "Chờ giao hàng" },
-            ["Đã giao"] = new List<string> { "Đang giao hàng" },
             ["Giao hàng thành công"] = new List<string> { "Đã giao" },
             ["Đã hủy"] = new List<string>() // Không cho phép rollback từ trạng thái đã hủy
         };
 
-        public OrderHistoryService(BanQuanAu1DbContext context, ILogger<OrderHistoryService> logger)
+        public OrderHistoryService(
+            BanQuanAu1DbContext context,
+            ILogger<OrderHistoryService> logger,
+            IInventoryReservationService inventoryReservationService)
         {
             _context = context;
             _logger = logger;
+            _inventoryReservationService = inventoryReservationService;
         }
 
         public async Task<bool> CanRollbackToStatusAsync(Guid orderId, string targetStatus)
@@ -49,7 +56,7 @@ namespace QuanApi.Services
                 var order = await _context.HoaDons.FindAsync(orderId);
                 if (order == null) return false;
 
-                return _rollbackFlow.ContainsKey(order.TrangThai) && 
+                return _rollbackFlow.ContainsKey(order.TrangThai) &&
                        _rollbackFlow[order.TrangThai].Contains(targetStatus);
             }
             catch (Exception ex)
@@ -64,8 +71,8 @@ namespace QuanApi.Services
             try
             {
                 // Lấy danh sách trạng thái có thể rollback theo luồng
-                return _rollbackFlow.ContainsKey(currentStatus) 
-                    ? _rollbackFlow[currentStatus] 
+                return _rollbackFlow.ContainsKey(currentStatus)
+                    ? _rollbackFlow[currentStatus]
                     : new List<string>();
             }
             catch (Exception ex)
@@ -127,31 +134,22 @@ namespace QuanApi.Services
 
         public async Task SaveOrderHistoryAsync(Guid orderId, string oldStatus, string newStatus, string updatedBy, string reason = null)
         {
-            try
+            var history = new LichSuHoaDon
             {
-                var history = new LichSuHoaDon
-                {
-                    IDLichSuHoaDon = Guid.NewGuid(),
-                    MaLichSuHoaDon = $"LS{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-                    IDHoaDon = orderId,
-                    TrangThai = newStatus,
-                    GhiChu = string.IsNullOrEmpty(reason) 
-                        ? $"Thay đổi từ '{oldStatus}' sang '{newStatus}'"
-                        : $"Thay đổi từ '{oldStatus}' sang '{newStatus}'. Lý do: {reason}",
-                    NgayTao = DateTime.UtcNow,
-                    NguoiTao = updatedBy,
-                    TrangThaiLichSu = true
-                };
+                IDLichSuHoaDon = Guid.NewGuid(),
+                MaLichSuHoaDon = $"LS{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                IDHoaDon = orderId,
+                TrangThai = newStatus,
+                GhiChu = string.IsNullOrEmpty(reason)
+                    ? $"Thay đổi từ '{oldStatus}' sang '{newStatus}'"
+                    : $"Thay đổi từ '{oldStatus}' sang '{newStatus}'. Lý do: {reason}",
+                NgayTao = DateTime.UtcNow,
+                NguoiTao = updatedBy,
+                TrangThaiLichSu = true
+            };
 
-                _context.LichSuHoaDons.Add(history);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Đã lưu lịch sử thay đổi trạng thái cho đơn hàng {orderId}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Lỗi khi lưu lịch sử đơn hàng {orderId}: {ex.Message}");
-            }
+            _context.LichSuHoaDons.Add(history);
+            await Task.CompletedTask;
         }
 
         public async Task<List<LichSuHoaDon>> GetOrderHistoryAsync(Guid orderId)
@@ -172,45 +170,44 @@ namespace QuanApi.Services
 
         private async Task HandleRollbackBusinessLogicAsync(HoaDon order, string oldStatus, string targetStatus)
         {
-            // Xử lý logic nghiệp vụ khi rollback
-            switch (oldStatus)
-            {
-                case "Đã hủy":
-                    // Nếu rollback từ "Đã hủy", cần trừ lại số lượng sản phẩm
-                    if (targetStatus != "Đã hủy")
-                    {
-                        foreach (var chiTiet in order.ChiTietHoaDons ?? new List<ChiTietHoaDon>())
-                        {
-                            if (chiTiet.SanPhamChiTiet != null)
-                            {
-                                chiTiet.SanPhamChiTiet.SoLuong -= chiTiet.SoLuong;
-                                _logger.LogInformation($"Trừ lại {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} khi rollback từ 'Đã hủy'");
-                            }
-                        }
-                    }
-                    break;
+            var lines = (order.ChiTietHoaDons ?? new List<ChiTietHoaDon>())
+                .Select(x => new InventoryLine(x.IDSanPhamChiTiet, x.SoLuong))
+                .ToList();
 
-                case "Đã giao hàng":
-                    // Rollback từ "Đã giao hàng" có thể cần xử lý hoàn tiền
-                    if (targetStatus == "Đang giao hàng")
-                    {
-                        _logger.LogInformation($"Rollback đơn hàng {order.IDHoaDon} từ 'Đã giao hàng' về 'Đang giao hàng' - có thể cần xử lý hoàn tiền");
-                    }
-                    break;
-            }
-
-            // Xử lý khi rollback VỀ trạng thái "Đã hủy"
             if (targetStatus == "Đã hủy" && oldStatus != "Đã hủy")
             {
-                // Hoàn trả số lượng sản phẩm về kho
-                foreach (var chiTiet in order.ChiTietHoaDons ?? new List<ChiTietHoaDon>())
+                if (order.DaDatChoTonKho)
                 {
-                    if (chiTiet.SanPhamChiTiet != null)
-                    {
-                        chiTiet.SanPhamChiTiet.SoLuong += chiTiet.SoLuong;
-                        _logger.LogInformation($"Hoàn trả {chiTiet.SoLuong} sản phẩm {chiTiet.SanPhamChiTiet.MaSPChiTiet} khi rollback về 'Đã hủy'");
-                    }
+                    var releaseResult = await _inventoryReservationService.ReleaseAsync(lines, "Rollback");
+                    if (!releaseResult.Success)
+                        throw new InvalidOperationException(releaseResult.ErrorMessage ?? "Không thể nhả giữ chỗ khi rollback.");
                 }
+
+                if (order.DaTruTonKho)
+                {
+                    var restockResult = await _inventoryReservationService.RestockAsync(lines, "Rollback");
+                    if (!restockResult.Success)
+                        throw new InvalidOperationException(restockResult.ErrorMessage ?? "Không thể hoàn kho khi rollback.");
+                }
+
+                order.DaDatChoTonKho = false;
+                order.DaTruTonKho = false;
+            }
+            else if (oldStatus == "Đã xác nhận" && targetStatus == "Chờ xác nhận")
+            {
+                if (order.DaTruTonKho)
+                {
+                    var restockResult = await _inventoryReservationService.RestockAsync(lines, "Rollback");
+                    if (!restockResult.Success)
+                        throw new InvalidOperationException(restockResult.ErrorMessage ?? "Không thể hoàn kho khi rollback về chờ xác nhận.");
+                }
+
+                var reserveResult = await _inventoryReservationService.ReserveAsync(lines, "Rollback");
+                if (!reserveResult.Success)
+                    throw new InvalidOperationException(reserveResult.ErrorMessage ?? "Không thể đặt chỗ lại tồn kho khi rollback.");
+
+                order.DaDatChoTonKho = true;
+                order.DaTruTonKho = false;
             }
 
             await Task.CompletedTask;

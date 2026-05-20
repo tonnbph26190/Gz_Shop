@@ -100,6 +100,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             TenKichCo = ct.KichCo.TenKichCo,
                             TenMauSac = ct.MauSac.TenMauSac,
@@ -126,7 +129,9 @@ namespace QuanApi.Controllers
             decimal? priceTo = null,
             int? qtyFrom = null,
             int? qtyTo = null,
-            DateTime? dateFrom = null,
+			 string? sortDate = null,
+
+			DateTime? dateFrom = null,
             DateTime? dateTo = null)
         {
             if (page <= 0) page = 1;
@@ -173,17 +178,37 @@ namespace QuanApi.Controllers
                 baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.GiaBan <= priceTo.Value));
             }
 
-            // Filter by variant quantity range
-            if (qtyFrom.HasValue)
-            {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong >= qtyFrom.Value));
-            }
-            if (qtyTo.HasValue)
-            {
-                baseQuery = baseQuery.Where(s => s.SanPhamChiTiets.Any(ct => ct.SoLuong <= qtyTo.Value));
-            }
+			// Filter by total available quantity of product
+			if (qtyFrom.HasValue)
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets
+						.Where(ct => ct.TrangThai)
+						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) >= qtyFrom.Value
+				);
+			}
 
-            var total = await baseQuery.CountAsync();
+			if (qtyTo.HasValue)
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets
+						.Where(ct => ct.TrangThai)
+						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value
+				);
+			}
+			// ✅ SORT NGÀY TẠO
+			if (!string.IsNullOrEmpty(sortDate))
+			{
+				if (sortDate == "desc")
+					baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenByDescending(s => s.NgayTao);
+				else if (sortDate == "asc")
+					baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenBy(s => s.NgayTao);
+			}
+			else
+			{
+				baseQuery = baseQuery.OrderByDescending(s => s.TrangThai).ThenBy(s => s.TenSanPham);
+			}
+			var total = await baseQuery.CountAsync();
 
             var data = await baseQuery
                 .Include(s => s.ChatLieu)
@@ -200,7 +225,7 @@ namespace QuanApi.Controllers
                     .ThenInclude(ct => ct.HoaTiet)
                 .Include(s => s.SanPhamChiTiets)
                     .ThenInclude(ct => ct.AnhSanPhams.Where(a => a.TrangThai))
-                .OrderBy(s => s.TenSanPham)
+               
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(s => new SanPhamDto
@@ -256,6 +281,9 @@ namespace QuanApi.Controllers
                             IdMauSac = ct.IDMauSac,
                             IdHoaTiet = ct.IDHoaTiet ?? Guid.Empty,
                             SoLuong = ct.SoLuong,
+                            SoLuongVatLy = ct.SoLuong,
+                            SoLuongDatCho = ct.SoLuongDatCho,
+                            SoLuongKhaDung = Math.Max(0, ct.SoLuong - ct.SoLuongDatCho),
                             GiaBan = ct.GiaBan,
                             price = ct.GiaBan,
                             originalPrice = ct.GiaBan,
@@ -635,21 +663,32 @@ namespace QuanApi.Controllers
             return Ok(images);
         }
 
-        [HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
-        public async Task<IActionResult> UploadProductImage(Guid sanPhamChiTietId, IFormFile file, bool laAnhChinh = false)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("Không có file ảnh.");
+		[HttpPost("chitiet/{sanPhamChiTietId}/upload-image")]
+		public async Task<IActionResult> UploadProductImage(
+	Guid sanPhamChiTietId,
+	IFormFile file,
+	bool laAnhChinh = false)
+		{
+			if (file == null || file.Length == 0)
+				return BadRequest("Không có file ảnh.");
 
-			// Tạo tên file duy nhất
+			var sanPhamChiTiet = await _context.SanPhamChiTiets
+				.FirstOrDefaultAsync(x => x.IDSanPhamChiTiet == sanPhamChiTietId);
+
+			if (sanPhamChiTiet == null)
+				return NotFound("Không tìm thấy sản phẩm chi tiết.");
+
 			var viewProjectPath = Path.Combine(
-				Directory.GetParent(Directory.GetCurrentDirectory()).FullName,
+				Directory.GetParent(Directory.GetCurrentDirectory())!.FullName,
 				"QuanView",
 				"wwwroot",
 				"uploads"
 			);
 
-			var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+			if (!Directory.Exists(viewProjectPath))
+				Directory.CreateDirectory(viewProjectPath);
+
+			var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
 			var fullPath = Path.Combine(viewProjectPath, fileName);
 
 			using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -659,57 +698,90 @@ namespace QuanApi.Controllers
 
 			var urlAnh = $"/uploads/{fileName}";
 
-			var danhSachAnhCu = await _context.AnhSanPhams.Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai).ToListAsync();
+			var daCoAnh = await _context.AnhSanPhams
+				.AnyAsync(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai);
 
-			if (danhSachAnhCu.Any())
+			if (!daCoAnh)
+				laAnhChinh = true;
+
+			if (laAnhChinh)
 			{
-				foreach (var anh in danhSachAnhCu)
+				var anhChinhCu = await _context.AnhSanPhams
+					.Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId
+							 && a.LaAnhChinh
+							 && a.TrangThai)
+					.ToListAsync();
+
+				foreach (var anh in anhChinhCu)
 				{
-					anh.TrangThai = false; // hoặc = 1 nếu bạn dùng 1 là inactive
+					anh.LaAnhChinh = false;
 					anh.LanCapNhatCuoi = DateTime.UtcNow;
 					anh.NguoiCapNhat = User?.Identity?.Name ?? "System";
 				}
 			}
 
-			// Tạo bản ghi ảnh sản phẩm như logic cũ
 			var anhSanPham = new AnhSanPham
-            {
-                IDAnhSanPham = Guid.NewGuid(),
-                MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
-                IDSanPhamChiTiet = sanPhamChiTietId,
-                UrlAnh = urlAnh,
-                LaAnhChinh = laAnhChinh,
-                NgayTao = DateTime.UtcNow,
-                NguoiTao = User?.Identity?.Name ?? "System",
-                TrangThai = true
-            };
+			{
+				IDAnhSanPham = Guid.NewGuid(),
+				MaAnh = $"IMG_{DateTime.Now:yyyyMMddHHmmssfff}",
+				IDSanPhamChiTiet = sanPhamChiTietId,
+				UrlAnh = urlAnh,
+				LaAnhChinh = laAnhChinh,
+				NgayTao = DateTime.UtcNow,
+				NguoiTao = User?.Identity?.Name ?? "System",
+				TrangThai = true
+			};
 
-            // Nếu đặt làm ảnh chính, bỏ ảnh chính cũ
-            if (laAnhChinh)
-            {
-                var anhChinhCu = await _context.AnhSanPhams
-                    .Where(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.LaAnhChinh && a.TrangThai)
-                    .FirstOrDefaultAsync();
+			_context.AnhSanPhams.Add(anhSanPham);
+			await _context.SaveChangesAsync();
 
-                if (anhChinhCu != null)
-                {
-                    anhChinhCu.LaAnhChinh = false;
-                    anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
-                    anhChinhCu.NguoiCapNhat = User?.Identity?.Name ?? "System";
-                }
-            }
+			return Ok(new
+			{
+				message = "Upload ảnh thành công.",
+				urlAnh,
+				anhSanPham.IDAnhSanPham,
+				anhSanPham.MaAnh,
+				anhSanPham.LaAnhChinh
+			});
+		}
 
-            _context.AnhSanPhams.Add(anhSanPham);
-            await _context.SaveChangesAsync();
+		[HttpGet("thong-ke")]
+		public async Task<IActionResult> GetThongKeSanPham()
+		{
+			try
+			{
+				var tongSanPham = await _context.SanPhams
+	.Where(x => x.TrangThai)
+	.CountAsync();
+				var tongBienThe = await _context.SanPhamChiTiets
+		.Where(x => x.TrangThai && x.SanPham.TrangThai)
+		.CountAsync();
 
-            return Ok(new
-            {
-                message = "Upload ảnh thành công.",
-                urlAnh,
-                anhSanPham.IDAnhSanPham,
-                anhSanPham.MaAnh,
-                anhSanPham.LaAnhChinh
-            });
-        }
-    }
-}
+				// 🔥 Sản phẩm hết hàng (group by product, ensure product navigation exists and is active)
+				var sanPhamHetHang = await _context.SanPhamChiTiets
+	.Where(ct => ct.TrangThai && ct.SanPham != null && ct.SanPham.TrangThai) // 👈 thêm dòng này
+	.GroupBy(ct => ct.IDSanPham)
+	.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
+	.CountAsync();
+
+				// 🔥 Biến thể hết hàng
+				var bienTheHetHang = await _context.SanPhamChiTiets
+		.Where(x => x.TrangThai && (x.SoLuong - x.SoLuongDatCho) <= 0)
+		.CountAsync();
+
+				return Ok(new
+				{
+					tongSanPham,
+					tongBienThe,
+					sanPhamHetHang,
+					bienTheHetHang // 👈 thêm dòng này
+				});
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+	}
+	}
+

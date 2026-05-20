@@ -1,52 +1,97 @@
-﻿@model IEnumerable<QuanApi.Data.Banner>
+@model IEnumerable<QuanApi.Data.Banner>
 
 @{
-    ViewData["Title"] = "Banners";
+    ViewData["Title"] = "Quản lý Banner";
 }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Danh sách Banner</h2>
+        </div>
+        <a asp-action="Create" class="btn btn-primary shadow-sm px-4">
+            <i class="fa fa-plus me-2"></i> Thêm Banner Mới
+        </a>
+    </div>
 
-<h1 class="mb-4">Danh sách Banner</h1>
-
-<div class="mb-3">
-    <a asp-action="Create" class="btn btn-success">
-        <i class="fa fa-plus"></i> Thêm Banner Mới
-    </a>
+    <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 border-0 py-3 text-secondary text-uppercase fw-bold" style="font-size: 0.85rem;">Hình ảnh</th>
+                            <th class="border-0 py-3 text-secondary text-uppercase fw-bold" style="font-size: 0.85rem;">Tiêu đề</th>
+                            <th class="border-0 py-3 text-secondary text-uppercase fw-bold" style="font-size: 0.85rem;">Liên kết</th>
+                            <th class="text-center border-0 py-3 text-secondary text-uppercase fw-bold" style="font-size: 0.85rem; width: 220px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var productLink = Url.Action("SanPhamTheoLink", "Banner", new { area = "", id = item.Id }) ?? "#";
+                            <tr>
+                                <td class="ps-4">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <div class="banner-img-wrapper">
+                                            <img src="@item.ImageUrl" class="rounded shadow-sm" style="width: 100px; height: 50px; object-fit: cover;" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-muted">Không có ảnh</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@item.Title</span>
+                                </td>
+                                <td>
+                                    <a href="@productLink" target="_blank" class="text-decoration-none text-info">
+                                        <i class="fa fa-external-link-alt small me-1"></i> Truy cập
+                                    </a>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="btn-group shadow-sm" role="group" style="border-radius: 8px; overflow: hidden;">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-light btn-sm text-primary border" title="Chi tiết">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-light btn-sm text-warning border" title="Chỉnh sửa">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-light btn-sm text-danger border" title="Xóa">
+                                            <i class="fa fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
-<table class="table table-bordered table-striped">
-    <thead class="thead-dark">
-        <tr>
-            <th>Hình ảnh</th>
-            <th>Tiêu đề</th>
-            <th>Liên kết</th>
-            <th class="text-center" style="width: 150px;">Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
-                    {
-                        <img src="@item.ImageUrl" width="120" height="auto" style="object-fit: cover;" />
-                    }
-                </td>
-                <td>@item.Title</td>
-                <td>
-                    <a href="@item.Link" target="_blank">@item.Link</a>
-                </td>
-                <td class="text-center">
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
-                        <i class="fa fa-edit"></i> Sửa
-                    </a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
-                        <i class="fa fa-trash"></i> Xóa
-                    </a>
-                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary">
-                        <i class="fa fa-trash"></i> Chi Tiết
-                    </a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<style>
+    /* Làm sáng nền trang */
+    body {
+        background-color: #f8f9fa;
+    }
+
+    /* Hiệu ứng khi hover vào dòng trong bảng */
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.04);
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    /* Tinh chỉnh nút bấm */
+    .btn-group .btn {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .btn-group .btn:hover {
+        background-color: #f1f1f1;
+    }
+</style>

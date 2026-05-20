@@ -1,0 +1,313 @@
+@model QuanView.Areas.Admin.Models.CauHinhBanHangPageVm
+@{
+    ViewData["Title"] = "Cấu hình ship và điểm";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800 mb-0">Cấu hình ship và điểm</h1>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <!-- Cấu hình chung -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Cấu hình chung</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="SaveConfig" method="post" id="shippingConfigForm">
+                @Html.AntiForgeryToken()
+
+                <!-- ==================== CẤU HÌNH SHIP ==================== -->
+                <div class="mb-5">
+                    <h5 class="text-primary font-weight-bold mb-3">
+                        <i class="fas fa-truck mr-2"></i>Cấu hình ship
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Nguồn tính phí ship mặc định</label>
+                                <input class="form-control" value="Giá cấu hình hệ thống" readonly />
+                                <input type="hidden" name="NguonTinhPhiShipMacDinh" value="Config" />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Tỉnh áp dụng nội/ngoại thành</label>
+                                <input class="form-control shipping-config-manual"
+                                    name="TinhApDungPhiShip"
+                                    value="@Model.Config.TinhApDungPhiShip"
+                                    placeholder="Ví dụ: Hà Nội" required />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Phí ship nội thành</label>
+                                <input class="form-control shipping-config-manual" type="number" min="0"
+                                    name="PhiShipNoiThanh" value="@Model.Config.PhiShipNoiThanh" required />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Phí ship ngoại thành</label>
+                                <input class="form-control shipping-config-manual" type="number" min="0"
+                                    name="PhiShipNgoaiThanh" value="@Model.Config.PhiShipNgoaiThanh" required />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Phí ship toàn quốc</label>
+                                <input class="form-control shipping-config-manual" type="number" min="0"
+                                    name="PhiShipToanQuoc" value="@Model.Config.PhiShipToanQuoc" required />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Phí ship mặc định fallback</label>
+                                <input class="form-control" type="number" min="0"
+                                    name="PhiShipMacDinh" value="@Model.Config.PhiShipMacDinh" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Danh sách quận/huyện nội thành</label>
+                                <input class="form-control shipping-config-manual"
+                                    name="DanhSachQuanHuyenNoiThanh"
+                                    value="@Model.Config.DanhSachQuanHuyenNoiThanh"
+                                    placeholder="Nhập cách nhau bằng dấu phẩy" />
+                                <small class="form-text text-muted">Ví dụ: Ba Đình, Hoàn Kiếm, Cầu Giấy</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- ==================== CẤU HÌNH ĐIỂM ==================== -->
+                <div class="mb-4">
+                    <h5 class="text-success font-weight-bold mb-3">
+                        <i class="fas fa-star mr-2"></i>Cấu hình điểm
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Số tiền để tích 1 điểm</label>
+                                <div class="input-group">
+                                    <input class="form-control" type="number" min="1"
+                                        name="SoTienTrenMotDiemTich" value="@Model.Config.SoTienTrenMotDiemTich" required />
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Số tiền giảm cho 1 điểm</label>
+                                <div class="input-group">
+                                    <input class="form-control" type="number" min="1"
+                                        name="SoTienGiamTrenMotDiem" value="@Model.Config.SoTienGiamTrenMotDiem" required />
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Điểm tối đa dùng mỗi đơn</label>
+                                <input class="form-control" type="number" min="0" step="1"
+                                    name="DiemToiDaSuDungMoiDon"
+                                    value="@Model.Config.DiemToiDaSuDungMoiDon"
+                                    title="0 = không giới hạn" required />
+                                <small class="form-text text-muted">0 = không giới hạn</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="mb-4" />
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="fas fa-save mr-2"></i>Lưu cấu hình
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hạng khách hàng -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Hạng khách hàng theo điểm</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Mã hạng</th>
+                            <th>Tên hạng</th>
+                            <th class="text-center">Điểm từ</th>
+                            <th class="text-center">Điểm đến</th>
+                            <th class="text-center">Giảm ship (%)</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center" style="width: 200px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tier in Model.Tiers)
+                        {
+                            <tr>
+                                <td><strong>@tier.MaHang</strong></td>
+                                <td>@tier.TenHang</td>
+                                <td class="text-center">@tier.DiemTu</td>
+                                <td class="text-center">@(tier.DiemDen?.ToString() ?? "<span class='text-muted'>Không giới hạn</span>")</td>
+                                <td class="text-center">@tier.PhanTramGiamPhiShip %</td>
+                                <td class="text-center">
+                                    <span class="badge badge-@(tier.TrangThai ? "success" : "secondary") p-2 text-dark">
+                                        @(tier.TrangThai ? "Hoạt động" : "Ngừng")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mr-1"
+                                            onclick="fillTierForm('@tier.IDHangKhachHang','@tier.MaHang','@tier.TenHang',@tier.DiemTu,@(tier.DiemDen?.ToString() ?? "null"),@tier.PhanTramGiamPhiShip,'@tier.TrangThai.ToString().ToLower()')">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <form asp-action="DeleteTier" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@tier.IDHangKhachHang" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-ban"></i> Ngừng
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="font-weight-bold mb-3">Thêm / Cập nhật hạng khách hàng</h6>
+            
+            <form asp-action="SaveTier" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="tierId" name="IDHangKhachHang" />
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Mã hạng</label>
+                            <input id="tierCode" class="form-control" name="MaHang" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Tên hạng</label>
+                            <input id="tierName" class="form-control" name="TenHang" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Điểm từ</label>
+                            <input id="tierFrom" class="form-control" type="number" min="0" name="DiemTu" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Điểm đến <small class="text-muted">(trống = max)</small></label>
+                            <input id="tierTo" class="form-control" type="number" min="0" name="DiemDen" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Giảm ship (%)</label>
+                            <input id="tierDiscount" class="form-control" type="number" min="0" max="100" step="0.1" 
+                                   name="PhanTramGiamPhiShip" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Trạng thái</label>
+                            <select id="tierStatus" class="form-control" name="TrangThai">
+                                <option value="true">Hoạt động</option>
+                               @*  <option value="false">Ngừng</option> *@
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mt-4 pt-2">
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save mr-2"></i>Lưu hạng
+                            </button>
+                            <button type="button" class="btn btn-secondary ml-2" onclick="resetTierForm()">
+                                <i class="fas fa-undo mr-2"></i>Mới
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function fillTierForm(id, code, name, fromPoint, toPoint, discount, active) {
+        document.getElementById('tierId').value = id || '';
+        document.getElementById('tierCode').value = code || '';
+        document.getElementById('tierName').value = name || '';
+        document.getElementById('tierFrom').value = fromPoint || 0;
+        document.getElementById('tierTo').value = (toPoint === null || toPoint === undefined || toPoint === "null") ? '' : toPoint;
+        document.getElementById('tierDiscount').value = discount || 0;
+       document.getElementById('tierStatus').value = 'true';
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function resetTierForm() {
+        document.getElementById('tierId').value = '';
+        document.getElementById('tierCode').value = '';
+        document.getElementById('tierName').value = '';
+        document.getElementById('tierFrom').value = 0;
+        document.getElementById('tierTo').value = '';
+        document.getElementById('tierDiscount').value = 0;
+        document.getElementById('tierStatus').value = 'true';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Config mode is now fixed: keep manual shipping fields editable.
+    });
+</script>
+}

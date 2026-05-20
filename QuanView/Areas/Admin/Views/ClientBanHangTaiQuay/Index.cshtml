@@ -1,12 +1,100 @@
 @{
     ViewBag.Title = "Bán hàng";
 }
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <style>
+    .nav-tabs {
+        border-bottom: none !important;
+        gap: 3px;
+    }
+
+    .nav-tabs .nav-link {
+        border: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 16px 8px 16px;
+        font-weight: 500;
+        position: relative;
+        min-width: 170px;
+        background: #f8f9fa;
+        color: #555;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+    }
+
+    .nav-tabs .nav-link.active {
+        background: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+        color: #000;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        border-bottom: 2px solid #fff;
+        /* blends with content */
+    }
+
+    .nav-tabs .nav-link:hover {
+        background: #fff;
+        border-color: #adb5bd;
+        color: #333;
+    }
+
+    .tab-close {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 18px;
+        color: #999;
+        opacity: 0.75;
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover .tab-close {
+        opacity: 1;
+    }
+
+    .tab-close:hover {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.15);
+    }
+
+    .invoice-tabs-container {
+        display: flex;
+        align-items: end;
+        gap: 3px;
+        flex-wrap: wrap;
+    }
+
+    #btnAddInvoice {
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+    }
+
+    #btnAddInvoice:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+    /* Toast styles (kept from your original) */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 350px;
+    }
+
     /* Toast Notification Styles */
     .toast-container {
         position: fixed;
@@ -19,7 +107,7 @@
     .custom-toast {
         background: white;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         margin-bottom: 10px;
         overflow: hidden;
         transform: translateX(400px);
@@ -27,25 +115,25 @@
         border-left: 4px solid #28a745;
     }
 
-        .custom-toast.show {
-            transform: translateX(0);
-        }
+    .custom-toast.show {
+        transform: translateX(0);
+    }
 
-        .custom-toast.success {
-            border-left-color: #28a745;
-        }
+    .custom-toast.success {
+        border-left-color: #28a745;
+    }
 
-        .custom-toast.error {
-            border-left-color: #dc3545;
-        }
+    .custom-toast.error {
+        border-left-color: #dc3545;
+    }
 
-        .custom-toast.warning {
-            border-left-color: #ffc107;
-        }
+    .custom-toast.warning {
+        border-left-color: #ffc107;
+    }
 
-        .custom-toast.info {
-            border-left-color: #17a2b8;
-        }
+    .custom-toast.info {
+        border-left-color: #17a2b8;
+    }
 
     .toast-header {
         padding: 12px 16px;
@@ -67,21 +155,21 @@
         font-size: 12px;
     }
 
-        .toast-icon.success {
-            background-color: #28a745;
-        }
+    .toast-icon.success {
+        background-color: #28a745;
+    }
 
-        .toast-icon.error {
-            background-color: #dc3545;
-        }
+    .toast-icon.error {
+        background-color: #dc3545;
+    }
 
-        .toast-icon.warning {
-            background-color: #ffc107;
-        }
+    .toast-icon.warning {
+        background-color: #ffc107;
+    }
 
-        .toast-icon.info {
-            background-color: #17a2b8;
-        }
+    .toast-icon.info {
+        background-color: #17a2b8;
+    }
 
     .toast-title {
         font-weight: 600;
@@ -104,9 +192,9 @@
         justify-content: center;
     }
 
-        .toast-close:hover {
-            color: #666;
-        }
+    .toast-close:hover {
+        color: #666;
+    }
 
     .toast-body {
         padding: 12px 16px;
@@ -117,7 +205,7 @@
 
     .toast-progress {
         height: 3px;
-        background-color: rgba(0,0,0,0.1);
+        background-color: rgba(0, 0, 0, 0.1);
         position: relative;
         overflow: hidden;
     }
@@ -165,16 +253,16 @@
         transition: border-color 0.3s;
     }
 
-        .css_select:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-            outline: none;
-        }
+    .css_select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
 
-        .css_select:disabled {
-            background-color: #f8f9fa;
-            color: #6c757d;
-        }
+    .css_select:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
 
     @@media (max-width: 768px) {
         .css_select_div {
@@ -193,29 +281,95 @@
         cursor: pointer;
     }
 
-        .address-card:hover {
-            border-color: #007bff;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.15);
-            transform: translateY(-1px);
-        }
+    .address-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        transform: translateY(-1px);
+    }
 
-        .address-card.selected {
-            border-color: #007bff;
-            background-color: #f8f9ff;
-        }
+    .address-card.selected {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+    }
+
+    .voucher-ticket {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        background: #fff;
+    }
+
+    .voucher-ticket:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Reactive Badge Color Shifts */
+    .badge-reactive {
+        transition: all 0.3s ease !important;
+        transform: scale(1);
+    }
+
+    /* When the WHOLE card is hovered, change the badge colors */
+    .voucher-ticket:hover .badge-reactive.bg-success {
+        background-color: #198754 !important;
+        /* Deeper Green */
+        box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-secondary {
+        background-color: #495057 !important;
+        /* Darker Gray */
+        transform: scale(1.1);
+    }
+
+    .voucher-ticket:hover .badge-reactive.bg-danger {
+        background-color: #bb2d3b !important;
+        /* Deeper Red */
+        box-shadow: 0 0 10px rgba(187, 45, 59, 0.4);
+        transform: scale(1.1);
+    }
+
+    /* Button Hover */
+    .btn-voucher-active:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        transform: translateY(-1px);
+    }
+
+    #qrReader {
+        min-height: 220px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111;
+    }
 </style>
 
 <div class="container mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <ul class="nav nav-tabs" id="invoiceTabs"></ul>
-        <button class="btn btn-primary" id="btnAddInvoice">+ Tạo giỏ hàng</button>
-    </div>
-    <div class="d-flex justify-content-end mb-2">
-        @* <button class="btn btn-info me-2" id="btnQRCode">QR Code</button> *@
-        <button class="btn btn-success" id="btnAddProduct">Thêm sản phẩm</button>
-    </div>
-    <div id="invoiceContent"></div>
+    <!-- Tab Header - Chrome-like Style with Clear Outlines -->
+    <div class="d-flex align-items-end mb-3">
+        <div class="invoice-tabs-container d-flex align-items-end flex-grow-1" style="gap: 3px;">
+            <ul class="nav nav-tabs" id="invoiceTabs" style="border-bottom: none; background: transparent;"></ul>
 
+            <!-- Small + Button like Chrome -->
+            <button class="btn btn-light border shadow-sm d-flex align-items-center justify-content-center"
+                id="btnAddInvoice"
+                style="width: 42px; height: 38px; border-radius: 8px 8px 0 0; margin-bottom: 2px; font-size: 1.5rem; line-height: 1;">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+
+        <div class="d-flex gap-2 ms-auto">
+            <button class="btn btn-info" id="btnQRCode">
+                <i class="bi bi-qr-code-scan me-1"></i> QR Code
+            </button>
+            <button class="btn btn-success" id="btnAddProduct">
+                <i class="bi bi-plus-circle me-1"></i> Thêm sản phẩm
+            </button>
+        </div>
+    </div>
+    <div id="invoiceContent" class="mt-3"></div>
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     <div class="row mt-4">
@@ -231,12 +385,16 @@
                         <div><span class="fw-bold">Số điện thoại:</span> <span id="customerPhone"></span></div>
                         <div><span class="fw-bold">email:</span> <span id="customerEmail"></span></div>
                     </div>
-                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài khoản</button>
-                    <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;" onclick="clearCustomer()" title="Hủy chọn khách hàng">
+                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="showCustomerModal()">Chọn tài
+                        khoản</button>
+                    <button class="btn btn-outline-danger btn-sm mt-2 ms-2" id="btnClearCustomer" style="display:none;"
+                        onclick="clearCustomer()" title="Hủy chọn khách hàng">
                         <i class="bi bi-x-circle"></i> Hủy chọn
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress" style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
-                    <button class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress" style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 float-end" id="btnShowAddress"
+                        style="display:none;" onclick="focusAddressForm()">Chọn địa chỉ</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2 me-2 float-end" id="btnAddAddress"
+                        style="display:none;" onclick="openSaveAddressModal()">Lưu địa chỉ</button>
                 </div>
             </div>
 
@@ -263,40 +421,28 @@
 
                         <!-- Dropdown chọn tỉnh thành, quận huyện, phường xã cho form chính -->
                         <div class="css_select_div mb-3">
-                            <select class="css_select form-control" id="shipTinh" name="shipTinh" title="Chọn Tỉnh Thành">
+                            <select class="css_select form-control" id="shipTinh" name="shipTinh"
+                                title="Chọn Tỉnh Thành">
                                 <option value="0">Tỉnh Thành</option>
                             </select>
-                            <select class="css_select form-control" id="shipQuan" name="shipQuan" title="Chọn Quận Huyện">
+                            <select class="css_select form-control" id="shipQuan" name="shipQuan"
+                                title="Chọn Quận Huyện">
                                 <option value="0">Quận Huyện</option>
                             </select>
-                            <select class="css_select form-control" id="shipPhuong" name="shipPhuong" title="Chọn Phường Xã">
+                            <select class="css_select form-control" id="shipPhuong" name="shipPhuong"
+                                title="Chọn Phường Xã">
                                 <option value="0">Phường Xã</option>
                             </select>
                         </div>
 
                         <!-- Địa chỉ chi tiết -->
-                        <input type="text" class="form-control mb-2" id="shipDiaChiChiTiet" name="shipDiaChiChiTiet" placeholder="Số nhà, tên đường...">
+                        <input type="text" class="form-control mb-2" id="shipDiaChiChiTiet" name="shipDiaChiChiTiet"
+                            placeholder="Số nhà, tên đường...">
 
                         <!-- Địa chỉ đầy đủ (readonly) -->
-                        <textarea class="form-control" id="shipAddress" rows="3" readonly placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
+                        <textarea class="form-control" id="shipAddress" rows="3" readonly
+                            placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
                     </div>
-                    @*  <div class="row mb-2">
-                    <div class="col">
-                    <select class="form-select" id="shipProvince">
-                    <option>Chọn tỉnh</option>
-                    </select>
-                    </div>
-                    <div class="col">
-                    <select class="form-select" id="shipDistrict">
-                    <option>Chọn Quận</option>
-                    </select>
-                    </div>
-                    <div class="col">
-                    <select class="form-select" id="shipWard">
-                    <option>Chọn Phường xã</option>
-                    </select>
-                    </div>
-                    </div> *@
                     <div class="mb-2">
                         <input type="text" class="form-control" id="shipNote" placeholder="Ghi chú">
                     </div>
@@ -308,80 +454,206 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header fw-bold"><i class="bi bi-bag"></i> Thông tin thanh toán</div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <span>Tiền hàng:</span>
-                        <span class="float-end" id="goodsAmount">0 VND</span>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Phí vận chuyển:</label>
-                        <input type="number" class="form-control" id="shippingFee" value="0" min="0" readonly />
-                    </div>
 
-                    <div class="mb-2">
-                        <label class="form-label">Mã giảm giá:</label>
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-bag-check-fill me-2"></i>Thông tin thanh toán
+                </div>
+                <div class="card-body">
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Mã giảm giá:</label>
                         <div class="input-group">
-                            <input type="text" class="form-control" id="discountCode" value="" placeholder="Chọn phiếu giảm giá" readonly>
-                            <button class="btn btn-outline-secondary" type="button" onclick="applyDiscount()">Chọn mã</button>
-                            <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()" title="Xóa phiếu giảm giá">
+                            <input type="text" class="form-control border-end-0" id="discountCode"
+                                placeholder="Chọn phiếu giảm giá" readonly>
+                            <button class="btn btn-outline-secondary border-start-0" type="button"
+                                onclick="applyDiscount()">Chọn mã</button>
+                            <button class="btn btn-outline-danger" type="button" onclick="clearDiscount()">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="form-check form-switch mb-2">
+
+                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="shippingSwitch" onchange="toggleShipping()">
-                        <label class="form-check-label" for="shippingSwitch">Giao Hàng</label>
-                    </div>
-                    <div class="mb-2">
-                        <span>Khách cần thanh toán</span>
-                        <span class="float-end fw-bold" id="payAmount">0 VND</span>
+                        <label class="form-check-label fw-medium" for="shippingSwitch">Giao Hàng</label>
                     </div>
 
-                    <div class="mb-2">
-                        <span>Tiền thối lại:</span>
-                        <span class="float-end fw-bold text-success" id="changeAmount">0 VND</span>
+                    <div class="p-3 rounded-3 mb-3" style="background-color: #f0f7ff; border: 1px solid #d0e3ff;">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
+                            <label class="form-check-label fw-bold text-primary" for="pointSwitch">
+                                Dùng điểm (<span id="customerPoint">0</span> điểm)
+                            </label>
+                        </div>
+                        <div class="small text-muted mb-2" id="pointRateLabel">
+                            1 điểm = 1,000 VND | Tối đa 200 điểm/đơn
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Số điểm muốn dùng:</label>
+                            <input type="number" class="form-control form-control-lg border-primary-subtle"
+                                id="requestedUsedPoints" min="0" value="0" oninput="updatePaymentInfo()" />
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="small fw-bold text-uppercase">Điểm quy đổi:</span>
+                            <span class="fw-bold text-primary" id="pointDiscountLabel">- 0 VND</span>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <span>Giảm giá:</span>
-                        <span class="float-end text-success" id="discountAmount">0 VND</span>
+
+                    <hr class="my-4 opacity-10">
+
+                    <div class="payment-summary">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Tạm tính (tiền hàng):</span>
+                            <span class="fw-medium" id="goodsAmount">0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Phí vận chuyển phải thu:</span>
+                            <span class="fw-medium text-dark" id="shippingFeeContainer">+ 0 VND</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 d-none" id="shippingOriginalRow">
+                            <span class="text-secondary">Phí vận chuyển gốc:</span>
+                            <span class="text-muted" id="shippingOriginalAmount">0 VND</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 d-none" id="shippingDiscountRow">
+                            <span class="text-secondary">Ưu đãi phí ship:</span>
+                            <span class="text-success" id="shippingDiscountAmount">- 0 VND</span>
+                        </div>
+                        <div class="mb-2 d-none" id="shippingDiscountMessageRow">
+                            <small class="text-success" id="shippingDiscountMessage"></small>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Giảm từ phiếu giảm giá:</span>
+                            <span class="text-success" id="discountAmount">- 0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Tổng điểm giảm:</span>
+                            <span class="text-success" id="totalPointDiscount">- 0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                            <span class="text-secondary">Tiền thối lại:</span>
+                            <span class="fw-bold text-success" id="changeAmount">0 VND</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-3">
+                            <span class="h5 mb-0 fw-bold">Tổng tiền:</span>
+                            <span class="h4 mb-0 fw-bold text-danger" id="totalAmount">0 VND</span>
+                        </div>
                     </div>
-                    @*   <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="pointSwitch" onchange="togglePoint()">
-                    <label class="form-check-label" for="pointSwitch">Điểm hiện tại là <span id="customerPoint">0</span>:</label>
-                    </div> *@
-                    <div class="mb-2 d-flex align-items-center">
-                        <span>Hình thức thanh toán:</span>
-                        <span class="ms-auto d-flex align-items-center">
-                            <span id="selectedPaymentMethod">Tiền mặt</span>
-                            <a href="javascript:void(0)" onclick="openPaymentModal()" class="ms-2" title="Chỉnh sửa">
-                                <i class="bi bi-pencil-square" style="font-size: 1.2em; cursor: pointer;"></i>
-                            </a>
-                        </span>
+
+                    <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded mb-3">
+                        <span class="small text-muted">Hình thức: <span id="selectedPaymentMethod"
+                                class="text-dark fw-bold">Tiền mặt</span></span>
+                        <a href="javascript:void(0)" onclick="openPaymentModal()" class="text-decoration-none">
+                            <i class="bi bi-pencil-square"></i> Sửa
+                        </a>
                     </div>
-                    <div class="mb-2">
-                        <span class="fw-bold">Tổng tiền:</span>
-                        <span class="float-end fw-bold text-danger" id="totalAmount">0 VND</span>
-                    </div>
-                    <button class="btn btn-primary w-100" onclick="payInvoice()">Thanh toán</button>
+
+                    <button class="btn btn-dark btn-lg w-100 fw-bold shadow-sm" onclick="payInvoice()">
+                        THANH TOÁN
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+</div>
+
 
 <!-- Modal chọn sản phẩm -->
 <div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog" style="max-width: 70%;">
+        <div class="modal-content">
+
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAll">
+                        Chọn sản phẩm
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDiscount">
+                        Chọn sản phẩm giảm giá
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Nội dung -->
+            <div class="tab-content">
+
+                <!-- Tab tất cả -->
+                <div class="tab-pane fade show active" id="tabAll">
+
+                    <!-- FILTER -->
+                    <div class="d-flex gap-2 mb-3 align-items-center">
+
+                        <input type="text" id="searchName" class="form-control" placeholder="Tìm theo tên hoặc mã..."
+                            style="max-width: 400px; margin-left:20px;" />
+
+                        <button class="btn btn-primary" onclick="applyFilter()">
+                            Áp dụng
+                        </button>
+
+                        <button class="btn btn-outline-secondary" onclick="resetFilter()">
+                            Xóa lọc
+                        </button>
+
+                    </div>
+
+                    <!-- QUAN TRỌNG: PHẢI CÓ -->
+                    <div id="productList"></div>
+
+                </div>
+                <!-- Tab giảm giá -->
+                <div class="tab-pane fade" id="tabDiscount">
+                    <div id="discountProductList"></div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Modal quét QR -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Chọn sản phẩm</h5>
+                <h5 class="modal-title"><i class="bi bi-qr-code-scan me-2"></i>Quét mã QR sản phẩm</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="productList">
-                <!-- Danh sách sản phẩm sẽ được load ở đây -->
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary" id="btnQrCameraToggle" data-on="false">
+                        <i class="bi bi-camera-video me-1"></i><span id="btnQrCameraToggleText">Bật camera</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnQrUpload">
+                        <i class="bi bi-upload me-1"></i>Tải ảnh QR lên
+                    </button>
+                    <input type="file" id="qrFileInput" accept="image/*" class="d-none" />
+                </div>
+                <div id="qrReader" class="mb-3"></div>
+                <label for="qrCodeInput" class="form-label">Hoặc nhập / máy quét cầm tay</label>
+                <input type="text" class="form-control" id="qrCodeInput"
+                    placeholder="Dán mã hoặc quét bằng máy quét, sau đó nhấn Enter">
+                <div class="form-text">
+                    Sau khi nhận mã hợp lệ, hệ thống mở cửa sổ nhập số lượng (từ 1 đến tồn kho).
+                </div>
+                <div id="qrLastResult" class="small mt-3 text-muted"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button class="btn btn-primary" id="btnQrScan"><i class="bi bi-box-arrow-in-right me-1"></i>Tìm sản phẩm
+                    &amp; nhập số lượng</button>
             </div>
         </div>
     </div>
@@ -400,7 +672,8 @@
                     <button type="button" class="btn btn-outline-secondary" onclick="selectGuestCustomer()">
                         <i class="bi bi-person-x"></i> Khách vãng lai
                     </button>
-                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addCustomerForm" aria-expanded="false">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse"
+                        data-bs-target="#addCustomerForm" aria-expanded="false">
                         <i class="bi bi-person-plus"></i> Thêm khách hàng mới
                     </button>
                 </div>
@@ -409,32 +682,38 @@
                         <h6 class="mb-2">Thêm khách hàng vào hệ thống</h6>
                         <div class="row g-2">
                             <div class="col-md-5">
-                                <input type="text" class="form-control form-control-sm" id="newCustomerName" placeholder="Tên khách hàng">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerName"
+                                    placeholder="Tên khách hàng">
                             </div>
                             <div class="col-md-4">
-                                <input type="text" class="form-control form-control-sm" id="newCustomerPhone" placeholder="Số điện thoại">
+                                <input type="text" class="form-control form-control-sm" id="newCustomerPhone"
+                                    placeholder="Số điện thoại">
                             </div>
                             <div class="col-md-3">
-                                <button type="button" class="btn btn-success btn-sm w-100" onclick="submitNewCustomer()">Lưu & chọn</button>
+                                <button type="button" class="btn btn-success btn-sm w-100"
+                                    onclick="submitNewCustomer()">Lưu & chọn</button>
                             </div>
                         </div>
-                        <small class="text-muted">Sau khi lưu, khách hàng sẽ được chọn và có thể dùng phiếu giảm giá (nếu có).</small>
+                        <small class="text-muted">Sau khi lưu, khách hàng sẽ được chọn và có thể dùng phiếu giảm giá
+                            (nếu có).</small>
                     </div>
                 </div>
                 <hr class="my-2" />
                 <p class="small text-muted mb-2">Hoặc chọn khách có sẵn trong hệ thống:</p>
-                <input type="text" class="form-control mb-2" id="searchCustomer" placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
+                <input type="text" class="form-control mb-2" id="searchCustomer"
+                    placeholder="Tìm theo tên hoặc số điện thoại" onkeypress="if(event.key==='Enter') searchCustomer()">
                 <button class="btn btn-primary btn-sm mb-2" onclick="searchCustomer()">Tìm kiếm</button>
                 <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-bordered table-sm">
+                    <table class="table table-bordered table-sm text-center">
                         <thead class="table-light sticky-top">
                             <tr>
                                 <th>STT</th>
-                                <th>Ảnh</th>
+                                @* <th>Ảnh</th> *@
                                 <th>Tên</th>
                                 <th>Email</th>
                                 <th>SĐT</th>
                                 <th>Điểm</th>
+                                <th>Tên hạng</th>
                                 <th>Chọn</th>
                             </tr>
                         </thead>
@@ -470,7 +749,8 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Tiền khách đưa</label>
-                    <input type="number" class="form-control" id="modalCustomerPaid" min="0" value="0" oninput="updateModalChangeAmount()" />
+                    <input type="number" class="form-control" id="modalCustomerPaid" min="0" value="0"
+                        oninput="updateModalChangeAmount()" />
                 </div>
                 <div class="mb-2">
                     <span>Tiền thối lại:</span>
@@ -500,7 +780,7 @@
                 </div>
                 <div id="noVoucherMessage" style="display:none;" class="text-center py-4">
                     <i class="bi bi-ticket-perforated" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="mt-2 text-muted">Khách hàng chưa có phiếu giảm giá nào</p>
+                    <p class="mt-2 text-muted">Không có phiếu giảm giá phù hợp cho đơn hiện tại</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -535,9 +815,8 @@
                         <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)">
                             <i class="bi bi-dash"></i>
                         </button>
-                        <input type="number" class="form-control text-center" id="quantityInput"
-                               min="1" value="1" oninput="validateQuantityInput()"
-                               onkeypress="if(event.key==='Enter') confirmAddProduct()">
+                        <input type="number" class="form-control text-center" id="quantityInput" min="1" value="1"
+                            oninput="validateQuantityInput()" onkeypress="if(event.key==='Enter') confirmAddProduct()">
                         <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)">
                             <i class="bi bi-plus"></i>
                         </button>
@@ -577,7 +856,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Địa chỉ chi tiết</label>
-                        <textarea class="form-control" id="newAddressDetail" rows="3" placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, tỉnh/thành phố)"></textarea>
+                        <textarea class="form-control" id="newAddressDetail" rows="3"
+                            placeholder="Nhập địa chỉ chi tiết (số nhà, đường, phường, quận, tỉnh/thành phố)"></textarea>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -597,33 +877,13 @@
     </div>
 </div>
 
-<!-- Modal chọn địa chỉ (cũ - có thể xóa nếu không dùng) -->
-<div class="modal fade" id="selectAddressModal" tabindex="-1" style="display: none;">
+<!-- Modal chọn địa chỉ legacy đã được thay thế bằng modal mới bên dưới -->
+<div class="modal fade" id="selectAddressModalLegacy" tabindex="-1" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Chọn địa chỉ giao hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddAddressModal()">
-                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
-                    </button>
-                </div>
-                <div id="addressList">
-                    <!-- Danh sách địa chỉ sẽ được load ở đây -->
-                </div>
-                <div id="noAddressMessage" style="display:none;" class="text-center py-4">
-                    <i class="bi bi-geo-alt" style="font-size: 3rem; color: #ccc;"></i>
-                    <p class="mt-2 text-muted">Khách hàng chưa có địa chỉ nào</p>
-                    <button type="button" class="btn btn-primary" onclick="openAddAddressModal()">
-                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ đầu tiên
-                    </button>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <div id="addressListLegacy"></div>
+                <div id="noAddressMessageLegacy" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -643,9 +903,83 @@
     let useShipping = false; // Có sử dụng giao hàng không
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
     let usePoint = false;
+    let moneyPerPoint = 1000;
+    let maxPointsPerOrder = 0;
     let selectedPaymentCode;
     let shippingFee = 0;
+    let shippingOriginalFee = 0;
+    let shippingDiscountAmountValue = 0;
+    let shippingDiscountMessageValue = '';
+    let isHandlingQrScan = false;
+    let html5QrCodeInstance = null;
+    let qrDecodeHandled = false;
 
+    function getPointLimitByConfig(available) {
+        if (maxPointsPerOrder > 0) {
+            return Math.min(available, maxPointsPerOrder);
+        }
+        return available;
+    }
+
+    function getPointLimitByAmount(total, discount) {
+        if (!moneyPerPoint || moneyPerPoint <= 0) {
+            return 0;
+        }
+        const baseAmount = Math.max(0, (Number(total) || 0) - (Number(discount) || 0));
+        return Math.floor(baseAmount / moneyPerPoint);
+    }
+
+    function getMaxUsablePoint(total, discount) {
+        const available = Number(selectedCustomer?.point || 0);
+        return Math.max(0, Math.min(getPointLimitByConfig(available), getPointLimitByAmount(total, discount)));
+    }
+
+    function updatePointRateLabel(total, discount) {
+        const rateLabel = document.getElementById('pointRateLabel');
+        if (!rateLabel) {
+            return;
+        }
+
+        if (!moneyPerPoint || moneyPerPoint <= 0) {
+            rateLabel.textContent = 'Không lấy được cấu hình điểm';
+            return;
+        }
+
+        const available = Number(selectedCustomer?.point || 0);
+        const configLimit = getPointLimitByConfig(available);
+        const orderLimit = getMaxUsablePoint(total, discount);
+        rateLabel.textContent = `1 điểm = ${moneyPerPoint.toLocaleString('vi-VN')} VND | Tối đa theo cấu hình: ${configLimit.toLocaleString('vi-VN')} điểm | Tối đa theo đơn hiện tại: ${orderLimit.toLocaleString('vi-VN')} điểm`;
+    }
+
+
+    function resetKhachHangForm() {
+        // Xóa input text
+        document.querySelectorAll('#khachHangForm input[type="text"], #khachHangForm input[type="email"]').forEach(el => el.value = '');
+
+        // Xóa textarea
+        document.querySelectorAll('#khachHangForm textarea').forEach(el => el.value = '');
+
+        // Reset select
+        document.querySelectorAll('#khachHangForm select').forEach(el => el.selectedIndex = 0);
+
+        // Tắt checkbox giao hàng
+        const giaoHangCheckbox = document.querySelector('#GiaoHang');
+        if (giaoHangCheckbox) {
+            giaoHangCheckbox.checked = false;
+        }
+
+        // Xóa địa chỉ hiển thị
+        const diaChiContainer = document.querySelector('#diaChiContainer');
+        if (diaChiContainer) {
+            diaChiContainer.innerHTML = '';
+        }
+
+        // Reset text hiển thị địa chỉ
+        const diaChiFull = document.querySelector('#DiaChiDayDu');
+        if (diaChiFull) {
+            diaChiFull.value = '';
+        }
+    }
     // Toast Notification System
     function showToast(message, type = 'success', duration = 4000) {
         const toastContainer = document.getElementById('toastContainer');
@@ -736,7 +1070,159 @@
     function loadProducts(callback) {
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-san-pham', function (data) {
             products = data;
+
+            // Tab tất cả
+            renderProductList(products, "productList");
+
+            // Tab giảm giá
+            renderDiscountProducts();
+
             if (callback) callback();
+        });
+    }
+
+    function upsertProductCache(product) {
+        if (!product || !product.id) return;
+        const existingIndex = products.findIndex(p => p.id === product.id);
+        if (existingIndex >= 0) {
+            products[existingIndex] = { ...products[existingIndex], ...product };
+        } else {
+            products.push(product);
+        }
+    }
+
+    function stopQrCamera() {
+        if (!html5QrCodeInstance) return Promise.resolve();
+        return html5QrCodeInstance.stop().then(function () {
+            html5QrCodeInstance.clear();
+            html5QrCodeInstance = null;
+        }).catch(function () {
+            try {
+                if (html5QrCodeInstance) html5QrCodeInstance.clear();
+            } catch (e) { }
+            html5QrCodeInstance = null;
+        });
+    }
+
+    function startQrCamera() {
+        if (typeof Html5Qrcode === 'undefined') {
+            showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+            return;
+        }
+        stopQrCamera().then(function () {
+            $('#qrReader').empty();
+            html5QrCodeInstance = new Html5Qrcode('qrReader');
+            Html5Qrcode.getCameras().then(function (cameras) {
+                if (!cameras || cameras.length === 0) {
+                    showError('Không tìm thấy camera trên thiết bị.');
+                    html5QrCodeInstance = null;
+                    return;
+                }
+                const cameraId = cameras[0].id;
+                html5QrCodeInstance.start(
+                    cameraId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    function (decodedText) {
+                        if (qrDecodeHandled) return;
+                        const text = (decodedText || '').trim();
+                        if (!text) return;
+                        qrDecodeHandled = true;
+                        stopQrCamera().then(function () {
+                            $('#btnQrCameraToggle').data('on', false);
+                            $('#btnQrCameraToggleText').text('Bật camera');
+                            $('#qrCodeInput').val(text);
+                            lookupProductByQrAndOpenQuantity(text);
+                        });
+                    },
+                    function () { }
+                ).then(function () {
+                    $('#btnQrCameraToggle').data('on', true);
+                    $('#btnQrCameraToggleText').text('Tắt camera');
+                }).catch(function (err) {
+                    showError('Không bật được camera: ' + (err && err.message ? err.message : err));
+                    html5QrCodeInstance = null;
+                });
+            }).catch(function () {
+                showError('Không đọc được danh sách camera.');
+                html5QrCodeInstance = null;
+            });
+        });
+    }
+
+    function toggleQrCamera() {
+        const on = $('#btnQrCameraToggle').data('on');
+        if (on) {
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+            });
+        } else {
+            qrDecodeHandled = false;
+            startQrCamera();
+        }
+    }
+
+    function openQrScannerModal() {
+        qrDecodeHandled = false;
+        $('#qrCodeInput').val('');
+        $('#qrLastResult').text('');
+        stopQrCamera().then(function () {
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
+        });
+        $('#qrScannerModal').modal('show');
+        setTimeout(function () {
+            $('#qrCodeInput').trigger('focus');
+        }, 250);
+    }
+
+    /** Gọi API theo mã QR, sau đó đóng modal QR và mở popup nhập số lượng (1..tồn). */
+    function lookupProductByQrAndOpenQuantity(qrCode) {
+        if (gioHangs.length === 0) {
+            showWarning('Vui lòng tạo giỏ hàng trước!');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        const code = (qrCode || '').trim();
+        if (!code) {
+            showWarning('Vui lòng nhập hoặc quét mã QR.');
+            qrDecodeHandled = false;
+            return;
+        }
+
+        if (isHandlingQrScan) return;
+        isHandlingQrScan = true;
+        $('#btnQrScan').prop('disabled', true);
+
+        $.get('/Admin/ClientBanHangTaiQuay/tim-san-pham-theo-qr', { qrCode: code }, function (product) {
+            upsertProductCache(product);
+            $('#qrLastResult').html(`<span class="text-success">Đã nhận diện: <b>${product.name || 'Sản phẩm'}</b></span>`);
+            $('#qrScannerModal').one('hidden.bs.modal', function () {
+                showQuantityModal(product.id);
+            });
+            $('#qrScannerModal').modal('hide');
+            $('#qrCodeInput').val('');
+        }).fail(function (xhr) {
+            let msg = 'Không tìm thấy sản phẩm từ mã QR.';
+            if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+            else if (xhr.responseText) {
+                try {
+                    const obj = JSON.parse(xhr.responseText);
+                    if (obj.message) msg = obj.message;
+                    else msg = xhr.responseText;
+                } catch {
+                    msg = xhr.responseText;
+                }
+            }
+            $('#qrLastResult').html(`<span class="text-danger">${msg}</span>`);
+            showError(msg);
+        }).always(function () {
+            isHandlingQrScan = false;
+            $('#btnQrScan').prop('disabled', false);
+            qrDecodeHandled = false;
+            $('#qrCodeInput').trigger('focus');
         });
     }
 
@@ -774,6 +1260,9 @@
         $('#customerPhone').text('—');
         $('#customerEmail').text('—');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
         $('#btnShowAddress').hide();
         $('#btnAddAddress').hide();
@@ -819,14 +1308,6 @@
 
     // Áp dụng mã giảm giá
     function applyDiscount() {
-        if (!selectedCustomer) {
-            showWarning('Vui lòng chọn khách hàng trước khi chọn phiếu giảm giá!');
-            return;
-        }
-        if (selectedCustomer.isGuest) {
-            showWarning('Khách vãng lai không có phiếu giảm giá. Chọn khách có tài khoản để dùng phiếu.');
-            return;
-        }
         loadCustomerDiscountVouchers();
     }
     function tinhTienGiam(v, tongTien) {
@@ -873,8 +1354,6 @@
     }
 
     function loadCustomerDiscountVouchers() {
-
-        if (!selectedCustomer || selectedCustomer.isGuest || !selectedCustomer.id) return;
         if (isLoadingVoucher) return;
 
         let gh = gioHangs[currentGioHang];
@@ -886,10 +1365,12 @@
 
         isLoadingVoucher = true;
 
-        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', {
-            customerId: selectedCustomer.id,
-            tongTien: tongTien
-        }, function (data) {
+        const query = { tongTien: tongTien };
+        if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
+            query.customerId = selectedCustomer.id;
+        }
+
+        $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', query, function (data) {
 
             console.log("Voucher response:", data);
 
@@ -992,41 +1473,62 @@
             let buttonClass = isDisabled ? 'disabled' : '';
 
             html += `
-                        <div class="col-md-6 mb-3">
-                            <div class="card ${statusClass} h-100 ${cardClass}">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">${voucher.tenPhieu}</h6>
-                                    <span class="badge ${statusBadgeClass}">
+                <div class="col-md-6 mb-3">
+                    <div class="card voucher-ticket h-100 border-0 ${!isActive ? 'opacity-75' : ''}" 
+                        style="border-radius: 12px; overflow: hidden; position: relative; min-height: 130px;">
+                        
+                        <div class="row g-0 h-100">
+                            <div class="${isExpired ? 'bg-danger' : (isActive && meetsMinimum ? 'bg-success' : 'bg-secondary')} ${typeof isBest !== 'undefined' && isBest ? 'bg-warning' : ''}" 
+                                style="width: 7px;"></div>
+
+                            <div class="col px-3 py-2 d-flex flex-column justify-content-between">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-truncate" style="max-width: 65%;">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">${voucher.tenPhieu}</h6>
+                                        ${typeof isBest !== 'undefined' && isBest ? '<span class="badge badge-best mt-1" style="font-size: 0.6rem;">🔥 ƯU TIÊN</span>' : ''}
+                                    </div>
+                                    <span class="badge badge-reactive ${statusBadgeClass}" style="font-size: 0.65rem; letter-spacing: 0.5px;">
                                         ${statusText}
                                     </span>
                                 </div>
-                                <div class="card-body">
-                                    <div class="mb-2">
-                                        <strong>Mã:</strong> <code>${voucher.maCode}</code>
+
+                                <div class="d-flex align-items-center justify-content-between my-2">
+                                    <div class="bg-light px-2 py-1 rounded">
+                                        <code class="fw-bold text-primary" style="font-size: 1.1rem; background: transparent;">${voucher.maCode}</code>
                                     </div>
-                                    <div class="mb-2">
-                                        <strong>Giảm giá:</strong> ${voucher.giaTriGiam}% (tối đa ${voucher.giaTriGiamToiDa.toLocaleString()} VND)
+                                    <div class="text-end">
+                                        <span class="fw-bold text-dark" style="font-size: 1.1rem;">-${voucher.giaTriGiam}%</span>
+                                        <small class="text-muted d-block" style="font-size: 0.65rem;">Tối đa ${voucher.giaTriGiamToiDa.toLocaleString()}đ</small>
                                     </div>
-                                    <div class="mb-2">
-                                        <strong>Đơn tối thiểu:</strong>
-                                        <span class="${!meetsMinimum && isActive ? 'text-danger fw-bold' : ''}">${voucher.donToiThieu.toLocaleString()} VND</span>
-                                        ${!meetsMinimum && isActive ? `<span class="badge bg-danger ms-2">Thiếu ${(voucher.donToiThieu - orderTotal).toLocaleString()} VND</span>` : ''}
-                                    </div>
-                                    <div class="mb-2">
-                                        <strong>Hiệu lực:</strong> ${new Date(voucher.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}
-                                    </div>
-                                    ${voucher.moTa ? `<div class="mb-2"><strong>Mô tả:</strong> ${voucher.moTa}</div>` : ''}
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-primary btn-sm w-100 ${buttonClass}"
+
+                                <div class="d-flex justify-content-between align-items-end pt-1" style="border-top: 1px dashed #e0e0e0 !important;">
+                                    <div style="line-height: 1.3;">
+                                        <div class="${!meetsMinimum && isActive ? 'text-danger fw-bold' : 'text-muted'}" style="font-size: 0.75rem;">
+                                            Đơn từ ${voucher.donToiThieu.toLocaleString()}đ
+                                        </div>
+                                        ${!meetsMinimum && isActive ? `
+                                            <div class="badge bg-soft-danger text-danger border border-danger-subtle" style="font-size: 0.6rem;">
+                                                Cần thêm ${(voucher.donToiThieu - orderTotal).toLocaleString()}đ
+                                            </div>` : (isActive && meetsMinimum && typeof realDiscount !== 'undefined' ?
+                    `<div class="text-success fw-bold" style="font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Giảm ${realDiscount.toLocaleString()}đ</div>` :
+                    `<div class="text-muted" style="font-size: 0.65rem;">Hạn: ${new Date(voucher.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`)}
+                                    </div>
+                                    
+                                    <button class="btn btn-sm py-0 px-3 rounded-pill btn-voucher-apply ${isActive && meetsMinimum ? 'btn-outline-primary btn-voucher-active' : 'btn-outline-secondary btn-voucher-disabled'}"
+                                            style="font-size: 0.75rem; height: 28px; border-width: 1.5px;"
                                             onclick="selectVoucher('${voucher.maCode}', ${voucher.giaTriGiam}, ${voucher.giaTriGiamToiDa}, ${voucher.donToiThieu})"
                                             ${!isActive ? 'disabled' : ''}>
-                                        ${isExpired ? 'Hết hạn' : !meetsMinimum ? 'Không đủ điều kiện' : !isActive ? 'Không có hiệu lực' : 'Chọn phiếu này'}
+                                        ${isExpired ? 'Hết hạn' : !meetsMinimum ? 'Chưa đủ' : 'Dùng ngay'}
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    `;
+
+                        <div style="position: absolute; width: 16px; height: 16px; background: #f4f7f6; border-radius: 50%; left: -8px; top: 50%; transform: translateY(-50%); border: 1px solid rgba(0,0,0,0.05);"></div>
+                    </div>
+                </div>
+            `;
         });
         html += '</div>';
         $('#voucherList').html(html);
@@ -1074,9 +1576,58 @@
         updatePaymentInfo();
     }
 
+    function validateShippingAddressForPayment() {
+        if (!useShipping) {
+            return true;
+        }
+
+        const shipTinh = $('#shipTinh').val();
+        const shipQuan = $('#shipQuan').val();
+        const shipPhuong = $('#shipPhuong').val();
+        const shipDiaChiChiTiet = ($('#shipDiaChiChiTiet').val() || '').trim();
+        let fullAddress = ($('#shipAddress').val() || '').trim();
+
+        if (!shipTinh || shipTinh === '0') {
+            showWarning('Vui lòng chọn Tỉnh/Thành để giao hàng.');
+            return false;
+        }
+
+        if (!shipQuan || shipQuan === '0') {
+            showWarning('Vui lòng chọn Quận/Huyện để giao hàng.');
+            return false;
+        }
+
+        if (!shipPhuong || shipPhuong === '0') {
+            showWarning('Vui lòng chọn Phường/Xã để giao hàng.');
+            return false;
+        }
+
+        if (!shipDiaChiChiTiet) {
+            showWarning('Vui lòng nhập số nhà, tên đường để giao hàng.');
+            return false;
+        }
+
+        // Nếu UI đã có đủ dropdown + địa chỉ chi tiết nhưng fullAddress chưa sync kịp, tự ghép lại
+        if (!fullAddress && shipTinh && shipTinh !== '0' && shipQuan && shipQuan !== '0' && shipPhuong && shipPhuong !== '0' && shipDiaChiChiTiet) {
+            concatenateShippingAddress();
+            fullAddress = ($('#shipAddress').val() || '').trim();
+        }
+
+        if (!fullAddress) {
+            showWarning('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán.');
+            return false;
+        }
+
+        return true;
+    }
+
     // Thanh toán hóa đơn
     function openPaymentModal() {
-        let pay = $('#payAmount').text();
+        if (!validateShippingAddressForPayment()) {
+            return;
+        }
+
+        let pay = $('#totalAmount').text();
         $('#modalPayAmount').text(pay);
         $('#modalCustomerPaid').val(pay.replace(/\D/g, ''));
         // Đặt lại phương thức thanh toán trong modal theo ngoài giao diện
@@ -1101,6 +1652,10 @@
 
     // Tạo giỏ hàng mới
     function taoGioHang() {
+        if (gioHangs.length >= maxGioHangs) {
+            showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
+            return;
+        }
         const dto = {
             idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             nguoiTao: "Admin"
@@ -1119,34 +1674,75 @@
                 };
                 gioHangs.push(gioHang);
                 currentGioHang = gioHangs.length - 1;
-                // Lưu tất cả giỏ hàng vào localStorage
+
                 saveGioHangsToStorage();
                 renderTabs();
-                loadGioHang(); // Load dữ liệu từ server
+                loadGioHang();
+                showSuccess('Đã tạo giỏ hàng mới!');
             },
-            error: function (err) {
+            error: function () {
                 showError('Tạo giỏ hàng thất bại!');
             }
         });
     }
 
-    // Render tabs giỏ hàng
     function renderTabs() {
         let html = '';
         gioHangs.forEach((gh, idx) => {
-            html += `<li class="nav-item">
-                        <a class="nav-link ${idx === currentGioHang ? 'active' : ''}" href="#" onclick="switchGioHang(${idx})">Giỏ hàng ${idx + 1}${gh.products.length > 0 ? '<span class=\'badge bg-danger ms-1\'>' + gh.products.length + '</span>' : ''}</a>
-                    </li>`;
+            const isActive = idx === currentGioHang;
+            const productCount = gh.products ? gh.products.length : 0;
+
+            html += `
+                <li class="nav-item">
+                    <a class="nav-link ${isActive ? 'active' : ''}" href="#" 
+                    onclick="switchGioHang(${idx}); event.preventDefault();">
+                        Giỏ hàng ${idx + 1}
+                        ${productCount > 0 ? `<span class="badge bg-danger ms-1">${productCount}</span>` : ''}
+                        
+                        <span class="tab-close" onclick="event.stopImmediatePropagation(); closeTab(${idx});" 
+                            title="Đóng giỏ hàng">×</span>
+                    </a>
+                </li>`;
         });
+
         $('#invoiceTabs').html(html);
+    }
+    function closeTab(index) {
+        if (gioHangs.length <= 1) {
+            showWarning("Phải giữ ít nhất một giỏ hàng!");
+            return;
+        }
+
+        // Remove the cart
+        gioHangs.splice(index, 1);
+
+        // Adjust current index
+        if (currentGioHang >= index) {
+            currentGioHang = Math.max(0, currentGioHang - 1);
+        }
+
+        saveGioHangsToStorage();
+        renderTabs();
+        loadGioHang();
+    }
+    function addMiddleClickSupport() {
+        $(document).on('mousedown', '.nav-tabs .nav-link', function (e) {
+            if (e.button === 1) { // Middle mouse button
+                e.preventDefault();
+                const index = $(this).parent().index();
+                if (index !== -1) {
+                    closeTab(index);
+                }
+            }
+        });
     }
 
     // Chuyển giỏ hàng
     function switchGioHang(idx) {
         currentGioHang = idx;
-        saveGioHangsToStorage(); // Lưu trạng thái hiện tại
+        saveGioHangsToStorage();
         renderTabs();
-        loadGioHang(); // Load dữ liệu từ server thay vì render trực tiếp
+        loadGioHang();
     }
 
     // Load thông tin giỏ hàng từ server
@@ -1162,7 +1758,10 @@
             showError('Lỗi khi tải thông tin giỏ hàng!');
         });
     }
-
+    function resetFilter() {
+        document.getElementById("searchName").value = "";
+        renderProductModal(); // load lại toàn bộ sản phẩm
+    }
     // Render danh sách sản phẩm trong giỏ hàng
     function renderGioHang() {
         let gh = gioHangs[currentGioHang];
@@ -1179,6 +1778,7 @@
                     <tr>
                         <td class="text-center">${i + 1}</td>
                         <td class="text-center"><img src="${p.anh}" width="60" class="rounded"/></td>
+                            <td class="text-center fw-bold">${p.ma}</td>
                         <td>
                             <div class="fw-bold">${p.ten}</div>
                             <small class="text-muted">
@@ -1189,7 +1789,7 @@
                         </td>
                         <td class="text-end">
                             ${p.giaGoc && p.giaGoc > p.giaBan ? `<div><small class="text-muted text-decoration-line-through">${p.giaGoc.toLocaleString()} VND</small></div>` : ''}
-                            <div class="fw-bold text-danger">${p.giaBan.toLocaleString()} VND</div>
+                                <div class="fw-bold text-danger">${(p.giaBan || 0).toLocaleString()} VND</div>
                         </td>
                         <td class="text-center">
                             <div class="input-group input-group-sm" style="width: 120px;">
@@ -1219,6 +1819,7 @@
                             <tr>
                                 <th class="text-center" style="width: 60px;">STT</th>
                                 <th class="text-center" style="width: 80px;">Ảnh</th>
+                                <th style="width: 120px;">Mã</th>
                                 <th style="width: 300px;">Sản phẩm</th>
                                 <th class="text-end" style="width: 120px;">Giá bán</th>
                                 <th class="text-center" style="width: 140px;">Số lượng</th>
@@ -1377,6 +1978,17 @@
         });
     }
 
+    function applyFilter() {
+        const keyword = document.getElementById("searchName").value.toLowerCase();
+
+        const filtered = products.filter(p =>
+            (p.name && p.name.toLowerCase().includes(keyword)) ||
+            (p.ma && p.ma.toLowerCase().includes(keyword))
+        );
+
+        renderProductList(filtered, "productList");
+    }
+
     // Xóa sản phẩm khỏi giỏ hàng
     function removeProduct(productId) {
         const gh = gioHangs[currentGioHang];
@@ -1436,14 +2048,15 @@
         let html = `<table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Ảnh</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Họa tiết</th><th>Tồn kho</th><th>Hành động</th>
+                                <th>Ảnh</th><th>Mã SP</th><th>Tên sản phẩm</th><th>Giá bán</th><th>Kích cỡ</th><th>Màu sắc</th><th>Họa tiết</th><th>Tồn kho</th><th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${availableProducts.map(p => `
                             <tr>
-                                <td><img src="${p.img}" width="60"/></td>
-                                <td>${p.name}</td>
+                                    <td><img src="${p.img}" width="60"/></td>
+            <td><b style="color:#0d6efd">${p.ma}</b></td>
+    <td>${p.name}</td>
                                 <td>
             ${(p.originalPrice && p.originalPrice > p.price)
                 ? `<span style="display:inline-flex;align-items:center;gap:8px;">
@@ -1473,7 +2086,101 @@
                 </table>`;
         $('#productList').html(html);
     }
+    function renderDiscountProducts() {
 
+        const discountProducts = products.filter(p =>
+            p.originalPrice && p.price && p.originalPrice > p.price
+        );
+
+        if (discountProducts.length === 0) {
+            document.getElementById("discountProductList").innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    Không có sản phẩm giảm giá
+                </div>
+            `;
+            return;
+        }
+
+        renderProductList(discountProducts, "discountProductList");
+    }
+    function renderProductList(list, elementId) {
+        let html = `<table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Ảnh</th>
+                    <th>Mã SP</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Giá bán</th>
+                    <th>Kích cỡ</th>
+                    <th>Màu sắc</th>
+                    <th>Họa tiết</th>
+                    <th>Tồn kho</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        list.forEach(p => {
+
+            // tránh lỗi undefined
+            const price = p.price || 0;
+            const originalPrice = p.originalPrice || 0;
+
+            html += `
+            <tr>
+                <td>
+                    <img src="${p.img || ''}" width="50"/>
+                </td>
+                     
+                    <td><b style="color:#0d6efd">${p.ma || ''}</b></td>
+
+                <td>
+                    ${p.name || ''}
+                    ${originalPrice > price ? '<span class="badge bg-danger ms-1">SALE</span>' : ''}
+                </td>
+
+                <td>
+                    ${(originalPrice > price)
+                    ? `
+                            <div class="text-muted text-decoration-line-through">
+                                ${originalPrice.toLocaleString()} VND
+                            </div>
+                            <div class="text-danger fw-bold">
+                                ${price.toLocaleString()} VND
+                            </div>
+                          `
+                    : `<div class="fw-bold">${price.toLocaleString()} VND</div>`
+                }
+                </td>
+
+                <td>${p.size || p.kichCo || ''}</td>
+                <td>${p.color || p.mauSac || ''}</td>
+                <td>${p.pattern || p.hoaTiet || ''}</td>
+
+                <td>
+                    <span class="badge bg-dark">
+                        ${p.stock || 0}
+                    </span>
+                </td>
+
+                               <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-success btn-sm" onclick="addProductQuick('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Thêm nhanh (SL: 1)">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="addProductToGioHang('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} title="Chọn số lượng">
+                                                <i class="bi bi-123"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+            </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+
+        document.getElementById(elementId).innerHTML = html;
+    }
     // Thêm sản phẩm vào giỏ hàng với tùy chọn số lượng
     function addProductToGioHang(productId, quantity = null) {
         if (gioHangs.length === 0) {
@@ -1578,9 +2285,15 @@
         const modal = document.getElementById('quantityModal');
         const productId = modal.getAttribute('data-product-id');
         const quantity = parseInt(document.getElementById('quantityInput').value);
+        const productInfo = products.find(p => p.id === productId);
 
         if (isNaN(quantity) || quantity <= 0) {
-            showError('Vui lòng nhập số lượng hợp lệ!');
+            showError('Số lượng phải lớn hơn 0!');
+            return;
+        }
+
+        if (productInfo && quantity > productInfo.stock) {
+            showError(`Số lượng không được vượt quá tồn kho (${productInfo.stock}).`);
             return;
         }
 
@@ -1638,13 +2351,14 @@
         lastRenderedCustomerList = list || [];
         let html = lastRenderedCustomerList.map((c, i) => `
                     <tr>
-                        <td>${i + 1}</td>
-                        <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td>
+                        <td><b>${i + 1}</b></td>
+                        @* <td><img src="${(c.img || '/img/default-user.png')}" width="32" height="32" class="rounded-circle object-fit-cover"/></td> *@
                         <td>${(c.name || '—')}</td>
                         <td>${(c.email || '—')}</td>
                         <td>${(c.phone || '—')}</td>
                         <td>${(c.point != null ? c.point : 0)}</td>
-                        <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
+                               <td>${(c.rankName || '—')}</td>
+                            <td><button class="btn btn-outline-primary btn-sm" onclick="selectCustomer('${c.id}')">Chọn</button></td>
                     </tr>
                 `).join('');
         if (!html) html = '<tr><td colspan="7" class="text-center text-muted">Không có khách hàng nào. Thêm mới hoặc chọn Khách vãng lai.</td></tr>';
@@ -1662,13 +2376,17 @@
         $('#customerDetails').show();
         $('#customerPhone').text(selectedCustomer.phone || '—');
         $('#customerEmail').text(selectedCustomer.email || '—');
-        $('#customerPoint').text(selectedCustomer.point != null ? selectedCustomer.point : 0);
+        const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
+        $('#customerPoint').text(currentPoint);
+        $('#requestedUsedPoints').val(0).attr('max', getPointLimitByConfig(currentPoint));
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
         $('#btnClearCustomer').show();
-        $('#btnShowAddress').show();
-        $('#btnAddAddress').show();
+        @* $('#btnShowAddress').show();
+        $('#btnAddAddress').show(); *@
 
         // Reset phiếu giảm giá khi chọn khách hàng mới
-        $('#discountCode').val('');
+            $('#discountCode').val('');
         discountValue = 0;
 
         // Nếu đang bật giao hàng thì tự động load địa chỉ
@@ -1695,6 +2413,9 @@
         $('#customerPhone').text('');
         $('#customerEmail').text('');
         $('#customerPoint').text('0');
+        $('#requestedUsedPoints').val(0).attr('max', 0);
+        $('#pointSwitch').prop('checked', false);
+        usePoint = false;
 
         // Ẩn nút hủy chọn và các nút địa chỉ
         $('#btnClearCustomer').hide();
@@ -1725,31 +2446,66 @@
         // Cập nhật lại thông tin thanh toán
         updatePaymentInfo();
     }
+    function clearCustomerForm() {
+        // Xóa input
+        // ===== XÓA THÔNG TIN KHÁCH =====
+        $('#shipName').val('');
+        $('#shipPhone').val('');
+        $('#shipEmail').val('');
 
+        // ===== XÓA ĐỊA CHỈ =====
+        $('#shipTinh').val('0').change();
+        $('#shipQuan').html('<option value="0">Quận Huyện</option>');
+        $('#shipPhuong').html('<option value="0">Phường Xã</option>');
+
+        $('#shipDiaChiChiTiet').val('');
+        $('#shipAddress').val('');
+        $('#shipNote').val('');
+
+        // ===== RESET BIẾN =====
+        selectedCustomer = null;
+        selectedCustomerId = null;
+
+        // Nếu có cache
+        if (typeof lastRenderedCustomerList !== 'undefined') {
+            lastRenderedCustomerList = [];
+        }
+    }
     // Toggle giao hàng
     function toggleShipping() {
         useShipping = $('#shippingSwitch').is(':checked');
+
         if (useShipping) {
-            $('#shippingFormCard').show();
-            $('#btnShowAddress').show();
-            $('#btnAddAddress').show();
-            // Tính phí vận chuyển động thay vì cố định
+            $('#shippingFormCard, #btnShowAddress, #btnAddAddress, #shippingFeeContainer').show();
+
             calculateShippingFee();
-            // Nếu đã chọn khách hàng thì tự động điền địa chỉ
-            if (selectedCustomer) {
+            if (selectedCustomer && selectedCustomerId) {
                 loadCustomerAddress();
             }
         } else {
-            $('#shippingFormCard').hide();
-            $('#btnShowAddress').hide();
-            $('#btnAddAddress').hide();
-            // Reset phí vận chuyển về 0
+            $('#shippingFormCard, #btnShowAddress, #btnAddAddress').hide();
+
             shippingFee = 0;
-            $('#shippingFee').val(0);
-            // Xóa hiển thị phí vận chuyển
-            $('#shippingFeeDisplay').html('');
+            resetShippingDisplayState();
+
+            clearCustomerForm();
         }
+
         updatePaymentInfo();
+    }
+
+    function resetShippingDisplayState() {
+        shippingOriginalFee = 0;
+        shippingDiscountAmountValue = 0;
+        shippingDiscountMessageValue = '';
+
+        $('#shippingFeeContainer').text('+ 0 VND');
+        $('#shippingOriginalAmount').text('0 VND');
+        $('#shippingDiscountAmount').text('- 0 VND');
+        $('#shippingDiscountMessage').text('');
+        $('#shippingOriginalRow').addClass('d-none');
+        $('#shippingDiscountRow').addClass('d-none');
+        $('#shippingDiscountMessageRow').addClass('d-none');
     }
 
     // Load địa chỉ khách hàng (chỉ khi chọn khách có trong DB, không áp dụng cho khách vãng lai)
@@ -1788,7 +2544,73 @@
     // Toggle sử dụng điểm
     function togglePoint() {
         usePoint = $('#pointSwitch').is(':checked');
+
+        if (usePoint) {
+            $('#requestedUsedPoints').closest('.mb-2').show();
+            $('#requestedUsedPoints').val(0);
+        } else {
+            $('#requestedUsedPoints').closest('.mb-2').hide();
+            $('#requestedUsedPoints').val(0);
+        }
+
         updatePaymentInfo();
+    }
+
+    function getRequestedPointForUse() {
+        if (!selectedCustomer || selectedCustomer.isGuest || !usePoint) {
+            return 0;
+        }
+
+        let gh = gioHangs[currentGioHang];
+        const total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
+        const discount = discountValue || 0;
+        const maxUsable = getMaxUsablePoint(total, discount);
+        const requested = Math.max(0, parseInt($('#requestedUsedPoints').val(), 10) || 0);
+        if (requested > maxUsable) {
+            $('#requestedUsedPoints').val(maxUsable);
+            return maxUsable;
+        }
+
+        return requested;
+    }
+
+    async function loadPointRate() {
+        try {
+            const response = await fetch('/Admin/ClientBanHangTaiQuay/cau-hinh-ban-hang');
+            if (!response.ok) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Không lấy được cấu hình điểm';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+
+            const data = await response.json();
+            const config = data?.config || {};
+            const rate = Number(config.soTienGiamTrenMotDiem ?? config.SoTienGiamTrenMotDiem);
+            maxPointsPerOrder = Math.max(0, Number(config.diemToiDaSuDungMoiDon ?? config.DiemToiDaSuDungMoiDon) || 0);
+            if (!Number.isFinite(rate) || rate <= 0) {
+                moneyPerPoint = 0;
+                const rateLabel = document.getElementById('pointRateLabel');
+                if (rateLabel) rateLabel.textContent = 'Cấu hình quy đổi điểm chưa hợp lệ';
+                $('#pointSwitch').prop('checked', false);
+                usePoint = false;
+                updatePaymentInfoWithoutRecalculation();
+                return;
+            }
+            moneyPerPoint = rate;
+
+            const currentPoint = Number(selectedCustomer?.point || 0);
+            $('#requestedUsedPoints').attr('max', getPointLimitByConfig(currentPoint));
+            const gh = gioHangs[currentGioHang];
+            const total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
+            updatePointRateLabel(total, discountValue || 0);
+            updatePaymentInfoWithoutRecalculation();
+        } catch (error) {
+            console.error('Không tải được cấu hình quy đổi điểm:', error);
+        }
     }
 
     // Cập nhật thông tin thanh toán (có tính lại phí vận chuyển)
@@ -1796,19 +2618,26 @@
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: update both point discount display elements
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        // cap the input at max usable so user can't over-enter
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+        updatePointRateLabel(total, discount);
+
         $('#shippingFee').val(shippingFee);
 
-        // Tự động tính lại phí vận chuyển khi tổng tiền thay đổi (nếu đang bật giao hàng)
         if (useShipping && total > 0) {
             calculateShippingFee();
         }
@@ -1819,16 +2648,23 @@
         let gh = gioHangs[currentGioHang];
         let total = gh && gh.products ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
         let discount = discountValue || 0;
-        let point = (selectedCustomer && usePoint) ? selectedCustomer.point * 1000 : 0; // ví dụ 1 điểm = 1000 VND
+        let pointUsed = getRequestedPointForUse();
+        let point = pointUsed * moneyPerPoint;
         let pay = total - discount - point + shippingFee;
         if (pay < 0) pay = 0;
 
         $('#goodsAmount').text(total.toLocaleString() + " VND");
-        $('#discountAmount').text(discount.toLocaleString() + " VND");
-        $('#payAmount').text(pay.toLocaleString() + " VND");
+        $('#discountAmount').text("- " + discount.toLocaleString() + " VND");
         $('#totalAmount').text(pay.toLocaleString() + " VND");
 
-        // Cập nhật phí vận chuyển trong input
+        // Fix 1: same update here
+        $('#pointDiscountLabel').text("- " + point.toLocaleString() + " VND");
+        $('#totalPointDiscount').text("- " + point.toLocaleString() + " VND");
+
+        const maxUsable = getMaxUsablePoint(total, discount);
+        $('#requestedUsedPoints').attr('max', maxUsable);
+        updatePointRateLabel(total, discount);
+
         $('#shippingFee').val(shippingFee);
     }
 
@@ -1878,30 +2714,58 @@
     function payInvoice() {
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
+        if (!validateShippingAddressForPayment()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
         let customerPaid = parseInt($('#modalCustomerPaid').val()) || 0;
-        let pay = parseInt($('#payAmount').text().replace(/\D/g, '')) || 0;
+        let pay = parseInt($('#totalAmount').text().replace(/\D/g, '')) || 0;
 
         if (customerPaid < pay) {
             showError('Khách đưa chưa đủ tiền!');
             return;
         }
 
+        const tinhText = $('#shipTinh option:selected').text() || '';
+        const quanText = $('#shipQuan option:selected').text() || '';
+        const shipQuanVal = $('#shipQuan').val();
+        const shipPhuongVal = $('#shipPhuong').val();
+        const parsedDistrictId = parseInt(shipQuanVal, 10);
+        const hasValidDistrictId = Number.isFinite(parsedDistrictId) && parsedDistrictId > 0;
+        const hasValidWardCode = !!(shipPhuongVal && shipPhuongVal !== '0');
+
+        const pointSwitchOn = $('#pointSwitch').is(':checked') && selectedCustomer && !selectedCustomer.isGuest;
+        const rawPointReq = parseInt($('#requestedUsedPoints').val(), 10);
+        let requestedPtsForApi = 0;
+        let usePointForApi = false;
+        if (pointSwitchOn) {
+            usePointForApi = true;
+            requestedPtsForApi = (Number.isFinite(rawPointReq) && rawPointReq > 0)
+                ? getRequestedPointForUse()
+                : null;
+        }
+
         // Dữ liệu gửi đi (khách vãng lai: lấy tên/SĐT từ form giao hàng nếu có)
         let dto = {
             idGioHang: gh.id,
+            customerId: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
             customerName: selectedCustomer ? (selectedCustomer.isGuest ? ($('#shipName').val() || 'Khách vãng lai') : selectedCustomer.name) : ($('#shipName').val() || ''),
             customerPhone: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipPhone').val() : selectedCustomer.phone) : $('#shipPhone').val(),
             customerEmail: selectedCustomer ? (selectedCustomer.isGuest ? $('#shipEmail').val() : selectedCustomer.email) : $('#shipEmail').val(),
             address: $('#shipAddress').val(),
             discountCode: $('#discountCode').val(),
-            usePoint: usePoint,
+            usePoint: usePointForApi,
+            requestedUsedPoints: requestedPtsForApi,
             shipping: useShipping,
             paymentMethod: paymentMethodCode,
             customerPaid: customerPaid,
-            shippingFee: shippingFee
+            shippingFee: shippingFee,
+            province: tinhText && tinhText !== 'Tỉnh Thành' ? tinhText : '',
+            district: quanText && quanText !== 'Quận Huyện' ? quanText : '',
+            toDistrictId: hasValidDistrictId ? parsedDistrictId : null,
+            toWardCode: hasValidWardCode ? String(shipPhuongVal) : null,
+            weight: (hasValidDistrictId && hasValidWardCode) ? 500 : null,
+            shippingFeeSource: 'Config'
         };
 
         // Nếu chọn chuyển khoản/thẻ (VNPay): theo mã thường là "vnpay", "bank", "chuyển khoản", "thẻ"
@@ -1937,8 +2801,18 @@
             data: JSON.stringify(dto),
             success: function (res) {
                 showSuccess('Thanh toán thành công!');
-                $('#confirmPaymentModal').modal('hide');
+                // RESET KHÁCH HÀNG
+                clearCustomerForm();
 
+                // Tắt giao hàng
+                $('#shippingSwitch').prop('checked', false);
+
+                // 🔥 Reset luôn biến control
+                useShipping = false;
+
+                toggleShipping();
+
+                $('#confirmPaymentModal').modal('hide');
                 // Xóa giỏ hàng đã thanh toán
                 gioHangs.splice(currentGioHang, 1);
                 if (gioHangs.length === 0) {
@@ -2040,32 +2914,99 @@
         }
         return false; // Không khôi phục được
     }
+    $('#productModal').on('shown.bs.modal', function () {
+        const input = document.getElementById("searchName");
 
+        if (input) {
+            input.addEventListener("input", applyFilter);
+        }
+    });
     // Khởi tạo giỏ hàng đầu tiên và load dữ liệu động
     $(document).ready(function () {
+        $('#shippingSwitch').prop('checked', false);
+        $('#pointSwitch').prop('checked', false);
+        $('#requestedUsedPoints').closest('.mb-2').hide();
+        useShipping = false;
+        usePoint = false;
+        shippingFee = 0;
+        discountValue = 0;
+        $('#shippingFormCard').hide();
+        $('#btnShowAddress').hide();
+        $('#btnAddAddress').hide();
+        $('#requestedUsedPoints').val(0).closest('.mb-2').hide();
+        $('#pointDiscountLabel').text("- 0 VND");
+        $('#totalPointDiscount').text("- 0 VND");
+        $('#discountCode').val('');
         // Thử khôi phục giỏ hàng từ localStorage trước
         if (!restoreGioHangsFromStorage()) {
-            // Nếu không khôi phục được, tạo giỏ hàng mới
             taoGioHang();
         }
+
         loadProducts();
         loadCustomers();
-        loadPaymentMethods(); // Load phương thức thanh toán động từ API
+        loadPaymentMethods();
+        loadPointRate();
 
-        $('#btnAddInvoice').click(function () {
-            if (gioHangs.length < maxGioHangs) {
-                taoGioHang();
-            } else {
-                showWarning('Chỉ được tối đa 5 giỏ hàng chờ!');
-            }
-        });
-
+        $('#btnAddInvoice').click(taoGioHang);
         // Khi mở modal chọn sản phẩm, luôn reload sản phẩm mới nhất
         $('#btnAddProduct').click(function () {
             loadProducts(function () {
                 renderProductModal();
                 $('#productModal').modal('show');
             });
+        });
+
+        $('#btnQRCode').click(openQrScannerModal);
+        addMiddleClickSupport();
+        $('#btnQrScan').click(function () {
+            lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+        });
+
+        $('#qrCodeInput').on('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                lookupProductByQrAndOpenQuantity($('#qrCodeInput').val());
+            }
+        });
+
+        $('#btnQrCameraToggle').click(function () {
+            toggleQrCamera();
+        });
+
+        $('#btnQrUpload').click(function () {
+            $('#qrFileInput').click();
+        });
+
+        $('#qrFileInput').on('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (typeof Html5Qrcode === 'undefined') {
+                showError('Thư viện quét QR chưa tải xong. Vui lòng tải lại trang.');
+                return;
+            }
+            stopQrCamera().then(function () {
+                $('#btnQrCameraToggle').data('on', false);
+                $('#btnQrCameraToggleText').text('Bật camera');
+                $('#qrReader').empty();
+                const h = new Html5Qrcode('qrReader');
+                h.scanFile(file, true).then(function (decodedText) {
+                    const text = (decodedText || '').trim();
+                    try { h.clear(); } catch (x) { }
+                    $('#qrCodeInput').val(text);
+                    lookupProductByQrAndOpenQuantity(text);
+                }).catch(function () {
+                    showError('Không đọc được mã QR từ ảnh. Thử ảnh rõ nét hơn.');
+                    try { h.clear(); } catch (x) { }
+                });
+            });
+            e.target.value = '';
+        });
+
+        $('#qrScannerModal').on('hidden.bs.modal', function () {
+            stopQrCamera();
+            $('#btnQrCameraToggle').data('on', false);
+            $('#btnQrCameraToggleText').text('Bật camera');
+            $('#qrReader').empty();
         });
 
         // Cập nhật thông tin thanh toán ban đầu
@@ -2149,6 +3090,16 @@
         if (!selectedCustomer) return;
 
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang', { customerId: selectedCustomer.id }, function (data) {
+
+            // ✅ LẤY ID đã lưu
+            const savedId = $('#selectedAddressId').val();
+
+            if (savedId) {
+                selectedAddressId = savedId;
+            } else {
+                selectedAddressId = null;
+            }
+
             if (data && Array.isArray(data) && data.length > 0) {
                 renderAddressList(data);
                 $('#addressList').show();
@@ -2157,19 +3108,15 @@
                 $('#addressList').hide();
                 $('#noAddressMessage').show();
             }
-        }).fail(function (xhr, status, error) {
-            console.error('Lỗi khi lấy danh sách địa chỉ:', error);
-            $('#addressList').hide();
-            $('#noAddressMessage').show();
         });
     }
-
+    let selectedAddressId = null;
     // Render danh sách địa chỉ
     function renderAddressList(addresses) {
         let html = '';
         addresses.forEach((address, index) => {
             const isDefault = address.laMacDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : '';
-            const isSelected = (address.diaChiChiTiet === $('#shipAddress').val()) ? 'border-primary' : 'border-light';
+            const isSelected = (address.id === selectedAddressId);
 
             // Escape các ký tự đặc biệt để tránh lỗi JavaScript
             const safeTenNguoiNhan = (address.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
@@ -2177,43 +3124,51 @@
             const safeDiaChiChiTiet = (address.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
 
             html += `
-                        <div class="card mb-2 address-item ${isSelected}" style="cursor: pointer;" onclick="selectAddress('${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <h6 class="card-title mb-1">
-                                            ${address.tenNguoiNhan || 'N/A'} ${isDefault}
-                                        </h6>
-                                        <p class="card-text mb-1">
-                                            <i class="bi bi-telephone"></i> ${address.sdtNguoiNhan || 'N/A'}
-                                        </p>
-                                        <p class="card-text text-muted mb-0">
-                                            <i class="bi bi-geo-alt"></i> ${address.diaChiChiTiet || 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div class="ms-2">
-                                        <i class="bi bi-check-circle-fill text-primary" style="display: ${isSelected.includes('border-primary') ? 'block' : 'none'};"></i>
+
+                                 <div class="card mb-2 address-item ${isSelected ? 'active' : ''}"
+             style="cursor: pointer;"
+             onclick="selectAddress(event, '${address.id}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title mb-1">
+                                                ${address.tenNguoiNhan || 'N/A'} ${isDefault}
+                                            </h6>
+                                            <p class="card-text mb-1">
+                                                <i class="bi bi-telephone"></i> ${address.sdtNguoiNhan || 'N/A'}
+                                            </p>
+                                            <p class="card-text text-muted mb-0">
+                                                <i class="bi bi-geo-alt"></i> ${address.diaChiChiTiet || 'N/A'}
+                                            </p>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
         });
 
         $('#addressList').html(html);
     }
 
-    // Chọn địa chỉ
-    function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
+    // Chọn địa chỉ (legacy - giữ lại để tham chiếu)
+    function selectAddressLegacy(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+
+        // ✅ Lưu ID
+        selectedAddressId = addressId;
+        $('#selectedAddressId').val(addressId);
+        // ❌ Bỏ chọn tất cả
+        $('.address-item').removeClass('active');
+
+        // ✅ Chọn item hiện tại
+        let selectedItem = event.currentTarget;
+        $(selectedItem).addClass('active');
+
+        // ✅ Điền form
         $('#shipName').val(tenNguoiNhan);
         $('#shipPhone').val(sdtNguoiNhan);
         $('#shipAddress').val(diaChiChiTiet);
 
-        // Đóng modal
-        $('#selectAddressModal').modal('hide');
-
-        // Hiển thị thông báo
         showSuccess('Đã chọn địa chỉ giao hàng!');
     }
 
@@ -2225,35 +3180,35 @@
         $('<style>')
             .prop('type', 'text/css')
             .html(`
-                        .address-item {
-                            transition: all 0.3s ease;
-                            border: 2px solid #e9ecef;
-                        }
-                        .address-item:hover {
-                            border-color: #007bff;
-                            box-shadow: 0 2px 8px rgba(0,123,255,0.15);
-                            transform: translateY(-1px);
-                        }
-                        .address-item.border-primary {
-                            border-color: #007bff;
-                            background-color: #f8f9ff;
-                        }
-                        .address-item .card-body {
-                            padding: 1rem;
-                        }
-                        .address-item .card-title {
-                            font-size: 1rem;
-                            font-weight: 600;
-                            color: #333;
-                        }
-                        .address-item .card-text {
-                            font-size: 0.9rem;
-                            line-height: 1.4;
-                        }
-                        .address-item .bi {
-                            margin-right: 0.5rem;
-                        }
-                    `)
+                            .address-item {
+                                transition: all 0.3s ease;
+                                border: 2px solid #e9ecef;
+                            }
+                            .address-item:hover {
+                                border-color: #007bff;
+                                box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+                                transform: translateY(-1px);
+                            }
+                               .address-item.active {
+            border: 2px solid #007bff !important;
+            background-color: #f8f9ff;
+        }
+                            .address-item .card-body {
+                                padding: 1rem;
+                            }
+                            .address-item .card-title {
+                                font-size: 1rem;
+                                font-weight: 600;
+                                color: #333;
+                            }
+                            .address-item .card-text {
+                                font-size: 0.9rem;
+                                line-height: 1.4;
+                            }
+                            .address-item .bi {
+                                margin-right: 0.5rem;
+                            }
+                        `)
             .appendTo('head');
     });
 
@@ -2393,8 +3348,12 @@
             if (addresses && addresses.length > 0) {
                 addresses.forEach(addr => {
                     const isDefault = addr.laMacDinh ? '<span class="badge bg-primary">Mặc định</span>' : '';
+                    const safeTenNguoiNhan = (addr.tenNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeSdtNguoiNhan = (addr.sdtNguoiNhan || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const safeDiaChiChiTiet = (addr.diaChiChiTiet || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const addrId = addr.id || addr.idDiaChi || '';
                     addressHtml += `
-                                <div class="address-card card mb-3" onclick="selectAddress('${addr.idDiaChi}', '${addr.tenNguoiNhan || ''}', '${addr.sdtNguoiNhan || ''}', '${addr.diaChiChiTiet || ''}')">
+                                    <div class="address-card card mb-3 address-item" onclick="selectAddress(event, '${addrId}', '${safeTenNguoiNhan}', '${safeSdtNguoiNhan}', '${safeDiaChiChiTiet}')">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
@@ -2426,32 +3385,37 @@
     }
 
     // Chọn địa chỉ từ modal
-    async function selectAddress(addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
-        // Điền thông tin vào form giao hàng
-        if (tenNguoiNhan && tenNguoiNhan !== 'N/A') {
-            $('#shipName').val(tenNguoiNhan);
-        }
-        if (sdtNguoiNhan && sdtNguoiNhan !== 'N/A') {
-            $('#shipPhone').val(sdtNguoiNhan);
+    function selectAddress(event, addressId, tenNguoiNhan, sdtNguoiNhan, diaChiChiTiet) {
+        // Lưu ID địa chỉ đã chọn để bind về form submit
+        selectedAddressId = addressId || null;
+        $('#selectedAddressId').val(addressId || '');
+
+        // Đồng bộ trạng thái chọn giữa các loại card cũ/mới
+        $('.address-item, .address-card').removeClass('active border-primary').addClass('border-light');
+        const selectedItem = event && event.currentTarget ? event.currentTarget : null;
+        if (selectedItem) {
+            $(selectedItem).removeClass('border-light').addClass('active border-primary');
+            $(selectedItem).find('.bi-check-circle-fill').show();
         }
 
-        // Sử dụng logic parse và populate dropdown như checkout
-        if (diaChiChiTiet) {
-            await populateAddressFromString(diaChiChiTiet);
+        // Đổ dữ liệu lên form giao hàng
+        $('#shipName').val(tenNguoiNhan || '');
+        $('#shipPhone').val(sdtNguoiNhan || '');
+        $('#shipAddress').val(diaChiChiTiet || '');
+
+        // Cố gắng map thêm vào ô địa chỉ chi tiết/dropdown nếu parse được
+        const parsedAddress = parseAddressString(diaChiChiTiet || '');
+        if (parsedAddress && parsedAddress.success) {
+            $('#shipDiaChiChiTiet').val(parsedAddress.chiTiet || '');
+            if (typeof populateDropdownsFromParsedAddress === 'function') {
+                populateDropdownsFromParsedAddress(parsedAddress);
+            }
+        } else {
+            $('#shipDiaChiChiTiet').val(diaChiChiTiet || '');
         }
 
-        // Lưu ID địa chỉ đã chọn
-        $('#selectedAddressId').val(addressId);
-
-        // Đóng modal
+        showSuccess('Đã chọn địa chỉ giao hàng!');
         $('#selectAddressModal').modal('hide');
-
-        // Tính lại phí vận chuyển nếu có địa chỉ
-        if (diaChiChiTiet && typeof calculateShippingFee === 'function') {
-            calculateShippingFee();
-        }
-
-        showSuccess('Đã chọn địa chỉ thành công!');
     }
 
     // Xóa form địa chỉ
@@ -2615,53 +3579,42 @@
 
     // Hiển thị thông tin phí vận chuyển chi tiết
     function updateShippingFeeDisplay(shippingResponse) {
-        const originalFee = shippingResponse.originalFee || 0;
-        const finalFee = shippingResponse.finalFee || 0;
-        const discountAmount = shippingResponse.discountAmount || 0;
-        const discountMessage = shippingResponse.discountMessage || '';
+        const originalFeeRaw = shippingResponse?.originalFee ?? shippingResponse?.OriginalFee ?? 0;
+        const finalFeeRaw = shippingResponse?.finalFee ?? shippingResponse?.FinalFee ?? 0;
+        const discountAmountRaw = shippingResponse?.discountAmount ?? shippingResponse?.DiscountAmount ?? 0;
+        const discountMessageRaw = shippingResponse?.discountMessage ?? shippingResponse?.DiscountMessage ?? '';
 
-        // Tạo HTML hiển thị phí vận chuyển
-        let feeDisplayHtml = '';
+        const originalFee = Number(originalFeeRaw) || 0;
+        const finalFee = Number(finalFeeRaw) || 0;
+        const discountAmount = Number(discountAmountRaw) || 0;
+        const discountMessage = String(discountMessageRaw || '').trim();
 
-        if (discountAmount > 0) {
-            // Có giảm giá
-            feeDisplayHtml = `
-                        <div class="shipping-fee-details">
-                            <div class="original-fee text-muted">
-                                <small>Phí gốc: <span style="text-decoration: line-through;">${originalFee.toLocaleString()} VNĐ</span></small>
-                            </div>
-                            <div class="final-fee text-success fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
-                            </div>
-                            <div class="discount-info text-success">
-                                <small><i class="bi bi-tag"></i> ${discountMessage}</small>
-                            </div>
-                        </div>
-                    `;
+        shippingOriginalFee = Math.max(originalFee, 0);
+        shippingFee = Math.max(finalFee, 0);
+        shippingDiscountAmountValue = Math.max(discountAmount, 0);
+        shippingDiscountMessageValue = discountMessage;
+
+        $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
+
+        const hasShippingDiscount = shippingDiscountAmountValue > 0;
+        if (hasShippingDiscount) {
+            $('#shippingOriginalAmount').text(`${shippingOriginalFee.toLocaleString('vi-VN')} VND`);
+            $('#shippingDiscountAmount').text(`- ${shippingDiscountAmountValue.toLocaleString('vi-VN')} VND`);
+            $('#shippingOriginalRow').removeClass('d-none');
+            $('#shippingDiscountRow').removeClass('d-none');
+
+            if (shippingDiscountMessageValue.length > 0) {
+                $('#shippingDiscountMessage').text(`Luu y: ${shippingDiscountMessageValue}`);
+                $('#shippingDiscountMessageRow').removeClass('d-none');
+            } else {
+                $('#shippingDiscountMessage').text('');
+                $('#shippingDiscountMessageRow').addClass('d-none');
+            }
         } else {
-            // Không có giảm giá
-            feeDisplayHtml = `
-                        <div class="shipping-fee-details">
-                            <div class="final-fee fw-bold">
-                                Phí vận chuyển: ${finalFee.toLocaleString()} VNĐ
-                            </div>
-                        </div>
-                    `;
-        }
-
-        // Tìm và cập nhật phần hiển thị phí vận chuyển
-        let feeDisplayElement = $('#shippingFeeDisplay');
-        if (feeDisplayElement.length === 0) {
-            // Tạo element mới nếu chưa có
-            $('#shippingFee').after('<div id="shippingFeeDisplay" class="mt-2"></div>');
-            feeDisplayElement = $('#shippingFeeDisplay');
-        }
-
-        feeDisplayElement.html(feeDisplayHtml);
-
-        // Hiển thị toast notification nếu có giảm giá
-        if (discountAmount > 0) {
-            showSuccess(`${discountMessage} - Tiết kiệm ${discountAmount.toLocaleString()} VNĐ!`);
+            $('#shippingOriginalRow').addClass('d-none');
+            $('#shippingDiscountRow').addClass('d-none');
+            $('#shippingDiscountMessage').text('');
+            $('#shippingDiscountMessageRow').addClass('d-none');
         }
     }
 
@@ -2679,12 +3632,13 @@
 
         // Khi dùng GHN: cần chọn đủ tỉnh, quận, phường. Không dùng GHN: chỉ cần tỉnh + quận
         const phuongText = $('#shipPhuong option:selected').text() || '';
-        const needWard = useGHN;
+        const needWard = false;
         const hasWard = phuongText && phuongText !== 'Phường Xã';
         if (!tinhText || tinhText === 'Tỉnh Thành' || !quanText || quanText === 'Quận Huyện' || (needWard && !hasWard)) {
             shippingFee = 0;
             $('#shippingFee').val(0);
-            $('#shippingFeeDisplay').html('');
+            resetShippingDisplayState();
+            updatePaymentInfoWithoutRecalculation();
             return;
         }
 
@@ -2697,10 +3651,13 @@
             District: quanText,
             OrderValue: orderValue
         };
+        if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
+            requestData.CustomerId = selectedCustomer.id;
+        }
         // GHN: gửi thêm ToDistrictId, ToWardCode, Weight để API tính phí chính xác
         const shipQuanVal = $('#shipQuan').val();
         const shipPhuongVal = $('#shipPhuong').val();
-        if (useGHN && shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
+        if (shipQuanVal && shipQuanVal !== '0' && shipPhuongVal && shipPhuongVal !== '0') {
             requestData.ToDistrictId = parseInt(shipQuanVal, 10);
             requestData.ToWardCode = String(shipPhuongVal);
             requestData.Weight = 500; // gram, mặc định
@@ -2713,8 +3670,9 @@
             data: JSON.stringify(requestData),
             success: function (response) {
                 console.log('Shipping calculation response:', response);
-                if (response && response.finalFee !== undefined) {
-                    shippingFee = response.finalFee;
+                const finalFeeResolved = response?.finalFee ?? response?.FinalFee;
+                if (response && finalFeeResolved !== undefined && finalFeeResolved !== null) {
+                    shippingFee = Number(finalFeeResolved) || 0;
                     $('#shippingFee').val(shippingFee);
 
                     // Hiển thị thông tin chi tiết phí vận chuyển
@@ -2726,6 +3684,8 @@
                     console.error('Invalid shipping response:', response);
                     shippingFee = 50000; // Fallback phí mặc định
                     $('#shippingFee').val(shippingFee);
+                    resetShippingDisplayState();
+                    $('#shippingFeeContainer').text(`+ ${shippingFee.toLocaleString('vi-VN')} VND`);
                     updatePaymentInfoWithoutRecalculation();
                 }
             },
@@ -2740,6 +3700,7 @@
                 // Fallback phí mặc định khi lỗi API
                 shippingFee = 50000;
                 $('#shippingFee').val(shippingFee);
+                resetShippingDisplayState();
 
                 // Hiển thị phí mặc định
                 updateShippingFeeDisplay({
@@ -2891,8 +3852,11 @@
 
             // Cập nhật địa chỉ đầy đủ sau khi điền xong
             setTimeout(() => {
-                concatenateShippingAddress();
-            }, 200);
+                renderTabs();
+                if (gioHangs.length > 0) {
+                    loadGioHang();
+                }
+            }, 300);
 
         } catch (error) {
             console.error('Error populating dropdowns from parsed address:', error);
@@ -3137,7 +4101,8 @@
 </script>
 
 <!-- Modal Chọn Địa Chỉ -->
-<div class="modal fade" id="selectAddressModal" tabindex="-1" aria-labelledby="selectAddressModalLabel" aria-hidden="true">
+<div class="modal fade" id="selectAddressModal" tabindex="-1" aria-labelledby="selectAddressModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -3154,6 +4119,10 @@
                         </div>
                         <p class="mt-2">Đang tải danh sách địa chỉ...</p>
                     </div>
+                </div>
+                <div id="noAddressMessage" style="display:none;" class="text-center py-4">
+                    <i class="bi bi-geo-alt" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="mt-2 text-muted">Khách hàng chưa có địa chỉ nào</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3190,22 +4159,27 @@
 
                     <!-- Dropdown chọn tỉnh thành, quận huyện, phường xã cho modal -->
                     <div class="css_select_div mb-3">
-                        <select class="css_select form-control" id="saveAddressTinh" name="saveAddressTinh" title="Chọn Tỉnh Thành">
+                        <select class="css_select form-control" id="saveAddressTinh" name="saveAddressTinh"
+                            title="Chọn Tỉnh Thành">
                             <option value="0">Tỉnh Thành</option>
                         </select>
-                        <select class="css_select form-control" id="saveAddressQuan" name="saveAddressQuan" title="Chọn Quận Huyện">
+                        <select class="css_select form-control" id="saveAddressQuan" name="saveAddressQuan"
+                            title="Chọn Quận Huyện">
                             <option value="0">Quận Huyện</option>
                         </select>
-                        <select class="css_select form-control" id="saveAddressPhuong" name="saveAddressPhuong" title="Chọn Phường Xã">
+                        <select class="css_select form-control" id="saveAddressPhuong" name="saveAddressPhuong"
+                            title="Chọn Phường Xã">
                             <option value="0">Phường Xã</option>
                         </select>
                     </div>
 
                     <!-- Địa chỉ chi tiết -->
-                    <input type="text" class="form-control mb-2" id="saveAddressChiTiet" name="saveAddressChiTiet" placeholder="Số nhà, tên đường...">
+                    <input type="text" class="form-control mb-2" id="saveAddressChiTiet" name="saveAddressChiTiet"
+                        placeholder="Số nhà, tên đường...">
 
                     <!-- Địa chỉ đầy đủ (readonly) -->
-                    <textarea class="form-control" id="saveAddressDetail" rows="3" readonly placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
+                    <textarea class="form-control" id="saveAddressDetail" rows="3" readonly
+                        placeholder="Địa chỉ đầy đủ sẽ hiển thị ở đây"></textarea>
                 </div>
                 <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="saveAddressDefault">

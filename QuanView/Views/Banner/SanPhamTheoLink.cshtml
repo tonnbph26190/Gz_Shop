@@ -1,0 +1,44 @@
+	@model QuanView.Models.BannerLinkProductListVm
+
+@{
+    ViewData["Title"] = Model.BannerTitle;
+}
+
+<div class="container py-4">
+    <h2 class="mb-4">@Model.BannerTitle</h2>
+
+    @if (!Model.Products.Any())
+    {
+        <div class="alert alert-warning">
+            Banner này chưa có sản phẩm nào.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var sp in Model.Products)
+            {
+                var image = string.IsNullOrWhiteSpace(sp.ThumbnailUrl) ? "/img/default-product.jpg" : sp.ThumbnailUrl;
+                var detailUrl = Url.Action("DetailByProduct", "SanPhamNguoiDung", new { id = sp.ProductId }) ?? "#";
+
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="@image" class="card-img-top" style="height: 220px; object-fit: cover;" alt="@sp.ProductName" />
+                        <div class="card-body d-flex flex-column">
+                            <div class="text-muted small mb-1">@sp.ProductCode</div>
+                            <h6 class="card-title">@sp.ProductName</h6>
+                            <div class="mt-auto">
+                                <div class="text-danger fw-bold mb-2">
+                                    @(sp.MinPrice?.ToString("N0") ?? "Liên hệ")
+                                </div>
+                                <a href="@detailUrl" class="btn btn-outline-danger btn-sm w-100">
+                                    Xem chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
