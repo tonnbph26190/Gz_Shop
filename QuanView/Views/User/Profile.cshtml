@@ -21,13 +21,15 @@
                   enctype="multipart/form-data">
 
                 <div class="text-center mb-4">
-                    <img src="@(string.IsNullOrEmpty(Model.AnhDaiDien) ? "/img/avatar-default.png" : Model.AnhDaiDien)"
+                    <img id="avatarPreview"
+                         src="@(string.IsNullOrEmpty(Model.AnhDaiDien) ? "/img/avatar-default.png" : Model.AnhDaiDien)"
                          style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:1px solid #ddd;" />
 
                     <div class="mt-3">
                         <label class="btn btn-outline-danger btn-sm">
                             Đổi ảnh đại diện
                             <input type="file"
+                                   id="avatarInput"
                                    name="avatar"
                                    accept="image/*"
                                    hidden />
@@ -77,3 +79,13 @@
         </div>
     </div>
 </div>
+<script>
+    document.getElementById("avatarInput").addEventListener("change", function (event) {
+        const file = event.target.files[0];
+
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            document.getElementById("avatarPreview").src = imageUrl;
+        }
+    });
+</script>

@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 
 namespace QuanView.Controllers
 {
@@ -20,13 +23,15 @@ namespace QuanView.Controllers
 
 		private async Task<KhachHang?> GetCurrentKhachHang()
 		{
-			var tenDangNhap = User.Identity?.Name;
+			var id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-			return await _context.KhachHang
-				.FirstOrDefaultAsync(x =>
-					x.TenKhachHang == tenDangNhap ||
-					x.Email == tenDangNhap ||
-					x.MaKhachHang == tenDangNhap);
+			if (Guid.TryParse(id, out var idKhachHang))
+			{
+				return await _context.KhachHang
+					.FirstOrDefaultAsync(x => x.IDKhachHang == idKhachHang);
+			}
+
+			return null;
 		}
 
 		public async Task<IActionResult> Profile()
@@ -84,14 +89,37 @@ namespace QuanView.Controllers
 			}
 
 			var tenMoi = tenKhachHang.Trim();
-			var emailMoi = email.Trim();
+			var emailMoi = email.Trim().ToLower();
 			var sdtMoi = soDienThoai.Trim();
+			if ((khachHang.Email ?? "").ToLower() != emailMoi)
+			{
+				var emailDaTonTai = await _context.KhachHang.AnyAsync(x =>
+					x.Email.ToLower() == emailMoi &&
+					x.IDKhachHang != khachHang.IDKhachHang);
 
+				if (emailDaTonTai)
+				{
+					ModelState.AddModelError("email", "Email này đã được sử dụng bởi tài khoản khác");
+					return View(khachHang);
+				}
+			}
+			if (khachHang.SoDienThoai != sdtMoi)
+			{
+				var sdtDaTonTai = await _context.KhachHang.AnyAsync(x =>
+					x.SoDienThoai == sdtMoi &&
+					x.IDKhachHang != khachHang.IDKhachHang);
+
+				if (sdtDaTonTai)
+				{
+					ModelState.AddModelError("soDienThoai", "Số điện thoại này đã được sử dụng bởi tài khoản khác");
+					return View(khachHang);
+				}
+			}
 			bool khongThayDoi =
-				khachHang.TenKhachHang == tenMoi &&
-				khachHang.Email == emailMoi &&
-				khachHang.SoDienThoai == sdtMoi &&
-				avatar == null;
+	khachHang.TenKhachHang == tenMoi &&
+	(khachHang.Email ?? "").ToLower() == emailMoi &&
+	khachHang.SoDienThoai == sdtMoi &&
+	avatar == null;
 
 			if (khongThayDoi)
 			{
@@ -102,7 +130,8 @@ namespace QuanView.Controllers
 			khachHang.TenKhachHang = tenMoi;
 			khachHang.Email = emailMoi;
 			khachHang.SoDienThoai = sdtMoi;
-
+			khachHang.LanCapNhatCuoi = DateTime.UtcNow;
+			khachHang.NguoiCapNhat = tenMoi;
 			if (avatar != null && avatar.Length > 0)
 			{
 				var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -134,6 +163,21 @@ namespace QuanView.Controllers
 
 			await _context.SaveChangesAsync();
 
+			var claims = new List<Claim>
+{
+	new Claim(ClaimTypes.NameIdentifier, khachHang.IDKhachHang.ToString()),
+	new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
+	new Claim(ClaimTypes.Email, khachHang.Email ?? ""),
+	new Claim(ClaimTypes.Role, "KhachHang"),
+	new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
+};
+
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+			await HttpContext.SignInAsync(
+				CookieAuthenticationDefaults.AuthenticationScheme,
+				new ClaimsPrincipal(identity));
+
 			TempData["Success"] = "Cập nhật thông tin thành công";
 			return RedirectToAction("Profile");
 		}
@@ -147,13 +191,7 @@ namespace QuanView.Controllers
 	string matKhauMoi,
 	string xacNhanMatKhau)
 		{
-			var tenDangNhap = User.Identity?.Name;
-
-			var khachHang = await _context.KhachHang
-				.FirstOrDefaultAsync(x =>
-					x.TenKhachHang == tenDangNhap ||
-					x.Email == tenDangNhap ||
-					x.MaKhachHang == tenDangNhap);
+			var khachHang = await GetCurrentKhachHang();
 
 			if (khachHang == null)
 			{
