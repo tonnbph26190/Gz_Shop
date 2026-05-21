@@ -899,6 +899,7 @@
     let customers = [];
     let lastRenderedCustomerList = []; // Danh sách đang hiển thị (full hoặc kết quả tìm kiếm) để chọn đúng
     let selectedCustomer = null;
+    let selectedCustomerId = null;
     let discountValue = 0; // Giá trị giảm giá hiện tại
     let useShipping = false; // Có sử dụng giao hàng không
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
@@ -913,6 +914,87 @@
     let isHandlingQrScan = false;
     let html5QrCodeInstance = null;
     let qrDecodeHandled = false;
+
+    function cloneCustomerForCart(customer) {
+        if (!customer) return null;
+        return {
+            id: customer.id || customer.iDKhachHang || null,
+            name: customer.name || customer.ten || customer.tenKhachHang || 'Khách vãng lai',
+            phone: customer.phone || customer.sdt || customer.soDienThoai || '',
+            email: customer.email || '',
+            point: customer.point != null ? customer.point : (customer.diem || 0),
+            rankName: customer.rankName || customer.tenHang || '',
+            isGuest: !!customer.isGuest
+        };
+    }
+
+    function getCurrentCart() {
+        return gioHangs.length > 0 ? gioHangs[currentGioHang] : null;
+    }
+
+    function setSelectedCustomerForCurrentCart(customer) {
+        const normalizedCustomer = cloneCustomerForCart(customer);
+        selectedCustomer = normalizedCustomer;
+        selectedCustomerId = normalizedCustomer && !normalizedCustomer.isGuest ? normalizedCustomer.id : null;
+
+        const gh = getCurrentCart();
+        if (gh) {
+            gh.customer = normalizedCustomer;
+        }
+
+        renderSelectedCustomer();
+        saveGioHangsToStorage();
+    }
+
+    function restoreSelectedCustomerFromCurrentCart() {
+        const gh = getCurrentCart();
+        selectedCustomer = cloneCustomerForCart(gh && gh.customer);
+        selectedCustomerId = selectedCustomer && !selectedCustomer.isGuest ? selectedCustomer.id : null;
+        renderSelectedCustomer();
+    }
+
+    function renderSelectedCustomer() {
+        if (!selectedCustomer) {
+            $('#customerName').text('khách lẻ').removeClass('bg-info bg-warning text-dark').addClass('bg-secondary');
+            $('#customerDetails').hide();
+            $('#customerPhone').text('');
+            $('#customerEmail').text('');
+            $('#customerPoint').text('0');
+            $('#requestedUsedPoints').val(0).attr('max', 0);
+            $('#pointSwitch').prop('checked', false);
+            $('#btnClearCustomer').hide();
+            $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
+            usePoint = false;
+            return;
+        }
+
+        if (selectedCustomer.isGuest) {
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-info').addClass('bg-warning text-dark');
+            $('#customerPhone').text('—');
+            $('#customerEmail').text('—');
+            $('#customerPoint').text('0');
+            $('#requestedUsedPoints').val(0).attr('max', 0);
+            $('#pointSwitch').prop('checked', false);
+            $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
+            usePoint = false;
+        } else {
+            const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-warning text-dark').addClass('bg-info');
+            $('#customerPhone').text(selectedCustomer.phone || '—');
+            $('#customerEmail').text(selectedCustomer.email || '—');
+            $('#customerPoint').text(currentPoint);
+            $('#requestedUsedPoints').val(0).attr('max', getPointLimitByConfig(currentPoint));
+            $('#pointSwitch').prop('checked', false);
+            @* $('#btnShowAddress').show();
+            $('#btnAddAddress').show(); *@
+            usePoint = false;
+        }
+
+        $('#customerDetails').show();
+        $('#btnClearCustomer').show();
+    }
 
     function getPointLimitByConfig(available) {
         if (maxPointsPerOrder > 0) {
@@ -1253,7 +1335,7 @@
 
     // Chọn khách vãng lai (không lưu DB, chỉ dùng cho đơn này)
     function selectGuestCustomer() {
-        selectedCustomer = { id: null, name: 'Khách vãng lai', phone: '', email: '', point: 0, isGuest: true };
+        setSelectedCustomerForCurrentCart({ id: null, name: 'Khách vãng lai', phone: '', email: '', point: 0, isGuest: true });
         $('#customerModal').modal('hide');
         $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary').addClass('bg-warning text-dark');
         $('#customerDetails').show();
@@ -1644,7 +1726,7 @@
     // Lưu tất cả giỏ hàng vào localStorage
     function saveGioHangsToStorage() {
         const gioHangData = {
-            gioHangs: gioHangs.map(gh => ({ id: gh.id, ma: gh.ma })),
+            gioHangs: gioHangs.map(gh => ({ id: gh.id, ma: gh.ma, customer: gh.customer || null })),
             currentGioHang: currentGioHang
         };
         localStorage.setItem('gioHangData', JSON.stringify(gioHangData));
@@ -1657,7 +1739,7 @@
             return;
         }
         const dto = {
-            idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
+            idKhachHang: null,
             nguoiTao: "Admin"
         };
 
@@ -1670,10 +1752,12 @@
                 const gioHang = {
                     id: res.idGioHang,
                     ma: res.maGioHang,
-                    products: []
+                    products: [],
+                    customer: null
                 };
                 gioHangs.push(gioHang);
                 currentGioHang = gioHangs.length - 1;
+                restoreSelectedCustomerFromCurrentCart();
 
                 saveGioHangsToStorage();
                 renderTabs();
@@ -1740,6 +1824,7 @@
     // Chuyển giỏ hàng
     function switchGioHang(idx) {
         currentGioHang = idx;
+        restoreSelectedCustomerFromCurrentCart();
         saveGioHangsToStorage();
         renderTabs();
         loadGioHang();
@@ -1752,6 +1837,10 @@
         const gioHang = gioHangs[currentGioHang];
         $.get(`/Admin/ClientBanHangTaiQuay/gio-hang/${gioHang.id}`, function (data) {
             gioHang.products = data.sanPhams || [];
+            if (!gioHang.customer && data.khachHang) {
+                gioHang.customer = cloneCustomerForCart(data.khachHang);
+            }
+            restoreSelectedCustomerFromCurrentCart();
             renderGioHang();
             updatePaymentInfo(); // Cập nhật thông tin thanh toán
         }).fail(function () {
@@ -2371,6 +2460,7 @@
         if (!c) return showWarning('Không tìm thấy khách hàng.');
         selectedCustomer = c;
         selectedCustomer.isGuest = false;
+        setSelectedCustomerForCurrentCart(selectedCustomer);
         $('#customerModal').modal('hide');
         $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-warning text-dark').addClass('bg-info');
         $('#customerDetails').show();
@@ -2406,6 +2496,12 @@
     // Hủy chọn khách hàng
     function clearCustomer() {
         selectedCustomer = null;
+        selectedCustomerId = null;
+        const currentCart = getCurrentCart();
+        if (currentCart) {
+            currentCart.customer = null;
+        }
+        saveGioHangsToStorage();
 
         // Reset thông tin hiển thị về khách lẻ
         $('#customerName').text('khách lẻ').removeClass('bg-info bg-warning text-dark').addClass('bg-secondary');
@@ -2467,6 +2563,7 @@
         selectedCustomerId = null;
 
         // Nếu có cache
+        restoreSelectedCustomerFromCurrentCart();
         if (typeof lastRenderedCustomerList !== 'undefined') {
             lastRenderedCustomerList = [];
         }
@@ -2885,7 +2982,8 @@
                                     return {
                                         id: data.idGioHang,
                                         ma: data.maGioHang,
-                                        products: data.sanPhams || []
+                                        products: data.sanPhams || [],
+                                        customer: cloneCustomerForCart(gh.customer || data.khachHang)
                                     };
                                 }
                                 return null;
@@ -2900,6 +2998,7 @@
                         if (gioHangs.length > 0) {
                             // Khôi phục currentGioHang, đảm bảo không vượt quá số lượng giỏ hàng
                             currentGioHang = Math.min(gioHangData.currentGioHang || 0, gioHangs.length - 1);
+                            restoreSelectedCustomerFromCurrentCart();
                             renderTabs();
                             loadGioHang();
                         } else {
