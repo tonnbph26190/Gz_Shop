@@ -253,9 +253,14 @@
                             <label class="fw-bold me-3">@((lang == "vi") ? "Số lượng:" : "Qty:")</label>
                             <div class="product-detail-qty">
                                 <button type="button" class="product-detail-qty-btn" id="btnMinus"><i class="fa fa-minus small"></i></button>
-                                <input type="number" id="soLuong" class="form-control text-center" 
-                                    style="width: 70px; border: none; font-weight: bold;" 
-                                    min="1" value="1"> 
+                                <input type="number"
+                                       id="soLuong"
+                                       class="form-control text-center"
+                                       style="width: 70px; border: none; font-weight: bold; background: transparent; box-shadow:none;"
+                                       min="1"
+                                       step="1"
+                                       inputmode="numeric"
+                                       value="1">
                                 <button type="button" class="product-detail-qty-btn" id="btnPlus"><i class="fa fa-plus small"></i></button>
                             </div>
                         </div>
@@ -443,61 +448,80 @@
         $(document).ready(function () {
             renderOptions();
             updatePriceAndQty();
-            
-            // --- QUANTITY KEYBOARD & INPUT LOGIC ---
+            // ======================
+            // QUANTITY CONTROL
+            // ======================
+
             const $qtyInput = $('#soLuong');
 
-            // 1. Handle Manual Typing & Keyboard
+            // Chỉ cho nhập số
             $qtyInput.on('input', function () {
-                let val = $(this).val();
-                let max = parseInt($(this).attr('max')) || 999;
 
-                // Prevent negative signs or decimals immediately
-                if (val.indexOf('-') !== -1) $(this).val(val.replace('-', ''));
-                
-                // If the user types a number higher than stock, cap it immediately
-                if (parseInt(val) > max) {
-                    $(this).val(max);
+                let value = $(this).val();
+
+                // Xóa ký tự không phải số
+                value = value.replace(/[^0-9]/g, '');
+
+                let max = parseInt($(this).attr('max')) || 1;
+
+                if (value === '') {
+                    $(this).val('');
+                    return;
                 }
+
+                value = parseInt(value);
+
+                // Không nhỏ hơn 1
+                if (value < 1) value = 1;
+
+                // Không vượt tồn kho
+                if (value > max) {
+                    alert(`Số lượng đã vượt quá tồn kho! Hiện chỉ còn ${max} sản phẩm.`);
+                    value = max;
+                }
+
+                $(this).val(value);
             });
 
-            // Handle manual typing
-            $qtyInput.on('keyup input', function() {
-                // We don't force validate on keyup to allow users to backspace
-                // but we prevent negative signs or decimals
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
-
-            // Final validation when user clicks away or presses Enter
+            // Khi click ra ngoài
             $qtyInput.on('blur', function () {
-                let val = parseInt($(this).val());
-                let max = parseInt($(this).attr('max')) || 999;
 
-                if (isNaN(val) || val < 1) {
-                    $(this).val(1); // Reset to 1 if empty or 0
-                } else if (val > max) {
-                    $(this).val(max);
+                let value = parseInt($(this).val());
+                let max = parseInt($(this).attr('max')) || 1;
+
+                if (isNaN(value) || value < 1) {
+                    value = 1;
                 }
+
+                if (value > max) {
+                    value = max;
+                }
+
+                $(this).val(value);
             });
 
-            // Plus Button
+            // Nút +
             $('#btnPlus').on('click', function () {
+
                 let current = parseInt($qtyInput.val()) || 1;
-                let max = parseInt($qtyInput.attr('max')) || 999;
+                let max = parseInt($qtyInput.attr('max')) || 1;
+
                 if (current < max) {
                     $qtyInput.val(current + 1);
                 }
             });
 
-            // Minus Button
+            // Nút -
             $('#btnMinus').on('click', function () {
+
                 let current = parseInt($qtyInput.val()) || 1;
+
                 if (current > 1) {
                     $qtyInput.val(current - 1);
                 }
             });
-
             if (totalImages > 1) startAutoCycle();
+
         });
 
         // Event Handlers
@@ -507,16 +531,7 @@
             pauseTimeout = setTimeout(startAutoCycle, 5000);
         });
 		// Handle manual typing/pasting in the quantity input
-		$(document).on('input change', '#soLuong', function () {
-			let val = parseInt($(this).val());
-			let max = parseInt($(this).attr('max')) || 1;
-
-			if (isNaN(val) || val < 1) {
-				$(this).val(1);
-			} else if (val > max) {
-				$(this).val(max);
-			}
-		});
+		
 		$(document).on('click', '.product-detail-btn-option', function() {
 			if ($(this).hasClass('disabled')) return;
 			
@@ -593,9 +608,15 @@
 				soluong: soLuong
 			}, function (res) {
 				try { if (typeof res === 'string') res = JSON.parse(res); } catch (e) { }
-				if (res && res.success === true) {
-					alert('Sản phẩm đã được thêm vào giỏ hàng!');
-				} else {
+                    if (res && res.success === true) {
+
+                        alert('Sản phẩm đã được thêm vào giỏ hàng!');
+
+                        // cập nhật số lượng giỏ hàng ngay lập tức
+                        if (window.loadCartCount) {
+                            window.loadCartCount();
+                        }
+                    } else {
 					const msg = (res && res.message ? String(res.message) : '').toLowerCase();
 					if (msg.includes('vượt quá tồn kho') || msg.includes('tối đa')) {
 						alert('Bạn đã đạt số lượng tối đa cho sản phẩm này trong giỏ hàng!');
