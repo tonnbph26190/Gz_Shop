@@ -383,7 +383,7 @@ namespace QuanView.Controllers
 
 				if (cartSession.Any())
 				{
-					return Json(new { count = cartSession.Sum(x => x.SoLuong) });
+					return Json(new { count = cartSession.Count });
 				}
 
 				var customerIdClaim = User.FindFirst("custom:id_khachhang");
@@ -403,7 +403,7 @@ namespace QuanView.Controllers
 
 				var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
 
-				int count = gioHang?.ChiTietGioHangs?.Sum(x => x.SoLuong) ?? 0;
+				int count = gioHang?.ChiTietGioHangs?.Count ?? 0;
 
 				return Json(new { count });
 			}
