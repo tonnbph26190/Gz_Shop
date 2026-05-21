@@ -372,5 +372,45 @@ namespace QuanView.Controllers
         {
             return View();
         }
-    }
+		[HttpGet]
+		public async Task<IActionResult> Count()
+		{
+			try
+			{
+				var cartSession = HttpContext.Session
+					.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart")
+					?? new List<QuanApi.Data.ChiTietGioHang>();
+
+				if (cartSession.Any())
+				{
+					return Json(new { count = cartSession.Count });
+				}
+
+				var customerIdClaim = User.FindFirst("custom:id_khachhang");
+
+				if (customerIdClaim == null ||
+					!Guid.TryParse(customerIdClaim.Value, out var customerId))
+				{
+					return Json(new { count = 0 });
+				}
+
+				var response = await _httpClient.GetAsync($"GioHangs/user/{customerId}");
+
+				if (!response.IsSuccessStatusCode)
+				{
+					return Json(new { count = 0 });
+				}
+
+				var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+
+				int count = gioHang?.ChiTietGioHangs?.Count ?? 0;
+
+				return Json(new { count });
+			}
+			catch
+			{
+				return Json(new { count = 0 });
+			}
+		}
+	}
 }
