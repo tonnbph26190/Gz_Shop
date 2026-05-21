@@ -292,6 +292,7 @@ namespace QuanView.Areas.Admin.Controllers
 		// Lấy danh sách địa chỉ của khách hàng
 		[HttpGet]
         [Route("Admin/ClientBanHangTaiQuay/danh-sach-dia-chi-khach-hang")]
+        [Route("Admin/ClientBanHangTaiQuay/dia-chi-khach-hang/{customerId}")]
         public async Task<IActionResult> GetCustomerAddresses(Guid customerId)
         {
             try
