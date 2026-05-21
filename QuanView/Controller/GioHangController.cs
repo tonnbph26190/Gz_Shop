@@ -69,7 +69,6 @@ namespace QuanView.Controllers
                 .Select(x => x.IDSanPhamChiTiet)
                 .ToHashSet() ?? new HashSet<Guid>();
 
-            var remainingSessionItems = new List<QuanApi.Data.ChiTietGioHang>();
             foreach (var item in cartSession)
             {
                 // Rule: ưu tiên số lượng đã có trong DB nếu sản phẩm đã tồn tại.
@@ -83,21 +82,9 @@ namespace QuanView.Controllers
                 {
                     existingProductIds.Add(item.IDSanPhamChiTiet);
                 }
-                else
-                {
-                    // Giữ lại item nếu chưa đồng bộ thành công để tránh mất dữ liệu session.
-                    remainingSessionItems.Add(item);
-                }
             }
 
-            if (remainingSessionItems.Any())
-            {
-                SaveSessionCart(remainingSessionItems);
-            }
-            else
-            {
-                HttpContext.Session.Remove("Cart");
-            }
+            HttpContext.Session.Remove("Cart");
         }
 
         // GET: /GioHang/Index
@@ -431,79 +418,9 @@ namespace QuanView.Controllers
                 return Json(new List<object>());
             }
         }
-		[HttpGet]
-		public IActionResult CheckoutSelected()
-		{
-			return RedirectToAction("Index", "Checkout");
-		}
-
-		[HttpPost]
-		public IActionResult CheckoutSelected(string selectedItemIds)
-		{
-			if (string.IsNullOrWhiteSpace(selectedItemIds))
-			{
-				TempData["ErrorMessage"] = "Vui lòng chọn sản phẩm để thanh toán.";
-				return RedirectToAction(nameof(Index));
-			}
-
-			TempData["SelectedItems"] = selectedItemIds;
-
-			return RedirectToAction("Index", "Checkout");
-		}
-		public IActionResult PaymenCallBack()
+        public IActionResult PaymenCallBack()
         {
             return View();
-        }
-        [HttpPost]
-        public IActionResult CheckoutSelected(string? selectedItemIds, Guid? iduser)
-        {
-            var customerId = ResolveCurrentCustomerId();
-            var selectedIds = (selectedItemIds ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(id => Guid.TryParse(id, out var parsedId) ? parsedId : Guid.Empty)
-                .Where(id => id != Guid.Empty)
-                .Distinct()
-                .ToList();
-
-            if (!selectedIds.Any())
-            {
-                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.";
-                return RedirectToAction(nameof(Index), customerId.HasValue ? null : new { iduser = iduser });
-            }
-
-            HttpContext.Session.SetObjectAsJson("SelectedCartItemIds", selectedIds);
-            return RedirectToAction("Index", "Checkout");
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Count()
-        {
-            try
-            {
-                var customerId = ResolveCurrentCustomerId();
-                if (!customerId.HasValue)
-                {
-                    var cartSession = GetSessionCart();
-                    return Json(new { count = cartSession.Count });
-                }
-
-                // Đăng nhập thì ưu tiên DB cart, merge session còn sót trước khi đếm.
-                await MergeSessionCartToDbAsync(customerId.Value);
-
-                var response = await _httpClient.GetAsync($"GioHangs/user/{customerId.Value}");
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Json(new { count = 0 });
-                }
-
-                var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
-                int count = gioHang?.ChiTietGioHangs?.Count ?? 0;
-                return Json(new { count });
-            }
-            catch
-            {
-                return Json(new { count = 0 });
-            }
         }
     }
 }
