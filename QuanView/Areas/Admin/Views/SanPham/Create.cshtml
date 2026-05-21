@@ -535,13 +535,21 @@
                         </td>
 
                         <!-- Ảnh biến thể -->
-                        <td>
-                            <input type="file"
-                                   name="VariantImages"
-                                   class="form-control form-control-sm"
-                                   accept="image/*" />
-                        </td>
+                                                    <td>
+            <div class="variant-image-wrapper" data-index="${index}">
+                <input type="file"
+                       name="VariantImages_${index}"
+                       class="form-control form-control-sm variant-image-input mb-1"
+                       accept="image/*" />
 
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary btn-add-more-image mt-1">
+                    + Thêm ảnh
+                </button>
+
+                <div class="variant-image-preview d-flex flex-wrap gap-1 mt-2"></div>
+            </div>
+        </td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Xóa dòng">
                                 <i class="fas fa-trash"></i>
@@ -558,7 +566,43 @@
             // Attach event listeners for Apply buttons AFTER generating the table
             attachApplyButtons();
         }
+        $(document).on('change', '.variant-image-input', function () {
+            const wrapper = $(this).closest('.variant-image-wrapper');
+            const previewBox = wrapper.find('.variant-image-preview');
 
+            previewBox.empty();
+
+            wrapper.find('.variant-image-input').each(function () {
+                if (!this.files || this.files.length === 0) return;
+
+                const file = this.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    previewBox.append(`
+                        <img src="${e.target.result}"
+                             style="width:45px;height:45px;object-fit:cover;border:1px solid #ddd;border-radius:5px;margin:2px;" />
+                    `);
+                };
+
+                reader.readAsDataURL(file);
+            });
+        });
+        $(document).on('click', '.btn-add-more-image', function () {
+            const wrapper = $(this).closest('.variant-image-wrapper');
+            const index = wrapper.data('index');
+
+            const input = `
+                <input type="file"
+                       name="VariantImages_${index}"
+                       class="form-control form-control-sm variant-image-input mb-1"
+                       accept="image/*" />
+            `;
+
+            $(this).before(input);
+        });
+
+     
         function attachApplyButtons() {
             // Apply Quantity to all
             document.querySelectorAll('.apply-qty-btn').forEach(btn => {

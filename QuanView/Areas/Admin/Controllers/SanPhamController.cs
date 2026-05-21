@@ -236,13 +236,10 @@ namespace QuanView.Areas.Admin.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(
 	QuanView.Areas.Admin.Models.SanPhamDto dto,
-	Guid? SanPhamDaCoId,
-	List<IFormFile>? VariantImages)
+	Guid? SanPhamDaCoId)
 		{
-			// Nếu chọn sản phẩm đã có, xóa lỗi validation các trường sản phẩm chính
 			if (SanPhamDaCoId.HasValue && SanPhamDaCoId.Value != Guid.Empty)
 			{
-				// Xóa lỗi cho các trường sản phẩm chính (tùy model, có thể cần bổ sung thêm)
 				ModelState.Remove(nameof(dto.MaSanPham));
 				ModelState.Remove(nameof(dto.TenSanPham));
 				ModelState.Remove(nameof(dto.IDDanhMuc));
@@ -255,110 +252,137 @@ namespace QuanView.Areas.Admin.Controllers
 				ModelState.Remove(nameof(dto.CoGian));
 				ModelState.Remove(nameof(dto.TrangThai));
 			}
+
 			if (dto.ChiTietSanPhams == null || !dto.ChiTietSanPhams.Any())
 			{
 				ModelState.AddModelError("ChiTietSanPhams",
 					"Vui lòng chọn kích cỡ, màu sắc, họa tiết và bấm 'Tạo bảng biến thể'.");
 			}
+
 			if (!ModelState.IsValid)
 			{
 				await LoadDropdownData();
 				ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
-
-				// GIỮ LẠI SẢN PHẨM ĐÃ CHỌN
 				ViewBag.SelectedSanPhamDaCoId = SanPhamDaCoId;
-
 				return View(dto);
 			}
 
+			Guid idSanPham;
+
+			// Nếu chọn sản phẩm đã có
 			if (SanPhamDaCoId.HasValue && SanPhamDaCoId.Value != Guid.Empty)
 			{
-				// Thêm biến thể cho sản phẩm đã có
-				if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
-				{
-					for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
-					{
-						var ct = dto.ChiTietSanPhams[i];
-
-						ct.IdSanPhamChiTiet = Guid.NewGuid();
-						ct.IdSanPham = SanPhamDaCoId.Value;
-
-						var res = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
-						if (!res.IsSuccessStatusCode)
-						{
-							var msg = await res.Content.ReadAsStringAsync();
-							ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
-							await LoadDropdownData();
-							ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
-							return View(dto);
-						}
-
-						var imageFile = VariantImages != null && i < VariantImages.Count
-	? VariantImages[i]
-	: null;
-
-						var uploadOk = await UploadVariantImageAsync(ct.IdSanPhamChiTiet, imageFile, i == 0);
-
-						if (!uploadOk)
-						{
-							ModelState.AddModelError(string.Empty, "Lưu biến thể thành công nhưng upload ảnh thất bại.");
-							await LoadDropdownData();
-							ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
-							return View(dto);
-						}
-					}
-				}
-				return RedirectToAction("Index");
+				idSanPham = SanPhamDaCoId.Value;
 			}
 			else
 			{
-				// Tạo sản phẩm mới như hiện tại
+				// Tạo sản phẩm mới
 				dto.IDSanPham = Guid.NewGuid();
+				idSanPham = dto.IDSanPham;
+
+				var tempChiTiet = dto.ChiTietSanPhams;
+				dto.ChiTietSanPhams = null;
+
 				var response = await _http.PostAsJsonAsync("sanphams", dto);
+
+				dto.ChiTietSanPhams = tempChiTiet;
+
 				if (!response.IsSuccessStatusCode)
 				{
 					var msg = await response.Content.ReadAsStringAsync();
 					ModelState.AddModelError(string.Empty, $"Lỗi API: {response.StatusCode} - {msg}");
+
 					await LoadDropdownData();
 					ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
 					return View(dto);
 				}
+			}
 
-				if (dto.ChiTietSanPhams != null && dto.ChiTietSanPhams.Any())
+			// Lưu biến thể + nhiều ảnh
+			for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
+			{
+				var ct = dto.ChiTietSanPhams[i];
+
+				ct.IdSanPham = idSanPham;
+
+				// Kiểm tra biến thể đã tồn tại trước khi tạo
+				var existingRes = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={idSanPham}");
+
+				if (existingRes.IsSuccessStatusCode)
 				{
-					for (int i = 0; i < dto.ChiTietSanPhams.Count; i++)
+					var existingList = await existingRes.Content.ReadFromJsonAsync<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(
+						new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+					var hoaTietMoi = ct.IdHoaTiet == Guid.Empty ? Guid.Empty : ct.IdHoaTiet;
+
+					bool isDuplicate = existingList != null && existingList.Any(x =>
+						x.IdKichCo == ct.IdKichCo &&
+						x.IdMauSac == ct.IdMauSac &&
+						(x.IdHoaTiet == Guid.Empty ? Guid.Empty : x.IdHoaTiet) == hoaTietMoi &&
+						x.TrangThai
+					);
+
+					if (isDuplicate)
 					{
-						var ct = dto.ChiTietSanPhams[i];
-						ct.IdSanPhamChiTiet = Guid.NewGuid();
-						ct.IdSanPham = dto.IDSanPham;
+						ModelState.AddModelError(string.Empty,
+							"Biến thể này đã tồn tại. Vui lòng chọn kích cỡ, màu sắc hoặc họa tiết khác.");
 
-						var res = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
-						if (!res.IsSuccessStatusCode)
-						{
-							var msg = await res.Content.ReadAsStringAsync();
-							ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
-							await LoadDropdownData();
-							ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
-							return View(dto);
-						}
-
-						var imageFile = VariantImages != null && i < VariantImages.Count
-	? VariantImages[i]
-	: null;
-
-						var uploadOk = await UploadVariantImageAsync(ct.IdSanPhamChiTiet, imageFile, i == 0);
-
-						if (!uploadOk)
-						{
-							ModelState.AddModelError(string.Empty, "Lưu biến thể thành công nhưng upload ảnh thất bại.");
-							await LoadDropdownData();
-							ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
-							return View(dto);
-						}
+						await LoadDropdownData();
+						ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+						ViewBag.SelectedSanPhamDaCoId = SanPhamDaCoId;
+						return View(dto);
 					}
 				}
-				return RedirectToAction("Index");
+
+				ct.IdSanPhamChiTiet = Guid.NewGuid();
+
+				var res = await _http.PostAsJsonAsync("sanphamchitiets", ct, ApiVariantJsonOptions);
+
+				if (!res.IsSuccessStatusCode)
+				{
+					var msg = await res.Content.ReadAsStringAsync();
+
+					if (msg.Contains("trùng", StringComparison.OrdinalIgnoreCase) ||
+						msg.Contains("duplicate", StringComparison.OrdinalIgnoreCase) ||
+						msg.Contains("đã tồn tại", StringComparison.OrdinalIgnoreCase))
+					{
+						ModelState.AddModelError(string.Empty,
+							"Biến thể này đã tồn tại. Vui lòng chọn kích cỡ, màu sắc hoặc họa tiết khác.");
+					}
+					else
+					{
+						ModelState.AddModelError(string.Empty, $"Lỗi lưu biến thể: {msg}");
+					}
+
+					await LoadDropdownData();
+					ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+					ViewBag.SelectedSanPhamDaCoId = SanPhamDaCoId;
+					return View(dto);
+				}
+
+				var imageFiles = Request.Form.Files
+					.Where(f => f.Name == $"VariantImages_{i}")
+					.ToList();
+
+				var uploadResult = await UploadVariantImagesAsync(
+	ct.IdSanPhamChiTiet,
+	imageFiles
+);
+
+				if (!uploadResult.Success)
+				{
+					ModelState.AddModelError(string.Empty,
+						"Upload ảnh thất bại: " + uploadResult.Error);
+
+					await LoadDropdownData();
+					ViewBag.SanPhams = await GetSelectList("sanphams", "idSanPham", "tenSanPham");
+					ViewBag.SelectedSanPhamDaCoId = SanPhamDaCoId;
+					return View(dto);
+				}
 			}
+
+			TempData["Success"] = "Thêm biến thể thành công!";
+			return RedirectToAction("Index");
 		}
 
 		public async Task<IActionResult> Edit(Guid id)
@@ -1326,27 +1350,46 @@ coXepLy, coGian, trangThaiSp,
 				results
 			});
 		}
-		private async Task<bool> UploadVariantImageAsync(Guid sanPhamChiTietId, IFormFile? file, bool laAnhChinh)
+		private async Task<(bool Success, string Error)> UploadVariantImagesAsync(
+	Guid sanPhamChiTietId,
+	List<IFormFile> files)
 		{
-			if (file == null || file.Length == 0)
-				return true;
+			if (files == null || files.Count == 0)
+				return (true, "");
 
-			using var form = new MultipartFormDataContent();
+			for (int i = 0; i < files.Count; i++)
+			{
+				var file = files[i];
 
-			await using var stream = file.OpenReadStream();
-			var fileContent = new StreamContent(stream);
-			fileContent.Headers.ContentType =
-				new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+				if (file == null || file.Length == 0)
+					continue;
 
-			form.Add(fileContent, "file", file.FileName);
-			form.Add(new StringContent(laAnhChinh.ToString().ToLower()), "laAnhChinh");
+				using var form = new MultipartFormDataContent();
 
-			var res = await _http.PostAsync(
-				$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
-				form
-			);
+				await using var stream = file.OpenReadStream();
+				var fileContent = new StreamContent(stream);
 
-			return res.IsSuccessStatusCode;
+				fileContent.Headers.ContentType =
+					new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+
+				form.Add(fileContent, "file", file.FileName);
+
+				// Không tự đặt ảnh chính khi tạo biến thể mới
+				form.Add(new StringContent("false"), "laAnhChinh");
+
+				var res = await _http.PostAsync(
+					$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
+					form
+				);
+
+				if (!res.IsSuccessStatusCode)
+				{
+					var error = await res.Content.ReadAsStringAsync();
+					return (false, error);
+				}
+			}
+
+			return (true, "");
 		}
 		[HttpPost]
 		[Route("Admin/AnhSanPham/UploadImage")]
