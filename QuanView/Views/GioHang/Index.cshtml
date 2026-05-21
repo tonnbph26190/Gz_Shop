@@ -75,7 +75,16 @@
         border-radius: 30px;
         padding: 4px;
     }
+    /* Ẩn nút tăng giảm mặc định */
+    .quantity-input::-webkit-outer-spin-button,
+    .quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
 
+    .quantity-input {
+        -moz-appearance: textfield;
+    }
     .cart-qty-btn {
         width: 32px;
         height: 32px;
@@ -201,8 +210,22 @@
                                                 <i class="fas fa-minus fa-xs"></i>
                                             </button>
                                         </form>
-                                        
-                                        <input type="text" class="cart-qty-input" value="@item.SoLuong" readonly />
+
+                                        <input type="number"
+                                               class="cart-qty-input quantity-input"
+                                               value="@item.SoLuong"
+                                               min="1"
+                                               max="@(spct?.SoLuong ?? 1)"
+                                               data-id="@item.IDChiTietGioHang"
+                                               data-user="@gioHang.IDKhachHang"
+                                               style="width:60px;" />
+                                        <form method="post"
+                                              action="/GioHang/Update"
+                                              class="update-cart-form d-none">
+                                            <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
+                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
+                                            <input type="hidden" name="soluong" class="hidden-qty" value="@item.SoLuong" />
+                                        </form>
 
                                         <form method="post" action="/GioHang/Update" class="d-inline">
                                             <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
@@ -244,10 +267,10 @@
                     <span class="fw-bold" id="tamTinh">@tongTien.ToString("N0") VND</span>
                 </div>
                 
-                <div class="d-flex justify-content-between mb-3">
+              @*   <div class="d-flex justify-content-between mb-3">
                     <span class="text-muted">@((lang == "vi") ? "Vận chuyển" : "Shipping")</span>
                     <span class="text-success small">@((lang == "vi") ? "Miễn phí" : "Free")</span>
-                </div>
+                </div> *@
 
                 <hr class="my-4">
 
@@ -301,6 +324,37 @@
     }
 
     $(document).ready(function() {
+        $(document).on('input', '.quantity-input', function () {
+            let value = ($(this).val() ?? '').toString();
+            let max = parseInt($(this).attr('max')) || 1;
+
+            value = value.replace(/[^0-9]/g, '');
+            if (value === '') {
+                return;
+            }
+
+            let parsedValue = parseInt(value);
+            if (parsedValue < 1) {
+                parsedValue = 1;
+            }
+            if (parsedValue > max) {
+                alert(`Số lượng vượt quá tồn kho! Chỉ còn ${max} sản phẩm.`);
+                parsedValue = max;
+            }
+
+            $(this).val(parsedValue);
+        });
+
+        $(document).on('change', '.quantity-input', function () {
+            let value = parseInt($(this).val()) || 1;
+            const form = $(this)
+                .closest('.cart-qty-control')
+                .find('.update-cart-form');
+
+            form.find('.hidden-qty').val(value);
+            form.submit();
+        });
+
         $('#selectAllItems').on('change', function () {
             $('.item-checkbox').prop('checked', $(this).is(':checked'));
             updatePaymentInfo();
