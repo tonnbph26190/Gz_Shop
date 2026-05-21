@@ -295,17 +295,17 @@ namespace QuanView.Controllers
             return RedirectToAction("Index", "Login");
         }
 
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+		public async Task<IActionResult> Logout()
+		{
+			HttpContext.Session.Remove("Cart");
+			HttpContext.Session.Remove("CustomerId");
 
-            // Xóa thông tin khách hàng khỏi session
-            HttpContext.Session.Remove("CustomerId");
+			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            return RedirectToAction("Index", "Home");
-        }
+			return RedirectToAction("Index", "Home");
+		}
 
-        public IActionResult AccessDenied()
+		public IActionResult AccessDenied()
         {
             return View();
         }

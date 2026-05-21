@@ -26,7 +26,15 @@ namespace QuanView.Controllers
         // GET: /GioHang/Index
         public async Task<IActionResult> Index(Guid? iduser)
         {
-            if (iduser == null || iduser == Guid.Empty)
+			var customerIdClaim = User.FindFirst("custom:id_khachhang");
+
+			if ((!iduser.HasValue || iduser == Guid.Empty) &&
+				customerIdClaim != null &&
+				Guid.TryParse(customerIdClaim.Value, out var currentUserId))
+			{
+				iduser = currentUserId;
+			}
+			if (iduser == null || iduser == Guid.Empty)
             {
                 var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
                 foreach (var item in cart)
@@ -64,14 +72,45 @@ namespace QuanView.Controllers
                 var gioHang = new QuanApi.Data.GioHang { ChiTietGioHangs = cart };
                 return View(gioHang);
             }
-            var response = await _httpClient.GetAsync($"GioHangs/user/{iduser}");
-            if (!response.IsSuccessStatusCode)
-            {
-                ViewData["ErrorMessage"] = "Không thể tải giỏ hàng.";
-                return View(new QuanApi.Data.GioHang { ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() });
-            }
-            var gioHangDb = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
-            if (gioHangDb == null)
+			var response = await _httpClient.GetAsync($"GioHangs/user/{iduser}");
+
+			if (!response.IsSuccessStatusCode)
+			{
+				return View(new QuanApi.Data.GioHang
+				{
+					ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>()
+				});
+			}
+
+			var content = await response.Content.ReadAsStringAsync();
+
+			if (string.IsNullOrWhiteSpace(content))
+			{
+				return View(new QuanApi.Data.GioHang
+				{
+					ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>()
+				});
+			}
+
+			QuanApi.Data.GioHang? gioHangDb;
+
+			try
+			{
+				gioHangDb = System.Text.Json.JsonSerializer.Deserialize<QuanApi.Data.GioHang>(
+					content,
+					new System.Text.Json.JsonSerializerOptions
+					{
+						PropertyNameCaseInsensitive = true
+					});
+			}
+			catch
+			{
+				return View(new QuanApi.Data.GioHang
+				{
+					ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>()
+				});
+			}
+			if (gioHangDb == null)
             {
                 gioHangDb = new QuanApi.Data.GioHang { ChiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() };
             }
@@ -124,7 +163,15 @@ namespace QuanView.Controllers
         [HttpPost]
         public async Task<IActionResult> Add(Guid? iduser, Guid idsp, int soluong)
         {
-            try
+			var customerIdClaim = User.FindFirst("custom:id_khachhang");
+
+			if ((!iduser.HasValue || iduser == Guid.Empty) &&
+				customerIdClaim != null &&
+				Guid.TryParse(customerIdClaim.Value, out var currentUserId))
+			{
+				iduser = currentUserId;
+			}
+			try
             {
                 var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{idsp}");
                 if (!responseSpct.IsSuccessStatusCode)
@@ -372,40 +419,48 @@ namespace QuanView.Controllers
         {
             return View();
         }
+
 		[HttpGet]
 		public async Task<IActionResult> Count()
 		{
 			try
 			{
+				// =========================
+				// USER ĐÃ ĐĂNG NHẬP
+				// =========================
+				var customerIdClaim = User.FindFirst("custom:id_khachhang");
+
+				if (customerIdClaim != null &&
+					Guid.TryParse(customerIdClaim.Value, out var customerId))
+				{
+					var response = await _httpClient.GetAsync($"GioHangs/user/{customerId}");
+
+					if (!response.IsSuccessStatusCode)
+					{
+						return Json(new { count = 0 });
+					}
+
+					var gioHang = await response
+						.Content
+						.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+
+					// Đếm tổng số lượng sản phẩm
+					int count = gioHang?.ChiTietGioHangs?
+						.Count() ?? 0;
+
+					return Json(new { count });
+				}
+
+				// =========================
+				// KHÁCH CHƯA ĐĂNG NHẬP
+				// =========================
 				var cartSession = HttpContext.Session
 					.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart")
 					?? new List<QuanApi.Data.ChiTietGioHang>();
 
-				if (cartSession.Any())
-				{
-					return Json(new { count = cartSession.Count });
-				}
+				int sessionCount = cartSession.Count();
 
-				var customerIdClaim = User.FindFirst("custom:id_khachhang");
-
-				if (customerIdClaim == null ||
-					!Guid.TryParse(customerIdClaim.Value, out var customerId))
-				{
-					return Json(new { count = 0 });
-				}
-
-				var response = await _httpClient.GetAsync($"GioHangs/user/{customerId}");
-
-				if (!response.IsSuccessStatusCode)
-				{
-					return Json(new { count = 0 });
-				}
-
-				var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
-
-				int count = gioHang?.ChiTietGioHangs?.Count ?? 0;
-
-				return Json(new { count });
+				return Json(new { count = sessionCount });
 			}
 			catch
 			{

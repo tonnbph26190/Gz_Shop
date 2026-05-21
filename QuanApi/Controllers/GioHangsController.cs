@@ -38,16 +38,44 @@ namespace QuanApi.Controllers
             }
         }
 
-        // GET: api/GioHangs/user/{userId}
-        [HttpGet("user/{userId}")]
-        public IActionResult GetByUser(Guid userId)
-        {
-            var gioHang = _gioHangRepo.GetByUserId(userId);
-            return Ok(gioHang);
-        }
+		// GET: api/GioHangs/user/{userId}
+		[HttpGet("user/{userId}")]
+		public IActionResult GetByUser(Guid userId)
+		{
+			try
+			{
+				var gioHang = _gioHangRepo.GetByUserId(userId);
 
-        // DELETE: api/GioHangs/item/{id}
-        [HttpDelete("item/{idgiohang}")]
+				if (gioHang == null)
+				{
+					return Ok(new GioHang
+					{
+						IDGioHang = Guid.NewGuid(),
+						IDKhachHang = userId,
+						ChiTietGioHangs = new List<ChiTietGioHang>()
+					});
+				}
+
+				if (gioHang.ChiTietGioHangs == null)
+				{
+					gioHang.ChiTietGioHangs = new List<ChiTietGioHang>();
+				}
+
+				return Ok(gioHang);
+			}
+			catch
+			{
+				return Ok(new GioHang
+				{
+					IDGioHang = Guid.NewGuid(),
+					IDKhachHang = userId,
+					ChiTietGioHangs = new List<ChiTietGioHang>()
+				});
+			}
+		}
+
+		// DELETE: api/GioHangs/item/{id}
+		[HttpDelete("item/{idgiohang}")]
         public IActionResult XoaChiTiet(Guid idgiohang)
         {
             _gioHangRepo.XoaChiTietGioHang(idgiohang);
