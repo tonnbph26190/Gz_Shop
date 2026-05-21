@@ -217,13 +217,11 @@
                                                min="1"
                                                max="@(spct?.SoLuong ?? 1)"
                                                data-id="@item.IDChiTietGioHang"
-                                               data-user="@gioHang.IDKhachHang"
                                                style="width:60px;" />
                                         <form method="post"
                                               action="/GioHang/Update"
                                               class="update-cart-form d-none">
                                             <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
-                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
                                             <input type="hidden" name="soluong" class="hidden-qty" value="@item.SoLuong" />
                                         </form>
 

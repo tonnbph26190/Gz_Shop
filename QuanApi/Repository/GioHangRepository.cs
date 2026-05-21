@@ -100,89 +100,93 @@ namespace QuanApi.Repository
             };
         }
 
-		public void AddGioHang(Guid iduser, Guid idsp, int soluong)
-		{
-			if (soluong <= 0)
-			{
-				throw new ArgumentException("Số lượng không hợp lệ.");
-			}
+        public void AddGioHang(Guid iduser, Guid idsp, int soluong)
+        {
+            if (soluong <= 0)
+            {
+                throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
+            }
 
-			var gioHang = _db.GioHangs
-				.FirstOrDefault(g => g.IDKhachHang == iduser);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    AddGioHangInternal(iduser, idsp, soluong);
+                    return;
+                }
+                catch (DbUpdateConcurrencyException) when (attempt == 0)
+                {
+                    // Reload trạng thái mới nhất rồi thử lại 1 lần khi có race condition.
+                    _db.ChangeTracker.Clear();
+                }
+            }
+        }
 
-			if (gioHang == null)
-			{
-				gioHang = new GioHang
-				{
-					IDGioHang = Guid.NewGuid(),
-					IDKhachHang = iduser,
-					MaGioHang = "GH" + DateTime.UtcNow.Ticks,
-					NgayTao = DateTime.UtcNow,
-					TrangThai = true
-				};
+        private void AddGioHangInternal(Guid iduser, Guid idsp, int soluong)
+        {
+            var nguoidung = _db.GioHangs.FirstOrDefault(gt => gt.IDKhachHang == iduser);
+            if (nguoidung == null)
+            {
+                nguoidung = new GioHang
+                {
+                    IDKhachHang = iduser,
+                    MaGioHang = $"GH{Guid.NewGuid():N}",
+                    NgayTao = DateTime.UtcNow,
+                    TrangThai = true
+                };
 
-				_db.GioHangs.Add(gioHang);
-				_db.SaveChanges();
-			}
+                _db.GioHangs.Add(nguoidung);
+                _db.SaveChanges();
+            }
 
-			var sp = _db.SanPhamChiTiets
-				.Include(s => s.DotGiamGia)
-				.FirstOrDefault(s => s.IDSanPhamChiTiet == idsp);
+            var sp = _db.SanPhamChiTiets
+                .Include(s => s.DotGiamGia)
+                .FirstOrDefault(s => s.IDSanPhamChiTiet == idsp);
+            if (sp == null)
+            {
+                throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
+            }
 
-			if (sp == null)
-			{
-				throw new ArgumentException("Sản phẩm không tồn tại.");
-			}
+            var existingLine = _db.ChiTietGioHangs
+                .FirstOrDefault(ghct => ghct.IDGioHang == nguoidung.IDGioHang && ghct.IDSanPhamChiTiet == idsp);
 
-			var existingLine = _db.ChiTietGioHangs
-				.FirstOrDefault(x =>
-					x.IDGioHang == gioHang.IDGioHang &&
-					x.IDSanPhamChiTiet == idsp);
+            var soLuongHienCo = (existingLine?.SoLuong ?? 0) + soluong;
+            var soLuongKhaDung = Math.Max(0, sp.SoLuong - sp.SoLuongDatCho);
+            if (soLuongHienCo > soLuongKhaDung)
+            {
+                throw new InvalidOperationException($"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");
+            }
 
-			var soLuongHienCo = existingLine != null ? existingLine.SoLuong : 0;
-			var soLuongMoi = soLuongHienCo + soluong;
+            var giaSauGiam = sp.GiaBan;
+            if (sp.DotGiamGia != null &&
+                sp.DotGiamGia.TrangThai &&
+                sp.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
+                sp.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
+            {
+                giaSauGiam = sp.GiaBan * (1 - sp.DotGiamGia.PhanTramGiam / 100m);
+            }
 
-			var soLuongKhaDung = Math.Max(0, sp.SoLuong - sp.SoLuongDatCho);
+            if (existingLine != null)
+            {
+                existingLine.SoLuong += soluong;
+                existingLine.GiaBan = giaSauGiam;
+                existingLine.LanCapNhatCuoi = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.ChiTietGioHangs.Add(new Data.ChiTietGioHang
+                {
+                    MaChiTietGioHang = $"CTGH{Guid.NewGuid():N}",
+                    IDGioHang = nguoidung.IDGioHang,
+                    IDSanPhamChiTiet = idsp,
+                    SoLuong = soluong,
+                    GiaBan = giaSauGiam
+                });
+            }
 
-			if (soLuongMoi > soLuongKhaDung)
-			{
-				throw new InvalidOperationException(
-					$"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");
-			}
-
-			var giaSauGiam = sp.GiaBan;
-
-			if (sp.DotGiamGia != null &&
-				sp.DotGiamGia.TrangThai &&
-				sp.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
-				sp.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
-			{
-				giaSauGiam = sp.GiaBan * (1 - sp.DotGiamGia.PhanTramGiam / 100m);
-			}
-
-			if (existingLine != null)
-			{
-				existingLine.SoLuong = soLuongMoi;
-				existingLine.GiaBan = giaSauGiam;
-
-				_db.ChiTietGioHangs.Update(existingLine);
-			}
-			else
-			{
-				_db.ChiTietGioHangs.Add(new ChiTietGioHang
-				{
-					IDChiTietGioHang = Guid.NewGuid(),
-					MaChiTietGioHang = $"CTGH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
-					IDGioHang = gioHang.IDGioHang,
-					IDSanPhamChiTiet = idsp,
-					SoLuong = soluong,
-					GiaBan = giaSauGiam
-				});
-			}
-
-			_db.SaveChanges();
-		}
-		public GioHang GetByUserId(Guid userId)
+            _db.SaveChanges();
+        }
+        public GioHang GetByUserId(Guid userId)
         {
             return _db.GioHangs
                 .Include(g => g.ChiTietGioHangs)
