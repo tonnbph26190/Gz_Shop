@@ -40,11 +40,11 @@ namespace QuanApi.Controllers
 
      
 		[HttpGet("phieu-giam-gia-cong-khai")]
-		public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers([FromQuery] decimal tongTien)
+		public async Task<ActionResult<IEnumerable<object>>> GetPublicDiscountVouchers([FromQuery] decimal tongTien, [FromQuery] Guid? customerId = null, [FromQuery] string? soDienThoai = null, [FromQuery] string? email = null)
 		{
 			try
 			{
-				var vouchers = await _service.GetPublicDiscountVouchersAsync(tongTien);
+				var vouchers = await _service.GetPublicDiscountVouchersAsync(tongTien, customerId, soDienThoai, email);
 				return Ok(vouchers);
 			}
 			catch (Exception ex)

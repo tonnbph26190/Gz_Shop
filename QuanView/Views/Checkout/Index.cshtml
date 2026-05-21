@@ -957,6 +957,7 @@
 
 			// Lấy dữ liệu từ server-side thay vì gioHangData
 			const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
+			const selectedCartItemIds = cartItems.map(item => item.idChiTietGioHang || item.IDChiTietGioHang).filter(Boolean);
 			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
 
 			if (!cartItems || cartItems.length === 0) {
@@ -1013,7 +1014,8 @@
 				toDistrictId: getSelectedToDistrictId(),
 				toWardCode: getSelectedToWardCode(),
 				weight: calculateShippingWeight(),
-				maGiamGia: voucherCode
+				maGiamGia: voucherCode,
+				selectedCartItemIds: selectedCartItemIds
 				};
 
 			console.log('checkoutData being sent:', checkoutData);
@@ -1040,8 +1042,7 @@
 						} else if (result.redirect && result.redirectUrl) {
 							// Chuyển hướng đến trang Success với đầy đủ thông tin
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							setTimeout(() => {
@@ -1050,8 +1051,7 @@
 						} else {
 							// Thanh toán thường (tiền mặt, COD) - fallback cũ
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							// Trích xuất mã đơn hàng từ message
@@ -1858,16 +1858,27 @@
 
 		// Ensure we send a numeric value
 		total = Number(total) || 0;
+		const soDienThoaiNguoiNhan = (document.getElementById('soDienThoaiNguoiNhan')?.value || '').trim();
+		const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 
 		$.get('/Checkout/GetCustomerVouchers',
-			{ tongTien: total },
+			{
+				tongTien: total,
+				soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+				emailNguoiNhan: emailNguoiNhan
+			},
 			function (data) {
 
 				console.log("Public vouchers response:", data);
 
-					renderVoucherList(data || []);
-		$('#voucherList').show();
-		$('#noVoucherMessage').hide();
+				const usableVoucherCount = renderVoucherList(data || [], total);
+				if (usableVoucherCount > 0) {
+					$('#voucherList').show();
+					$('#noVoucherMessage').hide();
+				} else {
+					$('#voucherList').hide();
+					$('#noVoucherMessage').show();
+				}
 
 			}).fail(function (xhr, status, error) {
 				console.error("Error loading vouchers:", error);
@@ -2068,6 +2079,7 @@
 
 			// Lấy dữ liệu từ server-side thay vì gioHangData
 			const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
+			const selectedCartItemIds = cartItems.map(item => item.idChiTietGioHang || item.IDChiTietGioHang).filter(Boolean);
 			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
 
 			if (!cartItems || cartItems.length === 0) {
@@ -2125,7 +2137,8 @@
 				toDistrictId: getSelectedToDistrictId(),
 				toWardCode: getSelectedToWardCode(),
 				weight: calculateShippingWeight(),
-				maGiamGia: voucherCode
+				maGiamGia: voucherCode,
+				selectedCartItemIds: selectedCartItemIds
 				};
 
 			console.log('checkoutData being sent:', checkoutData);
@@ -2152,8 +2165,7 @@
 						} else if (result.redirect && result.redirectUrl) {
 							// Chuyển hướng đến trang Success với đầy đủ thông tin
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							setTimeout(() => {
@@ -2162,8 +2174,7 @@
 						} else {
 							// Thanh toán thường (tiền mặt, COD) - fallback cũ
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							// Trích xuất mã đơn hàng từ message
@@ -2946,17 +2957,28 @@
 
 					// Ensure we send a numeric value
 					total = Number(total) || 0;
+					const soDienThoaiNguoiNhan = (document.getElementById('soDienThoaiNguoiNhan')?.value || '').trim();
+					const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 
 					$.get('/Checkout/GetCustomerVouchers',
-						{ tongTien: total },
+						{
+							tongTien: total,
+							soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+							emailNguoiNhan: emailNguoiNhan
+						},
 						function (data) {
 
 							console.log("Public vouchers response:", data);
 
 							if (data && data.length > 0) {
-								renderVoucherList(data, total);
-								$('#voucherList').show();
-								$('#noVoucherMessage').hide();
+								const usableVoucherCount = renderVoucherList(data, total);
+								if (usableVoucherCount > 0) {
+									$('#voucherList').show();
+									$('#noVoucherMessage').hide();
+								} else {
+									$('#voucherList').hide();
+									$('#noVoucherMessage').show();
+								}
 							} else {
 								$('#voucherList').hide();
 								$('#noVoucherMessage').show();
@@ -2997,11 +3019,15 @@
 				};
 			});
 
-			// ✅ SORT: usable lên đầu + giảm nhiều hơn đứng trước
-			mapped.sort((a, b) => {
-				if (a.isUsable !== b.isUsable) return b.isUsable - a.isUsable;
-				return b.realDiscount - a.realDiscount;
-			});
+			// Chỉ hiển thị mã có thể sử dụng được ngay
+			mapped = mapped.filter(v => v.isUsable);
+			if (mapped.length === 0) {
+				$('#voucherList').html('');
+				return 0;
+			}
+
+			// SORT: giảm nhiều hơn đứng trước
+			mapped.sort((a, b) => b.realDiscount - a.realDiscount);
 
 			// ✅ tìm BEST voucher
 			let bestVoucher = mapped.find(v => v.isUsable);
@@ -3076,6 +3102,7 @@
 
 			html += '</div>';
 			$('#voucherList').html(html);
+			return mapped.length;
 		}
 				// Chọn phiếu giảm giá
 			function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
