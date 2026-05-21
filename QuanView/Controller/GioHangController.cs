@@ -472,7 +472,26 @@ namespace QuanView.Controllers
                 return Json(new List<object>());
             }
         }
-        public IActionResult PaymenCallBack()
+		[HttpGet]
+		public IActionResult CheckoutSelected()
+		{
+			return RedirectToAction("Index", "Checkout");
+		}
+
+		[HttpPost]
+		public IActionResult CheckoutSelected(string selectedItemIds)
+		{
+			if (string.IsNullOrWhiteSpace(selectedItemIds))
+			{
+				TempData["ErrorMessage"] = "Vui lòng chọn sản phẩm để thanh toán.";
+				return RedirectToAction(nameof(Index));
+			}
+
+			TempData["SelectedItems"] = selectedItemIds;
+
+			return RedirectToAction("Index", "Checkout");
+		}
+		public IActionResult PaymenCallBack()
         {
             return View();
         }
