@@ -47,6 +47,12 @@
         transition: background 0.2s;
     }
 
+    .cart-check-input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
     .cart-img {
         width: 80px;
         height: 100px;
@@ -154,6 +160,9 @@
                 <table class="table cart-table align-middle">
                     <thead>
                         <tr>
+                            <th class="text-center" style="width: 44px;">
+                                <input type="checkbox" id="selectAllItems" class="cart-check-input" checked />
+                            </th>
                             <th colspan="2">@((lang == "vi") ? "Sản phẩm" : "Product")</th>
                             <th class="text-center">@((lang == "vi") ? "Số lượng" : "Quantity")</th>
                             <th class="text-end">@((lang == "vi") ? "Tổng cộng" : "Total")</th>
@@ -166,7 +175,13 @@
                             var spct = item.SanPhamChiTiet;
                             var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
                             
-                            <tr class="cart-item-row">
+                            <tr class="cart-item-row" data-line-total="@((item.GiaBan * item.SoLuong).ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                <td class="text-center">
+                                    <input type="checkbox"
+                                           class="cart-check-input item-checkbox"
+                                           data-item-id="@item.IDChiTietGioHang"
+                                           checked />
+                                </td>
                                 <td style="width: 100px;">
                                     <img src="@img" class="cart-img" alt="Product">
                                 </td>
@@ -182,7 +197,6 @@
                                     <div class="cart-qty-control">
                                         <form method="post" action="/GioHang/Update" class="d-inline">
                                             <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
-                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
                                             <button type="submit" name="soluong" value="@(item.SoLuong-1)" class="cart-qty-btn" @(item.SoLuong <= 1 ? "disabled" : "")>
                                                 <i class="fas fa-minus fa-xs"></i>
                                             </button>
@@ -192,7 +206,6 @@
 
                                         <form method="post" action="/GioHang/Update" class="d-inline">
                                             <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
-                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
                                             <button type="submit" name="soluong" value="@(item.SoLuong+1)" class="cart-qty-btn" @(item.SoLuong >= (spct?.SoLuong ?? 0) ? "disabled" : "")>
                                                 <i class="fas fa-plus fa-xs"></i>
                                             </button>
@@ -205,7 +218,6 @@
                                 <td class="text-end">
                                     <form method="post" action="/GioHang/Delete" onsubmit="return confirm('@((lang == "vi") ? "Xóa sản phẩm này?" : "Remove this item?")');">
                                         <input type="hidden" name="idgiohang" value="@item.IDChiTietGioHang" />
-                                        <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
                                         <button type="submit" class="btn btn-link cart-remove-link p-0">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
@@ -244,9 +256,12 @@
                     <span class="h5 fw-bold text-danger" id="tongCong">@tongTien.ToString("N0") VND</span>
                 </div>
 
-                <a href="/Checkout/Index" class="btn checkout-btn text-light">
-                    @((lang == "vi") ? "Tiến hành thanh toán" : "Checkout Now")
-                </a>
+                <form method="post" action="/GioHang/CheckoutSelected" id="checkoutSelectedForm">
+                    <input type="hidden" name="selectedItemIds" id="selectedItemIds" />
+                    <button type="submit" class="btn checkout-btn text-light" id="checkoutSelectedBtn">
+                        @((lang == "vi") ? "Tiến hành thanh toán" : "Checkout Now")
+                    </button>
+                </form>
                 
                 <div class="mt-4 text-center">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" height="20" class="me-2 opacity-50">
@@ -260,23 +275,57 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // This script mirrors your logic but adds a small animation feel
-    function updatePaymentInfo() {
-        let total = 0;
-        @foreach (var item in chiTietList)
-        {
-            <text>total += @((double)(item.GiaBan * item.SoLuong));</text>
-        }
-
-        const formattedTotal = total.toLocaleString() + ' VND';
-        
-        // Update both fields
-        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
-        $('#tongCong').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+    function formatVnd(value) {
+        return value.toLocaleString('vi-VN') + ' VND';
     }
 
-    // Initialize on load
+    function updatePaymentInfo() {
+        let total = 0;
+        $('.item-checkbox:checked').each(function () {
+            const lineTotal = Number($(this).closest('tr').attr('data-line-total')) || 0;
+            total += lineTotal;
+        });
+
+        const formattedTotal = formatVnd(total);
+        const hasSelection = $('.item-checkbox:checked').length > 0;
+        
+        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+        $('#tongCong').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+        $('#checkoutSelectedBtn').prop('disabled', !hasSelection);
+    }
+
+    function syncSelectAllState() {
+        const totalItems = $('.item-checkbox').length;
+        const checkedItems = $('.item-checkbox:checked').length;
+        $('#selectAllItems').prop('checked', totalItems > 0 && totalItems === checkedItems);
+    }
+
     $(document).ready(function() {
+        $('#selectAllItems').on('change', function () {
+            $('.item-checkbox').prop('checked', $(this).is(':checked'));
+            updatePaymentInfo();
+        });
+
+        $(document).on('change', '.item-checkbox', function () {
+            syncSelectAllState();
+            updatePaymentInfo();
+        });
+
+        $('#checkoutSelectedForm').on('submit', function (e) {
+            const selectedIds = $('.item-checkbox:checked').map(function () {
+                return $(this).data('item-id');
+            }).get();
+
+            if (selectedIds.length === 0) {
+                e.preventDefault();
+                alert('@((lang == "vi") ? "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán." : "Please select at least one product to checkout.")');
+                return;
+            }
+
+            $('#selectedItemIds').val(selectedIds.join(','));
+        });
+
+        syncSelectAllState();
         updatePaymentInfo();
     });
 </script>

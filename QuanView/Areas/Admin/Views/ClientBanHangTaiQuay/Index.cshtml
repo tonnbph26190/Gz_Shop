@@ -2801,7 +2801,8 @@
             data: JSON.stringify(dto),
             success: function (res) {
                 showSuccess('Thanh toán thành công!');
-                // RESET KHÁCH HÀNG
+                // RESET KHÁCH HÀNG (bao gồm cả card "Tài khoản" đang chọn)
+                clearCustomer();
                 clearCustomerForm();
 
                 // Tắt giao hàng

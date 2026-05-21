@@ -102,37 +102,61 @@ namespace QuanApi.Repository
 
         public void AddGioHang(Guid iduser, Guid idsp, int soluong)
         {
-            var nguoidung = _db.GioHangs.Include(g => g.ChiTietGioHangs).FirstOrDefault(gt => gt.IDKhachHang == iduser);
+            if (soluong <= 0)
+            {
+                throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
+            }
+
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    AddGioHangInternal(iduser, idsp, soluong);
+                    return;
+                }
+                catch (DbUpdateConcurrencyException) when (attempt == 0)
+                {
+                    // Reload trạng thái mới nhất rồi thử lại 1 lần khi có race condition.
+                    _db.ChangeTracker.Clear();
+                }
+            }
+        }
+
+        private void AddGioHangInternal(Guid iduser, Guid idsp, int soluong)
+        {
+            var nguoidung = _db.GioHangs.FirstOrDefault(gt => gt.IDKhachHang == iduser);
             if (nguoidung == null)
             {
                 nguoidung = new GioHang
                 {
                     IDKhachHang = iduser,
-                    MaGioHang = "GH" + DateTime.UtcNow.Ticks,
+                    MaGioHang = $"GH{Guid.NewGuid():N}",
                     NgayTao = DateTime.UtcNow,
-                    TrangThai = true,
-                    ChiTietGioHangs = new List<ChiTietGioHang>()
+                    TrangThai = true
                 };
+
                 _db.GioHangs.Add(nguoidung);
                 _db.SaveChanges();
             }
+
             var sp = _db.SanPhamChiTiets
                 .Include(s => s.DotGiamGia)
                 .FirstOrDefault(s => s.IDSanPhamChiTiet == idsp);
-            if (sp == null || soluong <= 0)
+            if (sp == null)
             {
                 throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
             }
 
-            var existingLine = nguoidung.ChiTietGioHangs?.FirstOrDefault(ghct => ghct.IDSanPhamChiTiet == idsp);
-            var soLuongHienCo = (existingLine != null ? existingLine.SoLuong : 0) + soluong;
+            var existingLine = _db.ChiTietGioHangs
+                .FirstOrDefault(ghct => ghct.IDGioHang == nguoidung.IDGioHang && ghct.IDSanPhamChiTiet == idsp);
+
+            var soLuongHienCo = (existingLine?.SoLuong ?? 0) + soluong;
             var soLuongKhaDung = Math.Max(0, sp.SoLuong - sp.SoLuongDatCho);
             if (soLuongHienCo > soLuongKhaDung)
             {
                 throw new InvalidOperationException($"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");
             }
 
-            // Tính giá sau khi áp dụng giảm giá
             var giaSauGiam = sp.GiaBan;
             if (sp.DotGiamGia != null &&
                 sp.DotGiamGia.TrangThai &&
@@ -146,19 +170,20 @@ namespace QuanApi.Repository
             {
                 existingLine.SoLuong += soluong;
                 existingLine.GiaBan = giaSauGiam;
+                existingLine.LanCapNhatCuoi = DateTime.UtcNow;
             }
             else
             {
-                nguoidung.ChiTietGioHangs ??= new List<ChiTietGioHang>();
-                nguoidung.ChiTietGioHangs.Add(new Data.ChiTietGioHang
+                _db.ChiTietGioHangs.Add(new Data.ChiTietGioHang
                 {
-                    MaChiTietGioHang = $"CTGH{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                    MaChiTietGioHang = $"CTGH{Guid.NewGuid():N}",
                     IDGioHang = nguoidung.IDGioHang,
                     IDSanPhamChiTiet = idsp,
                     SoLuong = soluong,
-                    GiaBan = giaSauGiam,
+                    GiaBan = giaSauGiam
                 });
             }
+
             _db.SaveChanges();
         }
         public GioHang GetByUserId(Guid userId)
