@@ -377,6 +377,31 @@ namespace QuanView.Controllers
             }
         }
 
+        // GET: /GioHang/Count
+        [HttpGet]
+        public async Task<IActionResult> Count()
+        {
+            try
+            {
+                var customerId = ResolveCurrentCustomerId();
+                if (customerId.HasValue)
+                {
+                    var gioHang = await GetDatabaseCartAsync(customerId.Value);
+                    var totalCount = gioHang.ChiTietGioHangs?.Sum(x => x.SoLuong) ?? 0;
+                    return Json(new { count = totalCount });
+                }
+
+                var cart = GetSessionCart();
+                var sessionCount = cart.Sum(x => x.SoLuong);
+                return Json(new { count = sessionCount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting cart count: {ex.Message}");
+                return Json(new { count = 0 });
+            }
+        }
+
         // GET: GioHang/GetCustomerVouchers
         [HttpGet]
         public async Task<IActionResult> GetCustomerVouchers()
@@ -418,6 +443,33 @@ namespace QuanView.Controllers
                 return Json(new List<object>());
             }
         }
+
+        // POST: /GioHang/CheckoutSelected
+        [HttpPost]
+        public IActionResult CheckoutSelected(string? selectedItemIds)
+        {
+            var selectedIds = new List<Guid>();
+
+            if (!string.IsNullOrWhiteSpace(selectedItemIds))
+            {
+                selectedIds = selectedItemIds
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(id => Guid.TryParse(id, out var parsedId) ? parsedId : Guid.Empty)
+                    .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList();
+            }
+
+            if (!selectedIds.Any())
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            HttpContext.Session.SetObjectAsJson("SelectedCartItemIds", selectedIds);
+            return RedirectToAction("Index", "Checkout");
+        }
+
         public IActionResult PaymenCallBack()
         {
             return View();
