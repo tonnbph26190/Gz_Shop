@@ -655,13 +655,19 @@ keyframes blink-warning {
 
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-primary btn-set-main-image"
-                                                                            data-id="@img.IDAnhSanPham">
+                                                                            data-id="@img.IDAnhSanPham"
+                                                                            data-bs-toggle="tooltip"
+                                                                            data-bs-placement="top"
+                                                                            title="Đặt làm ảnh chính">
                                                                         <i class="fas fa-star"></i>
                                                                     </button>
 
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-danger btn-delete-image"
-                                                                            data-id="@img.IDAnhSanPham">
+                                                                            data-id="@img.IDAnhSanPham"
+                                                                            data-bs-toggle="tooltip"
+                                                                            data-bs-placement="top"
+                                                                            title="Xóa ảnh">
                                                                         <i class="fas fa-trash"></i>
                                                                     </button>
 
@@ -1343,5 +1349,11 @@ document.querySelectorAll('.product-group').forEach(p => {
                 }
             });
         });
+        // Bootstrap tooltip
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
     </script>
 }
