@@ -377,33 +377,44 @@ namespace QuanView.Controllers
             }
         }
 
-        // GET: /GioHang/Count
-        [HttpGet]
-        public async Task<IActionResult> Count()
-        {
-            try
-            {
-                var customerId = ResolveCurrentCustomerId();
-                if (customerId.HasValue)
-                {
-                    var gioHang = await GetDatabaseCartAsync(customerId.Value);
-                    var totalCount = gioHang.ChiTietGioHangs?.Sum(x => x.SoLuong) ?? 0;
-                    return Json(new { count = totalCount });
-                }
+		// GET: /GioHang/Count
+		[HttpGet]
+		public async Task<IActionResult> Count()
+		{
+			try
+			{
+				var customerId = ResolveCurrentCustomerId();
 
-                var cart = GetSessionCart();
-                var sessionCount = cart.Sum(x => x.SoLuong);
-                return Json(new { count = sessionCount });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error getting cart count: {ex.Message}");
-                return Json(new { count = 0 });
-            }
-        }
+				if (customerId.HasValue)
+				{
+					var gioHang = await GetDatabaseCartAsync(customerId.Value);
 
-        // GET: GioHang/GetCustomerVouchers
-        [HttpGet]
+					var totalCount = gioHang.ChiTietGioHangs?
+						.Select(x => x.IDSanPhamChiTiet)
+						.Distinct()
+						.Count() ?? 0;
+
+					return Json(new { count = totalCount });
+				}
+
+				var cart = GetSessionCart();
+
+				var sessionCount = cart
+					.Select(x => x.IDSanPhamChiTiet)
+					.Distinct()
+					.Count();
+
+				return Json(new { count = sessionCount });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error getting cart count: {ex.Message}");
+				return Json(new { count = 0 });
+			}
+		}
+
+		// GET: GioHang/GetCustomerVouchers
+		[HttpGet]
         public async Task<IActionResult> GetCustomerVouchers()
         {
             try
