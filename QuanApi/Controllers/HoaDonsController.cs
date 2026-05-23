@@ -674,6 +674,23 @@ namespace QuanApi.Controllers
 
 					hoaDon.DaDatChoTonKho = false;
 					hoaDon.DaTruTonKho = false;
+
+                    // Trả lại lượt sử dụng mã giảm giá khi đơn bị hủy để khách có thể dùng lại.
+                    if (hoaDon.IDPhieuGiamGia.HasValue && hoaDon.IDKhachHang.HasValue)
+                    {
+                        var customerVoucher = await _context.KhachHangPhieuGiams
+                            .FirstOrDefaultAsync(x =>
+                                x.IDPhieuGiamGia == hoaDon.IDPhieuGiamGia.Value &&
+                                x.IDKhachHang == hoaDon.IDKhachHang.Value);
+
+                        if (customerVoucher != null && customerVoucher.SoLuongDaSuDung > 0)
+                        {
+                            customerVoucher.SoLuongDaSuDung = Math.Max(customerVoucher.SoLuongDaSuDung - 1, 0);
+                            customerVoucher.TrangThai = customerVoucher.SoLuongDaSuDung < customerVoucher.SoLuong;
+                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                            customerVoucher.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
+                        }
+                    }
 				}
 
 				var affected = await _context.Database.ExecuteSqlInterpolatedAsync(

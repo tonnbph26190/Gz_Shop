@@ -802,12 +802,17 @@ namespace QuanApi.Controllers
         }
 
 		[HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
-		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid? customerId, decimal tongTien)
+		public async Task<IActionResult> GetCustomerDiscountVouchers(
+            Guid? customerId,
+            decimal tongTien,
+            string? soDienThoai = null,
+            string? email = null)
 		{
 			var now = DateTime.UtcNow;
 			IQueryable<KhachHangPhieuGiam> customerVoucherQuery = _context.KhachHangPhieuGiams
 				.AsNoTracking()
 				.Where(x => false);
+            HashSet<Guid>? usedVoucherSet = null;
 
 			if (customerId.HasValue)
 			{
@@ -865,9 +870,75 @@ namespace QuanApi.Controllers
 					.Distinct()
 					.ToListAsync();
 
-				var usedVoucherSet = usedVoucherIds.ToHashSet();
-				raw = raw.Where(x => !usedVoucherSet.Contains(x.id)).ToList();
+				usedVoucherSet = usedVoucherIds.ToHashSet();
 			}
+            else
+            {
+                var normalizedPhone = NormalizePhoneForVoucherLimit(soDienThoai);
+                var normalizedEmail = NormalizeEmailForVoucherLimit(email);
+                if (!string.IsNullOrWhiteSpace(normalizedPhone) || !string.IsNullOrWhiteSpace(normalizedEmail))
+                {
+                    usedVoucherSet = new HashSet<Guid>();
+
+                    if (!string.IsNullOrWhiteSpace(normalizedPhone))
+                    {
+                        var usedByPhone = await _context.HoaDons
+                            .AsNoTracking()
+                            .Where(h =>
+                                h.IDPhieuGiamGia.HasValue &&
+                                h.TrangThaiHoaDon &&
+                                h.TrangThai != "Đã hủy")
+                            .Select(h => new
+                            {
+                                VoucherId = h.IDPhieuGiamGia!.Value,
+                                Phone = h.SoDienThoaiNguoiNhan
+                            })
+                            .ToListAsync();
+
+                        foreach (var item in usedByPhone)
+                        {
+                            if (NormalizePhoneForVoucherLimit(item.Phone) == normalizedPhone)
+                            {
+                                usedVoucherSet.Add(item.VoucherId);
+                            }
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(normalizedEmail))
+                    {
+                        var usedByEmail = await _context.HoaDons
+                            .AsNoTracking()
+                            .Where(h =>
+                                h.IDPhieuGiamGia.HasValue &&
+                                h.IDKhachHang.HasValue &&
+                                h.TrangThaiHoaDon &&
+                                h.TrangThai != "Đã hủy")
+                            .Join(
+                                _context.KhachHang.AsNoTracking(),
+                                h => h.IDKhachHang!.Value,
+                                kh => kh.IDKhachHang,
+                                (h, kh) => new
+                                {
+                                    VoucherId = h.IDPhieuGiamGia!.Value,
+                                    Email = kh.Email
+                                })
+                            .ToListAsync();
+
+                        foreach (var item in usedByEmail)
+                        {
+                            if (NormalizeEmailForVoucherLimit(item.Email) == normalizedEmail)
+                            {
+                                usedVoucherSet.Add(item.VoucherId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (usedVoucherSet is { Count: > 0 })
+            {
+                raw = raw.Where(x => !usedVoucherSet.Contains(x.id)).ToList();
+            }
 
 			// 👉 xử lý tại C#
 			var vouchers = raw.Select(x =>

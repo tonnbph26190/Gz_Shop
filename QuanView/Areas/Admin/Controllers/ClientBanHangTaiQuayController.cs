@@ -208,7 +208,11 @@ namespace QuanView.Areas.Admin.Controllers
         }
 		[HttpGet]
 		[Route("Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang")]
-		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid? customerId, decimal tongTien)
+		public async Task<IActionResult> GetCustomerDiscountVouchers(
+            Guid? customerId,
+            decimal tongTien,
+            string? soDienThoai = null,
+            string? email = null)
 		{
 			try
 			{
@@ -217,6 +221,18 @@ namespace QuanView.Areas.Admin.Controllers
 				{
 					query += $"&customerId={customerId.Value}";
 				}
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(soDienThoai))
+                    {
+                        query += $"&soDienThoai={Uri.EscapeDataString(soDienThoai.Trim())}";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        query += $"&email={Uri.EscapeDataString(email.Trim())}";
+                    }
+                }
 
 				var response = await _httpClient.GetAsync(query);
 
