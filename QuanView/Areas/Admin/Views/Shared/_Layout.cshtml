@@ -162,11 +162,56 @@
             display: none;
             grid-template-columns: 230px minmax(0, 1fr);
             height: min(520px, calc(100vh - 150px));
+            min-height: 420px;
+            min-width: 520px;
             overflow: hidden;
             position: fixed;
+            resize: both;
             right: 26px;
             width: min(760px, calc(100vw - 210px));
             z-index: 1050;
+        }
+
+        .admin-chat-resize-handle {
+            align-items: flex-end;
+            background: transparent;
+            border: 0;
+            color: #475569;
+            cursor: nwse-resize;
+            display: inline-flex;
+            height: 28px;
+            justify-content: flex-end;
+            padding: 0;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            touch-action: none;
+            width: 28px;
+            z-index: 20;
+        }
+
+        .admin-chat-resize-handle-left {
+            background: transparent;
+            border: 0;
+            cursor: ew-resize;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            padding: 0;
+            position: absolute;
+            touch-action: none;
+            width: 10px;
+            z-index: 19;
+        }
+
+        .admin-chat-resize-handle::before {
+            content: "";
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            height: 12px;
+            margin: 0 6px 6px 0;
+            width: 12px;
+            display: block;
         }
 
         .admin-chat-popup.open { display: grid; }
@@ -211,6 +256,57 @@
             padding: 9px;
         }
 
+        .admin-popup-room-head {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .admin-popup-room-title {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .admin-popup-rank-badge {
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            padding: 3px 7px;
+            white-space: nowrap;
+        }
+
+        .admin-popup-rank-kimcuong { background: #ede9fe; color: #6d28d9; }
+        .admin-popup-rank-vang { background: #fef3c7; color: #92400e; }
+        .admin-popup-rank-bac { background: #e2e8f0; color: #334155; }
+        .admin-popup-rank-dong { background: #ffedd5; color: #9a3412; }
+        .admin-popup-rank-default { background: #e5e7eb; color: #374151; }
+
+        .admin-popup-room-info-btn {
+            align-items: center;
+            background: #2563eb;
+            border: 0;
+            border-radius: 999px;
+            color: #fff;
+            display: inline-flex;
+            font-size: 11px;
+            gap: 4px;
+            opacity: 0;
+            padding: 3px 8px;
+            pointer-events: none;
+            transition: opacity .2s ease;
+            white-space: nowrap;
+        }
+
+        .admin-popup-room:hover .admin-popup-room-info-btn,
+        .admin-popup-room.active .admin-popup-room-info-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .admin-popup-room.active,
         .admin-popup-room:hover {
             background: #eff6ff;
@@ -225,11 +321,7 @@
             min-width: 0;
         }
 
-        .admin-popup-chat-title {
-            border-bottom: 1px solid #e5e7eb;
-            font-weight: 800;
-            padding: 12px 14px;
-        }
+        .admin-popup-chat-title { border-bottom: 1px solid #e5e7eb; font-weight: 800; padding: 12px 14px; }
 
         .admin-popup-messages {
             background: #f8fafc;
@@ -527,6 +619,28 @@
                 <button type="submit" id="adminPopupSend" disabled aria-label="Gửi"><i class="fas fa-paper-plane"></i></button>
             </form>
         </section>
+        <button type="button" class="admin-chat-resize-handle-left" id="adminChatResizeHandleLeft" aria-label="Kéo trái phải để đổi chiều rộng"></button>
+        <button type="button" class="admin-chat-resize-handle" id="adminChatResizeHandle" aria-label="Kéo để đổi kích thước"></button>
+    </div>
+
+    <div class="modal fade" id="adminPopupCustomerInfoModal" tabindex="-1" role="dialog" aria-labelledby="adminPopupCustomerInfoModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adminPopupCustomerInfoModalTitle">Thông tin khách hàng</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><strong>Tên:</strong> <span id="adminPopupCustomerName">-</span></div>
+                    <div class="mb-2"><strong>Số điện thoại:</strong> <span id="adminPopupCustomerPhone">-</span></div>
+                    <div class="mb-2"><strong>Hạng:</strong> <span id="adminPopupCustomerRank">-</span></div>
+                    <div class="mb-2"><strong>Điểm:</strong> <span id="adminPopupCustomerPoints">0</span></div>
+                    <div><strong>Địa chỉ:</strong> <span id="adminPopupCustomerAddress">Chưa có địa chỉ</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Logout Modal -->
@@ -649,8 +763,20 @@
         const adminPopupForm = document.getElementById('adminPopupForm');
         const adminPopupInput = document.getElementById('adminPopupInput');
         const adminPopupSend = document.getElementById('adminPopupSend');
+        const adminChatResizeHandle = document.getElementById('adminChatResizeHandle');
+        const adminChatResizeHandleLeft = document.getElementById('adminChatResizeHandleLeft');
+        const adminPopupCustomerName = document.getElementById('adminPopupCustomerName');
+        const adminPopupCustomerPhone = document.getElementById('adminPopupCustomerPhone');
+        const adminPopupCustomerRank = document.getElementById('adminPopupCustomerRank');
+        const adminPopupCustomerPoints = document.getElementById('adminPopupCustomerPoints');
+        const adminPopupCustomerAddress = document.getElementById('adminPopupCustomerAddress');
         let adminPopupRoomId = null;
         let adminPopupTimer = null;
+        let adminPopupRoomsData = [];
+        let adminResizeState = null;
+        const adminPopupMinWidth = 520;
+        const adminPopupMinHeight = 420;
+        const adminPopupStorageKey = 'gz-admin-chat-popup-size';
 
         function adminEscape(value) {
             return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -658,6 +784,74 @@
 
         function adminChatTime(value) {
             return value ? new Date(value).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
+        }
+
+        function clampPopupSize(width, height) {
+            const maxWidth = Math.max(adminPopupMinWidth, window.innerWidth - 40);
+            const popupTop = adminChatPopup ? adminChatPopup.getBoundingClientRect().top : 12;
+            const maxHeight = Math.max(adminPopupMinHeight, window.innerHeight - Math.max(12, popupTop) - 12);
+            return {
+                width: Math.min(Math.max(width, adminPopupMinWidth), maxWidth),
+                height: Math.min(Math.max(height, adminPopupMinHeight), maxHeight)
+            };
+        }
+
+        function applyAdminPopupSize(width, height) {
+            if (!adminChatPopup) return;
+            const size = clampPopupSize(width, height);
+            adminChatPopup.style.width = `${size.width}px`;
+            adminChatPopup.style.height = `${size.height}px`;
+        }
+
+        function loadAdminPopupSize() {
+            const raw = localStorage.getItem(adminPopupStorageKey);
+            if (!raw) return;
+            try {
+                const parsed = JSON.parse(raw);
+                if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
+                    applyAdminPopupSize(parsed.width, parsed.height);
+                }
+            } catch {
+            }
+        }
+
+        function ensurePopupTopAnchor() {
+            if (!adminChatPopup) return;
+            const rect = adminChatPopup.getBoundingClientRect();
+            adminChatPopup.style.top = `${Math.max(12, rect.top)}px`;
+            adminChatPopup.style.bottom = 'auto';
+        }
+
+        function getPopupRoomById(roomId) {
+            return adminPopupRoomsData.find(room => String(room.id) === String(roomId)) || null;
+        }
+
+        function popupRankClass(rank) {
+            const text = String(rank || '').toLowerCase();
+            if (text.includes('kim')) return 'admin-popup-rank-kimcuong';
+            if (text.includes('vang')) return 'admin-popup-rank-vang';
+            if (text.includes('bac')) return 'admin-popup-rank-bac';
+            if (text.includes('dong')) return 'admin-popup-rank-dong';
+            return 'admin-popup-rank-default';
+        }
+
+        function buildPopupCustomerTooltip(room) {
+            if (!room) return '';
+            const rank = room.customerRank || 'Chưa xếp hạng';
+            const points = Number(room.customerPoints || 0);
+            const phone = room.customerPhone || 'Không có SĐT';
+            const address = room.customerAddress || 'Chưa có địa chỉ';
+            return `${room.customerName || 'Khách hàng'} | ${phone} | ${rank} | ${points} điểm | ${address}`;
+        }
+
+        function showAdminPopupCustomerInfo(room) {
+            if (!room) return;
+            adminPopupCustomerName.textContent = room.customerName || 'Khách hàng';
+            adminPopupCustomerPhone.textContent = room.customerPhone || 'Không có SĐT';
+            adminPopupCustomerRank.textContent = room.customerRank || 'Chưa xếp hạng';
+            adminPopupCustomerPoints.textContent = String(Number(room.customerPoints || 0));
+            adminPopupCustomerAddress.textContent = room.customerAddress || 'Chưa có địa chỉ';
+            $('#adminPopupCustomerInfoModal').modal('show');
         }
 
         async function loadAdminPopupRooms(selectFirst = false) {
@@ -682,15 +876,28 @@
             }
 
             const result = await response.json();
-            const rooms = result.data || [];
+            const rooms = (result.data || []).sort((a, b) => {
+                const rankDiff = Number(b.rankPriority ?? -1) - Number(a.rankPriority ?? -1);
+                if (rankDiff !== 0) return rankDiff;
+                return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+            });
+            adminPopupRoomsData = rooms;
             if (!rooms.length) {
                 adminPopupRooms.innerHTML = '<div class="text-muted text-center small py-4">Chưa có hội thoại.</div>';
                 return;
             }
             if (!adminPopupRoomId && selectFirst) adminPopupRoomId = rooms[0].id;
             adminPopupRooms.innerHTML = rooms.map(room => `
-                <div class="admin-popup-room ${room.id === adminPopupRoomId ? 'active' : ''}" data-room-id="${room.id}">
-                    <div class="font-weight-bold text-truncate">${adminEscape(room.customerName)}</div>
+                <div class="admin-popup-room ${room.id === adminPopupRoomId ? 'active' : ''}" data-room-id="${room.id}" title="${adminEscape(buildPopupCustomerTooltip(room))}">
+                    <div class="admin-popup-room-head">
+                        <div class="admin-popup-room-title">
+                            <div class="font-weight-bold text-truncate">${adminEscape(room.customerName)}</div>
+                            <span class="admin-popup-rank-badge ${popupRankClass(room.customerRank)}">${adminEscape(room.customerRank || 'Chưa xếp hạng')}</span>
+                        </div>
+                        <button type="button" class="admin-popup-room-info-btn" data-info-room-id="${room.id}">
+                            <i class="fas fa-id-card-alt"></i> Xem
+                        </button>
+                    </div>
                     <div class="small text-muted text-truncate">${adminEscape(room.lastMessage || room.customerPhone || 'Chưa có tin nhắn')}</div>
                 </div>`).join('');
             adminPopupRooms.querySelectorAll('[data-room-id]').forEach(item => {
@@ -698,6 +905,14 @@
                     adminPopupRoomId = item.dataset.roomId;
                     loadAdminPopupRooms(false);
                     loadAdminPopupMessages();
+                });
+            });
+            adminPopupRooms.querySelectorAll('[data-info-room-id]').forEach(button => {
+                button.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const room = getPopupRoomById(button.dataset.infoRoomId);
+                    showAdminPopupCustomerInfo(room);
                 });
             });
             if (adminPopupRoomId) await loadAdminPopupMessages();
@@ -710,6 +925,8 @@
             const result = await response.json();
             if (!result.success) return;
             adminPopupTitle.textContent = result.room?.customerName || 'Khách hàng';
+            const activeRoom = getPopupRoomById(adminPopupRoomId) || result.room || {};
+            adminPopupTitle.title = buildPopupCustomerTooltip(activeRoom);
             adminPopupInput.disabled = false;
             adminPopupSend.disabled = false;
             const messages = result.data || [];
@@ -735,6 +952,7 @@
         adminChatToggle?.addEventListener('click', async () => {
             adminChatPopup?.classList.toggle('open');
             if (adminChatPopup?.classList.contains('open')) {
+                ensurePopupTopAnchor();
                 await loadAdminPopupRooms(true);
                 clearInterval(adminPopupTimer);
                 adminPopupTimer = setInterval(() => {
@@ -766,6 +984,59 @@
                 await loadAdminPopupRooms(false);
             }
         });
+
+        function startPopupResize(event, mode) {
+            if (!adminChatPopup) return;
+            if (event.button !== 0) return;
+            event.preventDefault();
+            ensurePopupTopAnchor();
+            const bounds = adminChatPopup.getBoundingClientRect();
+            adminResizeState = {
+                startX: event.clientX,
+                startY: event.clientY,
+                width: bounds.width,
+                height: bounds.height,
+                mode
+            };
+            event.currentTarget?.setPointerCapture?.(event.pointerId);
+            document.body.style.userSelect = 'none';
+        }
+
+        adminChatResizeHandle?.addEventListener('pointerdown', event => {
+            startPopupResize(event, 'both');
+        });
+
+        adminChatResizeHandleLeft?.addEventListener('pointerdown', event => {
+            startPopupResize(event, 'width');
+        });
+
+        document.addEventListener('pointermove', event => {
+            if (!adminResizeState) return;
+            // Popup is anchored to the right side: drag left to increase width, drag right to decrease.
+            const nextWidth = adminResizeState.width - (event.clientX - adminResizeState.startX);
+            const nextHeight = adminResizeState.mode === 'both'
+                ? adminResizeState.height + (event.clientY - adminResizeState.startY)
+                : adminResizeState.height;
+            applyAdminPopupSize(nextWidth, nextHeight);
+        });
+
+        document.addEventListener('pointerup', () => {
+            if (!adminResizeState || !adminChatPopup) return;
+            adminResizeState = null;
+            document.body.style.userSelect = '';
+            localStorage.setItem(adminPopupStorageKey, JSON.stringify({
+                width: adminChatPopup.offsetWidth,
+                height: adminChatPopup.offsetHeight
+            }));
+        });
+
+        window.addEventListener('resize', () => {
+            if (!adminChatPopup || !adminChatPopup.style.width || !adminChatPopup.style.height) return;
+            applyAdminPopupSize(adminChatPopup.offsetWidth, adminChatPopup.offsetHeight);
+        });
+
+        loadAdminPopupSize();
+
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

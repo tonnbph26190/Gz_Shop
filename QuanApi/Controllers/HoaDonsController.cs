@@ -397,21 +397,27 @@ namespace QuanApi.Controllers
 					return BadRequest("Không có sản phẩm nào trong đơn hàng");
 				}
 
-				if (dto.TongTien <= 0)
+				var merchandiseSubtotal = Math.Max(dto.ChiTietHoaDons.Sum(x => x.ThanhTien), 0);
+				if (merchandiseSubtotal <= 0)
 				{
-					return BadRequest("Tổng tiền phải lớn hơn 0");
+					return BadRequest("Tổng tiền hàng phải lớn hơn 0");
 				}
 
+				PhieuGiamGia? voucher = null;
 				if (dto.PhieuGiamGiaId.HasValue)
 				{
 					var now = DateTime.UtcNow;
-					var voucher = await _context.PhieuGiamGias
+					voucher = await _context.PhieuGiamGias
 						.AsNoTracking()
 						.FirstOrDefaultAsync(x => x.IDPhieuGiamGia == dto.PhieuGiamGiaId.Value);
 
 					if (voucher == null || !voucher.TrangThai || voucher.NgayBatDau > now || voucher.NgayKetThuc < now)
 					{
 						return BadRequest("Phiếu giảm giá không hợp lệ hoặc đã hết hiệu lực.");
+					}
+					if (voucher.DonToiThieu.HasValue && merchandiseSubtotal < voucher.DonToiThieu.Value)
+					{
+						return BadRequest($"Đơn hàng chưa đạt giá trị tối thiểu {voucher.DonToiThieu.Value:n0} để áp dụng phiếu giảm giá.");
 					}
 
 					if (dto.KhachHangId.HasValue)
@@ -461,8 +467,8 @@ namespace QuanApi.Controllers
 					IDNhanVien = dto.NhanVienId,
 					IDPhieuGiamGia = dto.PhieuGiamGiaId,
 					IDPhuongThucThanhToan = dto.PhuongThucThanhToanId,
-					TongTien = dto.TongTien,
-					TienGiam = dto.TienGiam ?? 0,
+					TongTien = merchandiseSubtotal,
+					TienGiam = 0,
 					PhiVanChuyen = 0,
 					BanTaiQuay = dto.BanTaiQuay,
 					TrangThai = "Chờ xác nhận",
@@ -511,9 +517,24 @@ namespace QuanApi.Controllers
 					//}
 				}
 
-				hoaDon.TongTien = Math.Max(hoaDon.TongTien - (hoaDon.TienGiam ?? 0), 0);
+				if (voucher != null)
+				{
+					var voucherDiscount = hoaDon.TongTien * (voucher.GiaTriGiam / 100m);
+					if (voucher.GiaTriGiamToiDa.HasValue)
+					{
+						voucherDiscount = Math.Min(voucherDiscount, voucher.GiaTriGiamToiDa.Value);
+					}
 
-				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(dto.KhachHangId, hoaDon.TongTien, dto.UsePoint);
+					voucherDiscount = Math.Max(voucherDiscount, 0);
+					hoaDon.TienGiam = voucherDiscount;
+					hoaDon.TongTien = Math.Max(hoaDon.TongTien - voucherDiscount, 0);
+				}
+
+				var loyaltyResult = await _loyaltyService.BuildCheckoutResultAsync(
+					dto.KhachHangId,
+					hoaDon.TongTien,
+					dto.UsePoint,
+					dto.RequestedUsedPoints);
 				hoaDon.DiemDaDung = loyaltyResult.UsedPoints;
 				hoaDon.SoTienGiamTuDiem = loyaltyResult.DiscountFromPoints;
 				hoaDon.TyLeQuyDoiDiem = loyaltyResult.PointConversionRate;
@@ -529,9 +550,12 @@ namespace QuanApi.Controllers
 				{
 					if (dto.PhiVanChuyenDaGiam)
 					{
-						hoaDon.PhiVanChuyenGoc = shippingFeeFromRequest;
+						var originalShippingFee = dto.PhiVanChuyenGoc.HasValue && dto.PhiVanChuyenGoc.Value >= shippingFeeFromRequest
+							? dto.PhiVanChuyenGoc.Value
+							: shippingFeeFromRequest;
+						hoaDon.PhiVanChuyenGoc = originalShippingFee;
 						hoaDon.PhiVanChuyen = shippingFeeFromRequest;
-						hoaDon.SoTienGiamPhiVanChuyen = 0;
+						hoaDon.SoTienGiamPhiVanChuyen = dto.SoTienGiamPhiVanChuyen ?? Math.Max(originalShippingFee - shippingFeeFromRequest, 0);
 						hoaDon.TongTien += shippingFeeFromRequest;
 					}
 					else
@@ -1262,6 +1286,9 @@ namespace QuanApi.Controllers
 		public decimal? PhiVanChuyen { get; set; }
 		public bool PhiVanChuyenDaGiam { get; set; }
 		public bool UsePoint { get; set; }
+		public int? RequestedUsedPoints { get; set; }
+		public decimal? PhiVanChuyenGoc { get; set; }
+		public decimal? SoTienGiamPhiVanChuyen { get; set; }
 		public bool XacNhanNgaySauThanhToan { get; set; } = false;
 		public bool BanTaiQuay { get; set; } = false;
 		public string TenNguoiNhan { get; set; }

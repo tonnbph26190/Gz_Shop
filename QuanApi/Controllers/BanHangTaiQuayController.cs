@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using System.Collections.Generic; // Added for List
+using Microsoft.Extensions.Logging;
 using QuanApi.Services;
 
 namespace QuanApi.Controllers
@@ -21,6 +22,8 @@ namespace QuanApi.Controllers
         private readonly IShippingPolicyService _shippingPolicyService;
         private readonly ILoyaltyService _loyaltyService;
         private readonly IInventoryReservationService _inventoryReservationService;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<BanHangTaiQuayController> _logger;
 
         public BanHangTaiQuayController(
             BanQuanAu1DbContext context,
@@ -28,7 +31,9 @@ namespace QuanApi.Controllers
             IGHNService ghnService,
             IShippingPolicyService shippingPolicyService,
             ILoyaltyService loyaltyService,
-            IInventoryReservationService inventoryReservationService)
+            IInventoryReservationService inventoryReservationService,
+            IEmailService emailService,
+            ILogger<BanHangTaiQuayController> logger)
         {
             _context = context;
             _shippingService = shippingService;
@@ -36,6 +41,8 @@ namespace QuanApi.Controllers
             _shippingPolicyService = shippingPolicyService;
             _loyaltyService = loyaltyService;
             _inventoryReservationService = inventoryReservationService;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         // 1. Tạo đơn hàng mới
@@ -780,6 +787,7 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+            await TrySendPosCheckoutEmailAsync(hoaDon, dto.CustomerEmail);
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon });
         }
 
@@ -1814,7 +1822,28 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+            await TrySendPosCheckoutEmailAsync(hoaDon, dto.CustomerEmail);
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
+        }
+
+        private async Task TrySendPosCheckoutEmailAsync(HoaDon hoaDon, string? fallbackEmail)
+        {
+            try
+            {
+                var normalizedFallbackEmail = string.IsNullOrWhiteSpace(fallbackEmail)
+                    ? null
+                    : fallbackEmail.Trim();
+
+                await _emailService.SendOrderStatusChangeEmailAsync(
+                    hoaDon,
+                    string.Empty,
+                    hoaDon.TrangThai ?? "DaThanhToan",
+                    normalizedFallbackEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể gửi email sau khi chốt đơn POS {OrderCode}", hoaDon.MaHoaDon);
+            }
         }
 
         private static string NormalizePhoneForVoucherLimit(string? phone)

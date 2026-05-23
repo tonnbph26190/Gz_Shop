@@ -20,7 +20,7 @@ namespace QuanApi.Services
             _logger = logger;
         }
 
-        public async Task SendOrderStatusChangeEmailAsync(HoaDon hoaDon, string oldStatus, string newStatus)
+        public async Task SendOrderStatusChangeEmailAsync(HoaDon hoaDon, string oldStatus, string newStatus, string? fallbackEmail = null)
         {
             try
             {
@@ -32,7 +32,15 @@ namespace QuanApi.Services
                             .ThenInclude(sp => sp.SanPham)
                     .FirstOrDefaultAsync(h => h.IDHoaDon == hoaDon.IDHoaDon);
 
-                if (fullOrder?.KhachHang?.Email == null)
+                var recipientEmail = fullOrder?.KhachHang?.Email;
+                if (string.IsNullOrWhiteSpace(recipientEmail))
+                {
+                    recipientEmail = string.IsNullOrWhiteSpace(fallbackEmail)
+                        ? null
+                        : fallbackEmail.Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientEmail))
                 {
                     _logger.LogWarning($"Không thể gửi email: Khách hàng không có email cho đơn hàng {hoaDon.MaHoaDon}");
                     return;
@@ -41,7 +49,7 @@ namespace QuanApi.Services
                 var subject = GetEmailSubject(newStatus, hoaDon.MaHoaDon);
                 var body = GenerateStatusChangeEmailBody(fullOrder, oldStatus, newStatus);
 
-                await SendEmailAsync(fullOrder.KhachHang.Email, subject, body);
+                await SendEmailAsync(recipientEmail, subject, body);
 
                 _logger.LogInformation($"Đã gửi email thông báo thay đổi trạng thái từ '{oldStatus}' sang '{newStatus}' cho đơn hàng {hoaDon.MaHoaDon}");
             }

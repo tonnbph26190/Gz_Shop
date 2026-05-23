@@ -36,6 +36,10 @@ namespace QuanView.Controllers
                 ViewBag.StaffName = room.NhanVien?.TenNhanVien ?? "Nhân viên hỗ trợ";
             }
 
+            var customerInfo = await BuildCustomerInfoAsync(customer.IDKhachHang);
+            ViewBag.CustomerRank = customerInfo?.Rank ?? "Chưa xếp hạng";
+            ViewBag.CustomerPoints = customerInfo?.SoDiemHienTai ?? 0;
+
             return View();
         }
 
@@ -69,6 +73,8 @@ namespace QuanView.Controllers
                 })
                 .ToListAsync();
 
+            var customerInfo = await BuildCustomerInfoAsync(customer.IDKhachHang);
+
             return Json(new
             {
                 success = true,
@@ -77,6 +83,7 @@ namespace QuanView.Controllers
                     id = room.IDPhongTroChuyen,
                     staffName = room.NhanVien?.TenNhanVien ?? "Nhân viên hỗ trợ"
                 },
+                customerInfo,
                 data = messages
             });
         }
@@ -229,6 +236,42 @@ namespace QuanView.Controllers
 
             room.NhanVien = staff;
             return room;
+        }
+
+        private async Task<CustomerInfoVm?> BuildCustomerInfoAsync(Guid customerId)
+        {
+            var customer = await _context.KhachHang
+                .AsNoTracking()
+                .Include(k => k.HangKhachHang)
+                .Include(k => k.DiaChis)
+                .Where(k => k.IDKhachHang == customerId && k.TrangThai)
+                .Select(k => new CustomerInfoVm
+                {
+                    TenKhachHang = k.TenKhachHang,
+                    SoDienThoai = k.SoDienThoai,
+                    SoDiemHienTai = k.SoDiemHienTai,
+                    Rank = k.HangKhachHang != null ? k.HangKhachHang.TenHang : "Chưa xếp hạng",
+                    DiaChiMacDinh = k.DiaChis != null
+                        ? k.DiaChis
+                            .Where(d => d.TrangThai)
+                            .OrderByDescending(d => d.LaMacDinh)
+                            .ThenByDescending(d => d.LanCapNhatCuoi ?? d.NgayTao)
+                            .Select(d => d.DiaChiChiTiet)
+                            .FirstOrDefault()
+                        : null
+                })
+                .FirstOrDefaultAsync();
+
+            return customer;
+        }
+
+        private sealed class CustomerInfoVm
+        {
+            public string TenKhachHang { get; set; } = string.Empty;
+            public string SoDienThoai { get; set; } = string.Empty;
+            public int SoDiemHienTai { get; set; }
+            public string Rank { get; set; } = "Chưa xếp hạng";
+            public string? DiaChiMacDinh { get; set; }
         }
     }
 }

@@ -38,7 +38,7 @@ public class ChartsApiController : ControllerBase
                             && h.TrangThaiHoaDon
                             && h.NgayTao >= startOfToday
                             && h.NgayTao < startOfTomorrow)
-                .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
+                .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
             // month revenue (use half-open range)
             var monthRevenue = await _context.HoaDons
@@ -46,7 +46,7 @@ public class ChartsApiController : ControllerBase
                         && h.TrangThaiHoaDon
                         && h.NgayTao >= firstDayOfMonth
                         && h.NgayTao < firstDayOfNextMonth)
-            .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
+            .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
             var monthProductQuantity = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
@@ -138,7 +138,7 @@ public class ChartsApiController : ControllerBase
             var today = DateTime.UtcNow.Date;
             var revenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao.Date == today)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -155,7 +155,7 @@ public class ChartsApiController : ControllerBase
             var revenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
                             h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -262,7 +262,7 @@ public class ChartsApiController : ControllerBase
                 {
                     g.Key.Year,
                     g.Key.Month,
-                    Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)),
+                    Revenue = g.Sum(h => h.TongTien - (h.PhiVanChuyen ?? 0)),
                     OrderCount = g.Count()
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month)
@@ -549,7 +549,7 @@ public class ChartsApiController : ControllerBase
 
             var monthlyRevenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
 
             var todayOrders = await _context.HoaDons.CountAsync(h => h.NgayTao.Date == today && h.TrangThaiHoaDon);
             var totalCustomers = await _context.KhachHang.CountAsync(k => k.TrangThai);

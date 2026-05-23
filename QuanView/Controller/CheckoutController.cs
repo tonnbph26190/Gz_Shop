@@ -511,6 +511,8 @@ namespace QuanView.Controllers
                     requestedUsedPoints = checkoutData.RequestedUsedPoints,
                     phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
                     phiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
+                    phiVanChuyenGoc = checkoutData.PhiVanChuyenGoc,
+                    soTienGiamPhiVanChuyen = checkoutData.SoTienGiamPhiVanChuyen,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
@@ -528,6 +530,7 @@ namespace QuanView.Controllers
                     Console.WriteLine($"API Response: {responseContent}");
 
                     string maHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}"; // Fallback
+                    decimal finalOrderTotal = checkoutData.TongTien;
                     decimal soTienGiamTuDiem = 0;
                     decimal tyLeQuyDoiDiem = 0;
                     int diemDaDung = checkoutData.RequestedUsedPoints ?? 0;
@@ -554,6 +557,7 @@ namespace QuanView.Controllers
                             // Thử parse như HoaDon object
                             var hoaDonResponse = JsonSerializer.Deserialize<HoaDon>(responseContent);
                             maHoaDon = hoaDonResponse?.MaHoaDon ?? maHoaDon;
+                            finalOrderTotal = hoaDonResponse?.TongTien ?? finalOrderTotal;
                             soTienGiamTuDiem = hoaDonResponse?.SoTienGiamTuDiem ?? 0;
                             tyLeQuyDoiDiem = hoaDonResponse?.TyLeQuyDoiDiem ?? 0;
                             diemDaDung = hoaDonResponse?.DiemDaDung ?? diemDaDung;
@@ -570,6 +574,14 @@ namespace QuanView.Controllers
                         if (responseData.TryGetProperty("diemDaDung", out var diemDaDungElement))
                         {
                             diemDaDung = diemDaDungElement.GetInt32();
+                        }
+                        if (responseData.TryGetProperty("tongTien", out var tongTienElement))
+                        {
+                            finalOrderTotal = tongTienElement.GetDecimal();
+                        }
+                        else if (responseData.TryGetProperty("TongTien", out var tongTienPascalElement))
+                        {
+                            finalOrderTotal = tongTienPascalElement.GetDecimal();
                         }
                         if (responseData.TryGetProperty("phiVanChuyen", out var phiVanChuyenElement))
                         {
@@ -592,7 +604,7 @@ namespace QuanView.Controllers
 
                     // Chuẩn bị dữ liệu cho trang Success
                     ViewBag.OrderCode = maHoaDon;
-                    ViewBag.OrderTotal = checkoutData.TongTien;
+                    ViewBag.OrderTotal = finalOrderTotal;
                     ViewBag.PaymentMethod = "Thanh toán khi nhận hàng";
                     ViewBag.OrderDate = DateTime.Now;
                     ViewBag.CustomerName = checkoutData.TenNguoiNhan;
@@ -613,7 +625,7 @@ namespace QuanView.Controllers
                         redirectUrl = Url.Action("Success", "Checkout", new
                         {
                             orderCode = maHoaDon,
-                            total = checkoutData.TongTien,
+                            total = finalOrderTotal,
                             paymentMethod = "Thanh toán khi nhận hàng",
                             customerName = checkoutData.TenNguoiNhan,
                             customerPhone = checkoutData.SoDienThoaiNguoiNhan,
@@ -1165,6 +1177,8 @@ namespace QuanView.Controllers
                             requestedUsedPoints = checkoutInfo.RequestedUsedPoints,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
                             phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
+                            phiVanChuyenGoc = checkoutInfo.PhiVanChuyenGoc,
+                            soTienGiamPhiVanChuyen = checkoutInfo.SoTienGiamPhiVanChuyen,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
                             soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
                             diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
@@ -1188,6 +1202,11 @@ namespace QuanView.Controllers
                                 var diemDaDung = root.TryGetProperty("diemDaDung", out var diemDaDungEl)
                                     ? diemDaDungEl.GetInt32()
                                     : (checkoutInfo.RequestedUsedPoints ?? 0);
+                                var finalOrderTotal = root.TryGetProperty("tongTien", out var tongTienEl)
+                                    ? tongTienEl.GetDecimal()
+                                    : (root.TryGetProperty("TongTien", out var tongTienPascalEl)
+                                        ? tongTienPascalEl.GetDecimal()
+                                        : checkoutInfo.TongTien);
                                 var soTienGiamTuDiem = root.TryGetProperty("soTienGiamTuDiem", out var soTienGiamTuDiemEl)
                                     ? soTienGiamTuDiemEl.GetDecimal()
                                     : 0m;
@@ -1206,7 +1225,7 @@ namespace QuanView.Controllers
 
                                 // Chuẩn bị dữ liệu cho trang Success
                                 ViewBag.OrderCode = maHoaDon;
-                                ViewBag.OrderTotal = checkoutInfo.TongTien;
+                                ViewBag.OrderTotal = finalOrderTotal;
                                 ViewBag.PaymentMethod = "Thanh toán VNPay";
                                 ViewBag.OrderDate = DateTime.Now;
                                 ViewBag.CustomerName = checkoutInfo.TenNguoiNhan;
