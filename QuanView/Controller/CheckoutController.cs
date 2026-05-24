@@ -171,7 +171,7 @@ namespace QuanView.Controllers
             HttpContext.Session.SetObjectAsJson("Cart", cart);
         }
 
-        private async Task<PhieuGiamGiaResponse?> KiemTraPhieuGiamGiaHopLeAsync(string maGiamGia)
+        private async Task<PhieuGiamGiaResponse?> KiemTraPhieuGiamGiaHopLeAsync(string maGiamGia, decimal? tongTien = null)
         {
             if (string.IsNullOrWhiteSpace(maGiamGia))
             {
@@ -179,10 +179,13 @@ namespace QuanView.Controllers
             }
 
             var code = Uri.EscapeDataString(maGiamGia.Trim());
+            var tongTienQuery = tongTien.HasValue
+                ? $"&tongTien={tongTien.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+                : string.Empty;
             var endpoints = new[]
             {
-                $"PhieuGiamGia/kiem-tra?code={code}",
-                $"PhieuGiamGias/kiem-tra?code={code}"
+                $"PhieuGiamGia/kiem-tra?code={code}{tongTienQuery}",
+                $"PhieuGiamGias/kiem-tra?code={code}{tongTienQuery}"
             };
 
             foreach (var endpoint in endpoints)
@@ -381,7 +384,8 @@ namespace QuanView.Controllers
                 var maGiamGia = checkoutData.MaGiamGia?.Trim();
                 if (!string.IsNullOrWhiteSpace(maGiamGia))
                 {
-                    var phieuResult = await KiemTraPhieuGiamGiaHopLeAsync(maGiamGia);
+                    var tongTienHang = chiTietHoaDons.Sum(x => x.thanhTien);
+                    var phieuResult = await KiemTraPhieuGiamGiaHopLeAsync(maGiamGia, tongTienHang);
                     if (phieuResult == null || !phieuResult.Success || !phieuResult.IdPhieuGiamGia.HasValue)
                     {
                         return Json(new { success = false, message = "Mã giảm giá không hợp lệ hoặc đã hết hiệu lực." });
@@ -462,6 +466,7 @@ namespace QuanView.Controllers
                             PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                            EmailNguoiNhan = checkoutData.EmailNguoiNhan,
                             DiaChiGiaoHang = checkoutData.DiaChiGiaoHang,
                             GhiChu = checkoutData.GhiChu,
                             PhieuGiamGiaId = phieuGiamGiaId,
@@ -515,6 +520,7 @@ namespace QuanView.Controllers
                     soTienGiamPhiVanChuyen = checkoutData.SoTienGiamPhiVanChuyen,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                    emailNguoiNhan = checkoutData.EmailNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
                     ghiChu = checkoutData.GhiChu,
                     chiTietHoaDons = chiTietHoaDons
@@ -709,11 +715,11 @@ namespace QuanView.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> KiemTraMaGiamGia(string code)
+        public async Task<IActionResult> KiemTraMaGiamGia(string code, decimal? tongTien = null)
         {
             try
             {
-                var result = await KiemTraPhieuGiamGiaHopLeAsync(code);
+                var result = await KiemTraPhieuGiamGiaHopLeAsync(code, tongTien);
                 if (result != null)
                 {
                     return Json(result);
@@ -1181,6 +1187,7 @@ namespace QuanView.Controllers
                             soTienGiamPhiVanChuyen = checkoutInfo.SoTienGiamPhiVanChuyen,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
                             soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
+                            emailNguoiNhan = checkoutInfo.EmailNguoiNhan,
                             diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
                             ghiChu = checkoutInfo.GhiChu,
                             chiTietHoaDons = chiTietHoaDons
@@ -1320,6 +1327,7 @@ namespace QuanView.Controllers
         public Guid? KhachHangId { get; set; }
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
+        public string? EmailNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }
         public string Province { get; set; }
         public string District { get; set; }

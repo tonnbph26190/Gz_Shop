@@ -1450,6 +1450,15 @@
         const query = { tongTien: tongTien };
         if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
             query.customerId = selectedCustomer.id;
+        } else {
+            const guestPhone = ($('#shipPhone').val() || '').trim();
+            const guestEmail = ($('#shipEmail').val() || '').trim();
+            if (guestPhone) {
+                query.soDienThoai = guestPhone;
+            }
+            if (guestEmail) {
+                query.email = guestEmail;
+            }
         }
 
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', query, function (data) {
@@ -1457,9 +1466,8 @@
             console.log("Voucher response:", data);
 
             if (data && data.length > 0) {
-
-                // ✅ dùng toàn bộ list (KHÔNG filter)
-                let finalVouchers = [...data];
+                // Chỉ giữ voucher khả dụng để ẩn hoàn toàn mã đã dùng/không đủ điều kiện.
+                let finalVouchers = [...data].filter(v => v && v.hopLe === true);
 
                 // reset best
                 finalVouchers.forEach(v => v.isBest = false);
@@ -1490,15 +1498,17 @@
                     return new Date(a.ngayKetThuc) - new Date(b.ngayKetThuc);
                 });
 
-                // 🥇 đánh dấu tốt nhất
-                if (finalVouchers.length > 0) {
+                const usableVoucherCount = finalVouchers.length;
+                if (usableVoucherCount > 0) {
+                    // 🥇 đánh dấu tốt nhất
                     finalVouchers[0].isBest = true;
+                    renderVoucherList(finalVouchers);
+                    $('#voucherList').show();
+                    $('#noVoucherMessage').hide();
+                } else {
+                    $('#voucherList').hide();
+                    $('#noVoucherMessage').show();
                 }
-
-                renderVoucherList(finalVouchers);
-
-                $('#voucherList').show();
-                $('#noVoucherMessage').hide();
 
             } else {
                 $('#voucherList').hide();
@@ -1518,12 +1528,18 @@
 
     // Render danh sách phiếu giảm giá
     function renderVoucherList(vouchers) {
+        const usableVouchers = (vouchers || []).filter(v => v && v.hopLe === true);
+        if (usableVouchers.length === 0) {
+            $('#voucherList').html('');
+            return 0;
+        }
+
         // Tính tổng tiền đơn hàng hiện tại
         let gh = gioHangs[currentGioHang];
         let orderTotal = (gh && gh.products) ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
 
         let html = '<div class="row">';
-        vouchers.forEach(function (voucher, index) {
+        usableVouchers.forEach(function (voucher, index) {
             let isExpired = new Date(voucher.ngayKetThuc) < new Date();
             let isActive = !isExpired && new Date(voucher.ngayBatDau) <= new Date();
             let meetsMinimum = orderTotal >= voucher.donToiThieu;
@@ -1614,6 +1630,7 @@
         });
         html += '</div>';
         $('#voucherList').html(html);
+        return usableVouchers.length;
     }
 
     // Chọn phiếu giảm giá

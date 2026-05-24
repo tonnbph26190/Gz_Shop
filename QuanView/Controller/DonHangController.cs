@@ -33,9 +33,9 @@ namespace QuanView.Controllers
             return null;
         }
 
-        // GET: DonHang/Index
-        public async Task<IActionResult> Index(string search = "", string fromDate = "", string toDate = "", string quickDate = "", int page = 1)
-        {
+		// GET: DonHang/Index
+		public async Task<IActionResult> Index(string search = "", string trangThai = "", string fromDate = "", string toDate = "", string quickDate = "", int page = 1)
+		{
             try
             {
                 // Đồng bộ quickDate với from/to để pagination hoặc reload không làm mất bộ lọc.
@@ -71,8 +71,11 @@ namespace QuanView.Controllers
                     {
                         customerParameters.Add($"search={Uri.EscapeDataString(search)}");
                     }
-
-                    if (!string.IsNullOrEmpty(fromDate))
+					if (!string.IsNullOrEmpty(trangThai))
+					{
+						customerParameters.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+					}
+					if (!string.IsNullOrEmpty(fromDate))
                     {
                         customerParameters.Add($"fromDate={Uri.EscapeDataString(fromDate)}");
                     }
@@ -129,7 +132,8 @@ namespace QuanView.Controllers
                         ViewBag.Search = search;
                         ViewBag.FromDate = fromDate;
                         ViewBag.ToDate = toDate;
-                        ViewBag.IsAuthenticated = true;
+						ViewBag.TrangThai = trangThai;
+						ViewBag.IsAuthenticated = true;
                         return View(viewModel);
                     }
 
@@ -138,7 +142,8 @@ namespace QuanView.Controllers
                     ViewBag.Search = search;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = true;
+					ViewBag.TrangThai = trangThai;
+					ViewBag.IsAuthenticated = true;
                     TempData["ErrorMessage"] = "Không tải được danh sách đơn hàng. Vui lòng thử lại sau.";
                     return View(new
                     {
@@ -161,7 +166,8 @@ namespace QuanView.Controllers
                     ViewBag.Search = search;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = true;
+					ViewBag.TrangThai = trangThai;
+					ViewBag.IsAuthenticated = true;
                     TempData["ErrorMessage"] = "Không xác định được tài khoản khách hàng. Vui lòng đăng xuất và đăng nhập lại.";
                     return View(new
                     {
@@ -254,7 +260,8 @@ namespace QuanView.Controllers
                     ViewBag.Search = search;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = isAuthenticated;
+					ViewBag.TrangThai = trangThai;
+					ViewBag.IsAuthenticated = isAuthenticated;
                     return View(viewModel);
                 }
                 else
@@ -270,7 +277,8 @@ namespace QuanView.Controllers
                     ViewBag.Search = search;
                     ViewBag.FromDate = fromDate;
                     ViewBag.ToDate = toDate;
-                    ViewBag.IsAuthenticated = isAuthenticated;
+					ViewBag.TrangThai = trangThai;
+					ViewBag.IsAuthenticated = isAuthenticated;
 
                     var emptyViewModel = new
                     {

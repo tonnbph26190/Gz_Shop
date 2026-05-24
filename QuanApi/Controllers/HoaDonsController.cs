@@ -674,6 +674,23 @@ namespace QuanApi.Controllers
 
 					hoaDon.DaDatChoTonKho = false;
 					hoaDon.DaTruTonKho = false;
+
+                    // Trả lại lượt sử dụng mã giảm giá khi đơn bị hủy để khách có thể dùng lại.
+                    if (hoaDon.IDPhieuGiamGia.HasValue && hoaDon.IDKhachHang.HasValue)
+                    {
+                        var customerVoucher = await _context.KhachHangPhieuGiams
+                            .FirstOrDefaultAsync(x =>
+                                x.IDPhieuGiamGia == hoaDon.IDPhieuGiamGia.Value &&
+                                x.IDKhachHang == hoaDon.IDKhachHang.Value);
+
+                        if (customerVoucher != null && customerVoucher.SoLuongDaSuDung > 0)
+                        {
+                            customerVoucher.SoLuongDaSuDung = Math.Max(customerVoucher.SoLuongDaSuDung - 1, 0);
+                            customerVoucher.TrangThai = customerVoucher.SoLuongDaSuDung < customerVoucher.SoLuong;
+                            customerVoucher.LanCapNhatCuoi = DateTime.UtcNow;
+                            customerVoucher.NguoiCapNhat = dto.NguoiCapNhat ?? "System";
+                        }
+                    }
 				}
 
 				var affected = await _context.Database.ExecuteSqlInterpolatedAsync(
@@ -1016,8 +1033,13 @@ namespace QuanApi.Controllers
 		// GET: api/HoaDons/customer/{customerId} - Cho người dùng đã đăng nhập
 		[HttpGet("customer/{customerId}")]
 		public async Task<ActionResult<IEnumerable<HoaDon>>> GetHoaDonsByCustomer(
-			Guid customerId, string? search = null, string? fromDate = null, string? toDate = null,
-			int page = 1, int pageSize = 10)
+	Guid customerId,
+	string? search = null,
+	string? trangThai = null,
+	string? fromDate = null,
+	string? toDate = null,
+	int page = 1,
+	int pageSize = 10)
 		{
 			try
 			{
@@ -1035,7 +1057,11 @@ namespace QuanApi.Controllers
 				{
 					query = query.Where(h => h.MaHoaDon.Contains(search));
 				}
-
+				// Lọc theo trạng thái
+				if (!string.IsNullOrEmpty(trangThai))
+				{
+					query = query.Where(h => h.TrangThai == trangThai);
+				}
 				// Lọc theo ngày từ (UTC range compare để ổn định với PostgreSQL timestamp)
 				if (!string.IsNullOrEmpty(fromDate) && DateTime.TryParse(fromDate, out var fromDateParsed))
 				{

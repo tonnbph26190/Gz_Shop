@@ -908,6 +908,7 @@
 				// Kiểm tra form
 				const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
 				const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
+				const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 				const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
 				const tinh = document.getElementById('tinh').value;
 				const quan = document.getElementById('quan').value;
@@ -997,6 +998,7 @@
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
 					soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+                    emailNguoiNhan: emailNguoiNhan || null,
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
@@ -2030,6 +2032,7 @@
 				// Kiểm tra form
 				const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
 				const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
+				const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 				const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
 				const tinh = document.getElementById('tinh').value;
 				const quan = document.getElementById('quan').value;
@@ -2120,6 +2123,7 @@
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
 					soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+                    emailNguoiNhan: emailNguoiNhan || null,
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
@@ -3019,8 +3023,8 @@
 				};
 			});
 
-			// Chỉ hiển thị mã có thể sử dụng được ngay
-			mapped = mapped.filter(v => v.isUsable);
+			// Chỉ hiển thị mã có thể sử dụng được ngay và còn hợp lệ theo backend.
+			mapped = mapped.filter(v => v.isUsable && v.hopLe !== false);
 			if (mapped.length === 0) {
 				$('#voucherList').html('');
 				return 0;

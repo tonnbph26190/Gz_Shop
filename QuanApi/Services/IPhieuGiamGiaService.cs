@@ -28,7 +28,7 @@ namespace QuanApi.Services
             Guid customerId,
             string? nguoiCapNhat);
 
-        Task<object> CheckVoucherCodeAsync(string code);
+        Task<object> CheckVoucherCodeAsync(string code, decimal? tongTien = null);
     }
 
     public class PhieuGiamGiaService : IPhieuGiamGiaService
@@ -346,7 +346,7 @@ namespace QuanApi.Services
             return true;
         }
 
-        public async Task<object> CheckVoucherCodeAsync(string code)
+        public async Task<object> CheckVoucherCodeAsync(string code, decimal? tongTien = null)
         {
             if (string.IsNullOrWhiteSpace(code))
             {
@@ -357,6 +357,7 @@ namespace QuanApi.Services
                 };
             }
 
+            code = code.Trim();
             var phieuGiamGia = await _context.PhieuGiamGias
                 .FirstOrDefaultAsync(pgg =>
                     pgg.MaCode == code &&
@@ -389,6 +390,18 @@ namespace QuanApi.Services
                 };
             }
 
+            if (tongTien.HasValue &&
+                phieuGiamGia.DonToiThieu.HasValue &&
+                tongTien.Value < phieuGiamGia.DonToiThieu.Value)
+            {
+                return new
+                {
+                    success = false,
+                    message = $"Đơn hàng chưa đạt giá trị tối thiểu {phieuGiamGia.DonToiThieu.Value:n0}.",
+                    donToiThieu = phieuGiamGia.DonToiThieu
+                };
+            }
+
             decimal tienGiam = phieuGiamGia.GiaTriGiam;
 
             if (phieuGiamGia.GiaTriGiamToiDa.HasValue &&
@@ -401,9 +414,12 @@ namespace QuanApi.Services
             {
                 success = true,
                 message = "Mã giảm giá hợp lệ.",
+                idPhieuGiamGia = phieuGiamGia.IDPhieuGiamGia,
                 tienGiam = tienGiam,
+                giaTriGiam = phieuGiamGia.GiaTriGiam,
                 phanTramGiam = phieuGiamGia.GiaTriGiam,
                 giaTriToiDa = phieuGiamGia.GiaTriGiamToiDa,
+                giaTriGiamToiDa = phieuGiamGia.GiaTriGiamToiDa,
                 donToiThieu = phieuGiamGia.DonToiThieu
             };
         }
