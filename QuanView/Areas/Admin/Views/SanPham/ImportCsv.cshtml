@@ -15,6 +15,23 @@
             <div class="alert alert-danger">@error</div>
         }
 
+        <div class="alert alert-info d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-info-circle"></i>
+                <strong>Chưa có file import?</strong> Tải xuống template và dữ liệu tham chiếu để bắt đầu.
+            </div>
+            <div class="btn-group">
+                <a asp-area="Admin" asp-controller="SanPham" asp-action="DownloadTemplate" 
+                   class="btn btn-success btn-sm" target="_blank">
+                    <i class="fas fa-file-csv"></i> Tải Template CSV
+                </a>
+                <a asp-area="Admin" asp-controller="SanPham" asp-action="DownloadReferenceData" 
+                   class="btn btn-primary btn-sm" target="_blank">
+                    <i class="fas fa-file-excel"></i> Tải dữ liệu tham chiếu
+                </a>
+            </div>
+        </div>
+
         <p class="text-muted small">
             Dán dữ liệu CSV vào khung bên dưới (dòng đầu có thể là tiêu đề) hoặc chọn file. Cột: MaSanPham, TenSanPham, TenDanhMuc, TenThuongHieu, TenChatLieu, TenLoaiOng, TenKieuDang, TenLungQuan, CoXepLy (0/1), CoGian (0/1), TrangThaiSP (0/1), TenKichCo, TenMauSac, TenHoaTiet, SoLuong, GiaBan, TrangThaiCT (0/1).
         </p>

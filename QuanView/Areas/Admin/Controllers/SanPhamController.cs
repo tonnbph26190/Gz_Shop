@@ -641,81 +641,104 @@ namespace QuanView.Areas.Admin.Controllers
 			return RedirectToAction("Index");
 		}
 
-		/// <summary>Export danh sách sản phẩm (theo bộ lọc hiện tại) ra file CSV.</summary>
-		[HttpGet]
-		public async Task<IActionResult> ExportCsv(
-			string? keyword = null,
-			string? trangThai = null,
-			decimal? priceFrom = null,
+	/// <summary>Export danh sách sản phẩm (theo bộ lọc hiện tại) ra file CSV.</summary>
+	[HttpGet]
+	public async Task<IActionResult> ExportCsv(
+		string? keyword = null,
+		string? trangThai = null,
+		decimal? priceFrom = null,
 decimal? priceTo = null,
-			int? qtyFrom = null,
-			int? qtyTo = null,
-			DateTime? dateFrom = null,
-			DateTime? dateTo = null)
+		int? qtyFrom = null,
+		int? qtyTo = null,
+		DateTime? dateFrom = null,
+		DateTime? dateTo = null,
+		bool includeComments = true)
+	{
+		int pageSize = 10000;
+		var queryParams = new List<string>
 		{
-			int pageSize = 10000;
-			var queryParams = new List<string>
-			{
-				"page=1",
-				$"pageSize={pageSize}"
-			};
-			if (!string.IsNullOrWhiteSpace(keyword)) queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
-			if (!string.IsNullOrWhiteSpace(trangThai)) queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
-			if (priceFrom.HasValue) queryParams.Add($"priceFrom={priceFrom.Value}");
-			if (priceTo.HasValue) queryParams.Add($"priceTo={priceTo.Value}");
-			if (qtyFrom.HasValue) queryParams.Add($"qtyFrom={qtyFrom.Value}");
-			if (qtyTo.HasValue) queryParams.Add($"qtyTo={qtyTo.Value}");
-			if (dateFrom.HasValue) queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
-			if (dateTo.HasValue) queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
+			"page=1",
+			$"pageSize={pageSize}"
+		};
+		if (!string.IsNullOrWhiteSpace(keyword)) queryParams.Add($"keyword={Uri.EscapeDataString(keyword)}");
+		if (!string.IsNullOrWhiteSpace(trangThai)) queryParams.Add($"trangThai={Uri.EscapeDataString(trangThai)}");
+		if (priceFrom.HasValue) queryParams.Add($"priceFrom={priceFrom.Value}");
+		if (priceTo.HasValue) queryParams.Add($"priceTo={priceTo.Value}");
+		if (qtyFrom.HasValue) queryParams.Add($"qtyFrom={qtyFrom.Value}");
+		if (qtyTo.HasValue) queryParams.Add($"qtyTo={qtyTo.Value}");
+		if (dateFrom.HasValue) queryParams.Add($"dateFrom={dateFrom.Value:yyyy-MM-dd}");
+		if (dateTo.HasValue) queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
 
-			var response = await _http.GetAsync($"sanphams/paged?{string.Join("&", queryParams)}");
-			if (!response.IsSuccessStatusCode)
-			{
-				TempData["Error"] = "Không thể tải dữ liệu để xuất CSV.";
-				return RedirectToAction("Index");
-			}
-
-			var json = await response.Content.ReadAsStringAsync();
-			var pagedResult = JsonSerializer.Deserialize<dynamic>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-			var dataArray = pagedResult.GetProperty("data").EnumerateArray();
-			var products = new List<QuanView.Areas.Admin.Models.SanPhamDto>();
-			foreach (var item in dataArray)
-			{
-				var product = JsonSerializer.Deserialize<QuanView.Areas.Admin.Models.SanPhamDto>(item.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-				if (product != null) products.Add(product);
-			}
-
-			foreach (var sp in products)
-			{
-				var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={sp.IDSanPham}");
-				if (res.IsSuccessStatusCode)
-				{
-					var ctJson = await res.Content.ReadAsStringAsync();
-					sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-				}
-				sp.ChiTietSanPhams ??= new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
-			}
-
-			var csv = BuildProductCsv(products);
-			var bom = new byte[] { 0xEF, 0xBB, 0xBF };
-			var bytes = bom.Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
-			var fileName = $"san-pham-export-{DateTime.Now:yyyyMMdd-HHmmss}.csv";
-			return File(bytes, "text/csv", fileName);
+		var response = await _http.GetAsync($"sanphams/paged?{string.Join("&", queryParams)}");
+		if (!response.IsSuccessStatusCode)
+		{
+			TempData["Error"] = "Không thể tải dữ liệu để xuất CSV.";
+			return RedirectToAction("Index");
 		}
 
-		private static string EscapeCsvField(string? value)
+		var json = await response.Content.ReadAsStringAsync();
+		var pagedResult = JsonSerializer.Deserialize<dynamic>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+		var dataArray = pagedResult.GetProperty("data").EnumerateArray();
+		var products = new List<QuanView.Areas.Admin.Models.SanPhamDto>();
+		foreach (var item in dataArray)
 		{
-			if (value == null) return "";
-			if (value.Contains('"') || value.Contains(',') || value.Contains('\n'))
-				return "\"" + value.Replace("\"", "\"\"") + "\"";
-			return value;
+			var product = JsonSerializer.Deserialize<QuanView.Areas.Admin.Models.SanPhamDto>(item.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+			if (product != null) products.Add(product);
 		}
 
-		private static string BuildProductCsv(List<QuanView.Areas.Admin.Models.SanPhamDto> products)
+		foreach (var sp in products)
 		{
-			var sb = new StringBuilder();
-			sb.AppendLine("MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,TenChatLieu,TenLoaiOng,TenKieuDang,TenLungQuan,CoXepLy,CoGian,TrangThaiSP,TenKichCo,TenMauSac,TenHoaTiet,SoLuong,GiaBan,TrangThaiCT");
-			foreach (var sp in products)
+			var res = await _http.GetAsync($"sanphamchitiets/bysanpham?idsanpham={sp.IDSanPham}");
+			if (res.IsSuccessStatusCode)
+			{
+				var ctJson = await res.Content.ReadAsStringAsync();
+				sp.ChiTietSanPhams = JsonSerializer.Deserialize<List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>>(ctJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+			}
+			sp.ChiTietSanPhams ??= new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+		}
+
+		var lookups = includeComments ? await LoadLookupMapsAsync() : (null, null, null, null, null, null, null, null, null);
+		var csv = BuildProductCsv(products, lookups, includeComments);
+		var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+		var bytes = bom.Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+		var fileName = $"san-pham-export-{DateTime.Now:yyyyMMdd-HHmmss}.csv";
+		return File(bytes, "text/csv", fileName);
+	}
+
+	private static string EscapeCsvField(string? value)
+	{
+		if (value == null) return "";
+		if (value.Contains('"') || value.Contains(',') || value.Contains('\n'))
+			return "\"" + value.Replace("\"", "\"\"") + "\"";
+		return value;
+	}
+
+	private static string BuildProductCsv(
+		List<QuanView.Areas.Admin.Models.SanPhamDto> products,
+		(Dictionary<string, Guid>? DanhMuc, Dictionary<string, Guid>? ThuongHieu, Dictionary<string, Guid>? ChatLieu,
+		Dictionary<string, Guid>? LoaiOng, Dictionary<string, Guid>? KieuDang, Dictionary<string, Guid>? LungQuan,
+		Dictionary<string, Guid>? KichCo, Dictionary<string, Guid>? MauSac, Dictionary<string, Guid>? HoaTiet) lookups,
+		bool includeComments = false)
+	{
+		var sb = new StringBuilder();
+		sb.AppendLine("MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,TenChatLieu,TenLoaiOng,TenKieuDang,TenLungQuan,CoXepLy,CoGian,TrangThaiSP,TenKichCo,TenMauSac,TenHoaTiet,SoLuong,GiaBan,TrangThaiCT");
+		
+		if (includeComments && lookups.DanhMuc != null)
+		{
+			sb.AppendLine($"# Danh mục: {string.Join(", ", lookups.DanhMuc.Keys.Take(10))}{(lookups.DanhMuc.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Thương hiệu: {string.Join(", ", lookups.ThuongHieu?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.ThuongHieu?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Chất liệu: {string.Join(", ", lookups.ChatLieu?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.ChatLieu?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Loại ống: {string.Join(", ", lookups.LoaiOng?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.LoaiOng?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Kiểu dáng: {string.Join(", ", lookups.KieuDang?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.KieuDang?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Lưng quần: {string.Join(", ", lookups.LungQuan?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.LungQuan?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine($"# Kích cỡ: {string.Join(", ", lookups.KichCo?.Keys ?? Enumerable.Empty<string>())}");
+			sb.AppendLine($"# Màu sắc: {string.Join(", ", lookups.MauSac?.Keys.Take(15) ?? Array.Empty<string>())}{(lookups.MauSac?.Count > 15 ? ", ..." : "")}");
+			sb.AppendLine($"# Họa tiết: {string.Join(", ", lookups.HoaTiet?.Keys.Take(10) ?? Array.Empty<string>())}{(lookups.HoaTiet?.Count > 10 ? ", ..." : "")}");
+			sb.AppendLine("# CoXepLy, CoGian, TrangThaiSP, TrangThaiCT: 1 = Có/Hoạt động, 0 = Không/Ngừng");
+			sb.AppendLine("#");
+		}
+		
+		foreach (var sp in products)
 			{
 				var tenDanhMuc = sp.TenDanhMuc ?? "";
 				var tenThuongHieu = sp.TenThuongHieu ?? "";
@@ -811,10 +834,10 @@ coXepLy, coGian, trangThaiSp,
 			{
 				var line = lines[i];
 				var row = ParseCsvLine(line);
+				if (IsProductCsvHeaderRow(row))
+					continue;
 				if (row.Count < 14)
 				{
-					if (i == 0 && line.TrimStart().StartsWith("MaSanPham", StringComparison.OrdinalIgnoreCase))
-						continue;
 					if (row.All(c => string.IsNullOrWhiteSpace(c)))
 						continue;
 					result.SkippedCount++;
@@ -1109,38 +1132,236 @@ coXepLy, coGian, trangThaiSp,
 			return list;
 		}
 
-		private async Task<(Dictionary<string, Guid> DanhMuc, Dictionary<string, Guid> ThuongHieu, Dictionary<string, Guid> ChatLieu,
-			Dictionary<string, Guid> LoaiOng, Dictionary<string, Guid> KieuDang, Dictionary<string, Guid> LungQuan,
-			Dictionary<string, Guid> KichCo, Dictionary<string, Guid> MauSac, Dictionary<string, Guid> HoaTiet)> LoadLookupMapsAsync()
-		{
-			var toDict = async (string url, string idKey, string nameKey) =>
-			{
-				var response = await _http.GetAsync(url);
-				if (!response.IsSuccessStatusCode) return new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
-				var json = await response.Content.ReadAsStringAsync();
-				using var doc = JsonDocument.Parse(json);
-				var d = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
-				foreach (var e in doc.RootElement.EnumerateArray())
-				{
-					var idStr = e.TryGetProperty(idKey, out var p) ? p.ToString() : e.TryGetProperty("id", out var p2) ? p2.ToString() : null;
-					var name = e.TryGetProperty(nameKey, out var n) ? n.GetString() : e.TryGetProperty("ten", out var n2) ? n2.GetString() : null;
-					if (!string.IsNullOrEmpty(idStr) && Guid.TryParse(idStr, out var id) && !string.IsNullOrEmpty(name))
-						d[name.Trim()] = id;
-				}
-				return d;
-			};
+	private static string NormalizeCsvCell(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+		return value.Trim().Trim('\uFEFF').Trim('"').Trim();
+	}
 
-			var danhMuc = await toDict("danhmucs", "idDanhMuc", "tenDanhMuc");
-			var thuongHieu = await toDict("thuonghieu", "idThuongHieu", "tenThuongHieu");
-			var chatLieu = await toDict("chatlieu", "idChatLieu", "tenChatLieu");
-			var loaiOng = await toDict("loaiong", "idLoaiOng", "tenLoaiOng");
-			var kieuDang = await toDict("kieudang", "idKieuDang", "tenKieuDang");
-			var lungQuan = await toDict("lungquan", "idLungQuan", "tenLungQuan");
-			var kichCo = await toDict("kichco", "idKichCo", "tenKichCo");
-			var mauSac = await toDict("mausac", "idMauSac", "tenMauSac");
-			var hoaTiet = await toDict("hoatiet", "idHoaTiet", "tenHoaTiet");
-			return (danhMuc, thuongHieu, chatLieu, loaiOng, kieuDang, lungQuan, kichCo, mauSac, hoaTiet);
+	private static bool IsProductCsvHeaderRow(List<string> row)
+	{
+		if (row == null || row.Count == 0) return false;
+		var firstCell = NormalizeCsvCell(row[0]);
+		if (!firstCell.Equals("MaSanPham", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		if (row.Count < 2) return true;
+		var secondCell = NormalizeCsvCell(row[1]);
+		return string.IsNullOrEmpty(secondCell) || secondCell.Equals("TenSanPham", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private async Task<(Dictionary<string, Guid> DanhMuc, Dictionary<string, Guid> ThuongHieu, Dictionary<string, Guid> ChatLieu,
+		Dictionary<string, Guid> LoaiOng, Dictionary<string, Guid> KieuDang, Dictionary<string, Guid> LungQuan,
+		Dictionary<string, Guid> KichCo, Dictionary<string, Guid> MauSac, Dictionary<string, Guid> HoaTiet)> LoadLookupMapsAsync()
+	{
+		var toDict = async (string url, string idKey, string nameKey) =>
+		{
+			var response = await _http.GetAsync(url);
+			if (!response.IsSuccessStatusCode) return new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+			var json = await response.Content.ReadAsStringAsync();
+			using var doc = JsonDocument.Parse(json);
+			var d = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+			foreach (var e in doc.RootElement.EnumerateArray())
+			{
+				var idStr = e.TryGetProperty(idKey, out var p) ? p.ToString() : e.TryGetProperty("id", out var p2) ? p2.ToString() : null;
+				var name = e.TryGetProperty(nameKey, out var n) ? n.GetString() : e.TryGetProperty("ten", out var n2) ? n2.GetString() : null;
+				if (!string.IsNullOrEmpty(idStr) && Guid.TryParse(idStr, out var id) && !string.IsNullOrEmpty(name))
+					d[name.Trim()] = id;
+			}
+			return d;
+		};
+
+		var danhMuc = await toDict("danhmucs", "idDanhMuc", "tenDanhMuc");
+		var thuongHieu = await toDict("thuonghieu", "idThuongHieu", "tenThuongHieu");
+		var chatLieu = await toDict("chatlieu", "idChatLieu", "tenChatLieu");
+		var loaiOng = await toDict("loaiong", "idLoaiOng", "tenLoaiOng");
+		var kieuDang = await toDict("kieudang", "idKieuDang", "tenKieuDang");
+		var lungQuan = await toDict("lungquan", "idLungQuan", "tenLungQuan");
+		var kichCo = await toDict("kichco", "idKichCo", "tenKichCo");
+		var mauSac = await toDict("mausac", "idMauSac", "tenMauSac");
+		var hoaTiet = await toDict("hoatiet", "idHoaTiet", "tenHoaTiet");
+		return (danhMuc, thuongHieu, chatLieu, loaiOng, kieuDang, lungQuan, kichCo, mauSac, hoaTiet);
+	}
+
+	[HttpGet]
+	public async Task<IActionResult> DownloadTemplate()
+	{
+		var lookups = await LoadLookupMapsAsync();
+		var sb = new StringBuilder();
+		sb.AppendLine("MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,TenChatLieu,TenLoaiOng,TenKieuDang,TenLungQuan,CoXepLy,CoGian,TrangThaiSP,TenKichCo,TenMauSac,TenHoaTiet,SoLuong,GiaBan,TrangThaiCT");
+		
+		var sampleDanhMuc = lookups.DanhMuc.Keys.FirstOrDefault() ?? "Quần Jean";
+		var sampleThuongHieu = lookups.ThuongHieu.Keys.FirstOrDefault() ?? "Nike";
+		var sampleChatLieu = lookups.ChatLieu.Keys.FirstOrDefault() ?? "Cotton";
+		var sampleLoaiOng = lookups.LoaiOng.Keys.FirstOrDefault() ?? "Ống suông";
+		var sampleKieuDang = lookups.KieuDang.Keys.FirstOrDefault() ?? "Slim fit";
+		var sampleLungQuan = lookups.LungQuan.Keys.FirstOrDefault() ?? "Lưng cao";
+		var sampleKichCo1 = lookups.KichCo.Keys.FirstOrDefault() ?? "M";
+		var sampleKichCo2 = lookups.KichCo.Keys.Skip(1).FirstOrDefault() ?? "L";
+		var sampleMauSac1 = lookups.MauSac.Keys.FirstOrDefault() ?? "Đen";
+		var sampleMauSac2 = lookups.MauSac.Keys.Skip(1).FirstOrDefault() ?? "Xanh";
+		var sampleHoaTiet = lookups.HoaTiet.Keys.FirstOrDefault() ?? "N/A";
+
+		sb.AppendLine($"SP001,Quần jean nam cao cấp,{sampleDanhMuc},{sampleThuongHieu},{sampleChatLieu},{sampleLoaiOng},{sampleKieuDang},{sampleLungQuan},0,1,1,{sampleKichCo1},{sampleMauSac1},{sampleHoaTiet},50,299000,1");
+		sb.AppendLine($"SP001,Quần jean nam cao cấp,{sampleDanhMuc},{sampleThuongHieu},{sampleChatLieu},{sampleLoaiOng},{sampleKieuDang},{sampleLungQuan},0,1,1,{sampleKichCo2},{sampleMauSac2},{sampleHoaTiet},30,299000,1");
+		sb.AppendLine($"SP002,Quần kaki công sở,{sampleDanhMuc},{sampleThuongHieu},{sampleChatLieu},{sampleLoaiOng},{sampleKieuDang},{sampleLungQuan},1,0,1,{sampleKichCo1},{sampleMauSac1},{sampleHoaTiet},100,350000,1");
+
+		var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+		var bytes = bom.Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+		var fileName = $"template-import-sanpham-{DateTime.Now:yyyyMMdd}.csv";
+		return File(bytes, "text/csv", fileName);
+	}
+
+	[HttpGet]
+	public async Task<IActionResult> DownloadReferenceData()
+	{
+		var lookups = await LoadLookupMapsAsync();
+
+		// EPPlus 8+ requires setting license via ExcelPackage.License.
+		OfficeOpenXml.ExcelPackage.License.SetNonCommercialOrganization("Gz Shop");
+		using var package = new OfficeOpenXml.ExcelPackage();
+
+		void AddSheet(string sheetName, Dictionary<string, Guid> data, string columnName)
+		{
+			var ws = package.Workbook.Worksheets.Add(sheetName);
+			ws.Cells[1, 1].Value = columnName;
+			ws.Cells[1, 1].Style.Font.Bold = true;
+			
+			int row = 2;
+			foreach (var item in data.Keys.OrderBy(k => k))
+			{
+				ws.Cells[row, 1].Value = item;
+				row++;
+			}
+			ws.Column(1).AutoFit();
 		}
+
+		AddSheet("Danh mục", lookups.DanhMuc, "Tên danh mục");
+		AddSheet("Thương hiệu", lookups.ThuongHieu, "Tên thương hiệu");
+		AddSheet("Chất liệu", lookups.ChatLieu, "Tên chất liệu");
+		AddSheet("Loại ống", lookups.LoaiOng, "Tên loại ống");
+		AddSheet("Kiểu dáng", lookups.KieuDang, "Tên kiểu dáng");
+		AddSheet("Lưng quần", lookups.LungQuan, "Tên lưng quần");
+		AddSheet("Kích cỡ", lookups.KichCo, "Tên kích cỡ");
+		AddSheet("Màu sắc", lookups.MauSac, "Tên màu sắc");
+		AddSheet("Họa tiết", lookups.HoaTiet, "Tên họa tiết");
+
+		var noteSheet = package.Workbook.Worksheets.Add("Hướng dẫn");
+		noteSheet.Cells[1, 1].Value = "HƯỚNG DẪN SỬ DỤNG FILE THAM CHIẾU";
+		noteSheet.Cells[1, 1].Style.Font.Bold = true;
+		noteSheet.Cells[1, 1].Style.Font.Size = 14;
+		noteSheet.Cells[3, 1].Value = "File này chứa tất cả các giá trị hợp lệ trong hệ thống.";
+		noteSheet.Cells[4, 1].Value = "Khi import sản phẩm, bạn phải sử dụng chính xác các giá trị trong các sheet này.";
+		noteSheet.Cells[6, 1].Value = "Ví dụ: Nếu sheet 'Danh mục' có 'Quần Jean', bạn phải nhập đúng 'Quần Jean' (không dấu cách thừa).";
+		noteSheet.Cells[8, 1].Value = "Các trường bắt buộc: MaSanPham, TenSanPham, Danh mục, Thương hiệu, Chất liệu, Loại ống, Kiểu dáng, Lưng quần";
+		noteSheet.Cells[9, 1].Value = "Các trường biến thể: Kích cỡ, Màu sắc (bắt buộc nếu muốn tạo biến thể)";
+		noteSheet.Cells[10, 1].Value = "Họa tiết: có thể để trống hoặc 'N/A'";
+		noteSheet.Column(1).Width = 100;
+
+		var fileName = $"du-lieu-tham-chieu-{DateTime.Now:yyyyMMdd}.xlsx";
+		var stream = new MemoryStream(package.GetAsByteArray());
+		return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+	}
+
+	[HttpPost]
+	public async Task<IActionResult> ValidateImportData([FromBody] ValidateImportRequest request)
+	{
+		if (string.IsNullOrWhiteSpace(request.CsvContent))
+			return Json(new { success = false, message = "Không có dữ liệu để validate" });
+
+		var lines = request.CsvContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+		var lookups = await LoadLookupMapsAsync();
+		
+		var validRows = 0;
+		var errorRows = 0;
+		var warnings = new List<string>();
+
+		for (int i = 0; i < lines.Length; i++)
+		{
+			var line = lines[i];
+			if (string.IsNullOrWhiteSpace(line)) continue;
+			
+			var row = ParseCsvLine(line);
+			if (IsProductCsvHeaderRow(row))
+				continue;
+
+			if (row.Count < 14)
+			{
+				errorRows++;
+				continue;
+			}
+
+			var tenDanhMuc = row.Count > 2 ? row[2].Trim() : "";
+			var tenThuongHieu = row.Count > 3 ? row[3].Trim() : "";
+			var tenChatLieu = row.Count > 4 ? row[4].Trim() : "";
+			var tenLoaiOng = row.Count > 5 ? row[5].Trim() : "";
+			var tenKieuDang = row.Count > 6 ? row[6].Trim() : "";
+			var tenLungQuan = row.Count > 7 ? row[7].Trim() : "";
+			var tenKichCo = row.Count > 11 ? row[11].Trim() : "";
+			var tenMauSac = row.Count > 12 ? row[12].Trim() : "";
+
+			var hasError = false;
+			if (!string.IsNullOrEmpty(tenDanhMuc) && !lookups.DanhMuc.ContainsKey(tenDanhMuc))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Danh mục '{tenDanhMuc}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenThuongHieu) && !lookups.ThuongHieu.ContainsKey(tenThuongHieu))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Thương hiệu '{tenThuongHieu}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenChatLieu) && !lookups.ChatLieu.ContainsKey(tenChatLieu))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Chất liệu '{tenChatLieu}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenLoaiOng) && !lookups.LoaiOng.ContainsKey(tenLoaiOng))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Loại ống '{tenLoaiOng}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenKieuDang) && !lookups.KieuDang.ContainsKey(tenKieuDang))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Kiểu dáng '{tenKieuDang}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenLungQuan) && !lookups.LungQuan.ContainsKey(tenLungQuan))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Lưng quần '{tenLungQuan}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenKichCo) && !lookups.KichCo.ContainsKey(tenKichCo))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Kích cỡ '{tenKichCo}' không tồn tại");
+			}
+			if (!string.IsNullOrEmpty(tenMauSac) && !lookups.MauSac.ContainsKey(tenMauSac))
+			{
+				hasError = true;
+				warnings.Add($"Dòng {i + 1}: Màu sắc '{tenMauSac}' không tồn tại");
+			}
+
+			if (hasError)
+				errorRows++;
+			else
+				validRows++;
+		}
+
+		return Json(new
+		{
+			success = true,
+			validRows,
+			errorRows,
+			warnings = warnings.Take(50).ToList(),
+			totalWarnings = warnings.Count
+		});
+	}
+
+	public class ValidateImportRequest
+	{
+		public string CsvContent { get; set; } = "";
+	}
 
 		//load biến thể cần chỉnh sửa hàng loạt 
 		[HttpPost]
