@@ -27,6 +27,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public Guid IDHoaDon { get; set; }
             public string MaHoaDon { get; set; }
+            public bool BanTaiQuay { get; set; }
             public decimal TongTien { get; set; }
             public decimal? TienGiam { get; set; }
             public string TrangThai { get; set; }
@@ -259,6 +260,7 @@ namespace QuanView.Areas.Admin.Controllers
                             {
                                 IDHoaDon = hoaDonData.IDHoaDon,
                                 MaHoaDon = hoaDonData.MaHoaDon ?? "",
+                                BanTaiQuay = hoaDonData.BanTaiQuay,
                                 TongTien = hoaDonData.TongTien,
                                 TienGiam = hoaDonData.TienGiam ?? 0,
                                 TrangThai = hoaDonData.TrangThai ?? "Chờ xác nhận",
@@ -295,6 +297,18 @@ namespace QuanView.Areas.Admin.Controllers
                                 if (!string.IsNullOrWhiteSpace(hoaDonData.GhiChuChuyenKhoanChoXacNhan))
                                 {
                                     highlightNotes[hoaDonData.IDHoaDon] = hoaDonData.GhiChuChuyenKhoanChoXacNhan!;
+                                }
+                            }
+
+                            var isStoreShipPaidConfirmed = hoaDonData.BanTaiQuay
+                                && !string.IsNullOrWhiteSpace(hoaDonData.DiaChiGiaoHang)
+                                && string.Equals(hoaDonData.TrangThai, "Đã xác nhận", StringComparison.OrdinalIgnoreCase);
+                            if (isStoreShipPaidConfirmed)
+                            {
+                                highlightedOrderIds.Add(hoaDonData.IDHoaDon);
+                                if (!highlightNotes.ContainsKey(hoaDonData.IDHoaDon))
+                                {
+                                    highlightNotes[hoaDonData.IDHoaDon] = "Đơn đã trả tiền tại quầy.";
                                 }
                             }
 

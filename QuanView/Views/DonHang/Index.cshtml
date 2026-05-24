@@ -95,6 +95,7 @@
     .status-cancel { background: #ffebee; color: #c62828; }      /* Cancelled */
     .status-transfer-pending { background: #d4f2dd; color: #0f5132; }
     .highlight-transfer-pending td { background: #e8f8ee !important; }
+    .highlight-store-ship-paid td { background: #fff9e6 !important; }
     
     /* Buttons */
     .action-btn {
@@ -283,8 +284,14 @@
                                 _ => "bg-light text-dark"
                             };
                             var isTransferPending = hoaDon.TrangThai == "Đã thanh toán chờ xác nhận";
+                            var isStoreShipPaidConfirmed = hoaDon.BanTaiQuay
+                                && !string.IsNullOrEmpty(hoaDon.DiaChiGiaoHang)
+                                && hoaDon.TrangThai == "Đã xác nhận";
+                            var rowClass = isTransferPending
+                                ? "highlight-transfer-pending"
+                                : (isStoreShipPaidConfirmed ? "highlight-store-ship-paid" : "");
 
-                            <tr class="@(isTransferPending ? "highlight-transfer-pending" : "")">
+                            <tr class="@rowClass">
                                 <td class="text-center text-muted small">@stt</td>
                                 <td><span class="fw-bold">#@hoaDon.MaHoaDon</span></td>
                                 <td class="fw-bold text-dark">@hoaDon.TongTien.ToString("N0") <small>₫</small></td>
@@ -295,6 +302,10 @@
                                     @if (isTransferPending)
                                     {
                                         <div><small class="text-success fw-bold">Đơn đã thanh toán chuyển khoản, chờ xác nhận.</small></div>
+                                    }
+                                    else if (isStoreShipPaidConfirmed)
+                                    {
+                                        <div><small class="text-warning-emphasis fw-bold">Đã trả tiền tại quầy.</small></div>
                                     }
                                 </td>
                                 <td>

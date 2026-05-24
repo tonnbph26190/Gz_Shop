@@ -161,6 +161,7 @@ namespace QuanApi.Controllers
 					{
 						IDHoaDon = h.IDHoaDon,
 						MaHoaDon = h.MaHoaDon,
+						BanTaiQuay = h.BanTaiQuay,
 						TongTien = h.TongTien,
 						TienGiam = h.TienGiam,
 						TrangThai = h.TrangThai,
@@ -207,6 +208,7 @@ namespace QuanApi.Controllers
 						{
 							h.IDHoaDon,
 							h.MaHoaDon,
+							h.BanTaiQuay,
 							h.TongTien,
 							h.TienGiam,
 							TrangThai = displayStatus,
@@ -991,6 +993,7 @@ namespace QuanApi.Controllers
 						TongTien = h.TongTien,
 						TrangThai = h.TrangThai,
 						TrangThaiThanhToan = h.TrangThaiThanhToan,
+						BanTaiQuay = h.BanTaiQuay,
 						PhuongThucThanhToanMa = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.MaPhuongThuc : null,
 						PhuongThucThanhToanTen = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.TenPhuongThuc : null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
@@ -1004,6 +1007,7 @@ namespace QuanApi.Controllers
 						IDHoaDon = h.IDHoaDon,
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
+						BanTaiQuay = h.BanTaiQuay,
 						TrangThai = IsPaidTransferPendingConfirmation(
 							h.TrangThai,
 							h.TrangThaiThanhToan,
@@ -1085,6 +1089,7 @@ namespace QuanApi.Controllers
 						TongTien = h.TongTien,
 						TrangThai = h.TrangThai,
 						TrangThaiThanhToan = h.TrangThaiThanhToan,
+						BanTaiQuay = h.BanTaiQuay,
 						PhuongThucThanhToanMa = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.MaPhuongThuc : null,
 						PhuongThucThanhToanTen = h.PhuongThucThanhToan != null ? h.PhuongThucThanhToan.TenPhuongThuc : null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
@@ -1098,6 +1103,7 @@ namespace QuanApi.Controllers
 						IDHoaDon = h.IDHoaDon,
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
+						BanTaiQuay = h.BanTaiQuay,
 						TrangThai = IsPaidTransferPendingConfirmation(
 							h.TrangThai,
 							h.TrangThaiThanhToan,
