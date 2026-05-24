@@ -618,13 +618,6 @@
 				return textarea.value;
 			}
 
-			const tenSanPham = decodeHtmlEntities('@Model.TenSanPham');
-			const confirmMessage = `Bạn có chắc muốn thêm "${tenSanPham}" (${selectedColor}, ${selectedSize}) x${soLuong} vào giỏ hàng không?`;
-
-			if (!confirm(confirmMessage)) {
-				return;
-			}
-
             const originalButtonHtml = $addCartBtn.html();
             $addCartBtn
                 .addClass('is-adding')

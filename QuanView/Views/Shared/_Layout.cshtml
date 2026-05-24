@@ -8,6 +8,9 @@
 
     var tenDangNhap = User.Identity?.Name;
     var avatarUrl = "/img/avatar-default.png";
+    var avatarInitial = string.IsNullOrWhiteSpace(tenDangNhap)
+        ? "G"
+        : tenDangNhap.Trim().Substring(0, 1).ToUpperInvariant();
 
     if (User.Identity?.IsAuthenticated == true)
     {
@@ -71,6 +74,26 @@
             border: 1px solid #ddd;
         }
 
+        .user-avatar-frame {
+            align-items: center;
+            background: #dc3545;
+            border-radius: 50%;
+            color: #fff;
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 800;
+            height: 36px;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            width: 36px;
+        }
+
+        .user-avatar-frame .user-avatar {
+            inset: 0;
+            position: absolute;
+        }
+
         .profile-menu {
             display: none;
             position: absolute;
@@ -131,6 +154,7 @@
             color: #dc3545 !important;
             /* Force the navbar to have zero top padding */
         }
+
         .navbar {
             padding-top: 0 !important;
         }
@@ -368,7 +392,7 @@
                 transform .72s ease;
         }
 
-        @keyframes cartPulse {
+        @@keyframes cartPulse {
             0% { transform: scale(1); }
             45% { transform: scale(1.22); }
             100% { transform: scale(1); }
@@ -445,9 +469,13 @@
                                         Xin chào, <b>@User.Identity.Name</b>
                                     </span>
 
-                                    <img src="@avatarUrl"
-                                         class="user-avatar"
-                                         alt="Avatar" />
+                                    <span class="user-avatar-frame" aria-label="Avatar">
+                                        <span>@avatarInitial</span>
+                                        <img src="@avatarUrl"
+                                             class="user-avatar"
+                                             alt="Avatar"
+                                             onerror="this.style.display='none';" />
+                                    </span>
                                 </div>
 
                                 <div id="profileMenu" class="profile-menu">
