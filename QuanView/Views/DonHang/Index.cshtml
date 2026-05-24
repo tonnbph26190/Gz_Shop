@@ -1,4 +1,4 @@
-﻿@model dynamic
+@model dynamic
 @{
     var lang = Context.Request.Cookies["UserLanguage"] ?? "vi";
     ViewData["Title"] = ((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS");
@@ -9,6 +9,7 @@
     var fromDate = ViewBag.FromDate as string ?? "";
     var toDate = ViewBag.ToDate as string ?? "";
     var quickDate = ViewBag.QuickDate as string ?? "";
+    var trangThai = ViewBag.TrangThai as string ?? "";
     var isAuthenticated = ViewBag.IsAuthenticated as bool? ?? false;
 }
 
@@ -189,9 +190,22 @@
 
             <form method="get" action="@Url.Action("Index")" id="filterForm">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">@label</label>
-                        <input type="text" class="form-control" name="search" placeholder="@placeholder" value="@search" pattern="[A-Z0-9_]+" title="@titleMsg"> 
+                        <input type="text" class="form-control" name="search" placeholder="@placeholder" value="@search" pattern="[A-Z0-9_]+" title="@titleMsg">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">TRẠNG THÁI</label>
+                        <select class="form-control" name="trangThai">
+                            <option value="" selected="@(trangThai == "")">Tất cả</option>
+                            <option value="Chờ xác nhận" selected="@(trangThai == "Chờ xác nhận")">Chờ xác nhận</option>
+                            <option value="DaThanhToan" selected="@(trangThai == "DaThanhToan")">Đã thanh toán</option>
+                            <option value="Đã xác nhận" selected="@(trangThai == "Đã xác nhận")">Đã xác nhận</option>
+                            <option value="Đang giao hàng" selected="@(trangThai == "Đang giao hàng")">Đang giao hàng</option>
+                            <option value="Đã giao" selected="@(trangThai == "Đã giao")">Đã giao</option>
+                            <option value="Đã hủy" selected="@(trangThai == "Đã hủy")">Đã hủy</option>
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">@((lang == "vi") ? "Theo ngày" : "Quick date")</label>
@@ -217,13 +231,22 @@
                         <label class="form-label">@((lang == "vi") ? "Đến ngày" : "To")</label>
                         <input type="date" class="form-control" id="toDate" name="toDate" value="@toDate">
                     </div>
-                    <div class="col-md-2 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-search w-25" id=search-icon>
-                             <i class="bi bi-search"></i>
-                        </button>
-                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary rounded-3 px-3">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </a>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <div class="d-flex w-100 gap-2">
+
+                            <button type="submit"
+                                    class="btn btn-outline-dark d-flex align-items-center justify-content-center"
+                                    style="height:38px; width:38px;">
+                                <i class="fa fa-search"></i>
+                            </button>
+
+                            <a href="@Url.Action("Index")"
+                               class="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                               style="height:38px; width:38px;">
+                                <i class="fa fa-rotate-right"></i>
+                            </a>
+
+                        </div>
                     </div>
                 </div>
             </form>
@@ -365,12 +388,12 @@
             <nav>
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, fromDate, toDate, quickDate })" aria-label="First">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = 1, search, trangThai, fromDate, toDate, quickDate })" aria-label="First">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, fromDate, toDate, quickDate })" aria-label="Previous">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = prevPage, search, trangThai, fromDate, toDate, quickDate })" aria-label="Previous">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -378,17 +401,17 @@
                     @for (int i = 1; i <= totalPages; i++)
                     {
                         <li class="page-item @(i == currentPage ? "active" : "")">
-                            <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, fromDate, toDate, quickDate })">@i</a>
+                            <a class="page-link shadow-none" href="@Url.Action("Index", new { page = i, search, trangThai, fromDate, toDate, quickDate })">@i</a>
                         </li>
                     }
 
                     <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, fromDate, toDate, quickDate })" aria-label="Next">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = nextPage, search, trangThai, fromDate, toDate, quickDate })" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, fromDate, toDate, quickDate })" aria-label="Last">
+                        <a class="page-link shadow-none" href="@Url.Action("Index", new { page = totalPages, search, trangThai, fromDate, toDate, quickDate })" aria-label="Last">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -644,6 +667,7 @@
         return trangThai switch
         {
             "Chờ xác nhận" => "Chờ xác nhận",
+            "DaThanhToan" => "Đã thanh toán",
             "Đã thanh toán chờ xác nhận" => "Đã thanh toán chờ xác nhận",
             "Đã xác nhận" => "Đã xác nhận",
             "Chờ lấy hàng" => "Chờ lấy hàng",
