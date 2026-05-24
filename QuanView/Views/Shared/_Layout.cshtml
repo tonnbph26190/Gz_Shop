@@ -349,6 +349,30 @@
             line-height: 16px;
             z-index: 999;
         }
+
+        .cart-icon-wrap.cart-pulse {
+            animation: cartPulse .55s ease;
+        }
+
+        .add-to-cart-flyer {
+            border-radius: 10px;
+            box-shadow: 0 14px 34px rgba(0,0,0,.22);
+            object-fit: cover;
+            pointer-events: none;
+            position: fixed;
+            z-index: 3000;
+            transition:
+                left .72s cubic-bezier(.2,.8,.2,1),
+                top .72s cubic-bezier(.2,.8,.2,1),
+                opacity .72s ease,
+                transform .72s ease;
+        }
+
+        @keyframes cartPulse {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.22); }
+            100% { transform: scale(1); }
+        }
     </style>
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -716,6 +740,43 @@
 
             loadCartCount();
         });
+
+        window.animateAddToCart = function (sourceElement) {
+            const cartIcon = document.querySelector('.cart-icon-wrap');
+            const source = sourceElement || document.querySelector('.product-detail-img-main') || document.querySelector('.product-img');
+
+            if (!cartIcon || !source) return Promise.resolve();
+
+            const sourceRect = source.getBoundingClientRect();
+            const cartRect = cartIcon.getBoundingClientRect();
+            const flyer = source.cloneNode(true);
+            const size = Math.min(96, Math.max(56, sourceRect.width * 0.28));
+
+            flyer.classList.add('add-to-cart-flyer');
+            flyer.style.left = `${sourceRect.left + sourceRect.width / 2 - size / 2}px`;
+            flyer.style.top = `${sourceRect.top + sourceRect.height / 2 - size / 2}px`;
+            flyer.style.width = `${size}px`;
+            flyer.style.height = `${size}px`;
+            flyer.style.transform = 'scale(1)';
+            flyer.style.opacity = '1';
+            document.body.appendChild(flyer);
+
+            requestAnimationFrame(() => {
+                flyer.style.left = `${cartRect.left + cartRect.width / 2 - size / 2}px`;
+                flyer.style.top = `${cartRect.top + cartRect.height / 2 - size / 2}px`;
+                flyer.style.transform = 'scale(.28) rotate(10deg)';
+                flyer.style.opacity = '.15';
+            });
+
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    flyer.remove();
+                    cartIcon.classList.add('cart-pulse');
+                    setTimeout(() => cartIcon.classList.remove('cart-pulse'), 560);
+                    resolve();
+                }, 740);
+            });
+        };
     </script>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
