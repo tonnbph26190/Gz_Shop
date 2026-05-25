@@ -75,12 +75,14 @@ namespace QuanView.Areas.Admin.Controllers
 				queryParams.Add($"dateTo={dateTo.Value:yyyy-MM-dd}");
 			if (!string.IsNullOrEmpty(sortDate))
 				queryParams.Add($"sortDate={sortDate}");
-			if (stockFilter == "out")
-			{
-				queryParams.Add("qtyFrom=0");
-				queryParams.Add("qtyTo=0");
-				page = 1;
-			}
+			if (!string.IsNullOrEmpty(stockFilter))
+				queryParams.Add($"stockFilter={Uri.EscapeDataString(stockFilter)}");
+			//if (stockFilter == "out")
+			//{
+			//	queryParams.Add("qtyFrom=0");
+			//	queryParams.Add("qtyTo=0");
+			//	page = 1;
+			//}
 			var queryString = string.Join("&", queryParams);
 			var response = await _http.GetAsync($"sanphams/paged?{queryString}");
 

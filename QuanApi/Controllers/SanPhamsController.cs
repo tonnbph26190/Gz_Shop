@@ -130,7 +130,7 @@ namespace QuanApi.Controllers
             int? qtyFrom = null,
             int? qtyTo = null,
 			 string? sortDate = null,
-
+			 string? stockFilter = null,
 			DateTime? dateFrom = null,
             DateTime? dateTo = null)
         {
@@ -194,6 +194,12 @@ namespace QuanApi.Controllers
 					s.SanPhamChiTiets
 						.Where(ct => ct.TrangThai)
 						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value
+				);
+			}
+			if (stockFilter == "variant-out")
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets.Any(ct => ct.SoLuong <= 0)
 				);
 			}
 			// ✅ SORT NGÀY TẠO
@@ -749,31 +755,25 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
-				var tongSanPham = await _context.SanPhams
-	.Where(x => x.TrangThai)
-	.CountAsync();
-				var tongBienThe = await _context.SanPhamChiTiets
-		.Where(x => x.TrangThai && x.SanPham.TrangThai)
-		.CountAsync();
+				var tongSanPham = await _context.SanPhams.CountAsync();
 
-				// 🔥 Sản phẩm hết hàng (group by product, ensure product navigation exists and is active)
+				var tongBienThe = await _context.SanPhamChiTiets.CountAsync();
+
 				var sanPhamHetHang = await _context.SanPhamChiTiets
-	.Where(ct => ct.TrangThai && ct.SanPham != null && ct.SanPham.TrangThai) // 👈 thêm dòng này
-	.GroupBy(ct => ct.IDSanPham)
-	.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
-	.CountAsync();
+					.GroupBy(ct => ct.IDSanPham)
+					.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
+					.CountAsync();
 
-				// 🔥 Biến thể hết hàng
 				var bienTheHetHang = await _context.SanPhamChiTiets
-		.Where(x => x.TrangThai && (x.SoLuong - x.SoLuongDatCho) <= 0)
-		.CountAsync();
+	.Where(x => x.SoLuong <= 0)
+	.CountAsync();
 
 				return Ok(new
 				{
 					tongSanPham,
 					tongBienThe,
 					sanPhamHetHang,
-					bienTheHetHang // 👈 thêm dòng này
+					bienTheHetHang
 				});
 			}
 			catch (Exception ex)
