@@ -95,6 +95,7 @@ namespace QuanView.Areas.Admin.Controllers
             public decimal TyLeQuyDoiDiem { get; set; }
             public decimal? PhiVanChuyen { get; set; }
             public string TrangThai { get; set; }
+            public string? TrangThaiThanhToan { get; set; }
             public DateTime NgayTao { get; set; }
             public string TenNguoiNhan { get; set; }
             public string SoDienThoaiNguoiNhan { get; set; }
@@ -300,18 +301,6 @@ namespace QuanView.Areas.Admin.Controllers
                                 }
                             }
 
-                            var isStoreShipPaidConfirmed = hoaDonData.BanTaiQuay
-                                && !string.IsNullOrWhiteSpace(hoaDonData.DiaChiGiaoHang)
-                                && string.Equals(hoaDonData.TrangThai, "Đã xác nhận", StringComparison.OrdinalIgnoreCase);
-                            if (isStoreShipPaidConfirmed)
-                            {
-                                highlightedOrderIds.Add(hoaDonData.IDHoaDon);
-                                if (!highlightNotes.ContainsKey(hoaDonData.IDHoaDon))
-                                {
-                                    highlightNotes[hoaDonData.IDHoaDon] = "Đơn đã trả tiền tại quầy.";
-                                }
-                            }
-
                             hoaDons.Add(hoaDon);
                         }
 
@@ -327,15 +316,14 @@ namespace QuanView.Areas.Admin.Controllers
                         ViewBag.TotalPendingCount = result.Statistics?.TotalPendingCount ?? 0;
                         ViewBag.HighlightedOrderIds = highlightedOrderIds;
                         ViewBag.HighlightNotes = highlightNotes;
-						// ✅ SORT LOCAL (nếu API không xử lý)
-						if (sapXep == "asc")
-						{
-							hoaDons = hoaDons.OrderBy(h => h.NgayTao).ToList();
-						}
-						else
-						{
-							hoaDons = hoaDons.OrderByDescending(h => h.NgayTao).ToList();
-						}
+                        // Giữ nguyên thứ tự ưu tiên từ API; chỉ đổi chiều thời gian khi người dùng chọn tăng dần.
+                        if (string.Equals(sapXep, "asc", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hoaDons = hoaDons
+                                .OrderByDescending(h => highlightedOrderIds.Contains(h.IDHoaDon))
+                                .ThenBy(h => h.NgayTao)
+                                .ToList();
+                        }
 						return View(hoaDons);
                     }
                     catch (System.Text.Json.JsonException jsonEx)
@@ -382,6 +370,7 @@ namespace QuanView.Areas.Admin.Controllers
                             TyLeQuyDoiDiem = hoaDonData.TyLeQuyDoiDiem,
                             PhiVanChuyen = hoaDonData.PhiVanChuyen ?? 0,
                             TrangThai = hoaDonData.TrangThai,
+                            TrangThaiThanhToan = hoaDonData.TrangThaiThanhToan ?? "Chưa thanh toán",
                             NgayTao = hoaDonData.NgayTao,
                             TenNguoiNhan = hoaDonData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,
@@ -629,31 +618,37 @@ namespace QuanView.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                if (hoaDon.BanTaiQuay)
-                {
-                    TempData["ErrorMessage"] = "Chỉ cho phép hủy đơn online ở màn hình này.";
-                    return RedirectToAction(nameof(Details), new { id });
-                }
-
                 if (hoaDon.TrangThai == "Đã hủy")
                 {
                     TempData["ErrorMessage"] = "Đơn hàng đã ở trạng thái hủy.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
+                var isPaidOrder = IsPaidOrder(hoaDon);
+                var targetStatus = "Đã hủy";
+                var successMessage = "Đã hủy đơn hàng thành công.";
+                var cancelReason = "Hủy đơn bởi quản trị viên";
+
+                if (isPaidOrder && !string.Equals(hoaDon.TrangThai, OrderPaymentStatusRules.RefundedStatus, StringComparison.OrdinalIgnoreCase))
+                {
+                    targetStatus = OrderPaymentStatusRules.PendingRefundStatus;
+                    successMessage = "Đơn đã thanh toán đã được chuyển sang trạng thái 'Chờ hoàn tiền'.";
+                    cancelReason = "Yêu cầu hoàn tiền trước khi hủy đơn đã thanh toán";
+                }
+
                 var payload = new
                 {
-                    TrangThai = "Đã hủy",
+                    TrangThai = targetStatus,
                     NguoiCapNhat = User.Identity?.Name ?? "Admin",
                     LanCapNhatCuoi = DateTime.UtcNow,
-                    LyDoHuyDon = "Hủy đơn bởi quản trị viên"
+                    LyDoHuyDon = cancelReason
                 };
 
                 var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
 
                 if (updateResponse.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = "Đã hủy đơn hàng thành công.";
+                    TempData["SuccessMessage"] = successMessage;
                 }
                 else
                 {
@@ -689,28 +684,21 @@ namespace QuanView.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                if (hoaDon.BanTaiQuay)
-                {
-                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn online.";
-                    return RedirectToAction(nameof(Details), new { id });
-                }
-
                 if (hoaDon.TrangThai == "Đã hoàn tiền")
                 {
                     TempData["ErrorMessage"] = "Đơn hàng đã được hoàn tiền trước đó.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                if (hoaDon.TrangThai != "Đã hủy")
+                if (!IsPaidOrder(hoaDon))
                 {
-                    TempData["ErrorMessage"] = "Chỉ hoàn tiền cho đơn hàng đã hủy.";
+                    TempData["ErrorMessage"] = "Chỉ hoàn tiền cho đơn hàng đã thanh toán.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                var tenPhuongThucThanhToan = hoaDon.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty;
-                if (!tenPhuongThucThanhToan.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(hoaDon.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ErrorMessage"] = "Chỉ hỗ trợ hoàn tiền cho đơn thanh toán chuyển khoản.";
+                    TempData["ErrorMessage"] = "Đơn chưa ở trạng thái 'Chờ hoàn tiền'.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
@@ -724,7 +712,7 @@ namespace QuanView.Areas.Admin.Controllers
                 var updateResponse = await _httpClient.PutAsJsonAsync($"HoaDons/{id}/trangthai", payload);
                 if (updateResponse.IsSuccessStatusCode)
                 {
-                    TempData["SuccessMessage"] = "Đã hoàn tiền cho đơn hàng thành công.";
+                    TempData["SuccessMessage"] = "Đã xác nhận hoàn tiền. Có thể hoàn tất hủy đơn hàng.";
                 }
                 else
                 {
@@ -738,6 +726,11 @@ namespace QuanView.Areas.Admin.Controllers
             }
 
             return RedirectToAction(nameof(Details), new { id });
+        }
+
+        private static bool IsPaidOrder(HoaDonDetailDto hoaDon)
+        {
+            return OrderPaymentStatusRules.IsPaidOrder(hoaDon.TrangThai, hoaDon.TrangThaiThanhToan);
         }
 
         // POST: Admin/QuanLyDonHang/Rollback/{id}

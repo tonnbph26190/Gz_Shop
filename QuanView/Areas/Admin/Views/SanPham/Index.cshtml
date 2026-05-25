@@ -56,7 +56,7 @@
             margin-bottom: 20px;
             border: 1px solid #dee2e6;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
@@ -225,6 +225,101 @@
         }
         .variant-section table td, .variant-section table th {
             vertical-align: middle !important;
+        }
+        .stock-availability {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            overflow: visible;
+        }
+        .reservation-count {
+            font-size: 0.78rem;
+            color: #a16207;
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            border-radius: 10px;
+            padding: 1px 8px;
+            white-space: nowrap;
+        }
+        .reservation-info-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            z-index: 2000;
+        }
+        .reservation-info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+        }
+        .reservation-popup {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            max-height: 240px;
+            overflow-y: auto;
+            text-align: left;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            padding: 8px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.12s ease;
+        }
+        /* Cầu hover giữa icon và popup để tránh bị mất trạng thái khi rê chuột */
+        .reservation-popup::before {
+            content: "";
+            position: absolute;
+            top: -12px;
+            left: 0;
+            right: 0;
+            height: 12px;
+        }
+        .reservation-info-wrapper:hover .reservation-popup {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .reservation-popup-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0d6efd;
+            margin-bottom: 6px;
+        }
+        .reservation-item {
+            border-top: 1px dashed #e9ecef;
+            padding: 6px 2px;
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+        .reservation-order-link {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .reservation-order-link:hover {
+            text-decoration: underline;
+        }
+        .reservation-item:first-of-type {
+            border-top: none;
+            padding-top: 2px;
         }
 		.card-stats {
     cursor: pointer;
@@ -617,7 +712,42 @@ keyframes blink-warning {
                                             <strong class="text-secondary">@ct.SoLuongVatLy</strong>
                                         </td>
                                         <td class="text-center">
-                                            <strong class="text-primary">@ct.SoLuongKhaDung</strong>
+                                            <div class="stock-availability">
+                                                <strong class="text-primary">@ct.SoLuongKhaDung</strong>
+                                                <span class="reservation-count">Đặt trước: @ct.SoLuongDatCho</span>
+                                                @if (ct.SoLuongDatCho > 0 && ct.DanhSachDonDangGiu.Any())
+                                                {
+                                                    <span class="reservation-info-wrapper" onclick="event.stopPropagation();">
+                                                        <span class="reservation-info-icon">i</span>
+                                                        <div class="reservation-popup">
+                                                            <div class="reservation-popup-title">Đơn đang giữ hàng</div>
+                                                            @foreach (var don in ct.DanhSachDonDangGiu)
+                                                            {
+                                                                <div class="reservation-item">
+                                                                    <div>
+                                                                        <strong>Mã đơn:</strong>
+                                                                        @if (don.IdHoaDon != Guid.Empty)
+                                                                        {
+                                                                            <a class="reservation-order-link"
+                                                                               href="@Url.Action("Details", "QuanLyDonHang", new { area = "Admin", id = don.IdHoaDon })"
+                                                                               onclick="event.stopPropagation();">
+                                                                                @don.MaDonHang
+                                                                            </a>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span>@don.MaDonHang</span>
+                                                                        }
+                                                                    </div>
+                                                                    <div><strong>Khách:</strong> @(string.IsNullOrWhiteSpace(don.TenKhachHang) ? "Khách lẻ" : don.TenKhachHang)</div>
+                                                                    <div><strong>Giữ:</strong> @don.SoLuongDangGiu</div>
+                                                                    <div><strong>Trạng thái:</strong> @don.TrangThaiDon</div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </span>
+                                                }
+                                            </div>
                                         </td>
                                         <td>
                                             @if (ct.originalPrice > ct.price)
@@ -915,7 +1045,8 @@ keyframes blink-warning {
                     if (e.target.closest('a') || 
                         e.target.closest('button') || 
                         e.target.closest('.form-check-input') ||
-                        e.target.closest('.variant-count-badge')) {
+                        e.target.closest('.variant-count-badge') ||
+                        e.target.closest('.reservation-info-wrapper')) {
                         return;
                     }
 

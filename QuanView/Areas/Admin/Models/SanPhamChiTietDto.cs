@@ -33,6 +33,19 @@ namespace QuanView.Areas.Admin.Models
         // Thêm danh sách ảnh
         public List<AnhSanPhamDto> DanhSachAnh { get; set; } = new List<AnhSanPhamDto>();
 
+        // Danh sách đơn hàng đang giữ số lượng đặt trước của biến thể này.
+        public List<DonGiuHangChiTietDto> DanhSachDonDangGiu { get; set; } = new List<DonGiuHangChiTietDto>();
+
 		public bool IsDeleted { get; set; } = false;
 	}
+
+    public class DonGiuHangChiTietDto
+    {
+        public Guid IdSanPhamChiTiet { get; set; }
+        public Guid IdHoaDon { get; set; }
+        public string MaDonHang { get; set; } = string.Empty;
+        public string? TenKhachHang { get; set; }
+        public int SoLuongDangGiu { get; set; }
+        public string TrangThaiDon { get; set; } = string.Empty;
+    }
 }

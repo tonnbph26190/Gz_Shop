@@ -547,6 +547,85 @@ namespace QuanApi.Controllers
             }
         }
 
+        [HttpPost("reservation-details")]
+        public async Task<IActionResult> GetReservationDetails([FromBody] ReservationDetailsRequest request)
+        {
+            try
+            {
+                if (request?.VariantIds == null || request.VariantIds.Count == 0)
+                    return Ok(new List<VariantReservationDetailDto>());
+
+                var variantIds = request.VariantIds
+                    .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList();
+
+                if (variantIds.Count == 0)
+                    return Ok(new List<VariantReservationDetailDto>());
+
+                var reservedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Chờ xác nhận",
+                    "Đã thanh toán chờ xác nhận",
+                    "DaThanhToan",
+                    "Đã thanh toán",
+                    "Đã xác nhận",
+                    "Chờ lấy hàng",
+                    "Đang giao",
+                    "Đã giao",
+                    "Đã lấy hàng",
+                    "Chờ giao hàng",
+                    "Đang giao hàng",
+                    "Giao hàng thành công"
+                };
+
+                var rows = await _context.ChiTietHoaDons
+                    .AsNoTracking()
+                    .Include(ct => ct.HoaDon)
+                        .ThenInclude(h => h.KhachHang)
+                    .Where(ct => variantIds.Contains(ct.IDSanPhamChiTiet)
+                                 && ct.TrangThai
+                                 && ct.HoaDon != null
+                                 && ct.HoaDon.TrangThaiHoaDon
+                                 && ct.HoaDon.DaDatChoTonKho
+                                 && ct.HoaDon.TrangThai != "Đã hủy")
+                    .Select(ct => new
+                    {
+                        ct.IDSanPhamChiTiet,
+                        IdHoaDon = ct.HoaDon!.IDHoaDon,
+                        MaDonHang = ct.HoaDon!.MaHoaDon,
+                        KhachHangTen = ct.HoaDon.KhachHang != null ? ct.HoaDon.KhachHang.TenKhachHang : null,
+                        TenNguoiNhan = ct.HoaDon.TenNguoiNhan,
+                        SoLuongDangGiu = ct.SoLuong,
+                        TrangThaiDon = ct.HoaDon.TrangThai,
+                        NgayTaoDon = ct.HoaDon.NgayTao
+                    })
+                    .ToListAsync();
+
+                var result = rows
+                    .Where(x => !string.IsNullOrWhiteSpace(x.TrangThaiDon) && reservedStatuses.Contains(x.TrangThaiDon))
+                    .OrderByDescending(x => x.NgayTaoDon)
+                    .ThenBy(x => x.MaDonHang)
+                    .Select(x => new VariantReservationDetailDto
+                    {
+                        IdSanPhamChiTiet = x.IDSanPhamChiTiet,
+                        IdHoaDon = x.IdHoaDon,
+                        MaDonHang = x.MaDonHang ?? string.Empty,
+                        TenKhachHang = !string.IsNullOrWhiteSpace(x.KhachHangTen) ? x.KhachHangTen : x.TenNguoiNhan,
+                        SoLuongDangGiu = x.SoLuongDangGiu,
+                        TrangThaiDon = x.TrangThaiDon ?? string.Empty
+                    })
+                    .ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy reservation details cho biến thể.");
+                return StatusCode(500, "Lỗi khi tải chi tiết số lượng đặt trước");
+            }
+        }
+
         // DELETE: api/sanphamchitiets/{id} — luôn xóa mềm (TrangThai = false), không xóa hẳn bản ghi.
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
@@ -625,6 +704,21 @@ namespace QuanApi.Controllers
                 : maSpChiTiet.Trim();
 
             return $"SPCT|{variantCode}|{idSanPhamChiTiet:D}";
+        }
+
+        public class ReservationDetailsRequest
+        {
+            public List<Guid> VariantIds { get; set; } = new();
+        }
+
+        public class VariantReservationDetailDto
+        {
+            public Guid IdSanPhamChiTiet { get; set; }
+            public Guid IdHoaDon { get; set; }
+            public string MaDonHang { get; set; } = string.Empty;
+            public string? TenKhachHang { get; set; }
+            public int SoLuongDangGiu { get; set; }
+            public string TrangThaiDon { get; set; } = string.Empty;
         }
     }
 }

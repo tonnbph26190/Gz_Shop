@@ -200,9 +200,28 @@ namespace QuanApi.Controllers
 							h.TrangThaiThanhToan,
 							h.PhuongThucThanhToan?.MaPhuongThuc,
 							h.PhuongThucThanhToan?.TenPhuongThuc);
+						var isOnlinePaidTransferConfirmed = IsOnlinePaidTransferConfirmed(
+							h.TrangThai,
+							h.TrangThaiThanhToan,
+							h.PhuongThucThanhToan?.MaPhuongThuc,
+							h.PhuongThucThanhToan?.TenPhuongThuc,
+							h.DiaChiGiaoHang);
+						var isStoreShipPaidConfirmed = IsStoreShipPaidConfirmed(
+							h.BanTaiQuay,
+							h.TrangThai,
+							h.TrangThaiThanhToan,
+							h.DiaChiGiaoHang);
 						var displayStatus = canHighlight
 							? "Đã thanh toán chờ xác nhận"
 							: h.TrangThai;
+						var highlightForAdmin = canHighlight || isOnlinePaidTransferConfirmed || isStoreShipPaidConfirmed;
+						var highlightNote = canHighlight
+							? "Đơn đã thanh toán chuyển khoản, đang chờ quản lý xác nhận."
+							: isStoreShipPaidConfirmed
+								? FormatPaidPaymentNote(h.PhuongThucThanhToan?.TenPhuongThuc)
+							: isOnlinePaidTransferConfirmed
+								? "Đã trả tiền chuyển khoản."
+								: null;
 
 						return new
 						{
@@ -222,10 +241,8 @@ namespace QuanApi.Controllers
 							h.SoLuongSanPham,
 							h.TrangThaiThanhToan,
 							h.PhuongThucThanhToan,
-							CanHighlightChuyenKhoanChoXacNhan = canHighlight,
-							GhiChuChuyenKhoanChoXacNhan = canHighlight
-								? "Đơn đã thanh toán chuyển khoản, đang chờ quản lý xác nhận."
-								: null
+							CanHighlightChuyenKhoanChoXacNhan = highlightForAdmin,
+							GhiChuChuyenKhoanChoXacNhan = highlightNote
 						};
 					})
 					.ToList();
@@ -302,6 +319,7 @@ namespace QuanApi.Controllers
 							PhiVanChuyenGoc = h.PhiVanChuyenGoc,
 							SoTienGiamPhiVanChuyen = h.SoTienGiamPhiVanChuyen,
 							TrangThai = h.TrangThai,
+							TrangThaiThanhToan = h.TrangThaiThanhToan,
 							NgayTao = h.NgayTao,
 							TenNguoiNhan = h.TenNguoiNhan,
 							SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
@@ -347,12 +365,39 @@ namespace QuanApi.Controllers
 										GiaBan = ct.SanPhamChiTiet.GiaBan,
 										SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho,
 										SoLuongDatMua = ct.SoLuong,
-										SoLuongTonTruocXacNhan = h.DaTruTonKho
+										SoLuongTonTruocXacNhan = (
+												h.DaTruTonKho
+												|| h.TrangThai == "Đã xác nhận"
+												|| h.TrangThai == "Chờ lấy hàng"
+												|| h.TrangThai == "Đang giao"
+												|| h.TrangThai == "Đã giao"
+												|| h.TrangThai == "Đã lấy hàng"
+												|| h.TrangThai == "Chờ giao hàng"
+												|| h.TrangThai == "Đang giao hàng"
+												|| h.TrangThai == "Giao hàng thành công"
+											)
 											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
 											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
-										SoLuongTonDuKienSauHuy = (h.TrangThai == "Đã hủy" || h.TrangThai == "Đã hoàn tiền")
+										SoLuongTonDuKienSauHuy = (h.TrangThai == "Đã hủy")
 											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho)
-											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong,
+											: (
+												h.DaDatChoTonKho
+												|| h.DaTruTonKho
+												|| h.TrangThai == "Chờ xác nhận"
+												|| h.TrangThai == "DaThanhToan"
+												|| h.TrangThai == "Đã thanh toán"
+												|| h.TrangThai == "Đã thanh toán chờ xác nhận"
+												|| h.TrangThai == "Đã xác nhận"
+												|| h.TrangThai == "Chờ lấy hàng"
+												|| h.TrangThai == "Đang giao"
+												|| h.TrangThai == "Đã giao"
+												|| h.TrangThai == "Đã lấy hàng"
+												|| h.TrangThai == "Chờ giao hàng"
+												|| h.TrangThai == "Đang giao hàng"
+												|| h.TrangThai == "Giao hàng thành công"
+											)
+											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
+											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
 										KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
 										MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
 										HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
@@ -619,6 +664,11 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
+				if (string.IsNullOrWhiteSpace(dto.TrangThai))
+				{
+					return BadRequest("Trạng thái cập nhật không hợp lệ.");
+				}
+
 				await using var tx = await _context.Database.BeginTransactionAsync();
 
 				var hoaDon = await _context.HoaDons
@@ -632,7 +682,49 @@ namespace QuanApi.Controllers
 				}
 
 				var oldStatus = hoaDon.TrangThai;
-				var lyDoHuy = dto.TrangThai == "Đã hủy"
+				var targetStatus = dto.TrangThai.Trim();
+				var isPaidOrder = OrderPaymentStatusRules.IsPaidOrder(oldStatus, hoaDon.TrangThaiThanhToan);
+
+				if (isPaidOrder &&
+					string.Equals(targetStatus, OrderPaymentStatusRules.CanceledStatus, StringComparison.OrdinalIgnoreCase) &&
+					!OrderPaymentStatusRules.IsRefunded(oldStatus))
+				{
+					return BadRequest("Đơn đã thanh toán phải hoàn tiền trước khi hủy. Vui lòng chuyển sang 'Chờ hoàn tiền' rồi xác nhận 'Đã hoàn tiền'.");
+				}
+
+				if (string.Equals(targetStatus, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase))
+				{
+					if (!isPaidOrder)
+					{
+						return BadRequest("Chỉ đơn đã thanh toán mới được chuyển sang trạng thái 'Chờ hoàn tiền'.");
+					}
+
+					if (OrderPaymentStatusRules.IsCanceled(oldStatus) || OrderPaymentStatusRules.IsRefunded(oldStatus))
+					{
+						return BadRequest("Không thể yêu cầu hoàn tiền từ trạng thái hiện tại.");
+					}
+				}
+
+				if (string.Equals(targetStatus, OrderPaymentStatusRules.RefundedStatus, StringComparison.OrdinalIgnoreCase))
+				{
+					if (!isPaidOrder)
+					{
+						return BadRequest("Chỉ đơn đã thanh toán mới được xác nhận hoàn tiền.");
+					}
+
+					if (!OrderPaymentStatusRules.IsRefundRequested(oldStatus))
+					{
+						return BadRequest("Chỉ được xác nhận hoàn tiền cho đơn đang ở trạng thái 'Chờ hoàn tiền'.");
+					}
+				}
+
+				if (OrderPaymentStatusRules.IsRefunded(oldStatus) &&
+					!string.Equals(targetStatus, OrderPaymentStatusRules.CanceledStatus, StringComparison.OrdinalIgnoreCase))
+				{
+					return BadRequest("Đơn đã hoàn tiền chỉ có thể chuyển sang trạng thái 'Đã hủy'.");
+				}
+
+				var lyDoHuy = targetStatus == "Đã hủy"
 					? (dto.LyDoHuyDon ?? hoaDon.LyDoHuyDon)
 					: hoaDon.LyDoHuyDon;
 
@@ -640,7 +732,7 @@ namespace QuanApi.Controllers
 					.Select(x => new InventoryLine(x.IDSanPhamChiTiet, x.SoLuong))
 					.ToList();
 
-				if (dto.TrangThai == "Đã xác nhận" && oldStatus == "Chờ xác nhận")
+				if (targetStatus == "Đã xác nhận" && oldStatus == "Chờ xác nhận")
 				{
 					var commitResult = await _inventoryReservationService.CommitReservedAsync(inventoryLines, dto.NguoiCapNhat ?? "System");
 					if (!commitResult.Success)
@@ -652,7 +744,7 @@ namespace QuanApi.Controllers
 					hoaDon.DaDatChoTonKho = false;
 					hoaDon.DaTruTonKho = true;
 				}
-				else if (dto.TrangThai == "Đã hủy" && oldStatus != "Đã hủy")
+				else if (targetStatus == "Đã hủy" && oldStatus != "Đã hủy")
 				{
 					if (hoaDon.DaDatChoTonKho)
 					{
@@ -697,7 +789,7 @@ namespace QuanApi.Controllers
 
 				var affected = await _context.Database.ExecuteSqlInterpolatedAsync(
 					$@"UPDATE ""HoaDons""
-					   SET ""TrangThai"" = {dto.TrangThai},
+					   SET ""TrangThai"" = {targetStatus},
 					       ""NguoiCapNhat"" = {dto.NguoiCapNhat},
 					       ""LanCapNhatCuoi"" = {dto.LanCapNhatCuoi},
 					       ""LyDoHuyDon"" = {lyDoHuy},
@@ -712,22 +804,22 @@ namespace QuanApi.Controllers
 					return Conflict("Đơn hàng đã được cập nhật bởi thao tác khác, vui lòng tải lại.");
 				}
 
-				await _orderHistoryService.SaveOrderHistoryAsync(id, oldStatus, dto.TrangThai, dto.NguoiCapNhat, dto.LyDoHuyDon);
+				await _orderHistoryService.SaveOrderHistoryAsync(id, oldStatus, targetStatus, dto.NguoiCapNhat, dto.LyDoHuyDon);
 				await _context.SaveChangesAsync();
 				await tx.CommitAsync();
 
-				hoaDon.TrangThai = dto.TrangThai;
+				hoaDon.TrangThai = targetStatus;
 				hoaDon.LyDoHuyDon = lyDoHuy;
 
-				_logger.LogInformation($"Updated order {id} status to {dto.TrangThai}");
+				_logger.LogInformation($"Updated order {id} status to {targetStatus}");
 
-				if (dto.TrangThai == "Đã hủy")
+				if (targetStatus == "Đã hủy")
 				{
 					await _emailService.SendOrderCancellationEmailAsync(hoaDon, dto.LyDoHuyDon);
 				}
 				else
 				{
-					await _emailService.SendOrderStatusChangeEmailAsync(hoaDon, oldStatus, dto.TrangThai);
+					await _emailService.SendOrderStatusChangeEmailAsync(hoaDon, oldStatus, targetStatus);
 				}
 
 				return Ok(new { message = "Cập nhật trạng thái thành công" });
@@ -1008,6 +1100,7 @@ namespace QuanApi.Controllers
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
 						BanTaiQuay = h.BanTaiQuay,
+						TrangThaiThanhToan = h.TrangThaiThanhToan ?? "Chưa thanh toán",
 						TrangThai = IsPaidTransferPendingConfirmation(
 							h.TrangThai,
 							h.TrangThaiThanhToan,
@@ -1015,6 +1108,13 @@ namespace QuanApi.Controllers
 							h.PhuongThucThanhToanTen)
 							? "Đã thanh toán chờ xác nhận"
 							: h.TrangThai,
+						PhuongThucThanhToan = (h.PhuongThucThanhToanMa != null || h.PhuongThucThanhToanTen != null)
+							? new PhuongThucThanhToan
+							{
+								MaPhuongThuc = h.PhuongThucThanhToanMa ?? string.Empty,
+								TenPhuongThuc = h.PhuongThucThanhToanTen ?? string.Empty
+							}
+							: null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
 						NgayTao = h.NgayTao
 					})
@@ -1113,6 +1213,7 @@ namespace QuanApi.Controllers
 						MaHoaDon = h.MaHoaDon,
 						TongTien = h.TongTien,
 						BanTaiQuay = h.BanTaiQuay,
+						TrangThaiThanhToan = h.TrangThaiThanhToan ?? "Chưa thanh toán",
 						TrangThai = IsPaidTransferPendingConfirmation(
 							h.TrangThai,
 							h.TrangThaiThanhToan,
@@ -1120,6 +1221,13 @@ namespace QuanApi.Controllers
 							h.PhuongThucThanhToanTen)
 							? "Đã thanh toán chờ xác nhận"
 							: h.TrangThai,
+						PhuongThucThanhToan = (h.PhuongThucThanhToanMa != null || h.PhuongThucThanhToanTen != null)
+							? new PhuongThucThanhToan
+							{
+								MaPhuongThuc = h.PhuongThucThanhToanMa ?? string.Empty,
+								TenPhuongThuc = h.PhuongThucThanhToanTen ?? string.Empty
+							}
+							: null,
 						DiaChiGiaoHang = h.DiaChiGiaoHang,
 						NgayTao = h.NgayTao
 					})
@@ -1174,19 +1282,54 @@ namespace QuanApi.Controllers
 				return false;
 			}
 
-			var isPaidByPaymentStatus =
-				string.Equals(paymentStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase);
-			var isPaidByOrderStatus =
-				string.Equals(orderStatus, "DaThanhToan", StringComparison.OrdinalIgnoreCase) ||
-				string.Equals(orderStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase) ||
-				string.Equals(orderStatus, "Đã thanh toán chờ xác nhận", StringComparison.OrdinalIgnoreCase);
-
-			if (!isPaidByPaymentStatus && !isPaidByOrderStatus)
+			if (!IsPaidStatus(orderStatus, paymentStatus))
 			{
 				return false;
 			}
 
 			return IsTransferPaymentMethod(paymentMethodCode, paymentMethodName);
+		}
+
+		private static bool IsOnlinePaidTransferConfirmed(
+			string? orderStatus,
+			string? paymentStatus,
+			string? paymentMethodCode,
+			string? paymentMethodName,
+			string? shippingAddress)
+		{
+			if (string.IsNullOrWhiteSpace(shippingAddress))
+			{
+				return false;
+			}
+
+			if (!string.Equals(orderStatus, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			if (!IsPaidStatus(orderStatus, paymentStatus))
+			{
+				return false;
+			}
+
+			return IsTransferPaymentMethod(paymentMethodCode, paymentMethodName);
+		}
+
+		private static bool IsStoreShipPaidConfirmed(
+			bool banTaiQuay,
+			string? orderStatus,
+			string? paymentStatus,
+			string? shippingAddress)
+		{
+			return banTaiQuay
+				&& !string.IsNullOrWhiteSpace(shippingAddress)
+				&& string.Equals(orderStatus, "Đã xác nhận", StringComparison.OrdinalIgnoreCase)
+				&& IsPaidStatus(orderStatus, paymentStatus);
+		}
+
+		private static bool IsPaidStatus(string? orderStatus, string? paymentStatus)
+		{
+			return OrderPaymentStatusRules.IsPaidOrder(orderStatus, paymentStatus);
 		}
 
 		private static bool IsTransferPaymentMethod(string? paymentMethodCode, string? paymentMethodName)
@@ -1199,6 +1342,15 @@ namespace QuanApi.Controllers
 				|| normalized.Contains("transfer")
 				|| normalized.Contains("vnpay")
 				|| normalized.Contains("qr");
+		}
+
+		private static string FormatPaidPaymentNote(string? paymentMethodName)
+		{
+			var method = string.IsNullOrWhiteSpace(paymentMethodName)
+				? "không xác định phương thức thanh toán"
+				: paymentMethodName.Trim();
+
+			return $"Đã trả tiền: {method}.";
 		}
 
 		private static string RemoveDiacritics(string value)
@@ -1232,6 +1384,30 @@ namespace QuanApi.Controllers
 					&& (h.TrangThaiThanhToan == "Đã thanh toán"
 						|| h.TrangThai == "DaThanhToan"
 						|| h.TrangThai == "Đã thanh toán")
+					&& h.PhuongThucThanhToan != null
+					&& (
+						(h.PhuongThucThanhToan.MaPhuongThuc != null && (
+							h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("bank")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("transfer")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("vnpay")
+							|| h.PhuongThucThanhToan.MaPhuongThuc.ToLower().Contains("qr")
+						))
+						|| (h.PhuongThucThanhToan.TenPhuongThuc != null && (
+							h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyển khoản")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("chuyen khoan")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("bank")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("transfer")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("vnpay")
+							|| h.PhuongThucThanhToan.TenPhuongThuc.ToLower().Contains("qr")
+						))
+					))
+				.ThenByDescending(h =>
+					!string.IsNullOrEmpty(h.DiaChiGiaoHang)
+					&& h.TrangThai == "Đã xác nhận"
+					&& (h.TrangThaiThanhToan == "Đã thanh toán"
+						|| h.TrangThai == "DaThanhToan"
+						|| h.TrangThai == "Đã thanh toán"
+						|| h.TrangThai == "Đã thanh toán chờ xác nhận")
 					&& h.PhuongThucThanhToan != null
 					&& (
 						(h.PhuongThucThanhToan.MaPhuongThuc != null && (

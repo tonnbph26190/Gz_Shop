@@ -1,4 +1,5 @@
 ﻿@model QuanApi.Data.HoaDon
+@using QuanApi.Data
 @using QuanView.Areas.Admin.Models
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
@@ -92,11 +93,16 @@
             break;
     }
 
-    var isBankTransferOrder = (Model.PhuongThucThanhToan?.TenPhuongThuc ?? string.Empty)
-        .Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
-    var canShowRefundButton = !Model.BanTaiQuay && currentStatus == "Đã hủy" && isBankTransferOrder;
+    var paymentMethodName = Model.PhuongThucThanhToan?.TenPhuongThuc ?? "không xác định";
+    var isPaidOrder = OrderPaymentStatusRules.IsPaidOrder(Model.TrangThai, Model.TrangThaiThanhToan);
+    var canShowRefundButton = string.Equals(Model.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase) && isPaidOrder;
+    var canFinalizeCancel = string.Equals(Model.TrangThai, OrderPaymentStatusRules.RefundedStatus, StringComparison.OrdinalIgnoreCase);
+    var isStoreShipPaidOrder = Model.BanTaiQuay && !string.IsNullOrWhiteSpace(Model.DiaChiGiaoHang) && isPaidOrder;
     // currentStatus đã normalize "Giao hàng thành công" → "Đã giao"
-    var orderCompleted = currentStatus == "Đã giao" || currentStatus == "Đã hoàn tiền";
+    var orderCompleted = currentStatus == "Đã giao" || currentStatus == "Đã hủy";
+    var canAdvanceStatus = !orderCompleted
+        && !string.Equals(Model.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(Model.TrangThai, OrderPaymentStatusRules.RefundedStatus, StringComparison.OrdinalIgnoreCase);
     // Chỉ dùng giá trị đã lưu trên hóa đơn (không suy từ cấu hình / bảng khác)
     var soTienGiamTuDiem = Model.SoTienGiamTuDiem;
     // Tạm tính = tiền hàng gốc (tổng thành tiền dòng); Tổng cộng = TongTien sau mọi cộng/trừ (voucher, điểm, ship…)
@@ -439,6 +445,14 @@
                         <h5>Đơn hàng đã hoàn tiền</h5>
                     </div>
                 }
+                else if (Model.TrangThai == "Chờ hoàn tiền")
+                {
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-wallet fa-2x mb-2"></i>
+                        <h5>Đơn hàng đang chờ hoàn tiền</h5>
+                        <p class="mb-0">Cần xác nhận hoàn tiền trước khi hủy đơn.</p>
+                    </div>
+                }
                 else
                 {
                     <div class="timeline">
@@ -564,12 +578,22 @@
                                     }
                                     var hasStockSnapshot = stockSnapshot != null;
                                     var soLuongTonHienTai = hasStockSnapshot ? stockSnapshot.SoLuongTonHienTai : (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
-                                    var daTruKho = currentStatus == "Đã xác nhận"
+                                    var isConfirmedStage = currentStatus == "Đã xác nhận"
                                         || currentStatus == "Chờ lấy hàng"
                                         || currentStatus == "Đang giao"
-                                        || currentStatus == "Đã giao";
-                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
-                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (daTruKho ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                        || currentStatus == "Đã giao"
+                                        || currentStatus == "Đã lấy hàng"
+                                        || currentStatus == "Chờ giao hàng"
+                                        || currentStatus == "Đang giao hàng"
+                                        || currentStatus == "Giao hàng thành công";
+                                    var isPendingConfirmationStage = currentStatus == "Chờ xác nhận"
+                                        || currentStatus == "DaThanhToan"
+                                        || currentStatus == "Đã thanh toán"
+                                        || currentStatus == "Đã thanh toán chờ xác nhận";
+                                    var isCanceledStage = currentStatus == "Đã hủy";
+                                    var canReturnOnCancel = !isCanceledStage && (isConfirmedStage || isPendingConfirmationStage);
+                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : (isConfirmedStage ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (canReturnOnCancel ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
 
                                     <tr>
                                         <td>
@@ -626,7 +650,13 @@
                                 <i class="fas fa-money-check-alt"></i> Đơn hàng đã hoàn tiền
                             </div>
                         }
-                        else if (!orderCompleted)
+                        else if (string.Equals(Model.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <div class="alert alert-warning text-center">
+                                <i class="fas fa-wallet"></i> Đơn hàng đang chờ xác nhận hoàn tiền
+                            </div>
+                        }
+                        else if (canAdvanceStatus)
                         {
                             <form method="post" action="@Url.Action(nextAction, new { id = Model.IDHoaDon })">
                                 <button type="submit" class="btn btn-primary btn-block">
@@ -656,8 +686,8 @@
                         @if (canShowRefundButton)
                         {
                             <form method="post" action="@Url.Action("HoanTien", new { id = Model.IDHoaDon })" class="mt-2">
-                                <button type="submit" class="btn btn-success btn-block" onclick="return confirm('Bạn có chắc chắn đã hoàn tiền cho đơn hàng này?')">
-                                    <i class="fas fa-money-check-alt"></i> Hoàn tiền
+                                <button type="submit" class="btn btn-success btn-block" onclick="return confirm('Xác nhận đã hoàn tiền cho đơn hàng này?')">
+                                    <i class="fas fa-money-check-alt"></i> Xác nhận hoàn tiền
                                 </button>
                             </form>
                         }
@@ -665,15 +695,27 @@
                         @if (orderCompleted)
                         {
                         }
-                        else if (!Model.BanTaiQuay && Model.TrangThai != "Đã hủy" && Model.TrangThai != "Đã hoàn tiền")
+                        else if (canFinalizeCancel)
                         {
-                            var cancelMessage = Model.TrangThai == "Chờ xác nhận"
-                                ? "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy."
-                                : "Bạn có chắc chắn muốn hủy đơn online này? Trạng thái sẽ chuyển sang Đã hủy và số lượng sản phẩm sẽ được hoàn lại kho.";
+                            <form method="post" action="@Url.Action("HuyDonHang", new { id = Model.IDHoaDon })" class="mt-2">
+                                <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('Đơn đã hoàn tiền. Bạn có chắc chắn muốn hoàn tất hủy đơn?')">
+                                    <i class="fas fa-times-circle"></i> Hoàn tất hủy đơn
+                                </button>
+                            </form>
+                        }
+                        else if (Model.TrangThai != "Đã hủy"
+                            && !string.Equals(Model.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var cancelMessage = isPaidOrder
+                                ? "Đơn đã thanh toán sẽ được chuyển sang Chờ hoàn tiền. Bạn có chắc chắn muốn tiếp tục?"
+                                : (Model.TrangThai == "Chờ xác nhận"
+                                    ? "Bạn có chắc chắn muốn hủy đơn này? Trạng thái sẽ chuyển sang Đã hủy."
+                                    : "Bạn có chắc chắn muốn hủy đơn này? Trạng thái sẽ chuyển sang Đã hủy và số lượng sản phẩm sẽ được hoàn lại kho.");
+                            var cancelButtonText = isPaidOrder ? "Yêu cầu hoàn tiền" : "Hủy đơn hàng";
 
                             <form method="post" action="@Url.Action("HuyDonHang", new { id = Model.IDHoaDon })" class="mt-2">
                                 <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('@cancelMessage')">
-                                    <i class="fas fa-times-circle"></i> Hủy đơn hàng
+                                    <i class="fas fa-times-circle"></i> @cancelButtonText
                                 </button>
                             </form>
                         }
@@ -718,8 +760,14 @@
                     <hr>
                     <div class="info-row">
                         <span class="info-label">Phương thức thanh toán:</span>
-                        <span class="info-value">@(Model.PhuongThucThanhToan?.TenPhuongThuc ?? "N/A")</span>
+                        <span class="info-value">@paymentMethodName</span>
                     </div>
+                    @if (isStoreShipPaidOrder)
+                    {
+                        <div class="alert alert-warning py-2 px-3 mb-3">
+                            <strong>Note:</strong> Đã trả tiền: @paymentMethodName.
+                        </div>
+                    }
                     <div class="info-row">
                         <span class="info-label">Ngày tạo:</span>
                         <span class="info-value">@Model.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
