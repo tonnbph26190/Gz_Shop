@@ -571,10 +571,17 @@ namespace QuanApi.Controllers
 
             string trangThaiHoaDon;
             var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-             {
-    "cash", "Tiền mặt", "tiền mặt"
-    };
-            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
+            {
+                "cash", "Tiền mặt", "tiền mặt"
+            };
+            var transferPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "bank", "transfer", "chuyenkhoan", "chuyen khoan", "chuyển khoản", "qr", "vnpay"
+            };
+            var shouldConfirmShippingPaidOrder = dto.Shipping
+                && !string.IsNullOrWhiteSpace(dto.Address)
+                && (cashPaymentMethods.Contains(dto.PaymentMethod) || transferPaymentMethods.Contains(dto.PaymentMethod));
+            if (shouldConfirmShippingPaidOrder)
             {
                 trangThaiHoaDon = "Đã xác nhận";
             }
@@ -1679,7 +1686,14 @@ namespace QuanApi.Controllers
                 {
                     "cash", "Tiền mặt", "tiền mặt"
                 };
-            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
+            var transferPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "bank", "transfer", "chuyenkhoan", "chuyen khoan", "chuyển khoản", "qr", "vnpay"
+                };
+            var shouldConfirmShippingPaidOrder = dto.Shipping
+                && !string.IsNullOrWhiteSpace(dto.Address)
+                && (cashPaymentMethods.Contains(dto.PaymentMethod) || transferPaymentMethods.Contains(dto.PaymentMethod));
+            if (shouldConfirmShippingPaidOrder)
             {
                 trangThaiHoaDon = "Đã xác nhận";
             }

@@ -1,4 +1,5 @@
 @model dynamic
+@using QuanApi.Data
 @{
     var lang = Context.Request.Cookies["UserLanguage"] ?? "vi";
     ViewData["Title"] = ((lang == "vi") ? "ĐƠN MUA CỦA TÔI" : "MY ORDERS");
@@ -205,6 +206,8 @@
                             <option value="Đã xác nhận" selected="@(trangThai == "Đã xác nhận")">Đã xác nhận</option>
                             <option value="Đang giao hàng" selected="@(trangThai == "Đang giao hàng")">Đang giao hàng</option>
                             <option value="Đã giao" selected="@(trangThai == "Đã giao")">Đã giao</option>
+                            <option value="Chờ hoàn tiền" selected="@(trangThai == "Chờ hoàn tiền")">Chờ hoàn tiền</option>
+                            <option value="Đã hoàn tiền" selected="@(trangThai == "Đã hoàn tiền")">Đã hoàn tiền</option>
                             <option value="Đã hủy" selected="@(trangThai == "Đã hủy")">Đã hủy</option>
                         </select>
                     </div>
@@ -303,13 +306,14 @@
                                 "Đã thanh toán chờ xác nhận" => "status-transfer-pending",
                                 "Đang giao hàng" => "status-shipping",
                                 "Giao hàng thành công" => "status-success",
+                                "Chờ hoàn tiền" => "status-transfer-pending",
+                                "Đã hoàn tiền" => "status-success",
                                 "Đã hủy" => "status-cancel",
                                 _ => "bg-light text-dark"
                             };
-                            var isTransferPending = hoaDon.TrangThai == "Đã thanh toán chờ xác nhận";
-                            var isStoreShipPaidConfirmed = hoaDon.BanTaiQuay
-                                && !string.IsNullOrEmpty(hoaDon.DiaChiGiaoHang)
-                                && hoaDon.TrangThai == "Đã xác nhận";
+                            var isTransferPending = string.Equals(hoaDon.TrangThai, "Đã thanh toán chờ xác nhận", StringComparison.OrdinalIgnoreCase);
+                            var isOnlinePaidTransferConfirmed = IsOnlinePaidTransferConfirmed(hoaDon);
+                            var isStoreShipPaidConfirmed = IsStoreShipPaidConfirmed(hoaDon);
                             var rowClass = isTransferPending
                                 ? "highlight-transfer-pending"
                                 : (isStoreShipPaidConfirmed ? "highlight-store-ship-paid" : "");
@@ -328,14 +332,25 @@
                                     }
                                     else if (isStoreShipPaidConfirmed)
                                     {
-                                        <div><small class="text-warning-emphasis fw-bold">Đã trả tiền tại quầy.</small></div>
+                                        <div>
+                                            <small class="text-warning-emphasis fw-bold">
+                                                @FormatPaidPaymentNote(hoaDon.PhuongThucThanhToan)
+                                            </small>
+                                        </div>
                                     }
                                 </td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(hoaDon.DiaChiGiaoHang)) {
-                                        <span class="small text-primary"><i class="bi bi-globe me-1"></i>Online</span>
+                                    @if (hoaDon.BanTaiQuay) {
+                                        if (!string.IsNullOrWhiteSpace(hoaDon.DiaChiGiaoHang))
+                                        {
+                                            <span class="small text-warning"><i class="bi bi-truck me-1"></i>Tại quầy (ship về)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="small text-muted"><i class="bi bi-shop me-1"></i>Tại quầy</span>
+                                        }
                                     } else {
-                                        <span class="small text-muted"><i class="bi bi-shop me-1"></i>Store</span>
+                                        <span class="small text-primary"><i class="bi bi-globe me-1"></i>Online</span>
                                     }
                                 </td>
                                 <td class="small text-muted">@hoaDon.NgayTao.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
@@ -673,6 +688,83 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 @functions {
+    private bool IsOnlinePaidTransferConfirmed(QuanApi.Data.HoaDon hoaDon)
+    {
+        if (hoaDon == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(hoaDon.DiaChiGiaoHang))
+        {
+            return false;
+        }
+
+        if (!string.Equals(hoaDon.TrangThai, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!IsPaidStatus(hoaDon.TrangThai, hoaDon.TrangThaiThanhToan))
+        {
+            return false;
+        }
+
+        return IsTransferPaymentMethod(hoaDon.PhuongThucThanhToan);
+    }
+
+    private bool IsStoreShipPaidConfirmed(QuanApi.Data.HoaDon hoaDon)
+    {
+        if (hoaDon == null)
+        {
+            return false;
+        }
+
+        if (!hoaDon.BanTaiQuay || string.IsNullOrWhiteSpace(hoaDon.DiaChiGiaoHang))
+        {
+            return false;
+        }
+
+        if (!string.Equals(hoaDon.TrangThai, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return IsPaidStatus(hoaDon.TrangThai, hoaDon.TrangThaiThanhToan);
+    }
+
+    private bool IsPaidStatus(string? orderStatus, string? paymentStatus)
+    {
+        return OrderPaymentStatusRules.IsPaidOrder(orderStatus, paymentStatus);
+    }
+
+    private bool IsTransferPaymentMethod(QuanApi.Data.PhuongThucThanhToan? paymentMethod)
+    {
+        var methodCode = paymentMethod?.MaPhuongThuc?.ToLowerInvariant() ?? string.Empty;
+        var methodName = paymentMethod?.TenPhuongThuc?.ToLowerInvariant() ?? string.Empty;
+
+        return methodCode.Contains("bank")
+            || methodCode.Contains("transfer")
+            || methodCode.Contains("vnpay")
+            || methodCode.Contains("qr")
+            || methodName.Contains("chuyển khoản")
+            || methodName.Contains("chuyen khoan")
+            || methodName.Contains("bank")
+            || methodName.Contains("transfer")
+            || methodName.Contains("vnpay")
+            || methodName.Contains("qr");
+    }
+
+    private string FormatPaidPaymentNote(QuanApi.Data.PhuongThucThanhToan? paymentMethod)
+    {
+        var methodName = paymentMethod?.TenPhuongThuc;
+        var method = string.IsNullOrWhiteSpace(methodName)
+            ? "không xác định phương thức thanh toán"
+            : methodName.Trim();
+
+        return $"Đã trả tiền: {method}.";
+    }
+
     public string GetTrangThaiText(string trangThai)
     {
         return trangThai switch
@@ -687,6 +779,8 @@
             "Đang giao hàng" => "Đang giao hàng",
             "Đã giao" => "Đã giao",
             "Giao hàng thành công" => "Hoàn thành",
+            "Chờ hoàn tiền" => "Chờ hoàn tiền",
+            "Đã hoàn tiền" => "Đã hoàn tiền",
             "Đã hủy" => "Đã hủy",
             _ => trangThai
         };

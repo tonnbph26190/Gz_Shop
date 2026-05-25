@@ -144,6 +144,50 @@ namespace QuanView.Areas.Admin.Controllers
 				}
 			}
 
+			var allVariantIds = products
+				.SelectMany(sp => sp.ChiTietSanPhams ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>())
+				.Select(ct => ct.IdSanPhamChiTiet)
+				.Where(id => id != Guid.Empty)
+				.Distinct()
+				.ToList();
+
+			if (allVariantIds.Any())
+			{
+				var reservationRes = await _http.PostAsJsonAsync(
+					"sanphamchitiets/reservation-details",
+					new ReservationDetailsRequest { VariantIds = allVariantIds });
+
+				if (reservationRes.IsSuccessStatusCode)
+				{
+					var reservationDetails = await reservationRes.Content
+						.ReadFromJsonAsync<List<DonGiuHangChiTietDto>>(new JsonSerializerOptions
+						{
+							PropertyNameCaseInsensitive = true
+						}) ?? new List<DonGiuHangChiTietDto>();
+
+					var reservationByVariant = reservationDetails
+						.GroupBy(x => x.IdSanPhamChiTiet)
+						.ToDictionary(g => g.Key, g => g.ToList());
+
+					foreach (var sp in products)
+					{
+						foreach (var ct in sp.ChiTietSanPhams ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>())
+						{
+							if (reservationByVariant.TryGetValue(ct.IdSanPhamChiTiet, out var holds))
+							{
+								ct.DanhSachDonDangGiu = holds;
+								ct.SoLuongDatCho = holds.Sum(x => x.SoLuongDangGiu);
+							}
+							else
+							{
+								ct.DanhSachDonDangGiu = new List<DonGiuHangChiTietDto>();
+								ct.SoLuongDatCho = 0;
+							}
+						}
+					}
+				}
+			}
+
 			// Tạo ViewModel với phân trang và bộ lọc
 			var viewModel = new SanPhamFilterViewModel
 			{
@@ -1646,6 +1690,11 @@ coXepLy, coGian, trangThaiSp,
 			}
 
 			return Json(new { success = true, urlAnh });
+		}
+
+		private sealed class ReservationDetailsRequest
+		{
+			public List<Guid> VariantIds { get; set; } = new();
 		}
 	}
 }

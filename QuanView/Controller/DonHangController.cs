@@ -451,6 +451,29 @@ namespace QuanView.Controllers
         {
             try
             {
+                var detailResponse = await _httpClient.GetAsync($"HoaDons/{id}");
+                if (!detailResponse.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
+                }
+
+                var order = await detailResponse.Content.ReadFromJsonAsync<HoaDon>();
+                if (order == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy đơn hàng." });
+                }
+
+                var isPaidOrder = OrderPaymentStatusRules.IsPaidOrder(order.TrangThai, order.TrangThaiThanhToan);
+                var isRefunded = OrderPaymentStatusRules.IsRefunded(order.TrangThai);
+                if (isPaidOrder && !isRefunded)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Đơn đã thanh toán cần được hoàn tiền trước khi hủy. Vui lòng liên hệ cửa hàng để xử lý hoàn tiền."
+                    });
+                }
+
                 var response = await _httpClient.PutAsync($"HoaDons/{id}/trangthai",
                     new StringContent(JsonSerializer.Serialize(new
                     {

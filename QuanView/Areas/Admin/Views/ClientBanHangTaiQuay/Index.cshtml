@@ -790,6 +790,40 @@
     </div>
 </div>
 
+<!-- Modal nhập nhanh thông tin khách vãng lai khi dùng mã giảm giá -->
+<div class="modal fade" id="guestContactDiscountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thông tin khách vãng lai</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" id="guestContactDiscountMessage">
+                    Vui lòng nhập SĐT hoặc email trước khi dùng mã giảm giá.
+                </p>
+                <div class="mb-2">
+                    <label class="form-label">Tên khách hàng (không bắt buộc)</label>
+                    <input type="text" class="form-control" id="guestContactName" placeholder="Nhập họ và tên">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" class="form-control" id="guestContactPhone" placeholder="Nhập số điện thoại">
+                </div>
+                <div class="mb-0">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="guestContactEmail" placeholder="Nhập email">
+                </div>
+                <small class="text-danger d-block mt-2">* Chỉ cần nhập SĐT hoặc email.</small>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Để sau</button>
+                <button class="btn btn-primary" type="button" onclick="saveGuestContactForDiscount()">Lưu thông tin</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal nhập số lượng sản phẩm -->
 <div class="modal fade" id="quantityModal" tabindex="-1">
     <div class="modal-dialog">
@@ -914,6 +948,9 @@
     let isHandlingQrScan = false;
     let html5QrCodeInstance = null;
     let qrDecodeHandled = false;
+    let shouldOpenVoucherAfterGuestContact = false;
+    let shouldRetryPaymentAfterGuestContact = false;
+    let pendingVoucherSelection = null;
 
     function cloneCustomerForCart(customer) {
         if (!customer) return null;
@@ -1390,8 +1427,121 @@
 
     // Áp dụng mã giảm giá
     function applyDiscount() {
+        if (!ensureGuestContactBeforeApplyDiscount()) {
+            return;
+        }
         loadCustomerDiscountVouchers();
     }
+
+    function isGuestCustomerForDiscountFlow() {
+        return !selectedCustomer || !!selectedCustomer.isGuest;
+    }
+
+    function getGuestContactInfo() {
+        return {
+            phone: ($('#shipPhone').val() || '').trim(),
+            email: ($('#shipEmail').val() || '').trim()
+        };
+    }
+
+    function hasGuestContactInfo() {
+        const contact = getGuestContactInfo();
+        return !!(contact.phone || contact.email);
+    }
+
+    function focusGuestContactModalInput() {
+        const phone = ($('#guestContactPhone').val() || '').trim();
+        const email = ($('#guestContactEmail').val() || '').trim();
+        if (!phone) {
+            $('#guestContactPhone').trigger('focus');
+            return;
+        }
+        if (!email) {
+            $('#guestContactEmail').trigger('focus');
+        }
+    }
+
+    function requestGuestContactForDiscount(message, options = {}) {
+        shouldOpenVoucherAfterGuestContact = !!options.afterOpenVoucher;
+        shouldRetryPaymentAfterGuestContact = !!options.afterPayInvoice;
+        pendingVoucherSelection = options.voucherSelection || null;
+
+        $('#guestContactDiscountMessage').text(message || 'Vui lòng nhập số điện thoại hoặc email cho khách vãng lai.');
+        $('#guestContactName').val(($('#shipName').val() || '').trim());
+        $('#guestContactPhone').val(($('#shipPhone').val() || '').trim());
+        $('#guestContactEmail').val(($('#shipEmail').val() || '').trim());
+        $('#guestContactDiscountModal').modal('show');
+        setTimeout(focusGuestContactModalInput, 150);
+    }
+
+    function saveGuestContactForDiscount() {
+        const name = ($('#guestContactName').val() || '').trim();
+        const phone = ($('#guestContactPhone').val() || '').trim();
+        const email = ($('#guestContactEmail').val() || '').trim();
+
+        if (!phone && !email) {
+            showWarning('Vui lòng nhập SĐT hoặc email.');
+            focusGuestContactModalInput();
+            return;
+        }
+
+        $('#shipName').val(name);
+        $('#shipPhone').val(phone);
+        $('#shipEmail').val(email);
+        $('#guestContactDiscountModal').modal('hide');
+        showSuccess('Đã lưu thông tin khách vãng lai.');
+
+        if (pendingVoucherSelection) {
+            const voucher = pendingVoucherSelection;
+            pendingVoucherSelection = null;
+            shouldOpenVoucherAfterGuestContact = false;
+            shouldRetryPaymentAfterGuestContact = false;
+            selectVoucher(voucher.code, voucher.giaTriGiam, voucher.giaTriGiamToiDa, voucher.donToiThieu);
+            return;
+        }
+
+        if (shouldOpenVoucherAfterGuestContact) {
+            shouldOpenVoucherAfterGuestContact = false;
+            shouldRetryPaymentAfterGuestContact = false;
+            loadCustomerDiscountVouchers();
+            return;
+        }
+
+        if (shouldRetryPaymentAfterGuestContact) {
+            shouldRetryPaymentAfterGuestContact = false;
+            shouldOpenVoucherAfterGuestContact = false;
+            payInvoice();
+            return;
+        }
+
+        shouldOpenVoucherAfterGuestContact = false;
+        shouldRetryPaymentAfterGuestContact = false;
+    }
+
+    function ensureGuestContactBeforeApplyDiscount() {
+        if (!isGuestCustomerForDiscountFlow()) {
+            return true;
+        }
+        if (hasGuestContactInfo()) {
+            return true;
+        }
+        requestGuestContactForDiscount('Khách vãng lai cần nhập SĐT hoặc email trước khi dùng mã giảm giá.', { afterOpenVoucher: true });
+        return false;
+    }
+
+    function ensureGuestContactForAppliedDiscount() {
+        const discountCode = ($('#discountCode').val() || '').trim();
+        const hasDiscountApplied = !!discountCode || Number(discountValue || 0) > 0;
+        if (!hasDiscountApplied || !isGuestCustomerForDiscountFlow()) {
+            return true;
+        }
+        if (hasGuestContactInfo()) {
+            return true;
+        }
+        requestGuestContactForDiscount('Khách vãng lai đã dùng mã giảm giá cần nhập SĐT hoặc email.', { afterPayInvoice: true });
+        return false;
+    }
+
     function tinhTienGiam(v, tongTien) {
         let discount = 0;
 
@@ -1635,6 +1785,13 @@
 
     // Chọn phiếu giảm giá
     function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
+        if (isGuestCustomerForDiscountFlow() && !hasGuestContactInfo()) {
+            requestGuestContactForDiscount('Nhập SĐT hoặc email trước khi áp dụng mã giảm giá cho khách vãng lai.', {
+                voucherSelection: { code: code, giaTriGiam: giaTriGiam, giaTriGiamToiDa: giaTriGiamToiDa, donToiThieu: donToiThieu }
+            });
+            return;
+        }
+
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products) {
             showWarning('Không có giỏ hàng nào được chọn!');
@@ -2829,6 +2986,7 @@
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
         if (!validateShippingAddressForPayment()) return;
+        if (!ensureGuestContactForAppliedDiscount()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();

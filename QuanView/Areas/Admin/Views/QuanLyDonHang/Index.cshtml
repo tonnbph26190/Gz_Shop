@@ -259,6 +259,10 @@
                                         selected="@(qTrangThai == "DaThanhToan" ? "selected" : null)">
                                     Đã thanh toán
                                 </option>
+                                <option value="Chờ hoàn tiền"
+                                        selected="@(qTrangThai == "Chờ hoàn tiền" ? "selected" : null)">
+                                    Chờ hoàn tiền
+                                </option>
                                        @*  <option value="Giao hàng thành công"
                                                 selected="@(qTrangThai == "Giao hàng thành công" ? "selected" : null)">
                                             Giao hàng thành công</option> *@
@@ -427,6 +431,7 @@
                                                     <th>Khách hàng</th>
                                                     <th>Tổng tiền</th>
                                                     <th>Trạng thái</th>
+                                                    <th>Loại đơn hàng</th>
                                 @{
                                     var currentSort = Context.Request.Query["sapXep"].ToString();
                                     if (string.IsNullOrEmpty(currentSort))
@@ -488,6 +493,7 @@
                                                                     "Đã giao" => "status-delivered",
                                                 "DaThanhToan" => "status-completed",
                                                                     "Giao hàng thành công" => "status-success",
+                                                                    "Chờ hoàn tiền" => "status-transfer-pending",
                                                                     "Đã hủy" => "status-cancelled",
                                                                     "Đã hoàn tiền" => "status-completed",
                                                                     _ => "status-pending"
@@ -508,6 +514,23 @@
                                                                 <div>
                                                                     <small class="text-success font-weight-bold">@highlightNote</small>
                                                                 </div>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            @if (hoaDon.BanTaiQuay)
+                                                            {
+                                                                if (!string.IsNullOrWhiteSpace(hoaDon.DiaChiGiaoHang))
+                                                                {
+                                                                    <span class="badge badge-warning">Tại quầy (ship về)</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge badge-secondary">Tại quầy</span>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-primary">Online</span>
                                                             }
                                                         </td>
                                                         <td>
