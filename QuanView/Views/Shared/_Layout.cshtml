@@ -14,7 +14,17 @@
 
     if (User.Identity?.IsAuthenticated == true)
     {
-        var kh = DbContext.KhachHang.FirstOrDefault(x =>
+        var customerId =
+            User.FindFirst("custom:id_khachhang")?.Value ??
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        KhachHang? kh = null;
+        if (Guid.TryParse(customerId, out var idKhachHang))
+        {
+            kh = DbContext.KhachHang.FirstOrDefault(x => x.IDKhachHang == idKhachHang);
+        }
+
+        kh ??= DbContext.KhachHang.FirstOrDefault(x =>
             x.TenKhachHang == tenDangNhap ||
             x.Email == tenDangNhap ||
             x.MaKhachHang == tenDangNhap);

@@ -23,7 +23,10 @@ namespace QuanView.Controllers
 
 		private async Task<KhachHang?> GetCurrentKhachHang()
 		{
-			var id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+			var id =
+				User.FindFirst("custom:id_khachhang")?.Value ??
+				User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ??
+				HttpContext.Session.GetString("CustomerId");
 
 			if (Guid.TryParse(id, out var idKhachHang))
 			{
@@ -31,7 +34,13 @@ namespace QuanView.Controllers
 					.FirstOrDefaultAsync(x => x.IDKhachHang == idKhachHang);
 			}
 
-			return null;
+			var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+			var name = User.Identity?.Name;
+
+			return await _context.KhachHang.FirstOrDefaultAsync(x =>
+				(!string.IsNullOrEmpty(email) && x.Email == email) ||
+				(!string.IsNullOrEmpty(name) &&
+					(x.TenKhachHang == name || x.Email == name || x.MaKhachHang == name)));
 		}
 
 		public async Task<IActionResult> Profile()
