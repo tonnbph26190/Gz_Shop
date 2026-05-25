@@ -39,9 +39,9 @@
 
                     <div class="col-md-4">
                         <label asp-for="PhanTramGiam" class="form-label">Giảm (%)</label>
-                        <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control" oninput="validateDiscountPercentage(this)" />
+                        <input asp-for="PhanTramGiam" type="number" min="1" max="90" step="1" class="form-control" oninput="validateDiscountPercentage(this)" />
                         <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
-                        <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
+                        <small class="form-text text-muted">Nhập giá trị từ 1% đến 90%</small>
                     </div>
 
                     <div class="col-md-4">
@@ -179,7 +179,7 @@
 
         function generateMaDot() {
             const now = new Date();
-            const year = now.getFullYear().toString().slice(-2);
+            const year = now.getFullYear().toString();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
             const hours = now.getHours().toString().padStart(2, '0');
@@ -189,6 +189,26 @@
 
             const maDot = `DG${year}${month}${day}${hours}${minutes}${seconds}${random}`;
             document.getElementById('MaDot').value = maDot;
+        }
+
+        function toDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function fillCurrentDates() {
+            const startInput = document.getElementById('NgayBatDau');
+            const endInput = document.getElementById('NgayKetThuc');
+            const now = new Date();
+            const nextWeek = new Date(now);
+            nextWeek.setDate(now.getDate() + 7);
+
+            if (startInput && !startInput.value) startInput.value = toDateTimeLocal(now);
+            if (endInput && !endInput.value) endInput.value = toDateTimeLocal(nextWeek);
         }
 
         function validateDiscountPercentage(input) {
@@ -206,15 +226,16 @@
                 return;
             }
 
-            if (value > 40) {
-                input.value = 40;
-                alert('Phần trăm giảm giá không được vượt quá 40%!');
+            if (value > 90) {
+                input.value = 90;
+                alert('Phần trăm giảm giá không được vượt quá 90%!');
                 return;
             }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            generateMaDot();
+            if (!document.getElementById('MaDot').value) generateMaDot();
+            fillCurrentDates();
             loadSanPhams();
         });
     </script>

@@ -119,9 +119,9 @@
         <div class="row mb-3">
             <div class="col-md-4">
                 <label asp-for="PhanTramGiam" class="form-label fw-semibold">Giá trị giảm (%)</label>
-                <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control border-success" placeholder="20" oninput="validateDiscountPercentage(this)" />
+                <input asp-for="PhanTramGiam" type="number" min="1" max="90" step="1" class="form-control border-success" placeholder="20" oninput="validateDiscountPercentage(this)" />
                 <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
-                <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
+                <small class="form-text text-muted">Nhập giá trị từ 1% đến 90%</small>
             </div>
             <div class="col-md-4">
                 <label asp-for="NgayBatDau" class="form-label fw-semibold">Ngày bắt đầu</label>
@@ -210,9 +210,9 @@
                 return;
             }
 
-            if (value > 40) {
-                input.value = 40;
-                alert('Phần trăm giảm giá không được vượt quá 40%!');
+            if (value > 90) {
+                input.value = 90;
+                alert('Phần trăm giảm giá không được vượt quá 90%!');
                 return;
             }
         }
