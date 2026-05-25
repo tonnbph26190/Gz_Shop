@@ -37,7 +37,16 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Tạo mới
-        public IActionResult Create() => View();
+        public IActionResult Create()
+        {
+            var now = DateTime.Now;
+            return View(new DotGiamGia
+            {
+                MaDot = GenerateMaDot(now),
+                NgayBatDau = now,
+                NgayKetThuc = now.AddDays(7)
+            });
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create(DotGiamGia model, string selectedIds)
@@ -143,7 +152,7 @@ namespace QuanView.Areas.Admin.Controllers
 
 			var now = DateTime.Now;
 
-			if (model.NgayBatDau < now)
+			if (model.NgayBatDau.Date < now.Date)
 			{
 				ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn hiện tại!");
 				return View(model);
@@ -266,6 +275,12 @@ namespace QuanView.Areas.Admin.Controllers
             }).ToList();
 
             return Json(result);
+        }
+
+        private static string GenerateMaDot(DateTime now)
+        {
+            var random = Random.Shared.Next(0, 1000).ToString("D3");
+            return $"DG{now:yyyyMMddHHmmss}{random}";
         }
 
 

@@ -97,12 +97,15 @@ public class ChartsApiController : ControllerBase
             var totalProducts = await _context.SanPhams.CountAsync();
             var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => (int?)spct.SoLuong ?? 0);
             var outOfStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) == 0)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 0)
                 .CountAsync();
             var lowStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) > 0 && g.Sum(spct => spct.SoLuong) <= 10)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) > 0
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 10)
                 .CountAsync();
 
             return Ok(new
@@ -223,12 +226,15 @@ public class ChartsApiController : ControllerBase
             var totalVariants = await _context.SanPhamChiTiets.CountAsync();
             var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => spct.SoLuong);
             var outOfStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) == 0)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 0)
                 .CountAsync();
             var lowStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) > 0 && g.Sum(spct => spct.SoLuong) <= 10)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) > 0
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 10)
                 .CountAsync();
             return Ok(new
             {
@@ -495,12 +501,21 @@ public class ChartsApiController : ControllerBase
 		{
 			var list = await _context.SanPhamChiTiets
 				.Include(ct => ct.SanPham)
-				.GroupBy(ct => ct.IDSanPham)
-				.Where(g => g.Sum(ct => (int?)ct.SoLuong) == 0)
-				.Select(g => new
+				.Include(ct => ct.KichCo)
+				.Include(ct => ct.MauSac)
+				.Include(ct => ct.HoaTiet)
+				.Where(ct => ct.TrangThai
+					&& ct.SanPham.TrangThai
+					&& (ct.SoLuong - ct.SoLuongDatCho) <= 0)
+				.Select(ct => new
 				{
-					Id = g.Key, // ✅ THÊM DÒNG NÀY
-					TenSanPham = g.First().SanPham.TenSanPham,
+					Id = ct.IDSanPham,
+					VariantId = ct.IDSanPhamChiTiet,
+					TenSanPham = ct.SanPham.TenSanPham,
+					MaBienThe = ct.MaSPChiTiet,
+					KichCo = ct.KichCo.TenKichCo,
+					MauSac = ct.MauSac.TenMauSac,
+					HoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "",
 					SoLuong = 0
 				})
 				.ToListAsync();
@@ -519,14 +534,23 @@ public class ChartsApiController : ControllerBase
 		{
 			var data = await _context.SanPhamChiTiets
 				.Include(x => x.SanPham)
-				.GroupBy(x => x.IDSanPham)
-				.Where(g => g.Sum(x => (int?)x.SoLuong) > 0
-						 && g.Sum(x => (int?)x.SoLuong) <= 10)
-				.Select(g => new
+				.Include(x => x.KichCo)
+				.Include(x => x.MauSac)
+				.Include(x => x.HoaTiet)
+				.Where(x => x.TrangThai
+					&& x.SanPham.TrangThai
+					&& (x.SoLuong - x.SoLuongDatCho) > 0
+					&& (x.SoLuong - x.SoLuongDatCho) <= 10)
+				.Select(x => new
 				{
-					Id = g.Key, // ✅ QUAN TRỌNG
-					TenSanPham = g.First().SanPham.TenSanPham,
-					SoLuong = g.Sum(x => (int?)x.SoLuong) ?? 0
+					Id = x.IDSanPham,
+					VariantId = x.IDSanPhamChiTiet,
+					TenSanPham = x.SanPham.TenSanPham,
+					MaBienThe = x.MaSPChiTiet,
+					KichCo = x.KichCo.TenKichCo,
+					MauSac = x.MauSac.TenMauSac,
+					HoaTiet = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "",
+					SoLuong = x.SoLuong - x.SoLuongDatCho
 				})
 				.ToListAsync();
 

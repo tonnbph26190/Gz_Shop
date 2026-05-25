@@ -16,7 +16,7 @@ namespace QuanApi.Data
         public string TenDot { get; set; }
 
         [Required]
-        [Range(0, 100, ErrorMessage = "Phần trăm giảm giá phải từ 0 đến 100.")]
+        [Range(1, 90, ErrorMessage = "Phần trăm giảm giá phải từ 1 đến 90.")]
         public int PhanTramGiam { get; set; }
 
         [Required]

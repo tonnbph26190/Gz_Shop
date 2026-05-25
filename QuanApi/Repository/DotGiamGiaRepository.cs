@@ -68,7 +68,10 @@ namespace QuanApi.Repository
 
         public async Task<bool> CreateAsync(DotGiamGia dot, List<Guid> chiTietIds)
         {
-            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.UtcNow)
+            if (dot.PhanTramGiam < 1 || dot.PhanTramGiam > 90)
+                return false;
+
+            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
                 return false;
 
             // Kiểm tra xem các sản phẩm đã có đợt giảm giá đang hoạt động hay chưa
@@ -163,7 +166,10 @@ namespace QuanApi.Repository
 
         public async Task<bool> UpdateAsync(DotGiamGia dot, List<Guid> chiTietIds)
         {
-            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau < DateTime.Today)
+            if (dot.PhanTramGiam < 1 || dot.PhanTramGiam > 90)
+                return false;
+
+            if (dot.NgayKetThuc < dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
                 return false;
 
             dot.LanCapNhatCuoi = DateTime.UtcNow;
