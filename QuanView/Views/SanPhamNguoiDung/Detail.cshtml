@@ -108,6 +108,23 @@
         letter-spacing: -1px;
     }
 
+    .product-detail-oldprice {
+        color: #9ca3af;
+        font-size: 1.35rem;
+        font-weight: 600;
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+    }
+
+    .product-detail-discount-badge {
+        background: rgba(211, 47, 47, 0.1);
+        border-radius: 999px;
+        color: var(--primary-red);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 5px 10px;
+    }
+
     /* Quantity Toggle */
     .product-detail-qty {
         background: var(--soft-bg);
@@ -236,9 +253,10 @@
                 </nav>
                 <h1 class="product-detail-title h2 mb-3">@Model.TenSanPham</h1>
                 
-                <div class="d-flex align-items-center mb-4">
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-4">
                     <span class="product-detail-price" id="giaBan">---</span>
-                    <span class="product-detail-oldprice ms-3" id="giaGoc"></span>
+                    <span class="product-detail-oldprice" id="giaGoc"></span>
+                    <span class="product-detail-discount-badge d-none" id="phanTramGiam"></span>
                 </div>
 
                 <hr class="my-4 opacity-50">
@@ -382,6 +400,8 @@
 
             if (!isFullySelected) {
                 $('#giaBan').text('---');
+                $('#giaGoc').text('');
+                $('#phanTramGiam').addClass('d-none').text('');
                 $('#soLuong').attr('max', 1); // Reset max
                 addCartBtn.prop('disabled', true).css('opacity', '0.5');
                 return;
@@ -394,7 +414,19 @@
             );
 
             if (bienThe) {
-                $('#giaBan').text(Number(bienThe.GiaSauGiam).toLocaleString() + ' VND');
+                const giaGoc = Number(bienThe.GiaGoc || 0);
+                const giaSauGiam = Number(bienThe.GiaSauGiam || giaGoc);
+                $('#giaBan').text(giaSauGiam.toLocaleString('vi-VN') + 'đ');
+
+                if (giaGoc > giaSauGiam) {
+                    const phanTramGiam = Math.round((1 - giaSauGiam / giaGoc) * 100);
+                    $('#giaGoc').text(giaGoc.toLocaleString('vi-VN') + 'đ');
+                    $('#phanTramGiam').removeClass('d-none').text('-' + phanTramGiam + '%');
+                } else {
+                    $('#giaGoc').text('');
+                    $('#phanTramGiam').addClass('d-none').text('');
+                }
+
                 // CRITICAL: Update the max attribute so the buttons and keyboard logic know the limit
                 $('#soLuong').attr('max', bienThe.SoLuong); 
                 
