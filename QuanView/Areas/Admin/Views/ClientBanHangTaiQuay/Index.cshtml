@@ -775,6 +775,14 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+
+                <div class="mb-3">
+                    <input type="text"
+                           id="searchVoucherInput"
+                           class="form-control"
+                           placeholder="Tìm theo tên hoặc mã phiếu giảm giá...">
+                </div>
+
                 <div id="voucherList">
                     <!-- Danh sách voucher sẽ được load ở đây -->
                 </div>
@@ -1475,26 +1483,19 @@
                 // 🔥 SORT CHUẨN NHẤT
                 finalVouchers.sort((a, b) => {
 
-                    // 1. Ưu tiên dùng được
-                    if (a.hopLe !== b.hopLe) return b.hopLe - a.hopLe;
+                    // 1. Voucher dùng được lên trước
+                    if (a.hopLe !== b.hopLe)
+                        return b.hopLe - a.hopLe;
 
-                    // 2. 🔥 giảm thực tế
-                    let giamA = tinhTienGiam(a, tongTien);
-                    let giamB = tinhTienGiam(b, tongTien);
+                    // 2. Sắp xếp % giảm từ cao -> thấp
+                    if (a.giaTriGiam !== b.giaTriGiam)
+                        return b.giaTriGiam - a.giaTriGiam;
 
-                    if (giamA !== giamB) return giamB - giamA;
+                    // 3. Nếu % bằng nhau thì ưu tiên giảm tối đa cao hơn
+                    if (a.giaTriGiamToiDa !== b.giaTriGiamToiDa)
+                        return b.giaTriGiamToiDa - a.giaTriGiamToiDa;
 
-                    // 3. gần đạt đơn tối thiểu
-                    let lechA = Math.abs((a.donToiThieu || 0) - tongTien);
-                    let lechB = Math.abs((b.donToiThieu || 0) - tongTien);
-
-                    if (lechA !== lechB) return lechA - lechB;
-
-                    // 4. còn nhiều lượt
-                    if (a.soLuongConLai !== b.soLuongConLai)
-                        return b.soLuongConLai - a.soLuongConLai;
-
-                    // 5. sắp hết hạn
+                    // 4. Sắp hết hạn lên trước
                     return new Date(a.ngayKetThuc) - new Date(b.ngayKetThuc);
                 });
 
@@ -1571,7 +1572,9 @@
             let buttonClass = isDisabled ? 'disabled' : '';
 
             html += `
-                <div class="col-md-6 mb-3">
+                   <div class="col-md-6 mb-3 voucher-item"
+         data-name="${voucher.tenPhieu || ''}"
+         data-code="${voucher.maCode || ''}">
                     <div class="card voucher-ticket h-100 border-0 ${!isActive ? 'opacity-75' : ''}" 
                         style="border-radius: 12px; overflow: hidden; position: relative; min-height: 130px;">
                         
@@ -4206,7 +4209,20 @@
         $(document).on('input', '#saveAddressChiTiet', function () {
             updateSaveAddressDetail();
         });
+        $(document).on('input', '#searchVoucherInput', function () {
+            const keyword = ($(this).val() || '').toLowerCase().trim();
 
+            $('.voucher-item').each(function () {
+                const name = ($(this).data('name') || '').toString().toLowerCase();
+                const code = ($(this).data('code') || '').toString().toLowerCase();
+
+                if (name.includes(keyword) || code.includes(keyword)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
         // Reset modal khi đóng
         $('#saveAddressModal').on('hidden.bs.modal', function () {
             resetSaveAddressDropdowns();

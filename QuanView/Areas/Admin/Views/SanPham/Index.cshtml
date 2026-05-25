@@ -399,7 +399,7 @@ keyframes blink-warning {
     <div class="col-md-3">
         <a href="@Url.Action("Index", new {
         page = 1,
-        trangThai = "active"
+       trangThai = "all"
     })" style="text-decoration:none">
             <div class="card border-left-primary shadow card-stats">
                 <div class="card-body">
@@ -413,7 +413,7 @@ keyframes blink-warning {
     <div class="col-md-3">
         <a href="@Url.Action("Index", new {
         page = 1,
-        trangThai = "active"
+        trangThai = "all"
     })" style="text-decoration:none">
             <div class="card border-left-success shadow card-stats">
                 <div class="card-body">
@@ -424,23 +424,17 @@ keyframes blink-warning {
         </a>
     </div>
 
-    <div class="col-md-3">
-        <a href="@Url.Action("Index", new {
-    page = 1,
-    keyword = Model.Keyword,
-    trangThai = Model.TrangThai,
-    priceFrom = Model.PriceFrom,
-    priceTo = Model.PriceTo,
-    qtyFrom = 0,
-    qtyTo = 0,
-    dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-    dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
-    sortDate = Model.SortDate
-})" style="text-decoration:none">
+  
+        <div class="col-md-3">
+            <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "all",
+        stockFilter = "variant-out"
+    })" style="text-decoration:none">
             <div class="card border-left-danger shadow card-stats">
                 <div class="card-body">
-                    <h6 class="text-danger">Sản phẩm hết hàng</h6>
-                    <h4>@ViewBag.SanPhamHetHang</h4>
+                    <h6 class="text-danger">Biến thể hết hàng</h6>
+                    <h4>@ViewBag.BienTheHetHang</h4>
                 </div>
             </div>
         </a>
@@ -492,10 +486,11 @@ keyframes blink-warning {
              var totalQty = item.ChiTietSanPhams?.Sum(x => x.SoLuongKhaDung) ?? 0;
 
             var targetId = "collapse-variant-" + item.IDSanPham;
-        var activeVariants = item.ChiTietSanPhams?
-         .Where(ct => ct.TrangThai)
-         .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
-
+        var allVariants = item.ChiTietSanPhams?
+     .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+        var displayedVariants = Model.StockFilter == "variant-out"
+     ? allVariants.Where(x => x.SoLuongVatLy <= 0).ToList()
+     : allVariants;
            <div class="product-group" data-qty="@totalQty">
                 <!-- Sản phẩm chính -->
                 <table class="table table-bordered table-hover mb-0 text-center">
@@ -536,12 +531,12 @@ keyframes blink-warning {
                             <td class="align-middle"> 
                                 <div class="d-flex align-items-center justify-content-center">
                                     <strong class="me-2">@item.TenSanPham</strong>
-                                    @if (activeVariants.Any())
-                                    {
-                                        <span class="variant-count-badge flex-shrink-0 text-dark">
-                                            <i class="fas fa-layer-group"></i> @activeVariants.Count
-                                        </span>
-                                    }
+                                @if (displayedVariants.Any())
+                                {
+                                    <span class="variant-count-badge flex-shrink-0 text-dark">
+                                        <i class="fas fa-layer-group"></i> @displayedVariants.Count
+                                    </span>
+                                }
                                 </div>
                             </td>
                             <td>@item.TenChatLieu</td>
@@ -590,7 +585,7 @@ keyframes blink-warning {
                 </table>
 
                 <!-- Biến thể - collapsible -->
-                @if (activeVariants.Any())
+            @if (displayedVariants.Any())
                 {
                     <div id="@targetId" class="collapse variant-section">
                         <table class="table table-sm table-bordered table-hover mb-0">
@@ -602,12 +597,13 @@ keyframes blink-warning {
                                     <th><i class="fas fa-warehouse"></i> Tồn vật lý</th>
                                     <th><i class="fas fa-boxes"></i> Tồn khả dụng</th>
                                     <th><i class="fas fa-tag"></i> Giá bán</th>
+                                <th><i class="fas fa-toggle-on"></i> Trạng thái</th>
                                     <th><i class="fas fa-image"></i> Ảnh SP</th>
                                     <th><i class="fas fa-cog"></i> Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var ct in activeVariants)
+                            @foreach (var ct in displayedVariants)
                                 {
                                     <tr class="variant-row text-center">
                                         <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
@@ -640,6 +636,16 @@ keyframes blink-warning {
                                                 </span>
                                             }
                                         </td>
+                                    <td class="text-center">
+                                        @if (ct.TrangThai)
+                                        {
+                                            <span class="badge bg-success p-2">Đang hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary p-2">Ngưng hoạt động</span>
+                                        }
+                                    </td>
                                         <td class="text-center">
                                             <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                 <div class="images-preview">
@@ -857,10 +863,10 @@ keyframes blink-warning {
                         <input type="file"
                                class="form-control"
                                id="imageFile"
-                               accept="image/*"
+                               accept=".jpg,.jpeg,.png,.webp"
                                multiple
                                required
-                               onchange="previewImageFile()">
+                               onchange="validateImageFiles(this); previewImageFile();">
 							<div id="imagePreview" class="image-upload-preview" style="display:none;">
 								<img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
 							</div>
@@ -1027,7 +1033,21 @@ keyframes blink-warning {
 
             updateMainImageDisplay()
 		}
+        function validateImageFiles(input) {
+            const allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
 
+            for (let file of input.files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                if (!allowedExt.includes(ext)) {
+                    alert('Chỉ được chọn file ảnh: JPG, JPEG, PNG, WEBP');
+                    input.value = '';
+                    return false;
+                }
+            }
+
+            return true;
+        }
         // Preview ảnh khi chọn file
         function previewImageFile() {
 
