@@ -69,25 +69,29 @@ namespace QuanView.Controllers
 				return NotFound();
 			}
 
-			if (string.IsNullOrWhiteSpace(tenKhachHang))
+			var tenMoi = tenKhachHang?.Trim() ?? string.Empty;
+			var emailMoi = email?.Trim().ToLowerInvariant() ?? string.Empty;
+			var sdtMoi = soDienThoai?.Trim() ?? string.Empty;
+
+			if (string.IsNullOrWhiteSpace(tenMoi))
 			{
 				ModelState.AddModelError("tenKhachHang", "Tên tài khoản không được để trống");
 			}
 
-			if (string.IsNullOrWhiteSpace(email))
+			if (string.IsNullOrWhiteSpace(emailMoi))
 			{
 				ModelState.AddModelError("email", "Email không được để trống");
 			}
-			else if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+			else if (!Regex.IsMatch(emailMoi, @"^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@gmail\.com$"))
 			{
 				ModelState.AddModelError("email", "Email không đúng định dạng");
 			}
 
-			if (string.IsNullOrWhiteSpace(soDienThoai))
+			if (string.IsNullOrWhiteSpace(sdtMoi))
 			{
 				ModelState.AddModelError("soDienThoai", "Số điện thoại không được để trống");
 			}
-			else if (!Regex.IsMatch(soDienThoai, @"^(03|05|07|08|09)[0-9]{8}$"))
+			else if (!Regex.IsMatch(sdtMoi, @"^(03|05|07|08|09)[0-9]{8}$"))
 			{
 				ModelState.AddModelError("soDienThoai", "Số điện thoại không đúng định dạng");
 			}
@@ -97,9 +101,6 @@ namespace QuanView.Controllers
 				return View(khachHang);
 			}
 
-			var tenMoi = tenKhachHang.Trim();
-			var emailMoi = email.Trim().ToLower();
-			var sdtMoi = soDienThoai.Trim();
 			if ((khachHang.Email ?? "").ToLower() != emailMoi)
 			{
 				var emailDaTonTai = await _context.KhachHang.AnyAsync(x =>
