@@ -106,65 +106,204 @@
 }
 
 <style>
-    .timeline {
-        position: relative;
-        padding: 20px 0;
+    .order-progress-card {
+        border: 0;
+        border-radius: 8px;
+        overflow: hidden;
     }
 
-        .timeline::before {
-            content: '';
-            position: absolute;
-            top: 50px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            @* background: #e9ecef; *@
-            z-index: 1;
-        }
+    .order-progress-card .card-header {
+        background: #fff;
+        border-bottom: 1px solid #edf0f4;
+        padding: 18px 22px;
+    }
+
+    .order-progress-title {
+        color: #111827;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .order-progress-subtitle {
+        color: #6b7280;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .timeline {
+        --progress-active: #16a34a;
+        --progress-current: #2563eb;
+        --progress-pending: #cbd5e1;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(130px, 1fr));
+        gap: 0;
+        padding: 26px 14px 12px;
+        position: relative;
+    }
 
     .timeline-item {
+        min-width: 0;
         position: relative;
-        display: flex;
-        align-items: center;
-        margin-bottom: 30px;
-        z-index: 2;
+        text-align: center;
+    }
+
+    .timeline-item::before,
+    .timeline-item::after {
+        content: "";
+        height: 4px;
+        position: absolute;
+        top: 22px;
+        width: 50%;
+        z-index: 1;
+    }
+
+    .timeline-item::before {
+        background: var(--progress-pending);
+        left: 0;
+    }
+
+    .timeline-item::after {
+        background: var(--progress-pending);
+        right: 0;
+    }
+
+    .timeline-item:first-child::before,
+    .timeline-item:last-child::after {
+        display: none;
+    }
+
+    .timeline-item.completed::before,
+    .timeline-item.completed::after,
+    .timeline-item.current::before {
+        background: var(--progress-active);
+    }
+
+    .timeline-item.current::after {
+        background: var(--progress-pending);
     }
 
     .timeline-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
         align-items: center;
+        background: #f8fafc;
+        border: 3px solid var(--progress-pending);
+        border-radius: 50%;
+        color: #64748b;
+        display: inline-flex;
+        font-size: 15px;
+        height: 48px;
         justify-content: center;
-        margin-right: 20px;
-        font-size: 16px;
-        color: white;
-        background: #6c757d;
-        transition: all 0.3s;
+        margin: 0 auto 12px;
+        position: relative;
+        transition: all .2s ease;
+        width: 48px;
+        z-index: 2;
     }
 
-        .timeline-icon.completed {
-            background: #28a745;
-        }
+    .timeline-icon.completed {
+        background: var(--progress-active);
+        border-color: var(--progress-active);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(22, 163, 74, .22);
+    }
 
-        .timeline-icon.pending {
-            background: #6c757d;
-        }
+    .timeline-icon.current {
+        background: var(--progress-current);
+        border-color: #bfdbfe;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
+    }
 
     .timeline-content {
-        flex: 1;
+        margin: 0 auto;
+        max-width: 170px;
     }
 
     .timeline-title {
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #333;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.3;
+        margin-bottom: 6px;
+    }
+
+    .timeline-item.pending .timeline-title {
+        color: #64748b;
+        font-weight: 700;
     }
 
     .timeline-time {
+        color: #64748b;
         font-size: 12px;
-        color: #6c757d;
+        line-height: 1.35;
+        min-height: 34px;
+    }
+
+    .timeline-status-pill {
+        border-radius: 999px;
+        display: inline-flex;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 5px;
+        padding: 5px 9px;
+    }
+
+    .timeline-status-pill.done {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .timeline-status-pill.now {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .timeline-status-pill.wait {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    @@media (max-width: 991.98px) {
+        .timeline {
+            display: block;
+            padding: 12px 4px 4px 10px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 14px;
+            min-height: 82px;
+            padding: 0 0 18px;
+            text-align: left;
+        }
+
+        .timeline-item::before,
+        .timeline-item::after {
+            left: 23px;
+            right: auto;
+            top: 0;
+            width: 4px;
+        }
+
+        .timeline-item::before {
+            height: 24px;
+        }
+
+        .timeline-item::after {
+            height: 100%;
+            top: 24px;
+        }
+
+        .timeline-icon {
+            flex: 0 0 48px;
+            margin: 0;
+        }
+
+        .timeline-content {
+            margin: 2px 0 0;
+            max-width: none;
+        }
     }
 
     .order-info {
@@ -271,9 +410,15 @@
     <!-- Timeline - Chỉ hiển thị cho đơn hàng online có địa chỉ giao hàng -->
     @if (!string.IsNullOrEmpty(Model.DiaChiGiaoHang))
     {
-        <div class="card shadow mb-4">
+        <div class="card shadow mb-4 order-progress-card">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Tiến trình đơn hàng</h6>
+                <div class="d-flex flex-wrap align-items-center justify-content-between">
+                    <div>
+                        <div class="order-progress-title">Tiến trình đơn hàng</div>
+                        <div class="order-progress-subtitle">Theo dõi các bước xử lý từ khi tạo đơn đến khi giao thành công</div>
+                    </div>
+                    <span class="status-badge mt-2 mt-sm-0">@currentStatus</span>
+                </div>
             </div>
             <div class="card-body">
                 @if (Model.TrangThai == "Đã hủy")
@@ -303,9 +448,10 @@
                             var isCompleted = completedStatuses.Contains(status.Name);
                             var isCurrent = status.Name == currentStatus;
                             var displayName = status.Name;
+                            var itemState = isCurrent ? "current" : (isCompleted ? "completed" : "pending");
 
-                            <div class="timeline-item">
-                                <div class="timeline-icon @(isCompleted ? "completed" : "")">
+                            <div class="timeline-item @itemState">
+                                <div class="timeline-icon @itemState">
                                     <i class="@status.Icon"></i>
                                 </div>
                                 <div class="timeline-content">
@@ -313,19 +459,23 @@
                                     <div class="timeline-time">
                                         @if (isCompleted && status.Name == "Chờ xác nhận" && status.Time.HasValue)
                                         {
-                                            @(status.Time.Value.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy"))
+                                            <span class="timeline-status-pill done">Hoàn thành</span><br />
+                                            @(status.Time.Value.AddHours(7).ToString("HH:mm dd/MM/yyyy"))
                                         }
                                         else if (isCompleted && status.Name != "Chờ xác nhận")
                                         {
-                                            <span class="text-success">@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm:ss dd/MM/yyyy")</span>
+                                            <span class="timeline-status-pill @(isCurrent ? "now" : "done")">@(isCurrent ? "Hiện tại" : "Hoàn thành")</span><br />
+                                            <span>@Model.LanCapNhatCuoi?.AddHours(7).ToString("HH:mm dd/MM/yyyy")</span>
                                         }
                                         else if (isCurrent)
                                         {
-                                            <span class="text-primary">Đang xử lý...</span>
+                                            <span class="timeline-status-pill now">Hiện tại</span><br />
+                                            <span>Đang xử lý</span>
                                         }
                                         else
                                         {
-                                            <span class="text-muted">Chưa thực hiện</span>
+                                            <span class="timeline-status-pill wait">Chờ</span><br />
+                                            <span>Chưa thực hiện</span>
                                         }
                                     </div>
                                 </div>
