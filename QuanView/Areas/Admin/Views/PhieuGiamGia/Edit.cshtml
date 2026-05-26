@@ -2,6 +2,14 @@
 
 @{
     ViewData["Title"] = "Sửa phiếu giảm giá";
+    var utcPlus7TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+    DateTime ConvertUtcToUtcPlus7(DateTime value)
+    {
+        var utcValue = value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        return TimeZoneInfo.ConvertTimeFromUtc(utcValue, utcPlus7TimeZone);
+    }
 }
 
 <style>
@@ -142,7 +150,7 @@
                         <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
                         <input class="form-control" type="datetime-local"
                                name="NgayBatDau"
-                               value="@Model.NgayBatDau.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                               value="@ConvertUtcToUtcPlus7(Model.NgayBatDau).ToString("yyyy-MM-ddTHH:mm")" />
                         <span asp-validation-for="NgayBatDau" class="text-danger"></span>
                     </div>
                 </div>
@@ -151,7 +159,7 @@
                         <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
                         <input class="form-control" type="datetime-local"
                                name="NgayKetThuc"
-                               value="@Model.NgayKetThuc.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                               value="@ConvertUtcToUtcPlus7(Model.NgayKetThuc).ToString("yyyy-MM-ddTHH:mm")" />
                         <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
                     </div>
                 </div>

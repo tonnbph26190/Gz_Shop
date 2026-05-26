@@ -9,6 +9,7 @@ namespace QuanView.Areas.Admin.Controllers
     //[Authorize(Policy = "AdminPolicy")]
     public class PhieuGiamGiaController : Controller
     {
+        private static readonly TimeZoneInfo UtcPlus7TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
         private readonly HttpClient _http;
         private readonly ILogger<PhieuGiamGiaController> _logger;
 
@@ -40,17 +41,30 @@ namespace QuanView.Areas.Admin.Controllers
                 // Lọc theo trạng thái
                 if (!string.IsNullOrEmpty(trangThai))
                 {
-                    var now = DateTime.Now;
+                    var now = ConvertUtcToUtcPlus7(DateTime.UtcNow);
                     switch (trangThai)
                     {
                         case "sapdienra":
-                            list = list.Where(p => p.TrangThai && now < p.NgayBatDau).ToList();
+                            list = list.Where(p =>
+                            {
+                                var start = ConvertUtcToUtcPlus7(p.NgayBatDau);
+                                return p.TrangThai && now < start;
+                            }).ToList();
                             break;
                         case "danghoatdong":
-                            list = list.Where(p => p.TrangThai && now >= p.NgayBatDau && now <= p.NgayKetThuc).ToList();
+                            list = list.Where(p =>
+                            {
+                                var start = ConvertUtcToUtcPlus7(p.NgayBatDau);
+                                var end = ConvertUtcToUtcPlus7(p.NgayKetThuc);
+                                return p.TrangThai && now >= start && now <= end;
+                            }).ToList();
                             break;
                         case "hethang":
-                            list = list.Where(p => p.TrangThai && now > p.NgayKetThuc).ToList();
+                            list = list.Where(p =>
+                            {
+                                var end = ConvertUtcToUtcPlus7(p.NgayKetThuc);
+                                return p.TrangThai && now > end;
+                            }).ToList();
                             break;
                         case "ngungapdung":
                             list = list.Where(p => !p.TrangThai).ToList();
@@ -228,6 +242,14 @@ namespace QuanView.Areas.Admin.Controllers
 				return StatusCode(500, "Lỗi server: " + ex.Message);
 			}
 		}
+
+        private static DateTime ConvertUtcToUtcPlus7(DateTime value)
+        {
+            var utcValue = value.Kind == DateTimeKind.Utc
+                ? value
+                : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            return TimeZoneInfo.ConvertTimeFromUtc(utcValue, UtcPlus7TimeZone);
+        }
 
 	}
 }
