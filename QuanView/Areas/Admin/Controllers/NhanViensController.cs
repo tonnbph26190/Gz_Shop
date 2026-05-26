@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +42,7 @@ namespace QuanView.Areas.Admin.Controllers
                 if (vaiTroResponse.IsSuccessStatusCode)
                 {
                     var vaiTros = await vaiTroResponse.Content.ReadFromJsonAsync<List<VaiTroDto>>();
+                    vaiTros = ExcludeCustomerRoles(vaiTros);
                     ViewBag.vaiTroList = new SelectList(vaiTros, "IDVaiTro", "TenVaiTro");
                 }
 
@@ -369,6 +370,7 @@ namespace QuanView.Areas.Admin.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     var vaiTros = await response.Content.ReadFromJsonAsync<List<VaiTroDto>>();
+                    vaiTros = ExcludeCustomerRoles(vaiTros);
                     ViewData["IDVaiTro"] = new SelectList(vaiTros, "IDVaiTro", "TenVaiTro");
                 }
                 else
@@ -382,6 +384,30 @@ namespace QuanView.Areas.Admin.Controllers
                 _logger.LogError(ex, "Lỗi khi tải danh sách vai trò cho dropdown.");
                 ViewData["IDVaiTro"] = new SelectList(new List<VaiTroDto>(), "IDVaiTro", "TenVaiTro");
             }
+        }
+
+        private static List<VaiTroDto> ExcludeCustomerRoles(List<VaiTroDto>? vaiTros)
+        {
+            return vaiTros?
+                .Where(x => !IsCustomerRole(x))
+                .ToList() ?? new List<VaiTroDto>();
+        }
+
+        private static bool IsCustomerRole(VaiTroDto vaiTro)
+        {
+            return IsCustomerRoleName(vaiTro.TenVaiTro) || IsCustomerRoleName(vaiTro.MaVaiTro);
+        }
+
+        private static bool IsCustomerRoleName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var normalized = value.Trim().ToLowerInvariant();
+            return normalized == "khách hàng"
+                || normalized == "khach hang"
+                || normalized == "khachhang"
+                || normalized == "customer";
         }
     }
 }
