@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 
 @{
     ViewData["Title"] = "Tạo mới đợt giảm giá";
@@ -122,17 +122,45 @@
             const table = document.getElementById('productTable');
             table.innerHTML = '';
             data.forEach((sp, index) => {
-                const row = `<tr onclick="loadChiTietSanPham('${sp.idSanPham}')">
-                            <td><input type="radio" name="productSelect" /></td>
-                            <td>${index + 1}</td>
-                            <td>${sp.maSanPham}</td>
-                            <td>${sp.tenSanPham}</td>
-                            <td>${sp.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
-                        </tr>`;
+                const row = `
+        <tr onclick="chonSanPham(this, '${sp.idSanPham}')">
+            <td>
+                <input type="radio"
+                       name="productSelect"
+                       class="product-radio" />
+            </td>
+            <td>${index + 1}</td>
+            <td>${sp.maSanPham}</td>
+            <td>${sp.tenSanPham}</td>
+            <td>
+                ${sp.trangThai
+                        ? '<span class="badge bg-success text-white">Hoạt động</span>'
+                        : '<span class="badge bg-secondary text-white">Ngừng</span>'}
+            </td>
+        </tr>`;
                 table.innerHTML += row;
             });
         }
+        function chonSanPham(row, idSanPham) {
 
+            document.querySelectorAll('#productTable tr').forEach(r => {
+                r.classList.remove('table-primary');
+            });
+
+            row.classList.add('table-primary');
+
+            document.querySelectorAll('.product-radio').forEach(r => {
+                r.checked = false;
+            });
+
+            const radio = row.querySelector('.product-radio');
+
+            if (radio) {
+                radio.checked = true;
+            }
+
+            loadChiTietSanPham(idSanPham);
+        }
         async function loadChiTietSanPham(idSanPham) {
             const response = await fetch(`/Admin/DotGiamGia/GetChiTietSanPham?idSanPham=${idSanPham}`);
             const data = await response.json();
@@ -148,7 +176,7 @@
                             <td>${ct.kichCo}</td>
                             <td>${ct.mauSac}</td>
                             <td>${ct.hoaTiet || '-'}</td>
-                            <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
+                                    <td>${ct.trangThai ? '<span class="badge bg-success text-white">Hoạt động</span>' : '<span class="badge bg-secondary text-white">Ngừng</span>'}</td>
                         `;
                 table.appendChild(tr);
             });
