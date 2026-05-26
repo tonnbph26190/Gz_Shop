@@ -22,6 +22,14 @@ namespace QuanView.Areas.Admin.Controllers
         // GET: Danh sách
         public async Task<IActionResult> Index(string maDot, string tenDot, int? phanTramGiam, DateTime? tuNgay, DateTime? denNgay, string trangThai, int page = 1, int pageSize = 10)
         {
+            // Giữ lại giá trị bộ lọc sau khi submit form
+            ViewBag.MaKhuyenMai = maDot;
+            ViewBag.TenKhuyenMai = tenDot;
+            ViewBag.GiaTri = phanTramGiam;
+            ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
+            ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
+            ViewBag.TrangThai = trangThai;
+
             var url = $"/api/DotGiamGias?" +
                       $"maDot={maDot}&tenDot={tenDot}&phanTramGiam={phanTramGiam}&" +
                       (tuNgay.HasValue ? $"tuNgay={tuNgay:yyyy-MM-dd}&" : "") +
@@ -153,14 +161,6 @@ namespace QuanView.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid) return View(model);
             if (id != model.IDDotGiamGia) return BadRequest();
-
-			var now = DateTime.Now;
-
-			if (model.NgayBatDau.Date < now.Date)
-			{
-				ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn hiện tại!");
-				return View(model);
-			}
 
 			if (model.NgayKetThuc <= model.NgayBatDau)
             {
