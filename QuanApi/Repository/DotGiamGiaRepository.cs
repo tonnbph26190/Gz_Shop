@@ -74,6 +74,11 @@ namespace QuanApi.Repository
             if (dot.NgayKetThuc <= dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
                 return false;
 
+            chiTietIds = await GetAvailableChiTietIdsAsync(chiTietIds);
+
+            if (!chiTietIds.Any())
+                return false;
+
             // Kiểm tra xem các sản phẩm đã có đợt giảm giá đang hoạt động hay chưa
             if (chiTietIds?.Count > 0)
             {
@@ -172,6 +177,8 @@ namespace QuanApi.Repository
             if (dot.NgayKetThuc <= dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
                 return false;
 
+            chiTietIds = await GetAvailableChiTietIdsAsync(chiTietIds);
+
             dot.LanCapNhatCuoi = DateTime.UtcNow;
             _context.DotGiamGias.Update(dot);
 
@@ -240,10 +247,13 @@ namespace QuanApi.Repository
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet)
+                .Where(x => x.TrangThai
+                            && x.SanPham.TrangThai
+                            && x.SoLuong > x.SoLuongDatCho)
                 .Select(x => new SelectListItem
                 {
                     Value = x.IDSanPhamChiTiet.ToString(),
-                    Text = $"{x.MaSPChiTiet} - {x.SanPham.TenSanPham} | Size: {x.KichCo.TenKichCo}, Màu: {x.MauSac.TenMauSac}, Họa tiết: {x.HoaTiet.TenHoaTiet}",
+                    Text = $"{x.MaSPChiTiet} - {x.SanPham.TenSanPham} | Size: {x.KichCo.TenKichCo}, Màu: {x.MauSac.TenMauSac}, Họa tiết: {(x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "N/A")}",
                     Selected = selectedIds.Contains(x.IDSanPhamChiTiet)
                 })
                 .ToListAsync();
@@ -340,6 +350,21 @@ namespace QuanApi.Repository
                                spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
                 .Select(spdg => spdg.IDSanPhamChiTiet)
                 .Distinct()
+                .ToListAsync();
+        }
+
+        private async Task<List<Guid>> GetAvailableChiTietIdsAsync(List<Guid>? chiTietIds)
+        {
+            if (chiTietIds == null || !chiTietIds.Any())
+                return new List<Guid>();
+
+            return await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                .Where(x => chiTietIds.Contains(x.IDSanPhamChiTiet)
+                            && x.TrangThai
+                            && x.SanPham.TrangThai
+                            && x.SoLuong > x.SoLuongDatCho)
+                .Select(x => x.IDSanPhamChiTiet)
                 .ToListAsync();
         }
 

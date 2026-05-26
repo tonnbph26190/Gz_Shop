@@ -29,11 +29,20 @@ namespace QuanApi.Controllers
 
         // GET: api/sanphamchitiets
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SanPhamChiTietDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<SanPhamChiTietDto>>> GetAll([FromQuery] bool onlyAvailableForDiscount = false)
         {
             try
             {
-                var result = await _context.SanPhamChiTiets
+                var query = _context.SanPhamChiTiets.AsQueryable();
+
+                if (onlyAvailableForDiscount)
+                {
+                    query = query.Where(ct => ct.TrangThai
+                                             && ct.SanPham.TrangThai
+                                             && ct.SoLuong > ct.SoLuongDatCho);
+                }
+
+                var result = await query
                     .Include(ct => ct.KichCo)
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)
@@ -182,7 +191,9 @@ namespace QuanApi.Controllers
 
         // GET: api/sanphamchitiets/bysanpham?idsanpham=...
         [HttpGet("bysanpham")]
-        public async Task<ActionResult<IEnumerable<SanPhamChiTietDto>>> GetBySanPham([FromQuery] Guid idsanpham)
+        public async Task<ActionResult<IEnumerable<SanPhamChiTietDto>>> GetBySanPham(
+            [FromQuery] Guid idsanpham,
+            [FromQuery] bool onlyAvailableForDiscount = false)
         {
             try
             {
@@ -190,8 +201,17 @@ namespace QuanApi.Controllers
                     return BadRequest("ID sản phẩm không hợp lệ.");
 
 
-                var list = await _context.SanPhamChiTiets
-                    .Where(ct => ct.IDSanPham == idsanpham)
+                var query = _context.SanPhamChiTiets
+                    .Where(ct => ct.IDSanPham == idsanpham);
+
+                if (onlyAvailableForDiscount)
+                {
+                    query = query.Where(ct => ct.TrangThai
+                                             && ct.SanPham.TrangThai
+                                             && ct.SoLuong > ct.SoLuongDatCho);
+                }
+
+                var list = await query
                     .Include(ct => ct.KichCo)
                     .Include(ct => ct.MauSac)
                     .Include(ct => ct.HoaTiet)

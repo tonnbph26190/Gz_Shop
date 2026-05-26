@@ -236,7 +236,7 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSanPhams()
         {
-            var response = await _httpClient.GetAsync("SanPhamChiTiets?page=1&pageSize=50");
+            var response = await _httpClient.GetAsync("SanPhamChiTiets?onlyAvailableForDiscount=true&page=1&pageSize=50");
             if (!response.IsSuccessStatusCode)
                 return Json(new List<object>());
 
@@ -244,6 +244,7 @@ namespace QuanView.Areas.Admin.Controllers
             if (result == null) return Json(new List<object>());
 
             var sanPhams = result
+                .Where(x => x.TrangThai && x.SoLuongKhaDung > 0)
                 .GroupBy(x => x.IdSanPham)
                 .Select(g => new
                 {
@@ -260,14 +261,16 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> GetChiTietSanPham(Guid idSanPham)
         {
-            var response = await _httpClient.GetAsync($"SanPhamChiTiets/bysanpham?idsanpham={idSanPham}");
+            var response = await _httpClient.GetAsync($"SanPhamChiTiets/bysanpham?idsanpham={idSanPham}&onlyAvailableForDiscount=true");
             if (!response.IsSuccessStatusCode)
                 return Json(new List<object>());
 
             var chiTiet = await response.Content.ReadFromJsonAsync<IEnumerable<SanPhamChiTietDto>>();
             if (chiTiet == null) return Json(new List<object>());
 
-            var result = chiTiet.Select(x => new
+            var result = chiTiet
+                .Where(x => x.TrangThai && x.SoLuongKhaDung > 0)
+                .Select(x => new
             {
                 idSanPhamChiTiet = x.IdSanPhamChiTiet,
                 tenSanPham = x.TenSanPham ?? "Không xác định",
