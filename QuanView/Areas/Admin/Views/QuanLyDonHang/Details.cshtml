@@ -694,17 +694,17 @@
                                 <thead class="thead-light">
                                     <tr>
                                         <th>Sản phẩm</th>
-                                        <th class="text-center" data-bs-toggle="tooltip" title="SoLuong: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">Tồn vật lý</th>
-                                        <th class="text-center" data-bs-toggle="tooltip" title="SoLuongDatCho: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">Đang giữ chỗ</th>
-                                        <th class="text-center" data-bs-toggle="tooltip" title="SoLuong − SoLuongDatCho: số có thể bán cho đơn mới.">Tồn khả dụng</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">Tồn vật lý</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng đặt giữ chỗ: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">Đang giữ chỗ</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng - Số lượng đặt giữ chỗ: số có thể bán cho đơn mới.">Tồn khả dụng</th>
                                         <th class="text-center">SL hoàn nếu hủy</th>
                                         @if (inventoryPhase == "reserved")
                                         {
-                                            <th class="text-center" data-bs-toggle="tooltip" title="SoLuongDatCho sau khi giải phóng giữ chỗ của đơn này. Tồn vật lý không đổi vì đơn chưa được xác nhận.">Giữ chỗ sau hủy</th>
+                                            <th class="text-center" data-bs-toggle="tooltip" title="Số lượng đặt giữ chỗ sau khi giải phóng giữ chỗ của đơn này. Tồn vật lý không đổi vì đơn chưa được xác nhận.">Giữ chỗ sau hủy</th>
                                         }
                                         else
                                         {
-                                            <th class="text-center" data-bs-toggle="tooltip" title="SoLuong sau khi cộng lại số lượng đã trừ vào tồn kho.">Tồn vật lý sau hủy</th>
+                                            <th class="text-center" data-bs-toggle="tooltip" title="Số lượng sau khi cộng lại số lượng đã trừ vào tồn kho.">Tồn vật lý sau hủy</th>
                                         }
                                     </tr>
                                 </thead>
@@ -834,28 +834,19 @@
                                                 <span class="badge badge-dark"
                                                       data-bs-toggle="tooltip"
                                                       data-bs-placement="top"
-                                                      title="SoLuong: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">
+                                                      title="Số lượng: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">
                                                     Tồn vật lý: @soLuongVatLy
                                                 </span>
                                                 <span class="badge badge-secondary"
                                                       data-bs-toggle="tooltip"
                                                       data-bs-placement="top"
                                                       title="SoLuongDatCho: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">
-                                                    Đang giữ chỗ (tổng): @soLuongDangGiuCho
+                                                    Đang giữ chỗ: @soLuongDangGiuCho
                                                 </span>
-                                                @if (inventoryPhase == "reserved")
-                                                {
-                                                    <span class="badge badge-warning text-dark"
-                                                          data-bs-toggle="tooltip"
-                                                          data-bs-placement="top"
-                                                          title="Số lượng đơn này đang đóng góp vào SoLuongDatCho. Hủy đơn sẽ giải phóng đúng lượng này.">
-                                                        Đơn này giữ: @chiTiet.SoLuong
-                                                    </span>
-                                                }
                                                 <span class="badge badge-@stockBadgeClass"
                                                       data-bs-toggle="tooltip"
                                                       data-bs-placement="top"
-                                                      title="SoLuong − SoLuongDatCho. Số lượng có thể bán cho đơn mới.">
+                                                      title="Số lượng - Số lượng đặt giữ chỗ. Số lượng có thể bán cho đơn mới.">
                                                     Tồn khả dụng: @soLuongTonHienTai
                                                 </span>
                                                 <span class="badge badge-light text-dark border"
