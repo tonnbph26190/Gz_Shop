@@ -110,7 +110,7 @@ namespace QuanView.Controllers
                                 {
                                     TenSanPham = spct.TenSanPham
                                 },
-                                GiaBan = spct.price,
+                                GiaBan = spct.GiaBan,
                                 SoLuong = soLuongKhaDung,
                                 KichCo = new KichCo { TenKichCo = spct.TenKichCo },
                                 MauSac = new MauSac { TenMauSac = spct.TenMauSac },
@@ -148,6 +148,7 @@ namespace QuanView.Controllers
                         }
 
                         item.SanPhamChiTiet.SoLuong = spct.SoLuongKhaDung;
+                        item.SanPhamChiTiet.GiaBan = spct.GiaBan;
                         item.SanPhamChiTiet.SanPham = new SanPham { TenSanPham = spct.TenSanPham };
                         item.SanPhamChiTiet.KichCo = new KichCo { TenKichCo = spct.TenKichCo };
                         item.SanPhamChiTiet.MauSac = new MauSac { TenMauSac = spct.TenMauSac };
