@@ -1,5 +1,3 @@
-using BanQuanAu1.Web.Data;
-using Microsoft.EntityFrameworkCore;
 using QuanApi.Data;
 using QuanApi.Dtos;
 using QuanApi.Repository.IRepository;
@@ -33,7 +31,7 @@ namespace QuanApi.Services
 
         public async Task<PagedResultGeneric<DotGiamGia>> GetAllAsync(DotGiamGiaFilterDto filter)
         {
-            var result = await _repository.GetDotGiamGia(
+            return await _repository.GetDotGiamGia(
                 filter.MaDot,
                 filter.TenDot,
                 filter.PhanTramGiam,
@@ -43,30 +41,11 @@ namespace QuanApi.Services
                 filter.Page,
                 filter.PageSize
             );
-
-			var now = DateTime.UtcNow;
-
-			foreach (var item in result.Data)
-			{
-				bool trangThaiMoi =
-					item.NgayBatDau <= now &&
-					item.NgayKetThuc >= now;
-
-				if (item.TrangThai != trangThaiMoi)
-				{
-					item.TrangThai = trangThaiMoi;
-
-					await _repository.UpdateTrangThaiAsync(
-						item.IDDotGiamGia,
-						trangThaiMoi);
-				}
-			}
-
-			return result;
         }
+
         public async Task<DotGiamGia?> GetByIdAsync(Guid id)
         {
-            _logger.LogInformation("Lấy đợt giảm giá theo ID: {Id}", id);
+            _logger.LogInformation("Lay dot giam gia theo ID: {Id}", id);
             return await _repository.GetByIdAsync(id);
         }
 
@@ -74,26 +53,16 @@ namespace QuanApi.Services
         {
             if (dto == null || dto.Dot == null)
             {
-                _logger.LogWarning("Dữ liệu tạo đợt giảm giá không hợp lệ");
+                _logger.LogWarning("Du lieu tao dot giam gia khong hop le");
                 return false;
             }
 
-            var nowUtc = DateTime.UtcNow;
+            dto.Dot.NgayBatDau = dto.Dot.NgayBatDau.ToUniversalTime();
+            dto.Dot.NgayKetThuc = dto.Dot.NgayKetThuc.ToUniversalTime();
+            dto.Dot.NgayTao = DateTime.UtcNow;
+            dto.Dot.TrangThai = true;
 
-			// 🔥 FIX UTC – BẮT BUỘC
-			dto.Dot.NgayBatDau = dto.Dot.NgayBatDau.ToUniversalTime();
-			dto.Dot.NgayKetThuc = dto.Dot.NgayKetThuc.ToUniversalTime();
-
-			dto.Dot.NgayTao = nowUtc;
-			var now = DateTime.UtcNow;
-
-			bool trangThaiMoi =
-				dto.Dot.NgayBatDau <= now &&
-				dto.Dot.NgayKetThuc >= now;
-
-			dto.Dot.TrangThai = trangThaiMoi;// hoặc true tuỳ logic
-
-			_logger.LogInformation("Tạo đợt giảm giá: {TenDot}", dto.Dot.TenDot);
+            _logger.LogInformation("Tao dot giam gia: {TenDot}", dto.Dot.TenDot);
 
             return await _repository.CreateAsync(
                 dto.Dot,
@@ -111,7 +80,7 @@ namespace QuanApi.Services
 
             if (id != dto.IDDotGiamGia)
             {
-                _logger.LogWarning("ID route không khớp body: {RouteId} - {BodyId}", id, dto.IDDotGiamGia);
+                _logger.LogWarning("ID route khong khop body: {RouteId} - {BodyId}", id, dto.IDDotGiamGia);
                 return false;
             }
 
@@ -121,46 +90,37 @@ namespace QuanApi.Services
                 MaDot = dto.MaDot,
                 TenDot = dto.TenDot,
                 PhanTramGiam = dto.PhanTramGiam,
-				NgayBatDau = dto.NgayBatDau.ToUniversalTime(),
-				NgayKetThuc = dto.NgayKetThuc.ToUniversalTime(),
-			};
+                NgayBatDau = dto.NgayBatDau.ToUniversalTime(),
+                NgayKetThuc = dto.NgayKetThuc.ToUniversalTime(),
+                TrangThai = dto.TrangThai
+            };
 
-			var now = DateTime.UtcNow;
+            _logger.LogInformation(
+                "Update trang thai DotGiamGia {Id} => {TrangThai}",
+                dot.IDDotGiamGia,
+                dot.TrangThai
+            );
 
-			// 🔥 TÍNH TRẠNG THÁI
-			
+            return await _repository.UpdateAsync(dot, dto.SanPhamChiTietIds);
+        }
 
-			dot.TrangThai =
-				dot.NgayBatDau <= now &&
-				dot.NgayKetThuc >= now;
-
-			// 🔥 LOG (debug rất tiện)
-			_logger.LogInformation(
-				"Update trạng thái DotGiamGia {Id} => {TrangThai}",
-				dot.IDDotGiamGia,
-				dot.TrangThai
-			);
-
-			return await _repository.UpdateAsync(dot, dto.SanPhamChiTietIds);
-		}
-
-     
         public async Task<List<object>> GetSanPhamsCuaDotAsync(Guid id)
         {
-            _logger.LogInformation("Lấy danh sách sản phẩm của đợt giảm giá: {Id}", id);
+            _logger.LogInformation("Lay danh sach san pham cua dot giam gia: {Id}", id);
 
             var data = await _repository.GetAllSanPhamChiTietWithSelected(id);
             return data.Cast<object>().ToList();
         }
+
         public async Task<(bool HasActive, List<Guid> ProductIds)> CheckActiveDiscountsAsync(List<Guid> productIds)
         {
             if (productIds == null || !productIds.Any())
             {
-                _logger.LogWarning("Danh sách sản phẩm không hợp lệ khi check đợt giảm giá.");
+                _logger.LogWarning("Danh sach san pham khong hop le khi check dot giam gia.");
                 return (false, new List<Guid>());
             }
 
-            _logger.LogInformation("Check đợt giảm giá đang hoạt động cho {Count} sản phẩm", productIds.Count);
+            _logger.LogInformation("Check dot giam gia dang hoat dong cho {Count} san pham", productIds.Count);
 
             var productsWithActiveDiscounts =
                 await _repository.GetProductsWithActiveDiscounts(productIds);
@@ -170,15 +130,14 @@ namespace QuanApi.Services
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            _logger.LogInformation("Xóa đợt giảm giá ID: {Id}", id);
+            _logger.LogInformation("Xoa dot giam gia ID: {Id}", id);
             return await _repository.DeleteAsync(id);
         }
 
         public async Task<bool> UpdateTrangThaiAsync(Guid id, bool trangThai)
         {
-            _logger.LogInformation("Cập nhật trạng thái đợt giảm giá ID: {Id} => {TrangThai}", id, trangThai);
+            _logger.LogInformation("Cap nhat trang thai dot giam gia ID: {Id} => {TrangThai}", id, trangThai);
             return await _repository.UpdateTrangThaiAsync(id, trangThai);
         }
-
     }
 }

@@ -42,9 +42,7 @@ namespace QuanView.Areas.Admin.Controllers
             var now = DateTime.Now;
             return View(new DotGiamGia
             {
-                MaDot = GenerateMaDot(now),
-                NgayBatDau = now,
-                NgayKetThuc = now.AddDays(7)
+                MaDot = GenerateMaDot(now)
             });
         }
 
@@ -53,6 +51,12 @@ namespace QuanView.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
                 return View(model);
+
+            if (model.NgayKetThuc <= model.NgayBatDau)
+            {
+                ModelState.AddModelError("NgayKetThuc", "Ngày kết thúc phải lớn hơn ngày bắt đầu.");
+                return View(model);
+            }
 
 			model.NgayBatDau = model.NgayBatDau.ToUniversalTime();
 			model.NgayKetThuc = model.NgayKetThuc.ToUniversalTime();
@@ -158,9 +162,9 @@ namespace QuanView.Areas.Admin.Controllers
 				return View(model);
 			}
 
-			if (model.NgayKetThuc < model.NgayBatDau)
+			if (model.NgayKetThuc <= model.NgayBatDau)
             {
-                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
+                ModelState.AddModelError("NgayKetThuc", "Ngày kết thúc phải lớn hơn ngày bắt đầu.");
                 return View(model);
             }
 
