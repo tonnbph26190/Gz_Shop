@@ -1139,6 +1139,44 @@
         }
 
         // ====================== MODAL EVENT HANDLERS ======================
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const confirmYesBtn = document.getElementById('confirmYes');
+            const confirmCancelBtn = document.getElementById('confirmCancel');
+            const confirmModalEl = document.getElementById('confirmModal');
+
+            if (confirmYesBtn) {
+                confirmYesBtn.addEventListener('click', function () {
+                    const modal = bootstrap.Modal.getInstance(confirmModalEl);
+
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    if (typeof confirmCallback === 'function') {
+                        confirmCallback(true);
+                    }
+
+                    confirmCallback = null;
+                });
+            }
+
+            if (confirmCancelBtn) {
+                confirmCancelBtn.addEventListener('click', function () {
+                    const modal = bootstrap.Modal.getInstance(confirmModalEl);
+
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    if (typeof confirmCallback === 'function') {
+                        confirmCallback(false);
+                    }
+
+                    confirmCallback = null;
+                });
+            }
+        });
         // ====================== PRODUCT STATUS TOGGLE ======================
         document.addEventListener('DOMContentLoaded', function () {
             const toggles = document.querySelectorAll('.product-status-toggle');
