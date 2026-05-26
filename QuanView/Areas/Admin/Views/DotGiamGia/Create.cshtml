@@ -2,6 +2,8 @@
 
 @{
     ViewData["Title"] = "Tạo mới đợt giảm giá";
+    var ngayBatDauValue = Model.NgayBatDau.Year > 1900 ? Model.NgayBatDau.ToString("yyyy-MM-ddTHH:mm") : "";
+    var ngayKetThucValue = Model.NgayKetThuc.Year > 1900 ? Model.NgayKetThuc.ToString("yyyy-MM-ddTHH:mm") : "";
 }
 
 <div class="container py-4">
@@ -46,13 +48,13 @@
 
                     <div class="col-md-4">
                         <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu</label>
-                        <input asp-for="NgayBatDau" type="datetime-local" class="form-control" />
+                        <input id="NgayBatDau" name="NgayBatDau" type="datetime-local" class="form-control" value="@ngayBatDauValue" lang="vi-VN" step="60" />
                         <span asp-validation-for="NgayBatDau" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc</label>
-                        <input asp-for="NgayKetThuc" type="datetime-local" class="form-control" />
+                        <input id="NgayKetThuc" name="NgayKetThuc" type="datetime-local" class="form-control" value="@ngayKetThucValue" lang="vi-VN" step="60" />
                         <span asp-validation-for="NgayKetThuc" class="text-danger small"></span>
                     </div>
                 </div>
@@ -219,26 +221,6 @@
             document.getElementById('MaDot').value = maDot;
         }
 
-        function toDateTimeLocal(date) {
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
-
-        function fillCurrentDates() {
-            const startInput = document.getElementById('NgayBatDau');
-            const endInput = document.getElementById('NgayKetThuc');
-            const now = new Date();
-            const nextWeek = new Date(now);
-            nextWeek.setDate(now.getDate() + 7);
-
-            if (startInput && !startInput.value) startInput.value = toDateTimeLocal(now);
-            if (endInput && !endInput.value) endInput.value = toDateTimeLocal(nextWeek);
-        }
-
         function validateDiscountPercentage(input) {
             const value = parseFloat(input.value);
 
@@ -261,9 +243,24 @@
             }
         }
 
+        document.querySelector('form').addEventListener('submit', function (event) {
+            const startInput = document.getElementById('NgayBatDau');
+            const endInput = document.getElementById('NgayKetThuc');
+
+            if (!startInput.value || !endInput.value) {
+                event.preventDefault();
+                alert('Vui lòng chọn ngày bắt đầu và ngày kết thúc.');
+                return;
+            }
+
+            if (new Date(endInput.value) <= new Date(startInput.value)) {
+                event.preventDefault();
+                alert('Ngày kết thúc phải lớn hơn ngày bắt đầu.');
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
             if (!document.getElementById('MaDot').value) generateMaDot();
-            fillCurrentDates();
             loadSanPhams();
         });
     </script>
