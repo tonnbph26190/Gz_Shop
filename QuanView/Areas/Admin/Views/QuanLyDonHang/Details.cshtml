@@ -132,6 +132,44 @@
     var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
     var tongCong = Model.TongTien;
     var stockSnapshots = ViewBag.StockSnapshots as Dictionary<Guid, QuanView.Areas.Admin.Controllers.QuanLyDonHangController.StockSnapshotDto>;
+
+    string inventoryPhase;
+    string inventoryPhaseLabel;
+    string inventoryPhaseColor;
+    string inventoryExplain;
+
+    if (Model.TrangThai == "Đã hủy")
+    {
+        inventoryPhase = "released";
+        inventoryPhaseLabel = "Đã hoàn kho";
+        inventoryPhaseColor = "secondary";
+        inventoryExplain = "Đơn đã hủy. Số lượng sản phẩm đã được trả lại kho và không còn ảnh hưởng tới hàng tồn.";
+    }
+    else if (Model.DaTruTonKho)
+    {
+        inventoryPhase = "committed";
+        inventoryPhaseLabel = "Đã trừ kho";
+        inventoryPhaseColor = "info";
+        inventoryExplain = "Đơn đã xác nhận. Số lượng trong đơn ĐÃ BỊ TRỪ KHỎI tồn kho thực tế. Nếu hủy đơn, hệ thống sẽ cộng trả lại vào tồn kho.";
+    }
+    else if (Model.DaDatChoTonKho)
+    {
+        inventoryPhase = "reserved";
+        inventoryPhaseLabel = "Đang giữ chỗ";
+        inventoryPhaseColor = "warning";
+        inventoryExplain = "Đơn chưa xác nhận. Số lượng đang được GIỮ CHỖ (chưa trừ kho), không cho đơn khác bán cùng số lượng đó. Nếu hủy đơn, giữ chỗ được giải phóng, kho không thay đổi.";
+    }
+    else
+    {
+        inventoryPhase = "none";
+        inventoryPhaseLabel = "Không áp dụng";
+        inventoryPhaseColor = "secondary";
+        inventoryExplain = "Đơn bán tại quầy đã trừ thẳng tồn kho khi tạo.";
+    }
+
+    var showCancelStockPreview = Model.TrangThai != "Đã hủy"
+        && currentStatus != "Đã giao"
+        && (inventoryPhase == "reserved" || inventoryPhase == "committed");
 }
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -403,6 +441,55 @@
             border: none;
             border-bottom: 1px solid #eee;
         }
+
+    .inventory-status-card .card-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .inv-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .inv-pill {
+        align-items: center;
+        background: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        border-radius: 999px;
+        color: #64748b;
+        display: inline-flex;
+        font-size: 13px;
+        font-weight: 700;
+        gap: 8px;
+        padding: 8px 16px;
+    }
+
+    .inv-pill.active {
+        background: #fff;
+        border-color: currentColor;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .08);
+        color: #0f172a;
+    }
+
+    .inv-pill.done {
+        background: #ecfdf5;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .inv-pill.active.warning { border-color: #f59e0b; color: #b45309; }
+    .inv-pill.active.info { border-color: #3b82f6; color: #1d4ed8; }
+    .inv-pill.active.secondary { border-color: #94a3b8; color: #475569; }
+
+    .stock-badge-group .badge {
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 4px;
+        margin-top: 4px;
+    }
 </style>
 
 <div class="container-fluid">
@@ -577,6 +664,97 @@
                 </div>
             </div>
 
+            <!-- Trạng thái tồn kho đơn hàng -->
+            <div class="card shadow mb-4 inventory-status-card">
+                <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Trạng thái tồn kho đơn hàng</h6>
+                    <span class="badge badge-@inventoryPhaseColor">@inventoryPhaseLabel</span>
+                </div>
+                <div class="card-body">
+                    <div class="inv-pill-row">
+                        <span class="inv-pill @(inventoryPhase == "reserved" ? "active warning" : (Model.DaTruTonKho || Model.TrangThai == "Đã hủy" ? "done" : ""))">
+                            <i class="fas fa-lock"></i> 1. Giữ chỗ
+                        </span>
+                        <span class="inv-pill @(inventoryPhase == "committed" ? "active info" : (Model.DaTruTonKho && Model.TrangThai != "Đã hủy" ? "done" : ""))">
+                            <i class="fas fa-box-open"></i> 2. Trừ kho
+                        </span>
+                        <span class="inv-pill @(inventoryPhase == "released" ? "active secondary" : "")">
+                            <i class="fas fa-undo"></i> 3. Hoàn kho
+                        </span>
+                    </div>
+                    <div class="alert alert-@inventoryPhaseColor mb-0">
+                        <i class="fas fa-info-circle mr-1"></i> @inventoryExplain
+                    </div>
+                    @if (showCancelStockPreview && (Model.ChiTietHoaDons?.Any() ?? false))
+                    {
+                        <hr />
+                        <p class="font-weight-bold mb-2 small text-muted text-uppercase">Nếu hủy đơn bây giờ, kho sẽ thay đổi như sau:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">Tồn vật lý</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng đặt giữ chỗ: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">Đang giữ chỗ</th>
+                                        <th class="text-center" data-bs-toggle="tooltip" title="Số lượng - Số lượng đặt giữ chỗ: số có thể bán cho đơn mới.">Tồn khả dụng</th>
+                                        <th class="text-center">SL hoàn nếu hủy</th>
+                                        @if (inventoryPhase == "reserved")
+                                        {
+                                            <th class="text-center" data-bs-toggle="tooltip" title="Số lượng đặt giữ chỗ sau khi giải phóng giữ chỗ của đơn này. Tồn vật lý không đổi vì đơn chưa được xác nhận.">Giữ chỗ sau hủy</th>
+                                        }
+                                        else
+                                        {
+                                            <th class="text-center" data-bs-toggle="tooltip" title="Số lượng sau khi cộng lại số lượng đã trừ vào tồn kho.">Tồn vật lý sau hủy</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ct in Model.ChiTietHoaDons!)
+                                    {
+                                        QuanView.Areas.Admin.Controllers.QuanLyDonHangController.StockSnapshotDto? snap = null;
+                                        stockSnapshots?.TryGetValue(ct.IDChiTietHoaDon, out snap);
+                                        var tonVatLy = snap?.SoLuongVatLy ?? (ct.SanPhamChiTiet?.SoLuong ?? 0);
+                                        var dangGiuCho = snap?.SoLuongDangGiuCho ?? 0;
+                                        var tonHienTai = snap?.SoLuongTonHienTai ?? tonVatLy;
+                                        var tonSauHuy = snap?.SoLuongTonDuKienSauHuy ?? tonHienTai;
+                                        var slHoan = Math.Max(0, tonSauHuy - tonHienTai);
+                                        if (slHoan <= 0 && (inventoryPhase == "reserved" || inventoryPhase == "committed"))
+                                        {
+                                            slHoan = ct.SoLuong;
+                                        }
+                                        var giuChoSauHuy = Math.Max(0, dangGiuCho - slHoan);
+                                        var tonVatLySauHuy = tonVatLy + slHoan;
+                                        <tr>
+                                            <td>@(ct.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")</td>
+                                            <td class="text-center">@tonVatLy</td>
+                                            <td class="text-center">@dangGiuCho</td>
+                                            <td class="text-center">@tonHienTai</td>
+                                            <td class="text-center font-weight-bold text-@inventoryPhaseColor">+@slHoan</td>
+                                            @if (inventoryPhase == "reserved")
+                                            {
+                                                <td class="text-center">@dangGiuCho <i class="fas fa-arrow-right text-muted small mx-1"></i> <strong>@giuChoSauHuy</strong></td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-center">@tonVatLy <i class="fas fa-arrow-right text-muted small mx-1"></i> <strong>@tonVatLySauHuy</strong></td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (inventoryPhase == "reserved")
+                        {
+                            <p class="small text-muted mb-0 mt-2"><i class="fas fa-lightbulb"></i> Hủy đơn ở bước này chỉ giải phóng chỗ giữ — tồn khả dụng tăng lên nhưng tồn thực tế (SoLuong) không đổi.</p>
+                        }
+                        else if (inventoryPhase == "committed")
+                        {
+                            <p class="small text-muted mb-0 mt-2"><i class="fas fa-lightbulb"></i> Hủy đơn ở bước này sẽ cộng lại số lượng vào tồn kho thực tế.</p>
+                        }
+                    }
+                </div>
+            </div>
+
             <!-- Products -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
@@ -602,25 +780,28 @@
                                         stockSnapshots.TryGetValue(chiTiet.IDChiTietHoaDon, out stockSnapshot);
                                     }
                                     var hasStockSnapshot = stockSnapshot != null;
-                                    var soLuongTonHienTai = hasStockSnapshot ? stockSnapshot.SoLuongTonHienTai : (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
-                                    var isConfirmedStage = currentStatus == "Đã xác nhận"
-                                        || currentStatus == "Chờ lấy hàng"
-                                        || currentStatus == "Đang giao"
-                                        || currentStatus == "Đã giao"
-                                        || currentStatus == "Đã lấy hàng"
-                                        || currentStatus == "Chờ giao hàng"
-                                        || currentStatus == "Đang giao hàng"
-                                        || currentStatus == "Giao hàng thành công";
-                                    var isPendingConfirmationStage = currentStatus == "Chờ xác nhận"
-                                        || currentStatus == "DaThanhToan"
-                                        || currentStatus == "Đã thanh toán"
-                                        || currentStatus == "Đã Thanh Toán"
-                                        || currentStatus == "Đã thanh toán chờ xác nhận";
+                                    var soLuongVatLy = hasStockSnapshot ? stockSnapshot!.SoLuongVatLy : (chiTiet.SanPhamChiTiet?.SoLuong ?? 0);
+                                    var soLuongDangGiuCho = hasStockSnapshot ? stockSnapshot!.SoLuongDangGiuCho : 0;
+                                    var soLuongTonHienTai = hasStockSnapshot ? stockSnapshot!.SoLuongTonHienTai : soLuongVatLy;
                                     var isCanceledStage = currentStatus == "Đã hủy";
-                                    var canReturnOnCancel = !isCanceledStage && (isConfirmedStage || isPendingConfirmationStage);
-                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (canReturnOnCancel ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
-                                    var soLuongDangGiuChoDon = Math.Max(0, soLuongTonDuKienSauHuy - soLuongTonHienTai);
-                                    var laDonChuaXacNhan = isPendingConfirmationStage && !isConfirmedStage;
+                                    var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot!.SoLuongTonDuKienSauHuy : soLuongTonHienTai;
+                                    var soLuongHoanKhiHuy = Math.Max(0, soLuongTonDuKienSauHuy - soLuongTonHienTai);
+                                    if (soLuongHoanKhiHuy <= 0 && (inventoryPhase == "reserved" || inventoryPhase == "committed"))
+                                    {
+                                        soLuongHoanKhiHuy = chiTiet.SoLuong;
+                                    }
+                                    var hoanKhoTooltip = inventoryPhase == "reserved"
+                                        ? $"Sẽ giải phóng chỗ giữ ({chiTiet.SoLuong} sp). Tồn khả dụng tăng, tồn thực tế không đổi."
+                                        : inventoryPhase == "committed"
+                                            ? $"Sẽ cộng lại {chiTiet.SoLuong} vào tồn kho thực tế (SoLuong)."
+                                            : "Đơn đã kết thúc hoặc không còn ảnh hưởng tồn kho.";
+                                    var stockBadgeClass = inventoryPhase switch
+                                    {
+                                        "reserved" => "warning",
+                                        "committed" => "info",
+                                        "released" => "secondary",
+                                        _ => "light"
+                                    };
 
                                     var variantInactive = chiTiet.SanPhamChiTiet != null && !chiTiet.SanPhamChiTiet.TrangThai;
                                     var productInactive = chiTiet.SanPhamChiTiet?.SanPham != null && !chiTiet.SanPhamChiTiet.SanPham.TrangThai;
@@ -642,20 +823,39 @@
                                                 &nbsp;|&nbsp;
                                                 Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
                                             </div>
-                                            <div class="small mt-1">
-                                                <span class="badge badge-light text-dark border mr-1">Tồn kho khả dụng hiện tại: @soLuongTonHienTai</span>
-                                                <span class="badge badge-light text-dark border mr-1">Đang giữ cho đơn này: @soLuongDangGiuChoDon</span>
-                                                @if (!isCanceledStage)
+                                            <div class="small mt-1 stock-badge-group">
+                                                <span class="badge badge-dark"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-placement="top"
+                                                      title="Số lượng: số lượng vật lý đang có trong kho (chưa trừ phần giữ chỗ).">
+                                                    Tồn vật lý: @soLuongVatLy
+                                                </span>
+                                                <span class="badge badge-secondary"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-placement="top"
+                                                      title="Số lượng đặt giữ chỗ: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">
+                                                    Đang giữ chỗ: @soLuongDangGiuCho
+                                                </span>
+                                                <span class="badge badge-@stockBadgeClass"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-placement="top"
+                                                      title="Số lượng - Số lượng đặt giữ chỗ. Số lượng có thể bán cho đơn mới.">
+                                                    Tồn khả dụng: @soLuongTonHienTai
+                                                </span>
+                                                <span class="badge badge-light text-dark border"
+                                                      data-bs-toggle="tooltip"
+                                                      data-bs-placement="top"
+                                                      title="Số lượng khách đặt trong đơn này.">
+                                                    SL trong đơn: @chiTiet.SoLuong
+                                                </span>
+                                                @if (!isCanceledStage && inventoryPhase != "released" && inventoryPhase != "none")
                                                 {
-                                                    if (laDonChuaXacNhan)
-                                                    {
-                                                        <span class="badge badge-light text-dark border">Sau khi hủy đơn: @soLuongTonDuKienSauHuy (+@soLuongDangGiuChoDon hoàn lại tồn đặt trước)</span>
-                                                    }
-                                                    else if (canReturnOnCancel)
-                                                    {
-                                                        <span class="badge badge-light text-dark border mr-1">Số lượng hoàn kho khi hủy: @soLuongDangGiuChoDon</span>
-                                                        <span class="badge badge-light text-dark border">Tồn kho sau hủy: @soLuongTonDuKienSauHuy</span>
-                                                    }
+                                                    <span class="badge badge-@stockBadgeClass"
+                                                          data-bs-toggle="tooltip"
+                                                          data-bs-placement="top"
+                                                          title="@hoanKhoTooltip">
+                                                        Hoàn kho nếu hủy: @soLuongHoanKhiHuy
+                                                    </span>
                                                 }
                                             </div>
                                         </td>
@@ -751,10 +951,12 @@
                             && !string.Equals(Model.TrangThai, OrderPaymentStatusRules.PendingRefundStatus, StringComparison.OrdinalIgnoreCase))
                         {
                             var cancelMessage = isPaidOrder
-                                ? "Đơn đã thanh toán sẽ được chuyển sang Chờ hoàn tiền. Bạn có chắc chắn muốn tiếp tục?"
-                                : (Model.TrangThai == "Chờ xác nhận"
-                                    ? "Bạn có chắc chắn muốn hủy đơn này? Trạng thái sẽ chuyển sang Đã hủy."
-                                    : "Bạn có chắc chắn muốn hủy đơn này? Trạng thái sẽ chuyển sang Đã hủy và số lượng sản phẩm sẽ được hoàn lại kho.");
+                                ? "Đơn đã thanh toán. Khi hủy, đơn chuyển sang Chờ hoàn tiền và " +
+                                  (Model.DaTruTonKho ? "kho sẽ được cộng lại số lượng đã trừ." : "chỗ giữ kho sẽ được giải phóng (tồn khả dụng tăng, tồn thực tế không đổi).") +
+                                  " Bạn có chắc chắn muốn tiếp tục?"
+                                : (Model.DaTruTonKho
+                                    ? "Khi hủy, kho sẽ được cộng lại số lượng sản phẩm đã trừ. Bạn có chắc chắn muốn tiếp tục?"
+                                    : "Khi hủy, chỗ giữ kho sẽ được giải phóng (tồn khả dụng tăng, kho thực tế không đổi). Bạn có chắc chắn muốn tiếp tục?");
                             var cancelButtonText = isPaidOrder ? "Yêu cầu hoàn tiền" : "Hủy đơn hàng";
 
                             <form method="post" action="@Url.Action("HuyDonHang", new { id = Model.IDHoaDon })" class="mt-2">
@@ -798,8 +1000,7 @@
                     }
                     <div class="info-row">
                         <span class="info-label font-weight-bold">Tổng cộng:</span>
-						<span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
-						<span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
+                        <span class="info-value font-weight-bold text-primary">@tongCong.ToString("N0") VNĐ</span>
                     </div>
                     <hr>
                     <div class="info-row">
@@ -821,3 +1022,11 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            .forEach(function (el) { new bootstrap.Tooltip(el); });
+    </script>
+}

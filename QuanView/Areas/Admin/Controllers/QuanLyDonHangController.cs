@@ -102,6 +102,8 @@ namespace QuanView.Areas.Admin.Controllers
             public string DiaChiGiaoHang { get; set; }
             public string GhiChu { get; set; }
             public string? LyDoHuyDon { get; set; }
+            public bool DaDatChoTonKho { get; set; }
+            public bool DaTruTonKho { get; set; }
             public KhachHangDetailDto KhachHang { get; set; }
             public NhanVienDetailDto NhanVien { get; set; }
             public PhieuGiamGiaDto PhieuGiamGia { get; set; }
@@ -153,6 +155,8 @@ namespace QuanView.Areas.Admin.Controllers
             public string MaSPChiTiet { get; set; }
             public bool TrangThai { get; set; } = true;
             public decimal GiaBan { get; set; }
+            public int SoLuongVatLy { get; set; }
+            public int SoLuongDangGiuCho { get; set; }
             public int SoLuongTonHienTai { get; set; }
             public int SoLuongDatMua { get; set; }
             public int SoLuongTonTruocXacNhan { get; set; }
@@ -165,6 +169,8 @@ namespace QuanView.Areas.Admin.Controllers
 
         public class StockSnapshotDto
         {
+            public int SoLuongVatLy { get; set; }
+            public int SoLuongDangGiuCho { get; set; }
             public int SoLuongTonHienTai { get; set; }
             public int SoLuongTonTruocXacNhan { get; set; }
             public int SoLuongTonDuKienSauHuy { get; set; }
@@ -376,6 +382,8 @@ namespace QuanView.Areas.Admin.Controllers
                             SoDienThoaiNguoiNhan = hoaDonData.SoDienThoaiNguoiNhan,
                             DiaChiGiaoHang = hoaDonData.DiaChiGiaoHang,
                             LyDoHuyDon = hoaDonData.LyDoHuyDon,
+                            DaDatChoTonKho = hoaDonData.DaDatChoTonKho,
+                            DaTruTonKho = hoaDonData.DaTruTonKho,
                         };
 
                         // Add related data if exists
@@ -450,6 +458,8 @@ namespace QuanView.Areas.Admin.Controllers
 
                                     stockSnapshots[chiTiet.IDChiTietHoaDon] = new StockSnapshotDto
                                     {
+                                        SoLuongVatLy = ct.SanPhamChiTiet.SoLuongVatLy,
+                                        SoLuongDangGiuCho = ct.SanPhamChiTiet.SoLuongDangGiuCho,
                                         SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuongTonHienTai,
                                         SoLuongTonTruocXacNhan = ct.SanPhamChiTiet.SoLuongTonTruocXacNhan,
                                         SoLuongTonDuKienSauHuy = ct.SanPhamChiTiet.SoLuongTonDuKienSauHuy
