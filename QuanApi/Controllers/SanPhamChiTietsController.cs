@@ -563,21 +563,7 @@ namespace QuanApi.Controllers
                 if (variantIds.Count == 0)
                     return Ok(new List<VariantReservationDetailDto>());
 
-                var reservedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "Chờ xác nhận",
-                    "Đã thanh toán chờ xác nhận",
-                    "DaThanhToan",
-                    "Đã thanh toán",
-                    "Đã xác nhận",
-                    "Chờ lấy hàng",
-                    "Đang giao",
-                    "Đã giao",
-                    "Đã lấy hàng",
-                    "Chờ giao hàng",
-                    "Đang giao hàng",
-                    "Giao hàng thành công"
-                };
+                var reservedStatuses = OrderActiveStatusRules.ActiveOrderStatuses;
 
                 var rows = await _context.ChiTietHoaDons
                     .AsNoTracking()
@@ -624,6 +610,27 @@ namespace QuanApi.Controllers
                 _logger.LogError(ex, "Lỗi khi lấy reservation details cho biến thể.");
                 return StatusCode(500, "Lỗi khi tải chi tiết số lượng đặt trước");
             }
+        }
+
+        /// <summary>Đếm số đơn đang xử lý có chứa biến thể này.</summary>
+        [HttpGet("{id}/active-orders-count")]
+        public async Task<IActionResult> GetActiveOrdersCount(Guid id)
+        {
+            if (!await _context.SanPhamChiTiets.AnyAsync(s => s.IDSanPhamChiTiet == id))
+                return NotFound("Không tìm thấy sản phẩm chi tiết.");
+
+            var count = await _context.ChiTietHoaDons
+                .AsNoTracking()
+                .Where(ct => ct.TrangThai
+                    && ct.IDSanPhamChiTiet == id
+                    && ct.HoaDon != null
+                    && ct.HoaDon.TrangThaiHoaDon
+                    && OrderActiveStatusRules.ActiveOrderStatuses.Contains(ct.HoaDon.TrangThai))
+                .Select(ct => ct.IDHoaDon)
+                .Distinct()
+                .CountAsync();
+
+            return Ok(new { count });
         }
 
         // DELETE: api/sanphamchitiets/{id} — luôn xóa mềm (TrangThai = false), không xóa hẳn bản ghi.

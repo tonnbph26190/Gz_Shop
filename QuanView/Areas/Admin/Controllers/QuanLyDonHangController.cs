@@ -151,6 +151,7 @@ namespace QuanView.Areas.Admin.Controllers
         {
             public Guid IDSanPhamChiTiet { get; set; }
             public string MaSPChiTiet { get; set; }
+            public bool TrangThai { get; set; } = true;
             public decimal GiaBan { get; set; }
             public int SoLuongTonHienTai { get; set; }
             public int SoLuongDatMua { get; set; }
@@ -178,6 +179,7 @@ namespace QuanView.Areas.Admin.Controllers
             public Guid IDSanPham { get; set; }
             public string TenSanPham { get; set; }
             public string MaSanPham { get; set; }
+            public bool TrangThai { get; set; } = true;
         }
 
         // GET: Admin/QuanLyDonHang
@@ -429,6 +431,7 @@ namespace QuanView.Areas.Admin.Controllers
                                     {
                                         IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
                                         MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+                                        TrangThai = ct.SanPhamChiTiet.TrangThai,
                                         GiaBan = ct.SanPhamChiTiet.GiaBan,
                                         SoLuong = ct.SanPhamChiTiet.SoLuongTonHienTai,
                                         KichCo = ct.SanPhamChiTiet.KichCo != null ? new KichCo
@@ -458,7 +461,8 @@ namespace QuanView.Areas.Admin.Controllers
                                         {
                                             IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
                                             TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
-                                            MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
+                                            MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham,
+                                            TrangThai = ct.SanPhamChiTiet.SanPham.TrangThai
                                         };
                                     }
 

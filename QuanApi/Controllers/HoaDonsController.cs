@@ -294,6 +294,7 @@ namespace QuanApi.Controllers
 			try
 			{
 				var hoaDon = await _context.HoaDons
+					.IgnoreQueryFilters()
 					.Include(h => h.KhachHang)
 					.Include(h => h.NhanVien)
 					.Include(h => h.PhieuGiamGia)
@@ -357,7 +358,6 @@ namespace QuanApi.Controllers
 								TenPhuongThuc = h.PhuongThucThanhToan.TenPhuongThuc
 							} : null,
 							ChiTietHoaDons = h.ChiTietHoaDons
-								.Where(ct => ct.SanPhamChiTiet != null)
 								.Select(ct => new
 								{
 									IDChiTietHoaDon = ct.IDChiTietHoaDon,
@@ -365,56 +365,60 @@ namespace QuanApi.Controllers
 									SoLuong = ct.SoLuong,
 									DonGia = ct.DonGia,
 									ThanhTien = ct.ThanhTien,
-									SanPhamChiTiet = new
-									{
-										IDSanPhamChiTiet = ct.SanPhamChiTiet!.IDSanPhamChiTiet,
-										MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
-										GiaBan = ct.SanPhamChiTiet.GiaBan,
-										SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho,
-										SoLuongDatMua = ct.SoLuong,
-										SoLuongTonTruocXacNhan = (
-												h.DaTruTonKho
-												|| h.TrangThai == "Đã xác nhận"
-												|| h.TrangThai == "Chờ lấy hàng"
-												|| h.TrangThai == "Đang giao"
-												|| h.TrangThai == "Đã giao"
-												|| h.TrangThai == "Đã lấy hàng"
-												|| h.TrangThai == "Chờ giao hàng"
-												|| h.TrangThai == "Đang giao hàng"
-												|| h.TrangThai == "Giao hàng thành công"
-											)
-											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
-											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
-										SoLuongTonDuKienSauHuy = (h.TrangThai == "Đã hủy")
-											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho)
-											: (
-												h.DaDatChoTonKho
-												|| h.DaTruTonKho
-												|| h.TrangThai == "Chờ xác nhận"
-												|| h.TrangThai == "DaThanhToan"
-												|| h.TrangThai == "Đã thanh toán"
-												|| h.TrangThai == "Đã thanh toán chờ xác nhận"
-												|| h.TrangThai == "Đã xác nhận"
-												|| h.TrangThai == "Chờ lấy hàng"
-												|| h.TrangThai == "Đang giao"
-												|| h.TrangThai == "Đã giao"
-												|| h.TrangThai == "Đã lấy hàng"
-												|| h.TrangThai == "Chờ giao hàng"
-												|| h.TrangThai == "Đang giao hàng"
-												|| h.TrangThai == "Giao hàng thành công"
-											)
-											? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
-											: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
-										KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
-										MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
-										HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
-										SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+									SanPhamChiTiet = ct.SanPhamChiTiet != null
+										? new
 										{
-											IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
-											TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
-											MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham
-										} : null
-									}
+											IDSanPhamChiTiet = ct.SanPhamChiTiet.IDSanPhamChiTiet,
+											MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
+											TrangThai = ct.SanPhamChiTiet.TrangThai,
+											GiaBan = ct.SanPhamChiTiet.GiaBan,
+											SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho,
+											SoLuongDatMua = ct.SoLuong,
+											SoLuongTonTruocXacNhan = (
+													h.DaTruTonKho
+													|| h.TrangThai == "Đã xác nhận"
+													|| h.TrangThai == "Chờ lấy hàng"
+													|| h.TrangThai == "Đang giao"
+													|| h.TrangThai == "Đã giao"
+													|| h.TrangThai == "Đã lấy hàng"
+													|| h.TrangThai == "Chờ giao hàng"
+													|| h.TrangThai == "Đang giao hàng"
+													|| h.TrangThai == "Giao hàng thành công"
+												)
+												? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
+												: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
+											SoLuongTonDuKienSauHuy = (h.TrangThai == "Đã hủy")
+												? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho)
+												: (
+													h.DaDatChoTonKho
+													|| h.DaTruTonKho
+													|| h.TrangThai == "Chờ xác nhận"
+													|| h.TrangThai == "DaThanhToan"
+													|| h.TrangThai == "Đã thanh toán"
+													|| h.TrangThai == "Đã thanh toán chờ xác nhận"
+													|| h.TrangThai == "Đã xác nhận"
+													|| h.TrangThai == "Chờ lấy hàng"
+													|| h.TrangThai == "Đang giao"
+													|| h.TrangThai == "Đã giao"
+													|| h.TrangThai == "Đã lấy hàng"
+													|| h.TrangThai == "Chờ giao hàng"
+													|| h.TrangThai == "Đang giao hàng"
+													|| h.TrangThai == "Giao hàng thành công"
+												)
+												? (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho) + ct.SoLuong
+												: (ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho),
+											KichCo = ct.SanPhamChiTiet.KichCo != null ? new { TenKichCo = ct.SanPhamChiTiet.KichCo.TenKichCo } : null,
+											MauSac = ct.SanPhamChiTiet.MauSac != null ? new { TenMauSac = ct.SanPhamChiTiet.MauSac.TenMauSac } : null,
+											HoaTiet = ct.SanPhamChiTiet.HoaTiet != null ? new { TenHoaTiet = ct.SanPhamChiTiet.HoaTiet.TenHoaTiet } : null,
+											SanPham = ct.SanPhamChiTiet.SanPham != null ? new
+											{
+												IDSanPham = ct.SanPhamChiTiet.SanPham.IDSanPham,
+												TenSanPham = ct.SanPhamChiTiet.SanPham.TenSanPham,
+												MaSanPham = ct.SanPhamChiTiet.SanPham.MaSanPham,
+												TrangThai = ct.SanPhamChiTiet.SanPham.TrangThai
+											} : null
+										}
+										: null
 								}).ToList()
 						})
 						.FirstOrDefaultAsync();
@@ -502,9 +506,15 @@ namespace QuanApi.Controllers
 				// Kiểm tra tồn kho trước khi trừ (tránh trừ một phần rồi mới báo lỗi)
 				foreach (var chiTiet in dto.ChiTietHoaDons)
 				{
-					var spct = await _context.SanPhamChiTiets.FindAsync(chiTiet.IDSanPhamChiTiet);
+					var spct = await _context.SanPhamChiTiets
+						.Include(s => s.SanPham)
+						.FirstOrDefaultAsync(s => s.IDSanPhamChiTiet == chiTiet.IDSanPhamChiTiet);
 					if (spct == null)
 						return BadRequest($"Không tìm thấy sản phẩm chi tiết {chiTiet.IDSanPhamChiTiet}");
+					if (!spct.TrangThai)
+						return BadRequest($"Sản phẩm {spct.MaSPChiTiet} đã ngưng bán.");
+					if (spct.SanPham != null && !spct.SanPham.TrangThai)
+						return BadRequest($"Sản phẩm {spct.SanPham.MaSanPham} đã ngưng bán.");
 					if (chiTiet.SoLuong <= 0)
 						return BadRequest("Số lượng sản phẩm phải lớn hơn 0");
 					var soLuongKhaDung = spct.SoLuong - spct.SoLuongDatCho;

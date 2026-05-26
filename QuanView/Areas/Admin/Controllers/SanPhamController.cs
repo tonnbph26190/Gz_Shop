@@ -616,6 +616,30 @@ namespace QuanView.Areas.Admin.Controllers
 			return RedirectToAction("Index");
 		}
 
+		/// <summary>Số đơn đang xử lý liên quan tới sản phẩm cha (proxy API).</summary>
+		[HttpGet]
+		public async Task<IActionResult> ActiveOrdersCount(Guid id)
+		{
+			var res = await _http.GetAsync($"sanphams/{id}/active-orders-count");
+			if (!res.IsSuccessStatusCode)
+				return Json(new { count = 0 });
+
+			var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+			return Json(json);
+		}
+
+		/// <summary>Số đơn đang xử lý liên quan tới biến thể (proxy API).</summary>
+		[HttpGet]
+		public async Task<IActionResult> VariantActiveOrdersCount(Guid id)
+		{
+			var res = await _http.GetAsync($"sanphamchitiets/{id}/active-orders-count");
+			if (!res.IsSuccessStatusCode)
+				return Json(new { count = 0 });
+
+			var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+			return Json(json);
+		}
+
 		/// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
 		[HttpPost]
 		public async Task<IActionResult> ToggleStatus(Guid id)
