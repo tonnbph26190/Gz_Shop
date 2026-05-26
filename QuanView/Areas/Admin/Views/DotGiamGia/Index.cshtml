@@ -1,9 +1,11 @@
 @using QuanApi.Dtos
+@using QuanApi.Helpers
 @model QuanApi.Dtos.PagedResultGeneric<QuanApi.Data.DotGiamGia>
 
 
 @{
     ViewData["Title"] = "Quản lý đợt giảm giá";
+    var nowVn = VietnamTime.Now();
 }
 
 <div class="container-fluid">
@@ -59,7 +61,7 @@
                     <label for="trangThai" class="form-label fw-bold">Trạng thái:</label>
                     <select id="trangThai" class="form-control shadow-sm" name="trangThai">
                         <option value="">Tất cả</option>
-                        @foreach (var option in new[] { ("true", "Đang kích hoạt"), ("false", "Tạm ngưng") })
+                        @foreach (var option in new[] { ("active", "Đang kích hoạt"), ("upcoming", "Sắp diễn ra"), ("ended", "Ngưng") })
                         {
                             <option value="@option.Item1" selected="@(ViewBag.TrangThai == option.Item1 ? "selected" : null)">
                                 @option.Item2
@@ -115,17 +117,29 @@
                                 <td>@item.MaDot</td>
                                 <td>@item.TenDot</td>
                                 <td>@item.PhanTramGiam%</td>
-                                <td>@item.NgayBatDau.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@item.NgayKetThuc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@(item.LanCapNhatCuoi?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")</td>
+                                <td>@VietnamTime.FromUtc(item.NgayBatDau).ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@VietnamTime.FromUtc(item.NgayKetThuc).ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(item.LanCapNhatCuoi.HasValue ? VietnamTime.FromUtc(item.LanCapNhatCuoi.Value).ToString("dd/MM/yyyy HH:mm") : "Chưa cập nhật")</td>
                                 <td>
-                                    @if (item.TrangThai)
+                                    @{
+                                        var batDauVn = VietnamTime.FromUtc(item.NgayBatDau);
+                                        var ketThucVn = VietnamTime.FromUtc(item.NgayKetThuc);
+                                    }
+                                    @if (!item.TrangThai)
+                                    {
+                                        <span class="badge text-bg-secondary text-light p-2">Ngưng</span>
+                                    }
+                                    else if (nowVn >= batDauVn && nowVn <= ketThucVn)
                                     {
                                         <span class="badge text-bg-success text-light p-2">Đang kích hoạt</span>
                                     }
+                                    else if (nowVn < batDauVn)
+                                    {
+                                        <span class="badge text-bg-info text-white p-2">Sắp diễn ra</span>
+                                    }
                                     else
                                     {
-                                        <span class="badge text-bg-warning text-dark p-2">Tạm ngưng</span>
+                                        <span class="badge text-bg-secondary text-light p-2">Ngưng</span>
                                     }
                                 </td>
                                 <td>

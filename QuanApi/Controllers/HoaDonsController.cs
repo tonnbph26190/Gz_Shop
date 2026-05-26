@@ -333,6 +333,8 @@ namespace QuanApi.Controllers
 							SoDienThoaiNguoiNhan = h.SoDienThoaiNguoiNhan,
 							DiaChiGiaoHang = h.DiaChiGiaoHang,
 							LyDoHuyDon = h.LyDoHuyDon,
+							DaDatChoTonKho = h.DaDatChoTonKho,
+							DaTruTonKho = h.DaTruTonKho,
 							KhachHang = h.KhachHang != null ? new
 							{
 								IDKhachHang = h.KhachHang.IDKhachHang,
@@ -372,6 +374,8 @@ namespace QuanApi.Controllers
 											MaSPChiTiet = ct.SanPhamChiTiet.MaSPChiTiet,
 											TrangThai = ct.SanPhamChiTiet.TrangThai,
 											GiaBan = ct.SanPhamChiTiet.GiaBan,
+											SoLuongVatLy = ct.SanPhamChiTiet.SoLuong,
+											SoLuongDangGiuCho = ct.SanPhamChiTiet.SoLuongDatCho,
 											SoLuongTonHienTai = ct.SanPhamChiTiet.SoLuong - ct.SanPhamChiTiet.SoLuongDatCho,
 											SoLuongDatMua = ct.SoLuong,
 											SoLuongTonTruocXacNhan = (

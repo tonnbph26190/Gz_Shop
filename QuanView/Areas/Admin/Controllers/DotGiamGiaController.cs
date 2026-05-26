@@ -22,6 +22,14 @@ namespace QuanView.Areas.Admin.Controllers
         // GET: Danh sách
         public async Task<IActionResult> Index(string maDot, string tenDot, int? phanTramGiam, DateTime? tuNgay, DateTime? denNgay, string trangThai, int page = 1, int pageSize = 10)
         {
+            // Giữ lại giá trị bộ lọc sau khi submit form
+            ViewBag.MaKhuyenMai = maDot;
+            ViewBag.TenKhuyenMai = tenDot;
+            ViewBag.GiaTri = phanTramGiam;
+            ViewBag.TuNgay = tuNgay?.ToString("yyyy-MM-dd");
+            ViewBag.DenNgay = denNgay?.ToString("yyyy-MM-dd");
+            ViewBag.TrangThai = trangThai;
+
             var url = $"/api/DotGiamGias?" +
                       $"maDot={maDot}&tenDot={tenDot}&phanTramGiam={phanTramGiam}&" +
                       (tuNgay.HasValue ? $"tuNgay={tuNgay:yyyy-MM-dd}&" : "") +
@@ -154,14 +162,6 @@ namespace QuanView.Areas.Admin.Controllers
             if (!ModelState.IsValid) return View(model);
             if (id != model.IDDotGiamGia) return BadRequest();
 
-			var now = DateTime.Now;
-
-			if (model.NgayBatDau.Date < now.Date)
-			{
-				ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn hiện tại!");
-				return View(model);
-			}
-
 			if (model.NgayKetThuc <= model.NgayBatDau)
             {
                 ModelState.AddModelError("NgayKetThuc", "Ngày kết thúc phải lớn hơn ngày bắt đầu.");
@@ -236,7 +236,7 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSanPhams()
         {
-            var response = await _httpClient.GetAsync("SanPhamChiTiets?page=1&pageSize=50");
+            var response = await _httpClient.GetAsync("SanPhamChiTiets?onlyAvailableForDiscount=true&page=1&pageSize=50");
             if (!response.IsSuccessStatusCode)
                 return Json(new List<object>());
 
@@ -244,6 +244,7 @@ namespace QuanView.Areas.Admin.Controllers
             if (result == null) return Json(new List<object>());
 
             var sanPhams = result
+                .Where(x => x.TrangThai && x.SoLuongKhaDung > 0)
                 .GroupBy(x => x.IdSanPham)
                 .Select(g => new
                 {
@@ -260,14 +261,16 @@ namespace QuanView.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> GetChiTietSanPham(Guid idSanPham)
         {
-            var response = await _httpClient.GetAsync($"SanPhamChiTiets/bysanpham?idsanpham={idSanPham}");
+            var response = await _httpClient.GetAsync($"SanPhamChiTiets/bysanpham?idsanpham={idSanPham}&onlyAvailableForDiscount=true");
             if (!response.IsSuccessStatusCode)
                 return Json(new List<object>());
 
             var chiTiet = await response.Content.ReadFromJsonAsync<IEnumerable<SanPhamChiTietDto>>();
             if (chiTiet == null) return Json(new List<object>());
 
-            var result = chiTiet.Select(x => new
+            var result = chiTiet
+                .Where(x => x.TrangThai && x.SoLuongKhaDung > 0)
+                .Select(x => new
             {
                 idSanPhamChiTiet = x.IdSanPhamChiTiet,
                 tenSanPham = x.TenSanPham ?? "Không xác định",

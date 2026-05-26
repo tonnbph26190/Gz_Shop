@@ -3,8 +3,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 @{
 	ViewData["Title"] = "Chi tiết phiếu giảm giá";
+	var utcPlus7TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+	DateTime ConvertUtcToUtcPlus7(DateTime value)
+	{
+		var utcValue = value.Kind == DateTimeKind.Utc
+			? value
+			: DateTime.SpecifyKind(value, DateTimeKind.Utc);
+		return TimeZoneInfo.ConvertTimeFromUtc(utcValue, utcPlus7TimeZone);
+	}
 
-	var now = DateTime.Now;
+	var now = ConvertUtcToUtcPlus7(DateTime.UtcNow);
+	var ngayBatDau = ConvertUtcToUtcPlus7(Model.NgayBatDau);
+	var ngayKetThuc = ConvertUtcToUtcPlus7(Model.NgayKetThuc);
+	var ngayTao = ConvertUtcToUtcPlus7(Model.NgayTao);
 	var status = "";
 	var statusClass = "";
 
@@ -13,12 +24,12 @@
 		status = "Ngưng áp dụng";
 		statusClass = "badge-secondary";
 	}
-	else if (now < Model.NgayBatDau)
+	else if (now < ngayBatDau)
 	{
 		status = "Sắp diễn ra";
 		statusClass = "badge-info";
 	}
-	else if (now >= Model.NgayBatDau && now <= Model.NgayKetThuc)
+	else if (now >= ngayBatDau && now <= ngayKetThuc)
 	{
 		status = "Đang hoạt động";
 		statusClass = "badge-success";
@@ -182,24 +193,24 @@
 
 		<div class="detail-row">
 			<div class="detail-label">Ngày bắt đầu:</div>
-			<div class="detail-value">@Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm")</div>
+			<div class="detail-value">@ngayBatDau.ToString("dd/MM/yyyy HH:mm")</div>
 		</div>
 
 		<div class="detail-row">
 			<div class="detail-label">Ngày kết thúc:</div>
-			<div class="detail-value">@Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</div>
+			<div class="detail-value">@ngayKetThuc.ToString("dd/MM/yyyy HH:mm")</div>
 		</div>
 
 		<div class="detail-row">
 			<div class="detail-label">Trạng thái:</div>
 			<div class="detail-value">
-				<span class="badge @statusClass" style="color: white;">@status</span>
+				<span class="badge @statusClass" style="color: black;">@status</span>
 			</div>
 		</div>
 
 		<div class="detail-row">
 			<div class="detail-label">Ngày tạo:</div>
-			<div class="detail-value">@Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
+			<div class="detail-value">@ngayTao.ToString("dd/MM/yyyy HH:mm")</div>
 		</div>
 
 		<div class="detail-row">

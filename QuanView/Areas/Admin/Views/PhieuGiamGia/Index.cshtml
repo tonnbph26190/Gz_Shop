@@ -4,6 +4,15 @@
     ViewData["Title"] = "Danh sách phiếu giảm giá";
     var currentKeyword = ViewBag.Keyword as string ?? "";
     var currentStatus = ViewBag.Status as string ?? "";
+    var utcPlus7TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
+    DateTime ConvertUtcToUtcPlus7(DateTime value)
+    {
+        var utcValue = value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        return TimeZoneInfo.ConvertTimeFromUtc(utcValue, utcPlus7TimeZone);
+    }
 }
 
 <style>
@@ -203,9 +212,9 @@
                         {
                             @foreach (var item in Model)
                             {
-                                var now = DateTime.Now.ToLocalTime(); // giờ hiện tại local
-                                var start = item.NgayBatDau.ToLocalTime(); // giờ bắt đầu local
-                                var end = item.NgayKetThuc.ToLocalTime();  // giờ kết thúc local
+                                var now = ConvertUtcToUtcPlus7(DateTime.UtcNow);
+                                var start = ConvertUtcToUtcPlus7(item.NgayBatDau);
+                                var end = ConvertUtcToUtcPlus7(item.NgayKetThuc);
                                 var status = "";
                                 var statusClass = "";
 
@@ -236,7 +245,7 @@
                                     <td>@($"{item.GiaTriGiam}%")</td>
                                     <td>@(item.GiaTriGiamToiDa?.ToString("n0") ?? "-")</td>
                                     <td>@(item.DonToiThieu?.ToString("n0") ?? "-")</td>
-                                    <td>@item.NgayBatDau.ToString("dd/MM/yyyy") - @item.NgayKetThuc.ToString("dd/MM/yyyy")</td>
+                                    <td>@start.ToString("dd/MM/yyyy") - @end.ToString("dd/MM/yyyy")</td>
                                     <td>
                                         <span class="badge @statusClass">@status</span>
                                     </td>

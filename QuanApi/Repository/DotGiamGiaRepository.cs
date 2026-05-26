@@ -1,6 +1,7 @@
 using BanQuanAu1.Web.Data;
 using QuanApi.Data;
 using QuanApi.Dtos;
+using QuanApi.Helpers;
 using QuanApi.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,6 +21,7 @@ namespace QuanApi.Repository
             DateTime? tuNgay, DateTime? denNgay, string trangThai, int page, int pageSize)
         {
             var query = _context.DotGiamGias.AsQueryable();
+            var nowVn = VietnamTime.Now();
 
             if (!string.IsNullOrEmpty(maDot))
             {
@@ -44,8 +46,19 @@ namespace QuanApi.Repository
 
             if (!string.IsNullOrEmpty(trangThai))
             {
-                bool tt = trangThai == "true";
-                query = query.Where(x => x.TrangThai == tt);
+                var tt = trangThai.Trim().ToLowerInvariant();
+                // Lọc trạng thái theo giờ Việt Nam (UTC+7).
+                query = tt switch
+                {
+                    "active" => query.Where(x => x.TrangThai
+                        && x.NgayBatDau.AddHours(7) <= nowVn
+                        && x.NgayKetThuc.AddHours(7) >= nowVn),
+                    "upcoming" => query.Where(x => x.TrangThai && x.NgayBatDau.AddHours(7) > nowVn),
+                    // ended: hết hạn hoặc bị tạm ngưng thủ công
+                    "ended" => query.Where(x => !x.TrangThai || x.NgayKetThuc.AddHours(7) < nowVn),
+                    // Nếu các giá trị khác được gửi lên, bỏ qua bộ lọc.
+                    _ => query
+                };
             }
 
             var total = await query.CountAsync();
@@ -71,18 +84,24 @@ namespace QuanApi.Repository
             if (dot.PhanTramGiam < 1 || dot.PhanTramGiam > 90)
                 return false;
 
-            if (dot.NgayKetThuc <= dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
+            if (dot.NgayKetThuc <= dot.NgayBatDau)
+                return false;
+
+            chiTietIds = await GetAvailableChiTietIdsAsync(chiTietIds);
+
+            if (!chiTietIds.Any())
                 return false;
 
             // Kiểm tra xem các sản phẩm đã có đợt giảm giá đang hoạt động hay chưa
             if (chiTietIds?.Count > 0)
             {
+                var nowVn = VietnamTime.Now();
                 var existingActiveDiscounts = await _context.SanPhamDotGiams
                     .Include(spdg => spdg.DotGiamGia)
                     .Where(spdg => chiTietIds.Contains(spdg.IDSanPhamChiTiet) &&
                                    spdg.DotGiamGia.TrangThai == true &&
-                                    spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
-                                    spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
+                                    spdg.DotGiamGia.NgayBatDau.AddHours(7) <= nowVn &&
+                                    spdg.DotGiamGia.NgayKetThuc.AddHours(7) >= nowVn)
                     .ToListAsync();
 
                 if (existingActiveDiscounts.Any())
@@ -169,8 +188,10 @@ namespace QuanApi.Repository
             if (dot.PhanTramGiam < 1 || dot.PhanTramGiam > 90)
                 return false;
 
-            if (dot.NgayKetThuc <= dot.NgayBatDau || dot.NgayBatDau.Date < DateTime.UtcNow.Date)
+            if (dot.NgayKetThuc <= dot.NgayBatDau)
                 return false;
+
+            chiTietIds = await GetAvailableChiTietIdsAsync(chiTietIds);
 
             dot.LanCapNhatCuoi = DateTime.UtcNow;
             _context.DotGiamGias.Update(dot);
@@ -240,10 +261,13 @@ namespace QuanApi.Repository
                 .Include(x => x.KichCo)
                 .Include(x => x.MauSac)
                 .Include(x => x.HoaTiet)
+                .Where(x => x.TrangThai
+                            && x.SanPham.TrangThai
+                            && x.SoLuong > x.SoLuongDatCho)
                 .Select(x => new SelectListItem
                 {
                     Value = x.IDSanPhamChiTiet.ToString(),
-                    Text = $"{x.MaSPChiTiet} - {x.SanPham.TenSanPham} | Size: {x.KichCo.TenKichCo}, Màu: {x.MauSac.TenMauSac}, Họa tiết: {x.HoaTiet.TenHoaTiet}",
+                    Text = $"{x.MaSPChiTiet} - {x.SanPham.TenSanPham} | Size: {x.KichCo.TenKichCo}, Màu: {x.MauSac.TenMauSac}, Họa tiết: {(x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "N/A")}",
                     Selected = selectedIds.Contains(x.IDSanPhamChiTiet)
                 })
                 .ToListAsync();
@@ -332,14 +356,30 @@ namespace QuanApi.Repository
             if (productIds == null || !productIds.Any())
                 return new List<Guid>();
 
+            var nowVn = VietnamTime.Now();
             return await _context.SanPhamDotGiams
                 .Include(spdg => spdg.DotGiamGia)
                 .Where(spdg => productIds.Contains(spdg.IDSanPhamChiTiet) &&
                                spdg.DotGiamGia.TrangThai == true &&
-                               spdg.DotGiamGia.NgayBatDau <= DateTime.UtcNow &&
-                               spdg.DotGiamGia.NgayKetThuc >= DateTime.UtcNow)
+                               spdg.DotGiamGia.NgayBatDau.AddHours(7) <= nowVn &&
+                               spdg.DotGiamGia.NgayKetThuc.AddHours(7) >= nowVn)
                 .Select(spdg => spdg.IDSanPhamChiTiet)
                 .Distinct()
+                .ToListAsync();
+        }
+
+        private async Task<List<Guid>> GetAvailableChiTietIdsAsync(List<Guid>? chiTietIds)
+        {
+            if (chiTietIds == null || !chiTietIds.Any())
+                return new List<Guid>();
+
+            return await _context.SanPhamChiTiets
+                .Include(x => x.SanPham)
+                .Where(x => chiTietIds.Contains(x.IDSanPhamChiTiet)
+                            && x.TrangThai
+                            && x.SanPham.TrangThai
+                            && x.SoLuong > x.SoLuongDatCho)
+                .Select(x => x.IDSanPhamChiTiet)
                 .ToListAsync();
         }
 
