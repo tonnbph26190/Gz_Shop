@@ -8,9 +8,13 @@
 
   <ItemGroup>
     <Compile Remove="Profiles\**" />
+    <Compile Remove="artifacts\**" />
     <Content Remove="Profiles\**" />
+    <Content Remove="artifacts\**" />
     <EmbeddedResource Remove="Profiles\**" />
+    <EmbeddedResource Remove="artifacts\**" />
     <None Remove="Profiles\**" />
+    <None Remove="artifacts\**" />
   </ItemGroup>
 
   <ItemGroup>

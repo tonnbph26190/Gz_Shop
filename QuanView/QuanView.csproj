@@ -10,15 +10,19 @@
     <Compile Remove="Controllers\**" />
     <Compile Remove="Services\**" />
     <Compile Remove="ViewModels\**" />
+    <Compile Remove="artifacts\**" />
     <Content Remove="Controllers\**" />
     <Content Remove="Services\**" />
     <Content Remove="ViewModels\**" />
+    <Content Remove="artifacts\**" />
     <EmbeddedResource Remove="Controllers\**" />
     <EmbeddedResource Remove="Services\**" />
     <EmbeddedResource Remove="ViewModels\**" />
+    <EmbeddedResource Remove="artifacts\**" />
     <None Remove="Controllers\**" />
     <None Remove="Services\**" />
     <None Remove="ViewModels\**" />
+    <None Remove="artifacts\**" />
   </ItemGroup>
 
   <ItemGroup>
