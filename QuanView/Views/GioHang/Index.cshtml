@@ -5,6 +5,11 @@
     var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     var chiTietList = gioHang?.ChiTietGioHangs?.ToList() ?? new List<QuanApi.Data.ChiTietGioHang>();
     decimal tongTien = chiTietList.Sum(x => x.GiaBan * x.SoLuong);
+    decimal tongTienGoc = chiTietList.Sum(x =>
+    {
+        var giaGoc = x.SanPhamChiTiet?.GiaBan ?? x.GiaBan;
+        return (giaGoc > x.GiaBan ? giaGoc : x.GiaBan) * x.SoLuong;
+    });
 }
 
 @if (Model == null || Model.ChiTietGioHangs == null || !Model.ChiTietGioHangs.Any())
@@ -75,6 +80,28 @@
         color: #111;
         text-decoration: none;
         line-height: 1.4;
+    }
+
+    .cart-sale-price {
+        color: var(--accent-red);
+        font-weight: 800;
+    }
+
+    .cart-old-price {
+        color: #9ca3af;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: line-through;
+        text-decoration-thickness: 1.5px;
+    }
+
+    .cart-discount-badge {
+        background: rgba(211, 47, 47, 0.1);
+        border-radius: 999px;
+        color: var(--accent-red);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
     }
 
     .cart-qty-control {
@@ -205,8 +232,16 @@
                             {
                                 var spct = item.SanPhamChiTiet;
                                 var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
+                                var giaSauGiam = item.GiaBan;
+                                var giaGoc = spct?.GiaBan ?? item.GiaBan;
+                                var coGiamGia = giaGoc > giaSauGiam;
+                                var phanTramGiam = coGiamGia && giaGoc > 0 ? (int)Math.Round((1 - giaSauGiam / giaGoc) * 100) : 0;
+                                var thanhTien = giaSauGiam * item.SoLuong;
+                                var thanhTienGoc = giaGoc * item.SoLuong;
                                 
-                                <tr class="cart-item-row" data-line-total="@((item.GiaBan * item.SoLuong).ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                <tr class="cart-item-row"
+                                    data-line-total="@thanhTien.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-line-original="@((coGiamGia ? thanhTienGoc : thanhTien).ToString(System.Globalization.CultureInfo.InvariantCulture))">
                                     <td class="text-center">
                                         <div class="cart-check-wrapper">
                                             <input type="checkbox"
@@ -224,7 +259,14 @@
                                             <span class="me-3">Color: <strong class="text-dark">@(spct?.MauSac?.TenMauSac ?? "N/A")</strong></span>
                                             <span>Size: <strong class="text-dark">@(spct?.KichCo?.TenKichCo ?? "N/A")</strong></span>
                                         </div>
-                                        <div class="fw-bold text-dark">@item.GiaBan.ToString("N0") <span class="small fw-semibold">VND</span></div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <span class="cart-sale-price">@giaSauGiam.ToString("N0")đ</span>
+                                            @if (coGiamGia)
+                                            {
+                                                <span class="cart-old-price">@giaGoc.ToString("N0")đ</span>
+                                                <span class="cart-discount-badge">-@phanTramGiam%</span>
+                                            }
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <div class="cart-qty-control">
@@ -255,8 +297,12 @@
                                             </form>
                                         </div>
                                     </td>
-                                    <td class="text-end fw-bold text-dark">
-                                        @((item.GiaBan * item.SoLuong).ToString("N0")) <span class="small fw-semibold">VND</span>
+                                    <td class="text-end">
+                                        <div class="cart-sale-price">@thanhTien.ToString("N0")đ</div>
+                                        @if (coGiamGia)
+                                        {
+                                            <div class="cart-old-price">@thanhTienGoc.ToString("N0")đ</div>
+                                        }
                                     </td>
                                     <td class="text-end pe-0">
                                         <form method="post" action="/GioHang/Delete" class="delete-item-form m-0">
@@ -282,17 +328,22 @@
         <div class="col-lg-4">
             <div class="cart-summary-card">
                 <h5 class="fw-bold mb-4">@((lang == "vi") ? "TỔNG ĐƠN HÀNG" : "ORDER SUMMARY")</h5>
-                
+
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">@((lang == "vi") ? "Tạm tính" : "Subtotal")</span>
-                    <span class="fw-bold text-dark" id="tamTinh">@tongTien.ToString("N0") VND</span>
+                    <span class="fw-bold text-dark" id="tamTinh">@tongTienGoc.ToString("N0")đ</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3" id="tongGiamWrap" style="@(tongTienGoc > tongTien ? "" : "display:none;")">
+                    <span class="text-muted">@((lang == "vi") ? "Đã giảm" : "Discount")</span>
+                    <span class="fw-bold text-danger" id="tongGiam">-@((tongTienGoc - tongTien).ToString("N0"))đ</span>
                 </div>
 
                 <hr class="my-4">
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <span class="h5 fw-bold m-0">@((lang == "vi") ? "Tổng cộng" : "Total")</span>
-                    <span class="h5 fw-bold text-danger m-0" id="tongCong">@tongTien.ToString("N0") VND</span>
+                    <span class="h5 fw-bold text-danger m-0" id="tongCong">@tongTien.ToString("N0")đ</span>
                 </div>
 
                 <form method="post" action="/GioHang/CheckoutSelected" id="checkoutSelectedForm">
@@ -349,21 +400,29 @@
     });
     
     function formatVnd(value) {
-        return value.toLocaleString('vi-VN') + ' VND';
+        return value.toLocaleString('vi-VN') + 'đ';
     }
 
     function updatePaymentInfo() {
         let total = 0;
+        let originalTotal = 0;
         $('.item-checkbox:checked').each(function () {
-            const lineTotal = Number($(this).closest('tr').attr('data-line-total')) || 0;
+            const row = $(this).closest('tr');
+            const lineTotal = Number(row.attr('data-line-total')) || 0;
+            const lineOriginal = Number(row.attr('data-line-original')) || lineTotal;
             total += lineTotal;
+            originalTotal += lineOriginal;
         });
 
         const formattedTotal = formatVnd(total);
+        const formattedOriginalTotal = formatVnd(originalTotal);
+        const discountTotal = Math.max(0, originalTotal - total);
         const hasSelection = $('.item-checkbox:checked').length > 0;
         
-        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedOriginalTotal).fadeIn(100); });
         $('#tongCong').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+        $('#tongGiam').text('-' + formatVnd(discountTotal));
+        $('#tongGiamWrap').toggle(discountTotal > 0);
         $('#checkoutSelectedBtn').prop('disabled', !hasSelection);
     }
 
