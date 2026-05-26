@@ -722,12 +722,19 @@
                                         {
                                             slHoan = ct.SoLuong;
                                         }
+                                        var donNayGiu = inventoryPhase == "reserved" ? ct.SoLuong : 0;
                                         var giuChoSauHuy = Math.Max(0, dangGiuCho - slHoan);
                                         var tonVatLySauHuy = tonVatLy + slHoan;
                                         <tr>
                                             <td>@(ct.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")</td>
                                             <td class="text-center">@tonVatLy</td>
-                                            <td class="text-center">@dangGiuCho</td>
+                                            <td class="text-center">
+                                                @dangGiuCho
+                                                @if (inventoryPhase == "reserved")
+                                                {
+                                                    <div class="small text-muted">đơn này: <strong>@donNayGiu</strong></div>
+                                                }
+                                            </td>
                                             <td class="text-center">@tonHienTai</td>
                                             <td class="text-center font-weight-bold text-@inventoryPhaseColor">+@slHoan</td>
                                             @if (inventoryPhase == "reserved")
@@ -833,7 +840,7 @@
                                                 <span class="badge badge-secondary"
                                                       data-bs-toggle="tooltip"
                                                       data-bs-placement="top"
-                                                      title="Số lượng đặt giữ chỗ: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">
+                                                      title="SoLuongDatCho: tổng số đang giữ chỗ cho các đơn chưa xác nhận (gồm cả đơn này và đơn khác).">
                                                     Đang giữ chỗ: @soLuongDangGiuCho
                                                 </span>
                                                 <span class="badge badge-@stockBadgeClass text-dark bg-light"
