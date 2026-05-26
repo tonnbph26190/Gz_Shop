@@ -2,6 +2,8 @@
     ViewData["Title"] = "Tin nhắn";
     var chatError = ViewBag.ChatError as string;
     var staffName = ViewBag.StaffName as string ?? "Nhân viên hỗ trợ";
+    var customerRank = ViewBag.CustomerRank as string ?? "Chưa xếp hạng";
+    var customerPoints = ViewBag.CustomerPoints as int? ?? 0;
 }
 
 <section class="customer-chat-page">
@@ -13,6 +15,7 @@
             <div>
                 <h1>Hỗ trợ khách hàng</h1>
                 <p id="supportName">@staffName</p>
+                <small id="customerRank" class="customer-rank">@customerRank · @customerPoints điểm</small>
             </div>
         </div>
 
@@ -94,6 +97,17 @@
         margin: 2px 0 0;
         color: #cbd5e1;
         font-size: .9rem;
+    }
+
+    .customer-rank {
+        display: inline-flex;
+        margin-top: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 700;
+        color: #dbeafe;
+        background: rgba(37, 99, 235, .35);
     }
 
     .chat-error {
@@ -241,6 +255,11 @@
                     .done(function (res) {
                         if (!res || !res.success) return;
                         $('#supportName').text(res.room.staffName || 'Nhân viên hỗ trợ');
+                        if (res.customerInfo) {
+                            const rank = res.customerInfo.rank || 'Chưa xếp hạng';
+                            const points = Number(res.customerInfo.soDiemHienTai || 0);
+                            $('#customerRank').text(`${rank} · ${points} điểm`);
+                        }
 
                         const messages = res.data || [];
                         if (!messages.length) {

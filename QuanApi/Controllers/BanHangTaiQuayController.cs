@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BanQuanAu1.Web.Data;
 using System.Collections.Generic; // Added for List
+using Microsoft.Extensions.Logging;
 using QuanApi.Services;
 
 namespace QuanApi.Controllers
@@ -21,6 +22,8 @@ namespace QuanApi.Controllers
         private readonly IShippingPolicyService _shippingPolicyService;
         private readonly ILoyaltyService _loyaltyService;
         private readonly IInventoryReservationService _inventoryReservationService;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<BanHangTaiQuayController> _logger;
 
         public BanHangTaiQuayController(
             BanQuanAu1DbContext context,
@@ -28,7 +31,9 @@ namespace QuanApi.Controllers
             IGHNService ghnService,
             IShippingPolicyService shippingPolicyService,
             ILoyaltyService loyaltyService,
-            IInventoryReservationService inventoryReservationService)
+            IInventoryReservationService inventoryReservationService,
+            IEmailService emailService,
+            ILogger<BanHangTaiQuayController> logger)
         {
             _context = context;
             _shippingService = shippingService;
@@ -36,6 +41,8 @@ namespace QuanApi.Controllers
             _shippingPolicyService = shippingPolicyService;
             _loyaltyService = loyaltyService;
             _inventoryReservationService = inventoryReservationService;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         // 1. Tạo đơn hàng mới
@@ -564,10 +571,17 @@ namespace QuanApi.Controllers
 
             string trangThaiHoaDon;
             var cashPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-             {
-    "cash", "Tiền mặt", "tiền mặt"
-    };
-            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
+            {
+                "cash", "Tiền mặt", "tiền mặt"
+            };
+            var transferPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "bank", "transfer", "chuyenkhoan", "chuyen khoan", "chuyển khoản", "qr", "vnpay"
+            };
+            var shouldConfirmShippingPaidOrder = dto.Shipping
+                && !string.IsNullOrWhiteSpace(dto.Address)
+                && (cashPaymentMethods.Contains(dto.PaymentMethod) || transferPaymentMethods.Contains(dto.PaymentMethod));
+            if (shouldConfirmShippingPaidOrder)
             {
                 trangThaiHoaDon = "Đã xác nhận";
             }
@@ -780,6 +794,7 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+            await TrySendPosCheckoutEmailAsync(hoaDon, dto.CustomerEmail);
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon });
         }
 
@@ -794,12 +809,17 @@ namespace QuanApi.Controllers
         }
 
 		[HttpGet("danh-sach-phieu-giam-gia-khach-hang")]
-		public async Task<IActionResult> GetCustomerDiscountVouchers(Guid? customerId, decimal tongTien)
+		public async Task<IActionResult> GetCustomerDiscountVouchers(
+            Guid? customerId,
+            decimal tongTien,
+            string? soDienThoai = null,
+            string? email = null)
 		{
 			var now = DateTime.UtcNow;
 			IQueryable<KhachHangPhieuGiam> customerVoucherQuery = _context.KhachHangPhieuGiams
 				.AsNoTracking()
 				.Where(x => false);
+            HashSet<Guid>? usedVoucherSet = null;
 
 			if (customerId.HasValue)
 			{
@@ -857,9 +877,75 @@ namespace QuanApi.Controllers
 					.Distinct()
 					.ToListAsync();
 
-				var usedVoucherSet = usedVoucherIds.ToHashSet();
-				raw = raw.Where(x => !usedVoucherSet.Contains(x.id)).ToList();
+				usedVoucherSet = usedVoucherIds.ToHashSet();
 			}
+            else
+            {
+                var normalizedPhone = NormalizePhoneForVoucherLimit(soDienThoai);
+                var normalizedEmail = NormalizeEmailForVoucherLimit(email);
+                if (!string.IsNullOrWhiteSpace(normalizedPhone) || !string.IsNullOrWhiteSpace(normalizedEmail))
+                {
+                    usedVoucherSet = new HashSet<Guid>();
+
+                    if (!string.IsNullOrWhiteSpace(normalizedPhone))
+                    {
+                        var usedByPhone = await _context.HoaDons
+                            .AsNoTracking()
+                            .Where(h =>
+                                h.IDPhieuGiamGia.HasValue &&
+                                h.TrangThaiHoaDon &&
+                                h.TrangThai != "Đã hủy")
+                            .Select(h => new
+                            {
+                                VoucherId = h.IDPhieuGiamGia!.Value,
+                                Phone = h.SoDienThoaiNguoiNhan
+                            })
+                            .ToListAsync();
+
+                        foreach (var item in usedByPhone)
+                        {
+                            if (NormalizePhoneForVoucherLimit(item.Phone) == normalizedPhone)
+                            {
+                                usedVoucherSet.Add(item.VoucherId);
+                            }
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(normalizedEmail))
+                    {
+                        var usedByEmail = await _context.HoaDons
+                            .AsNoTracking()
+                            .Where(h =>
+                                h.IDPhieuGiamGia.HasValue &&
+                                h.IDKhachHang.HasValue &&
+                                h.TrangThaiHoaDon &&
+                                h.TrangThai != "Đã hủy")
+                            .Join(
+                                _context.KhachHang.AsNoTracking(),
+                                h => h.IDKhachHang!.Value,
+                                kh => kh.IDKhachHang,
+                                (h, kh) => new
+                                {
+                                    VoucherId = h.IDPhieuGiamGia!.Value,
+                                    Email = kh.Email
+                                })
+                            .ToListAsync();
+
+                        foreach (var item in usedByEmail)
+                        {
+                            if (NormalizeEmailForVoucherLimit(item.Email) == normalizedEmail)
+                            {
+                                usedVoucherSet.Add(item.VoucherId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (usedVoucherSet is { Count: > 0 })
+            {
+                raw = raw.Where(x => !usedVoucherSet.Contains(x.id)).ToList();
+            }
 
 			// 👉 xử lý tại C#
 			var vouchers = raw.Select(x =>
@@ -1600,7 +1686,14 @@ namespace QuanApi.Controllers
                 {
                     "cash", "Tiền mặt", "tiền mặt"
                 };
-            if (dto.Shipping && !string.IsNullOrWhiteSpace(dto.Address) && cashPaymentMethods.Contains(dto.PaymentMethod))
+            var transferPaymentMethods = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "bank", "transfer", "chuyenkhoan", "chuyen khoan", "chuyển khoản", "qr", "vnpay"
+                };
+            var shouldConfirmShippingPaidOrder = dto.Shipping
+                && !string.IsNullOrWhiteSpace(dto.Address)
+                && (cashPaymentMethods.Contains(dto.PaymentMethod) || transferPaymentMethods.Contains(dto.PaymentMethod));
+            if (shouldConfirmShippingPaidOrder)
             {
                 trangThaiHoaDon = "Đã xác nhận";
             }
@@ -1814,7 +1907,28 @@ namespace QuanApi.Controllers
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+            await TrySendPosCheckoutEmailAsync(hoaDon, dto.CustomerEmail);
             return Ok(new { hoaDon.IDHoaDon, hoaDon.MaHoaDon, message = "Chuyển giỏ hàng thành hóa đơn thành công" });
+        }
+
+        private async Task TrySendPosCheckoutEmailAsync(HoaDon hoaDon, string? fallbackEmail)
+        {
+            try
+            {
+                var normalizedFallbackEmail = string.IsNullOrWhiteSpace(fallbackEmail)
+                    ? null
+                    : fallbackEmail.Trim();
+
+                await _emailService.SendOrderStatusChangeEmailAsync(
+                    hoaDon,
+                    string.Empty,
+                    hoaDon.TrangThai ?? "DaThanhToan",
+                    normalizedFallbackEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể gửi email sau khi chốt đơn POS {OrderCode}", hoaDon.MaHoaDon);
+            }
         }
 
         private static string NormalizePhoneForVoucherLimit(string? phone)

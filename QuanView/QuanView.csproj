@@ -10,15 +10,19 @@
     <Compile Remove="Controllers\**" />
     <Compile Remove="Services\**" />
     <Compile Remove="ViewModels\**" />
+    <Compile Remove="artifacts\**" />
     <Content Remove="Controllers\**" />
     <Content Remove="Services\**" />
     <Content Remove="ViewModels\**" />
+    <Content Remove="artifacts\**" />
     <EmbeddedResource Remove="Controllers\**" />
     <EmbeddedResource Remove="Services\**" />
     <EmbeddedResource Remove="ViewModels\**" />
+    <EmbeddedResource Remove="artifacts\**" />
     <None Remove="Controllers\**" />
     <None Remove="Services\**" />
     <None Remove="ViewModels\**" />
+    <None Remove="artifacts\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +53,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="EPPlus" Version="8.0.5" />
     <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.11">
       <PrivateAssets>all</PrivateAssets>

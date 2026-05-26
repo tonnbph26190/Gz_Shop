@@ -109,10 +109,23 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
-    <script>
+        <script>
         let addressIndex = 0;
 
+        function normalizeAddress(address = {}) {
+            return {
+                idDiaChi: address.idDiaChi || address.IDDiaChi || '',
+                maDiaChi: address.maDiaChi || address.MaDiaChi || '',
+                diaChiChiTiet: address.diaChiChiTiet || address.DiaChiChiTiet || '',
+                tenNguoiNhan: address.tenNguoiNhan || address.TenNguoiNhan || '',
+                sdtNguoiNhan: address.sdtNguoiNhan || address.SdtNguoiNhan || '',
+                laMacDinh: address.laMacDinh ?? address.LaMacDinh ?? false,
+                trangThai: address.trangThai ?? address.TrangThai ?? true
+            };
+        }
+
         function createAddressForm(index, address = {}) {
+            address = normalizeAddress(address);
             const diaChiChiTiet = address.diaChiChiTiet || '';
             const parts = diaChiChiTiet.split(',').map(part => part.trim());
 
@@ -226,6 +239,7 @@
         }
 
         function loadAddressData(formElement, address = {}) {
+            address = normalizeAddress(address);
             const tinhSelect = formElement.querySelector('.tinh-select');
             const quanSelect = formElement.querySelector('.quan-select');
             const phuongSelect = formElement.querySelector('.phuong-select');
@@ -294,6 +308,7 @@
             const container = document.getElementById('addressesContainer');
             container.innerHTML = '';
             addresses.forEach((address, idx) => {
+                address = normalizeAddress(address);
                 const newAddressForm = createAddressForm(idx, address);
                 container.appendChild(newAddressForm);
                 loadAddressData(newAddressForm, address);

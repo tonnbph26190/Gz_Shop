@@ -4,6 +4,9 @@
 }
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+
+
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-product-images.css" />
     <style>
@@ -52,7 +55,7 @@
             margin-bottom: 20px;
             border: 1px solid #dee2e6;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
@@ -222,6 +225,101 @@
         .variant-section table td, .variant-section table th {
             vertical-align: middle !important;
         }
+        .stock-availability {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            overflow: visible;
+        }
+        .reservation-count {
+            font-size: 0.78rem;
+            color: #a16207;
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            border-radius: 10px;
+            padding: 1px 8px;
+            white-space: nowrap;
+        }
+        .reservation-info-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            z-index: 2000;
+        }
+        .reservation-info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+        }
+        .reservation-popup {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            max-height: 240px;
+            overflow-y: auto;
+            text-align: left;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            padding: 8px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.12s ease;
+        }
+        /* Cầu hover giữa icon và popup để tránh bị mất trạng thái khi rê chuột */
+        .reservation-popup::before {
+            content: "";
+            position: absolute;
+            top: -12px;
+            left: 0;
+            right: 0;
+            height: 12px;
+        }
+        .reservation-info-wrapper:hover .reservation-popup {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .reservation-popup-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0d6efd;
+            margin-bottom: 6px;
+        }
+        .reservation-item {
+            border-top: 1px dashed #e9ecef;
+            padding: 6px 2px;
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+        .reservation-order-link {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .reservation-order-link:hover {
+            text-decoration: underline;
+        }
+        .reservation-item:first-of-type {
+            border-top: none;
+            padding-top: 2px;
+        }
 		.card-stats {
     cursor: pointer;
     transition: all 0.25s ease;
@@ -274,11 +372,10 @@ keyframes blink-warning {
 }
 
 <h2 class="mb-4">Danh sách sản phẩm</h2>
-<p class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+<div class="mb-3 d-flex flex-nowrap gap-2 align-items-center">
     <a asp-area="Admin" asp-controller="SanPham" asp-action="Create" class="btn" id="btnCreateProduct">
         + Thêm sản phẩm mới
     </a>
-    &nbsp; &nbsp;
     <a asp-area="Admin" asp-controller="SanPham" asp-action="ExportCsv"
        asp-route-keyword="@Model.Keyword"
        asp-route-trangThai="@Model.TrangThai"
@@ -291,11 +388,27 @@ keyframes blink-warning {
        class="btn btn-secondary">
         <i class="fas fa-download"></i> Export CSV
     </a>
-    &nbsp; &nbsp;
-    <a asp-area="Admin" asp-controller="SanPham" asp-action="ImportCsv" class="btn btn-info">
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-file-download"></i> Tải Template
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" asp-area="Admin" asp-controller="SanPham" asp-action="DownloadTemplate">
+                    <i class="fas fa-file-csv"></i> Template CSV
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" asp-area="Admin" asp-controller="SanPham" asp-action="DownloadReferenceData">
+                    <i class="fas fa-file-excel"></i> Dữ liệu tham chiếu (Excel)
+                </a>
+            </li>
+        </ul>
+    </div>
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal">
         <i class="fas fa-upload"></i> Import CSV
-    </a>
-</p>
+    </button>
+</div>
 
 <!-- Bộ lọc -->
 <div class="card mb-4 filter-card">
@@ -380,7 +493,7 @@ keyframes blink-warning {
     <div class="col-md-3">
         <a href="@Url.Action("Index", new {
         page = 1,
-        trangThai = "active"
+       trangThai = "all"
     })" style="text-decoration:none">
             <div class="card border-left-primary shadow card-stats">
                 <div class="card-body">
@@ -394,7 +507,7 @@ keyframes blink-warning {
     <div class="col-md-3">
         <a href="@Url.Action("Index", new {
         page = 1,
-        trangThai = "active"
+        trangThai = "all"
     })" style="text-decoration:none">
             <div class="card border-left-success shadow card-stats">
                 <div class="card-body">
@@ -405,23 +518,17 @@ keyframes blink-warning {
         </a>
     </div>
 
-    <div class="col-md-3">
-        <a href="@Url.Action("Index", new {
-    page = 1,
-    keyword = Model.Keyword,
-    trangThai = Model.TrangThai,
-    priceFrom = Model.PriceFrom,
-    priceTo = Model.PriceTo,
-    qtyFrom = 0,
-    qtyTo = 0,
-    dateFrom = Model.DateFrom?.ToString("yyyy-MM-dd"),
-    dateTo = Model.DateTo?.ToString("yyyy-MM-dd"),
-    sortDate = Model.SortDate
-})" style="text-decoration:none">
+  
+        <div class="col-md-3">
+            <a href="@Url.Action("Index", new {
+        page = 1,
+        trangThai = "all",
+        stockFilter = "variant-out"
+    })" style="text-decoration:none">
             <div class="card border-left-danger shadow card-stats">
                 <div class="card-body">
-                    <h6 class="text-danger">Sản phẩm hết hàng</h6>
-                    <h4>@ViewBag.SanPhamHetHang</h4>
+                    <h6 class="text-danger">Biến thể hết hàng</h6>
+                    <h4>@ViewBag.BienTheHetHang</h4>
                 </div>
             </div>
         </a>
@@ -473,10 +580,11 @@ keyframes blink-warning {
              var totalQty = item.ChiTietSanPhams?.Sum(x => x.SoLuongKhaDung) ?? 0;
 
             var targetId = "collapse-variant-" + item.IDSanPham;
-        var activeVariants = item.ChiTietSanPhams?
-         .Where(ct => ct.TrangThai)
-         .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
-
+        var allVariants = item.ChiTietSanPhams?
+     .ToList() ?? new List<QuanView.Areas.Admin.Models.SanPhamChiTietDto>();
+        var displayedVariants = Model.StockFilter == "variant-out"
+     ? allVariants.Where(x => x.SoLuongVatLy <= 0).ToList()
+     : allVariants;
            <div class="product-group" data-qty="@totalQty">
                 <!-- Sản phẩm chính -->
                 <table class="table table-bordered table-hover mb-0 text-center">
@@ -517,12 +625,12 @@ keyframes blink-warning {
                             <td class="align-middle"> 
                                 <div class="d-flex align-items-center justify-content-center">
                                     <strong class="me-2">@item.TenSanPham</strong>
-                                    @if (activeVariants.Any())
-                                    {
-                                        <span class="variant-count-badge flex-shrink-0 text-dark">
-                                            <i class="fas fa-layer-group"></i> @activeVariants.Count
-                                        </span>
-                                    }
+                                @if (displayedVariants.Any())
+                                {
+                                    <span class="variant-count-badge flex-shrink-0 text-dark">
+                                        <i class="fas fa-layer-group"></i> @displayedVariants.Count
+                                    </span>
+                                }
                                 </div>
                             </td>
                             <td>@item.TenChatLieu</td>
@@ -571,7 +679,7 @@ keyframes blink-warning {
                 </table>
 
                 <!-- Biến thể - collapsible -->
-                @if (activeVariants.Any())
+            @if (displayedVariants.Any())
                 {
                     <div id="@targetId" class="collapse variant-section">
                         <table class="table table-sm table-bordered table-hover mb-0">
@@ -583,12 +691,13 @@ keyframes blink-warning {
                                     <th><i class="fas fa-warehouse"></i> Tồn vật lý</th>
                                     <th><i class="fas fa-boxes"></i> Tồn khả dụng</th>
                                     <th><i class="fas fa-tag"></i> Giá bán</th>
+                                <th><i class="fas fa-toggle-on"></i> Trạng thái</th>
                                     <th><i class="fas fa-image"></i> Ảnh SP</th>
                                     <th><i class="fas fa-cog"></i> Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var ct in activeVariants)
+                            @foreach (var ct in displayedVariants)
                                 {
                                     <tr class="variant-row text-center">
                                         <td class="text-light"><span class="badge bg-info p-2">@ct.TenKichCo</span></td>
@@ -598,7 +707,42 @@ keyframes blink-warning {
                                             <strong class="text-secondary">@ct.SoLuongVatLy</strong>
                                         </td>
                                         <td class="text-center">
-                                            <strong class="text-primary">@ct.SoLuongKhaDung</strong>
+                                            <div class="stock-availability">
+                                                <strong class="text-primary">@ct.SoLuongKhaDung</strong>
+                                                <span class="reservation-count">Đặt trước: @ct.SoLuongDatCho</span>
+                                                @if (ct.SoLuongDatCho > 0 && ct.DanhSachDonDangGiu.Any())
+                                                {
+                                                    <span class="reservation-info-wrapper" onclick="event.stopPropagation();">
+                                                        <span class="reservation-info-icon">i</span>
+                                                        <div class="reservation-popup">
+                                                            <div class="reservation-popup-title">Đơn đang giữ hàng</div>
+                                                            @foreach (var don in ct.DanhSachDonDangGiu)
+                                                            {
+                                                                <div class="reservation-item">
+                                                                    <div>
+                                                                        <strong>Mã đơn:</strong>
+                                                                        @if (don.IdHoaDon != Guid.Empty)
+                                                                        {
+                                                                            <a class="reservation-order-link"
+                                                                               href="@Url.Action("Details", "QuanLyDonHang", new { area = "Admin", id = don.IdHoaDon })"
+                                                                               onclick="event.stopPropagation();">
+                                                                                @don.MaDonHang
+                                                                            </a>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span>@don.MaDonHang</span>
+                                                                        }
+                                                                    </div>
+                                                                    <div><strong>Khách:</strong> @(string.IsNullOrWhiteSpace(don.TenKhachHang) ? "Khách lẻ" : don.TenKhachHang)</div>
+                                                                    <div><strong>Giữ:</strong> @don.SoLuongDangGiu</div>
+                                                                    <div><strong>Trạng thái:</strong> @don.TrangThaiDon</div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </span>
+                                                }
+                                            </div>
                                         </td>
                                         <td>
                                             @if (ct.originalPrice > ct.price)
@@ -621,6 +765,16 @@ keyframes blink-warning {
                                                 </span>
                                             }
                                         </td>
+                                    <td class="text-center">
+                                        @if (ct.TrangThai)
+                                        {
+                                            <span class="badge bg-success p-2">Đang hoạt động</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary p-2">Ngưng hoạt động</span>
+                                        }
+                                    </td>
                                         <td class="text-center">
                                             <div class="product-images-container" data-sanchitiet-id="@ct.IdSanPhamChiTiet">
                                                 <div class="images-preview">
@@ -655,13 +809,19 @@ keyframes blink-warning {
 
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-primary btn-set-main-image"
-                                                                            data-id="@img.IDAnhSanPham">
+                                                                            data-id="@img.IDAnhSanPham"
+                                                                            data-bs-toggle="tooltip"
+                                                                            data-bs-placement="top"
+                                                                            title="Đặt làm ảnh chính">
                                                                         <i class="fas fa-star"></i>
                                                                     </button>
 
                                                                     <button type="button"
                                                                             class="btn btn-sm btn-outline-danger btn-delete-image"
-                                                                            data-id="@img.IDAnhSanPham">
+                                                                            data-id="@img.IDAnhSanPham"
+                                                                            data-bs-toggle="tooltip"
+                                                                            data-bs-placement="top"
+                                                                            title="Xóa ảnh">
                                                                         <i class="fas fa-trash"></i>
                                                                     </button>
 
@@ -832,10 +992,10 @@ keyframes blink-warning {
                         <input type="file"
                                class="form-control"
                                id="imageFile"
-                               accept="image/*"
+                               accept=".jpg,.jpeg,.png,.webp"
                                multiple
                                required
-                               onchange="previewImageFile()">
+                               onchange="validateImageFiles(this); previewImageFile();">
 							<div id="imagePreview" class="image-upload-preview" style="display:none;">
 								<img id="previewImg" src="" alt="Preview" style="max-width:100px;max-height:100px;">
 							</div>
@@ -863,138 +1023,142 @@ keyframes blink-warning {
 		</div>
 	</div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="alertModalLabel">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertMessage">
+                <!-- Message injected here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Xác nhận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmMessage">
+                <!-- Message injected here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="confirmCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmYes">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+@if (TempData["Success"] != null)
+{
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            toastr.success('@TempData["Success"]', 'Thành công', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000
+            });
+
+        });
+    </script>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ====================== GLOBAL MODAL HELPERS ======================
+        let confirmCallback = null;
+
+        function showAlert(message, title = "Thông báo") {
+            document.getElementById('alertModalLabel').textContent = title;
+            document.getElementById('alertMessage').innerHTML = message;
+            const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+            modal.show();
+        }
+
+        function showConfirm(message, callback, title = "Xác nhận") {
+            document.getElementById('confirmModalLabel').textContent = title;
+            document.getElementById('confirmMessage').innerHTML = message;
+            confirmCallback = callback;
+
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            modal.show();
+        }
+
+        // ====================== MODAL EVENT HANDLERS ======================
+        document.addEventListener('DOMContentLoaded', function () {
+            // Confirm Modal Yes button
+            document.getElementById('confirmYes').addEventListener('click', function () {
+                if (confirmCallback) confirmCallback(true);
+                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            });
+
+            // Confirm Modal Cancel button
+            document.getElementById('confirmCancel').addEventListener('click', function () {
+                if (confirmCallback) confirmCallback(false);
+                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            });
+        });
+
+        // ====================== MAIN PAGE LOGIC ======================
         document.addEventListener('DOMContentLoaded', () => {
-            // Whole row clickable → triggers the button
+            // Whole row clickable for collapse
             document.querySelectorAll('.product-main-row').forEach(row => {
                 row.addEventListener('click', function(e) {
-                    // Don't interfere with real buttons/links/switches
                     if (e.target.closest('a') || 
                         e.target.closest('button') || 
                         e.target.closest('.form-check-input') ||
-                        e.target.closest('.variant-count-badge')) {
+                        e.target.closest('.variant-count-badge') ||
+                        e.target.closest('.reservation-info-wrapper')) {
                         return;
                     }
 
                     const toggleBtn = row.querySelector('[data-bs-toggle="collapse"]');
                     if (toggleBtn) {
-                        toggleBtn.click();  // This uses Bootstrap 5's JS
-                    }
-                });
-            });
-
-            // Keep aria-expanded in sync (for screen readers & your CSS)
-            document.querySelectorAll('.collapse').forEach(collapse => {
-                const triggerRow = document.querySelector(`[aria-controls="${collapse.id}"]`)?.closest('tr');
-                if (!triggerRow) return;
-
-                collapse.addEventListener('show.bs.collapse', () => {
-                    triggerRow.setAttribute('aria-expanded', 'true');
-                });
-
-                collapse.addEventListener('hide.bs.collapse', () => {
-                    triggerRow.setAttribute('aria-expanded', 'false');
-                });
-            });
-        });
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.main-row').forEach(row => {
-                row.addEventListener('click', function (e) {
-                    if (e.target.closest('a') || 
-                        e.target.closest('button:not([data-toggle="collapse"])') || 
-                        e.target.closest('.form-check-input')) {
-                        return;
-                    }
-                    const toggleBtn = row.querySelector('button[data-toggle="collapse"]');
-                    if (toggleBtn) {
                         toggleBtn.click();
                     }
                 });
             });
-        });
-        // Tự động submit form khi thay đổi trạng thái bộ lọc
-        document.getElementById('trangThai')?.addEventListener('change', function () {
-            this.form.submit();
-        });
 
-        // Đổi trạng thái sản phẩm (Hoạt động / Ngưng) và lưu
-        document.querySelectorAll('.product-status-toggle').forEach(function (el) {
-            el.addEventListener('change', function () {
-                var id = this.getAttribute('data-id');
-                var row = this.closest('tr');
-                var label = row.querySelector('.form-check-label');
-                var checked = this.checked;
-                var newStatus = checked;
-
-                fetch('/Admin/SanPham/ToggleStatus?id=' + encodeURIComponent(id), { method: 'POST' })
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        if (data.success) {
-                            label.textContent = data.trangThai ? 'Hoạt động' : 'Ngưng';
-                            if (typeof showNotification === 'function') showNotification('Đã lưu trạng thái.', 'success');
-                        } else {
-                            this.checked = !checked;
-                            label.textContent = this.checked ? 'Hoạt động' : 'Ngưng';
-                            if (typeof showNotification === 'function') showNotification('Lỗi: ' + (data.message || 'Không lưu được.'), 'error');
-                        }
-                    }.bind(this))
-                    .catch(function (err) {
-                        this.checked = !checked;
-                        label.textContent = this.checked ? 'Hoạt động' : 'Ngưng';
-                        if (typeof showNotification === 'function') showNotification('Lỗi: ' + err.message, 'error');
-                    }.bind(this));
+            // Auto submit filter when status changes
+            document.getElementById('trangThai')?.addEventListener('change', function () {
+                this.form.submit();
             });
         });
-        // Hiển thị modal thêm ảnh
-		function showAddImageModal(sanPhamChiTietId) {
-			document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
 
-			const fileInput = document.getElementById('imageFile');
-			const checkbox = document.getElementById('isMainImage');
-			const preview = document.getElementById('imagePreview');
+        // ====================== IMAGE FUNCTIONS ======================
+        function validateImageFiles(input) {
+            const allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+            for (let file of input.files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!allowedExt.includes(ext)) {
+                    showAlert('Chỉ được chọn file ảnh: <strong>JPG, JPEG, PNG, WEBP</strong>');
+                    input.value = '';
+                    return false;
+                }
+            }
+            return true;
+        }
 
-			fileInput.value = '';
-			preview.style.display = 'none';
-
-			// ✅ Tìm container của biến thể hiện tại
-			const currentContainer = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-
-			let hasAnyImageInProduct = false;
-
-			if (currentContainer) {
-				// 🔥 tìm product-group cha
-				const productGroup = currentContainer.closest('.product-group');
-
-				if (productGroup) {
-					// 🔥 check toàn bộ ảnh trong product này
-					if (productGroup.querySelectorAll('.product-images-container img').length > 0) {
-						hasAnyImageInProduct = true;
-					}
-				}
-			}
-
-			// ✅ Nếu toàn bộ SP chưa có ảnh → auto check
-			checkbox.checked = !hasAnyImageInProduct;
-
-			const modalElement = document.getElementById('addImageModal');
-			if (modalElement) {
-				var modal = new bootstrap.Modal(modalElement);
-				modal.show();
-			}
-
-            updateMainImageDisplay()
-		}
-
-        // Preview ảnh khi chọn file
         function previewImageFile() {
-
             const fileInput = document.getElementById('imageFile');
             const previewDiv = document.getElementById('imagePreview');
 
             previewDiv.innerHTML = '';
-
             if (!fileInput.files || fileInput.files.length === 0) {
                 previewDiv.style.display = 'none';
                 return;
@@ -1005,28 +1169,21 @@ keyframes blink-warning {
             previewDiv.style.gap = '10px';
 
             Array.from(fileInput.files).forEach(file => {
-
                 const reader = new FileReader();
-
                 reader.onload = function (e) {
-
                     const img = document.createElement('img');
-
                     img.src = e.target.result;
-
                     img.style.maxWidth = '100px';
                     img.style.maxHeight = '100px';
                     img.style.objectFit = 'cover';
                     img.style.border = '1px solid #ddd';
                     img.style.borderRadius = '6px';
-
                     previewDiv.appendChild(img);
                 };
-
                 reader.readAsDataURL(file);
             });
         }
-        // Thêm ảnh mới
+
         function addImage() {
             const sanPhamChiTietId = document.getElementById('sanPhamChiTietId').value;
             const fileInput = document.getElementById('imageFile');
@@ -1034,17 +1191,14 @@ keyframes blink-warning {
             const addButton = document.querySelector('#addImageModal .btn-primary');
 
             if (!fileInput.files || !fileInput.files[0]) {
-                alert('Vui lòng chọn ảnh!');
+                showAlert('Vui lòng chọn ít nhất một ảnh!');
                 return;
             }
 
-            // Hiển thị loading
-            
             const originalText = addButton.innerHTML;
-            addButton.innerHTML = '<span class="loading-spinner"></span> Đang thêm...';
+            addButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang thêm...';
             addButton.disabled = true;
 
-            // Tạo FormData để upload file
             const formData = new FormData();
             for (let i = 0; i < fileInput.files.length; i++) {
                 formData.append('files', fileInput.files[i]);
@@ -1052,296 +1206,235 @@ keyframes blink-warning {
             formData.append('sanPhamChiTietId', sanPhamChiTietId);
             formData.append('laAnhChinh', isMainImage);
 
-			fetch('/Admin/AnhSanPham/AddImage', {
+            fetch('/Admin/AnhSanPham/AddImage', {
                 method: 'POST',
                 body: formData
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
                     showNotification('Thêm ảnh thành công!', 'success');
-                    
-                   
                     $('#addImageModal').modal('hide');
-
-                        if (data.urls && data.urls.length > 0) {
-
-                            data.urls.forEach((url, index) => {
-
-                                updateProductImageDisplay(
-                                    sanPhamChiTietId,
-                                    url,
-                                    index === 0 && isMainImage
-                                );
-                            });
-                        }
+                    if (data.urls && data.urls.length > 0) {
+                        data.urls.forEach((url, index) => {
+                            updateProductImageDisplay(sanPhamChiTietId, url, index === 0 && isMainImage);
+                        });
+                    }
                 } else {
-                        showNotification('Lỗi: ' + (data.message || 'Không thể thêm ảnh'), 'error');
+                    showAlert('Lỗi: ' + (data.message || 'Không thể thêm ảnh'));
                 }
             })
             .catch(error => {
-               
-                showNotification('Có lỗi xảy ra khi thêm ảnh: ' + error.message, 'error');
+                showAlert('Có lỗi xảy ra: ' + error.message);
             })
             .finally(() => {
-               
                 addButton.innerHTML = originalText;
                 addButton.disabled = false;
             });
         }
 
-        // Hiển thị thông báo
+        function setMainImage(imageId) {
+            showConfirm('Bạn có chắc muốn đặt ảnh này làm ảnh chính?', (confirmed) => {
+                if (!confirmed) return;
 
-        function showNotification(message, type) {
+                fetch(`/Admin/AnhSanPham/SetMainImage?imageId=${imageId}`, { method: 'PUT' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Đã đặt ảnh làm ảnh chính!', 'success');
+                            setTimeout(() => location.reload(), 800);
+                        } else {
+                            showAlert('Lỗi: ' + (data.message || 'Không thể đặt ảnh chính'));
+                        }
+                    })
+                    .catch(() => showAlert('Có lỗi xảy ra khi đặt ảnh chính'));
+            });
+        }
+
+        function deleteImage(imageId) {
+            showConfirm('Bạn có chắc muốn xóa ảnh này không?', (confirmed) => {
+                if (!confirmed) return;
+
+                fetch(`/Admin/AnhSanPham/DeleteImage?imageId=${imageId}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Đã xóa ảnh thành công!', 'success');
+                            setTimeout(() => location.reload(), 800);
+                        } else {
+                            showAlert('Lỗi: ' + (data.message || 'Không thể xóa ảnh'));
+                        }
+                    })
+                    .catch(() => showAlert('Có lỗi xảy ra khi xóa ảnh'));
+            });
+        }
+
+        function showNotification(message, type = 'success') {
             const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
             const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-           
+
             const notification = document.createElement('div');
             notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 320px;';
             notification.innerHTML = `
-                         <i class="${icon}"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert">x</button>
+                <i class="${icon}"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
-            
             document.body.appendChild(notification);
-            
-            // Tự động ẩn sau 5 giây
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
+            setTimeout(() => notification.remove(), 5000);
         }
 
-        // Đặt ảnh làm ảnh chính
-        function setMainImage(imageId) {
-            if (!confirm('Bạn có chắc muốn đặt ảnh này làm ảnh chính?')) {
-                return;
-            }
-
-            fetch(`/Admin/AnhSanPham/SetMainImage?imageId=${imageId}`, {
-                method: 'PUT'
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.text().then(text => {
-                        try {
-                            return JSON.parse(text);
-                        } catch (e) {
-                            console.error('Invalid JSON response:', text);
-                            throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                        }
-                    });
-                })
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Đã đặt ảnh làm ảnh chính!', 'success');
-                        // Reload danh sách ảnh
-                        const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-                        const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
-
-                        // Cập nhật giao diện chính - cần lấy URL của ảnh vừa đặt làm chính
-                        // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
-                    } else {
-                        showNotification('Lỗi: ' + (data.message || 'Không thể đặt ảnh chính'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Có lỗi xảy ra khi đặt ảnh chính: ' + error.message, 'error');
-                });
+        function previewImage(url) {
+            document.getElementById("previewImage").src = url;
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            modal.show();
         }
 
-        // Xóa ảnh
-        function deleteImage(imageId) {
-            if (!confirm('Bạn có chắc muốn xóa ảnh này?')) {
-                return;
-            }
-
-            fetch(`/Admin/AnhSanPham/DeleteImage?imageId=${imageId}`, {
-                method: 'DELETE'
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.text().then(text => {
-                        try {
-                            return JSON.parse(text);
-                        } catch (e) {
-                            console.error('Invalid JSON response:', text);
-                            throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
-                        }
-                    });
-                })
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Đã xóa ảnh thành công!', 'success');
-                        // Reload danh sách ảnh
-                        const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-                        const sanPhamChiTietId = container.dataset.sanPhamChiTietId;
-
-                        // Cập nhật giao diện chính nếu xóa ảnh chính
-                        // Tạm thời reload lại toàn bộ để đảm bảo hiển thị đúng
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
-                    } else {
-                        showNotification('Lỗi: ' + (data.message || 'Không thể xóa ảnh'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Có lỗi xảy ra khi xóa ảnh: ' + error.message, 'error');
-                });
-        }
-
-        // Cập nhật hiển thị ảnh trong bảng chính
-        function updateProductImageDisplay(sanPhamChiTietId, imageUrl, isMainImage) {
-            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) return;
-
-            const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) return;
-
-            const emptyText = previewDiv.querySelector('span.text-muted');
-            if (emptyText) {
-                previewDiv.innerHTML = '';
-            }
-
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.className = 'img-thumbnail';
-            img.style.maxWidth = '40px';
-            img.style.maxHeight = '40px';
-            img.style.cursor = 'pointer';
-            img.title = isMainImage ? 'Ảnh chính' : 'Ảnh phụ';
-            img.onclick = function () {
-                previewImage(imageUrl);
-            };
-
-            if (isMainImage) {
-                previewDiv.prepend(img);
-            } else {
-                previewDiv.appendChild(img);
-            }
-        }
-
-        // Cập nhật hiển thị ảnh sau khi đặt ảnh chính
-        function updateMainImageDisplay(sanPhamChiTietId, mainImageUrl) {
-            const container = document.querySelector(`[data-sanchitiet-id="${sanPhamChiTietId}"]`);
-            if (!container) return;
-
-            const previewDiv = container.querySelector('.images-preview');
-            if (!previewDiv) return;
-
-            if (mainImageUrl) {
-                previewDiv.innerHTML = `
-                            <img src="${mainImageUrl}" class="img-thumbnail" style="max-width:50px;max-height:50px" alt="Ảnh chính" />
-                        `;
-            } else {
-                previewDiv.innerHTML = '<span class="text-muted small">Chưa có ảnh</span>';
-            }
-        }
-
-		function previewImage(url) {
-			document.getElementById("previewImage").src = url;
-			var modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
-			modal.show();
-		}
-		
-    const cards = document.querySelectorAll('.card-stats');
-
-    cards.forEach(card => {
-        card.addEventListener('click', function () {
-
-            // Remove active của tất cả
-            cards.forEach(c => c.classList.remove('active'));
-
-            // Thêm active cho cái vừa click
-            this.classList.add('active');
-
-        });
-    });
-// 	document.querySelectorAll('.card-stats').forEach(card => {
-//     card.addEventListener('click', function () {
-
-//         // Active UI
-//         document.querySelectorAll('.card-stats')
-//             .forEach(c => c.classList.remove('active'));
-//         this.classList.add('active');
-
-//         const type = this.dataset.type;
-//         const products = document.querySelectorAll('.product-group');
-
-//         products.forEach(p => {
-//             const qty = parseInt(p.dataset.qty || 0);
-
-//             if (type === 'all') {
-//                 p.style.display = 'block';
-//             }
-//             else if (type === 'out') {
-//                 // hết hàng
-//                 p.style.display = qty === 0 ? 'block' : 'none';
-//             }
-//             else if (type === 'variant') {
-//                 // còn hàng
-//                 p.style.display = qty > 0 ? 'block' : 'none';
-//             }
-//         });
-//     });
-// });
-document.querySelectorAll('.product-group').forEach(p => {
-    const qty = parseInt(p.dataset.qty || 0);
-
-    if (qty > 0 && qty <= 5) {
-        p.classList.add('low-stock'); // sắp hết
-    }
-});
+        // jQuery handlers for image buttons
         $(document).on('click', '.btn-delete-image', function () {
             const imageId = $(this).data('id');
-
-            if (!confirm('Xóa ảnh này?')) return;
-
-            $.ajax({
-                url: '/Admin/SanPham/DeleteImage?imageId=' + imageId,
-                type: 'POST',
-                success: function (res) {
-                    if (res.success) {
-                        location.reload();
-                    } else {
-                        alert(res.message || 'Xóa ảnh thất bại');
-                    }
-                },
-                error: function () {
-                    alert('Lỗi xóa ảnh');
-                }
-            });
+            deleteImage(imageId);
         });
 
         $(document).on('click', '.btn-set-main-image', function () {
             const imageId = $(this).data('id');
+            setMainImage(imageId);
+        });
 
-            $.ajax({
-                url: '/Admin/SanPham/SetMainImage?imageId=' + imageId,
-                type: 'POST',
-                success: function (res) {
-                    if (res.success) {
-                        location.reload();
-                    } else {
-                        alert(res.message || 'Đặt ảnh chính thất bại');
-                    }
-                },
-                error: function () {
-                    alert('Lỗi đặt ảnh chính');
-                }
-            });
+        // Bootstrap Tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     </script>
 }
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">
+                    <span id="modalStepTitle">Bước 1/3 - Tải dữ liệu</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="importAntiForgeryToken" class="d-none">
+                    @Html.AntiForgeryToken()
+                </div>
+                <!-- Step 1: Upload Data -->
+                <div id="importStep1" class="import-step">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Tải lên file CSV hoặc dán dữ liệu vào ô bên dưới. Nếu chưa có file, hãy tải template mẫu.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="importCsvFile" class="form-label fw-bold">
+                            <i class="fas fa-file-upload"></i> Chọn file CSV
+                        </label>
+                        <input type="file" class="form-control" id="importCsvFile" accept=".csv">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importCsvContent" class="form-label fw-bold">
+                            <i class="fas fa-paste"></i> Hoặc dán dữ liệu CSV
+                        </label>
+                        <textarea class="form-control font-monospace" id="importCsvContent" rows="10" 
+                                  placeholder="MaSanPham,TenSanPham,TenDanhMuc,TenThuongHieu,..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-between">
+                        <div>
+                            <a asp-area="Admin" asp-controller="SanPham" asp-action="DownloadTemplate" 
+                               class="btn btn-outline-success btn-sm" target="_blank">
+                                <i class="fas fa-download"></i> Tải Template CSV
+                            </a>
+                            <a asp-area="Admin" asp-controller="SanPham" asp-action="DownloadReferenceData" 
+                               class="btn btn-outline-primary btn-sm" target="_blank">
+                                <i class="fas fa-download"></i> Tải dữ liệu tham chiếu
+                            </a>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btnNextStep1">
+                            Tiếp tục <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Preview & Validate -->
+                <div id="importStep2" class="import-step d-none">
+                    <div class="alert alert-success" id="validationSuccess" style="display:none;">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="validationSummary"></span>
+                    </div>
+                    
+                    <div class="alert alert-warning" id="validationWarnings" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Cảnh báo:</strong>
+                        <ul id="warningList" class="mb-0 mt-2"></ul>
+                    </div>
+
+                    <div class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-bordered mb-0" id="previewTable">
+                            <thead class="table-light sticky-top"></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-between mt-3">
+                        <button type="button" class="btn btn-secondary" id="btnBackStep2">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </button>
+                        <button type="button" class="btn btn-success" id="btnConfirmImport">
+                            <i class="fas fa-check"></i> Xác nhận Import
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Import Results -->
+                <div id="importStep3" class="import-step d-none">
+                    <div class="text-center mb-3" id="importProgress">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang import...</span>
+                        </div>
+                        <p class="mt-2">Đang import dữ liệu, vui lòng đợi...</p>
+                    </div>
+
+                    <div id="importResults" style="display:none;">
+                        <div class="alert alert-success" id="successSection" style="display:none;">
+                            <h6><i class="fas fa-check-circle"></i> Thành công (<span id="successCount">0</span>)</h6>
+                            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead><tr><th>Dòng</th><th>Nội dung</th></tr></thead>
+                                    <tbody id="successList"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-danger" id="errorSection" style="display:none;">
+                            <h6><i class="fas fa-exclamation-circle"></i> Lỗi (<span id="errorCount">0</span>)</h6>
+                            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead><tr><th>Dòng</th><th>Lý do</th><th>Preview</th></tr></thead>
+                                    <tbody id="errorList"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end mt-3" id="resultActions" style="display:none;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnImportMore">
+                            <i class="fas fa-upload"></i> Import tiếp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/admin/sanpham-import.js"></script>

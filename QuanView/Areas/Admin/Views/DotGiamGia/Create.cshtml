@@ -1,7 +1,9 @@
-﻿@model QuanApi.Data.DotGiamGia
+@model QuanApi.Data.DotGiamGia
 
 @{
     ViewData["Title"] = "Tạo mới đợt giảm giá";
+    var ngayBatDauValue = Model.NgayBatDau.Year > 1900 ? Model.NgayBatDau.ToString("yyyy-MM-ddTHH:mm") : "";
+    var ngayKetThucValue = Model.NgayKetThuc.Year > 1900 ? Model.NgayKetThuc.ToString("yyyy-MM-ddTHH:mm") : "";
 }
 
 <div class="container py-4">
@@ -39,20 +41,20 @@
 
                     <div class="col-md-4">
                         <label asp-for="PhanTramGiam" class="form-label">Giảm (%)</label>
-                        <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control" oninput="validateDiscountPercentage(this)" />
+                        <input asp-for="PhanTramGiam" type="number" min="1" max="90" step="1" class="form-control" oninput="validateDiscountPercentage(this)" />
                         <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
-                        <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
+                        <small class="form-text text-muted">Nhập giá trị từ 1% đến 90%</small>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="NgayBatDau" class="form-label">Ngày bắt đầu</label>
-                        <input asp-for="NgayBatDau" type="datetime-local" class="form-control" />
+                        <input id="NgayBatDau" name="NgayBatDau" type="datetime-local" class="form-control" value="@ngayBatDauValue" lang="vi-VN" step="60" />
                         <span asp-validation-for="NgayBatDau" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="NgayKetThuc" class="form-label">Ngày kết thúc</label>
-                        <input asp-for="NgayKetThuc" type="datetime-local" class="form-control" />
+                        <input id="NgayKetThuc" name="NgayKetThuc" type="datetime-local" class="form-control" value="@ngayKetThucValue" lang="vi-VN" step="60" />
                         <span asp-validation-for="NgayKetThuc" class="text-danger small"></span>
                     </div>
                 </div>
@@ -122,17 +124,45 @@
             const table = document.getElementById('productTable');
             table.innerHTML = '';
             data.forEach((sp, index) => {
-                const row = `<tr onclick="loadChiTietSanPham('${sp.idSanPham}')">
-                            <td><input type="radio" name="productSelect" /></td>
-                            <td>${index + 1}</td>
-                            <td>${sp.maSanPham}</td>
-                            <td>${sp.tenSanPham}</td>
-                            <td>${sp.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
-                        </tr>`;
+                const row = `
+        <tr onclick="chonSanPham(this, '${sp.idSanPham}')">
+            <td>
+                <input type="radio"
+                       name="productSelect"
+                       class="product-radio" />
+            </td>
+            <td>${index + 1}</td>
+            <td>${sp.maSanPham}</td>
+            <td>${sp.tenSanPham}</td>
+            <td>
+                ${sp.trangThai
+                        ? '<span class="badge bg-success text-white">Hoạt động</span>'
+                        : '<span class="badge bg-secondary text-white">Ngừng</span>'}
+            </td>
+        </tr>`;
                 table.innerHTML += row;
             });
         }
+        function chonSanPham(row, idSanPham) {
 
+            document.querySelectorAll('#productTable tr').forEach(r => {
+                r.classList.remove('table-primary');
+            });
+
+            row.classList.add('table-primary');
+
+            document.querySelectorAll('.product-radio').forEach(r => {
+                r.checked = false;
+            });
+
+            const radio = row.querySelector('.product-radio');
+
+            if (radio) {
+                radio.checked = true;
+            }
+
+            loadChiTietSanPham(idSanPham);
+        }
         async function loadChiTietSanPham(idSanPham) {
             const response = await fetch(`/Admin/DotGiamGia/GetChiTietSanPham?idSanPham=${idSanPham}`);
             const data = await response.json();
@@ -148,7 +178,7 @@
                             <td>${ct.kichCo}</td>
                             <td>${ct.mauSac}</td>
                             <td>${ct.hoaTiet || '-'}</td>
-                            <td>${ct.trangThai ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">Ngừng</span>'}</td>
+                                    <td>${ct.trangThai ? '<span class="badge bg-success text-white">Hoạt động</span>' : '<span class="badge bg-secondary text-white">Ngừng</span>'}</td>
                         `;
                 table.appendChild(tr);
             });
@@ -179,7 +209,7 @@
 
         function generateMaDot() {
             const now = new Date();
-            const year = now.getFullYear().toString().slice(-2);
+            const year = now.getFullYear().toString();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
             const hours = now.getHours().toString().padStart(2, '0');
@@ -206,15 +236,31 @@
                 return;
             }
 
-            if (value > 40) {
-                input.value = 40;
-                alert('Phần trăm giảm giá không được vượt quá 40%!');
+            if (value > 90) {
+                input.value = 90;
+                alert('Phần trăm giảm giá không được vượt quá 90%!');
                 return;
             }
         }
 
+        document.querySelector('form').addEventListener('submit', function (event) {
+            const startInput = document.getElementById('NgayBatDau');
+            const endInput = document.getElementById('NgayKetThuc');
+
+            if (!startInput.value || !endInput.value) {
+                event.preventDefault();
+                alert('Vui lòng chọn ngày bắt đầu và ngày kết thúc.');
+                return;
+            }
+
+            if (new Date(endInput.value) <= new Date(startInput.value)) {
+                event.preventDefault();
+                alert('Ngày kết thúc phải lớn hơn ngày bắt đầu.');
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
-            generateMaDot();
+            if (!document.getElementById('MaDot').value) generateMaDot();
             loadSanPhams();
         });
     </script>

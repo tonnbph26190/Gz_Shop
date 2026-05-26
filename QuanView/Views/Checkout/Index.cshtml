@@ -594,9 +594,16 @@
 						</div>
 					</div>
 
-					<button type="button" class="btn-checkout shadow-sm mt-3" onclick="datHang()" style="letter-spacing: 1px; transition: transform 0.2s;">
-						<i class="bi bi-cart-check me-2"></i>ĐẶT HÀNG NGAY
-					</button>
+                    <button type="button" class="btn-checkout shadow-sm mt-3"
+                            onclick="datHang()"
+                            style="letter-spacing: 1px; transition: transform 0.2s;">
+                        <i class="bi bi-cart-check me-2"></i>ĐẶT HÀNG NGAY
+                    </button>
+
+                    <a href="/GioHang"
+                       class="btn btn-outline-dark w-100 mt-2 py-2">
+                        <i class="bi bi-arrow-left me-2"></i>Quay lại giỏ hàng
+                    </a>
 				</div>
 			</div>
 		</div>
@@ -901,63 +908,74 @@
 				// Kiểm tra form
 				const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
 				const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
+				const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 				const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
 				const tinh = document.getElementById('tinh').value;
 				const quan = document.getElementById('quan').value;
 				const phuong = document.getElementById('phuong').value;
 				const diaChiChiTiet = document.getElementById('diaChiChiTiet').value;
-
-				if (!tenNguoiNhan || !soDienThoaiNguoiNhan) {
-					alert('Vui lòng điền đầy đủ họ tên và số điện thoại');
-					return;
-				}
-
 				const hasTinh = tinh && tinh !== '0';
 				const hasQuan = quan && quan !== '0';
 				const hasPhuong = phuong && phuong !== '0';
 				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
 				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
 
+				// === Validation in datHang() ===
+				if (!tenNguoiNhan || !soDienThoaiNguoiNhan) {
+					showNotification('Vui lòng điền đầy đủ họ tên và số điện thoại', 'warning');
+					return;
+				}
+
 				if (!hasTinh) {
-					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
+					showNotification('Vui lòng chọn Tỉnh/Thành để giao hàng', 'warning');
 					return;
 				}
 
 				if (!hasQuan) {
-					alert('Vui lòng chọn Quận/Huyện để giao hàng');
+					showNotification('Vui lòng chọn Quận/Huyện để giao hàng', 'warning');
 					return;
 				}
 
 				if (!hasPhuong) {
-					alert('Vui lòng chọn Phường/Xã để giao hàng');
+					showNotification('Vui lòng chọn Phường/Xã để giao hàng', 'warning');
 					return;
 				}
 
 				if (!hasDiaChiChiTiet) {
-					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
+					showNotification('Vui lòng nhập số nhà, tên đường để giao hàng', 'warning');
 					return;
 				}
 
 				if (!hasDiaChiDayDu) {
-					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
+					showNotification('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán', 'warning');
 					return;
 				}
 
 				if (!phuongThucThanhToan) {
-					alert('Vui lòng chọn phương thức thanh toán');
+					showNotification('Vui lòng chọn phương thức thanh toán', 'warning');
+					return;
+				}
+
+				if (!cartItems || cartItems.length === 0) {
+					showNotification('Giỏ hàng trống', 'warning');
 					return;
 				}
 
 			// Lấy dữ liệu từ server-side thay vì gioHangData
 			const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
-			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
 
 			if (!cartItems || cartItems.length === 0) {
-					alert('Giỏ hàng trống');
-					return;
-				}
+				showNotification('Giỏ hàng trống', 'warning');
+				return;
+			}
 
-			// Tính tổng tiền từ server-side data
+			const selectedCartItemIds = cartItems.map(item => 
+				item.idChiTietGioHang || item.IDChiTietGioHang || item.IdChiTietGioHang
+			).filter(Boolean);
+
+			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
+
+			// Tính tổng tiền
 			let tongTien = 0;
 			cartItems.forEach(item => {
 				const giaBan = parseFloat(item.GiaBan) || 0;
@@ -965,10 +983,14 @@
 				tongTien += giaBan * soLuong;
 			});
 
-			// Nếu tính toán bị sai, sử dụng dữ liệu từ server
 			if (tongTien === 0) {
 				tongTien = parseFloat(serverTongTien) || 0;
 			}
+
+			console.log('datHang - tongTien calculation:', { 
+				calculatedTongTien: tongTien, 
+				serverTongTien: serverTongTien 
+			});
 
 			console.log('datHang - tongTien calculation:', {
 				cartItems: cartItems,
@@ -989,6 +1011,7 @@
 				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
 					tenNguoiNhan: tenNguoiNhan,
 					soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+                    emailNguoiNhan: emailNguoiNhan || null,
 					diaChiGiaoHang: diaChiGiaoHang,
 					phuongThucThanhToanId: phuongThucThanhToan,
 					ghiChu: document.getElementById('ghiChu').value,
@@ -1006,7 +1029,8 @@
 				toDistrictId: getSelectedToDistrictId(),
 				toWardCode: getSelectedToWardCode(),
 				weight: calculateShippingWeight(),
-				maGiamGia: voucherCode
+				maGiamGia: voucherCode,
+				selectedCartItemIds: selectedCartItemIds
 				};
 
 			console.log('checkoutData being sent:', checkoutData);
@@ -1033,8 +1057,7 @@
 						} else if (result.redirect && result.redirectUrl) {
 							// Chuyển hướng đến trang Success với đầy đủ thông tin
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							setTimeout(() => {
@@ -1043,8 +1066,7 @@
 						} else {
 							// Thanh toán thường (tiền mặt, COD) - fallback cũ
 							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
+							// Server đã xử lý xóa đúng sản phẩm đã chọn khỏi giỏ
 							sessionStorage.removeItem('appliedDiscount');
 
 							// Trích xuất mã đơn hàng từ message
@@ -1350,42 +1372,79 @@
 					showNotification('ID địa chỉ không hợp lệ', 'danger');
 					return;
 				}
-				if (!confirm('Bạn có chắc muốn xóa địa chỉ này?')) return;
+
+				// Replace native confirm() with nicer confirmation
+				if (!await showConfirmDialog('Bạn có chắc muốn xóa địa chỉ này?')) {
+					return;
+				}
+
 				try {
-					const res = await fetch('/Checkout/DeleteAddress?id=' + encodeURIComponent(addressId), { method: 'DELETE' });
+					const res = await fetch('/Checkout/DeleteAddress?id=' + encodeURIComponent(addressId), { 
+						method: 'DELETE' 
+					});
+					
 					const data = await res.json().catch(() => ({}));
+
 					if (res.ok && (data.success === true || data.message)) {
-						showNotification('Xóa địa chỉ thành công', 'success');
-						// Nếu đang xóa đúng địa chỉ đang chọn, dọn form và tắt nút xóa
+						showNotification('✅ Xóa địa chỉ thành công', 'success');
+
+						// Nếu đang xóa đúng địa chỉ đang chọn, dọn form
 						const idInput = document.getElementById('selectedAddressId');
-						const btnDel = document.getElementById('btnDeleteSelectedAddress');
 						if (idInput && idInput.value === addressId) {
 							idInput.value = '';
-							if (btnDel) btnDel.disabled = true;
 							clearAddressForm();
 						}
+
 						// Reload danh sách trong modal nếu đang mở
-						try {
-							const response = await fetch('/Checkout/GetCustomerAddresses');
-							if (response.ok) {
-								const result = await response.json();
-								if (result.success && result.addresses) {
-									const list = document.getElementById('addressList');
-									if (result.addresses.length > 0) {
-										renderAddressList(result.addresses);
-										if (list) { $('#addressList').show(); $('#noAddressMessage').hide(); }
-									} else {
-										if (list) { $('#addressList').hide(); $('#noAddressMessage').show(); }
-									}
-								}
-							}
-						} catch {}
+						if ($('#addressModal').hasClass('show')) {
+							setTimeout(() => {
+								openAddressModal();
+							}, 600);
+						}
 					} else {
 						showNotification((data && data.message) || 'Xóa địa chỉ thất bại', 'danger');
 					}
 				} catch (err) {
 					showNotification('Lỗi khi xóa địa chỉ', 'danger');
 				}
+			}
+			// Nice confirmation dialog using your notification style
+			async function showConfirmDialog(message) {
+				return new Promise((resolve) => {
+					const confirmModal = document.createElement('div');
+					confirmModal.className = 'modal fade';
+					confirmModal.innerHTML = `
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title">Xác nhận</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+									<p>${message}</p>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+									<button type="button" class="btn btn-danger" id="confirmYesBtn">Xóa</button>
+								</div>
+							</div>
+						</div>
+					`;
+
+					document.body.appendChild(confirmModal);
+					const modal = new bootstrap.Modal(confirmModal);
+					modal.show();
+
+					document.getElementById('confirmYesBtn').onclick = () => {
+						modal.hide();
+						resolve(true);
+					};
+
+					confirmModal.addEventListener('hidden.bs.modal', () => {
+						confirmModal.remove();
+						resolve(false);
+					});
+				});
 			}
 
 			// Xóa địa chỉ đã chọn trên form
@@ -1851,16 +1910,27 @@
 
 		// Ensure we send a numeric value
 		total = Number(total) || 0;
+		const soDienThoaiNguoiNhan = (document.getElementById('soDienThoaiNguoiNhan')?.value || '').trim();
+		const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 
 		$.get('/Checkout/GetCustomerVouchers',
-			{ tongTien: total },
+			{
+				tongTien: total,
+				soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+				emailNguoiNhan: emailNguoiNhan
+			},
 			function (data) {
 
 				console.log("Public vouchers response:", data);
 
-					renderVoucherList(data || []);
-		$('#voucherList').show();
-		$('#noVoucherMessage').hide();
+				const usableVoucherCount = renderVoucherList(data || [], total);
+				if (usableVoucherCount > 0) {
+					$('#voucherList').show();
+					$('#noVoucherMessage').hide();
+				} else {
+					$('#voucherList').hide();
+					$('#noVoucherMessage').show();
+				}
 
 			}).fail(function (xhr, status, error) {
 				console.error("Error loading vouchers:", error);
@@ -2008,182 +2078,113 @@
 			}
 
 			// Đặt hàng
-			async function datHang() {
-				// Kiểm tra form
-				const tenNguoiNhan = document.getElementById('tenNguoiNhan').value;
-				const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value;
-				const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value;
-				const tinh = document.getElementById('tinh').value;
-				const quan = document.getElementById('quan').value;
-				const phuong = document.getElementById('phuong').value;
-				const diaChiChiTiet = document.getElementById('diaChiChiTiet').value;
+// Đặt hàng
+async function datHang() {
+    // ==================== VALIDATION ====================
+    const tenNguoiNhan = document.getElementById('tenNguoiNhan').value.trim();
+    const soDienThoaiNguoiNhan = document.getElementById('soDienThoaiNguoiNhan').value.trim();
+    const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
+    const diaChiGiaoHang = document.getElementById('diaChiGiaoHang').value.trim();
+    const tinh = document.getElementById('tinh').value;
+    const quan = document.getElementById('quan').value;
+    const phuong = document.getElementById('phuong').value;
+    const diaChiChiTiet = document.getElementById('diaChiChiTiet').value.trim();
 
-				if (!tenNguoiNhan || !soDienThoaiNguoiNhan) {
-					alert('Vui lòng điền đầy đủ họ tên và số điện thoại');
-					return;
-				}
+    if (!tenNguoiNhan || !soDienThoaiNguoiNhan) {
+        showNotification('Vui lòng điền đầy đủ họ tên và số điện thoại', 'warning');
+        return;
+    }
+    if (tinh === '0') { showNotification('Vui lòng chọn Tỉnh/Thành', 'warning'); return; }
+    if (quan === '0') { showNotification('Vui lòng chọn Quận/Huyện', 'warning'); return; }
+    if (phuong === '0') { showNotification('Vui lòng chọn Phường/Xã', 'warning'); return; }
+    if (!diaChiChiTiet) { showNotification('Vui lòng nhập địa chỉ chi tiết', 'warning'); return; }
+    if (!diaChiGiaoHang) { showNotification('Vui lòng nhập đầy đủ địa chỉ giao hàng', 'warning'); return; }
+    if (!phuongThucThanhToan) {
+        showNotification('Vui lòng chọn phương thức thanh toán', 'warning');
+        return;
+    }
 
-				const hasTinh = tinh && tinh !== '0';
-				const hasQuan = quan && quan !== '0';
-				const hasPhuong = phuong && phuong !== '0';
-				const hasDiaChiChiTiet = diaChiChiTiet.trim() !== '';
-				const hasDiaChiDayDu = diaChiGiaoHang.trim() !== '';
+    // ==================== LẤY DỮ LIỆU GIỎ HÀNG ====================
+    const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
 
-				if (!hasTinh) {
-					alert('Vui lòng chọn Tỉnh/Thành để giao hàng');
-					return;
-				}
+    if (!cartItems || cartItems.length === 0) {
+        showNotification('Giỏ hàng trống', 'warning');
+        return;
+    }
 
-				if (!hasQuan) {
-					alert('Vui lòng chọn Quận/Huyện để giao hàng');
-					return;
-				}
+    const selectedCartItemIds = cartItems.map(item => 
+        item.idChiTietGioHang || item.IDChiTietGioHang || item.IdChiTietGioHang
+    ).filter(Boolean);
 
-				if (!hasPhuong) {
-					alert('Vui lòng chọn Phường/Xã để giao hàng');
-					return;
-				}
+    const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
 
-				if (!hasDiaChiChiTiet) {
-					alert('Vui lòng nhập số nhà, tên đường để giao hàng');
-					return;
-				}
+    let tongTien = 0;
+    cartItems.forEach(item => {
+        const giaBan = parseFloat(item.GiaBan) || 0;
+        const soLuong = parseInt(item.SoLuong) || 0;
+        tongTien += giaBan * soLuong;
+    });
 
-				if (!hasDiaChiDayDu) {
-					alert('Vui lòng nhập đầy đủ địa chỉ giao hàng trước khi thanh toán');
-					return;
-				}
+    if (tongTien === 0) {
+        tongTien = parseFloat(serverTongTien) || 0;
+    }
 
-				if (!phuongThucThanhToan) {
-					alert('Vui lòng chọn phương thức thanh toán');
-					return;
-				}
+    // ==================== XỬ LÝ ĐẶT HÀNG ====================
+    const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
+    const voucherInput = document.getElementById('maGiamGia').value || '';
+    const voucherCode = voucherInput.split(' - ')[0].trim() || null;
 
-			// Lấy dữ liệu từ server-side thay vì gioHangData
-			const cartItems = @Html.Raw(Json.Serialize(ViewBag.CartItems ?? new List<QuanApi.Data.ChiTietGioHang>()));
-			const serverTongTien = @Html.Raw(Json.Serialize(ViewBag.TongTien ?? 0));
+    const checkoutData = {
+        tenNguoiNhan: tenNguoiNhan,
+        soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+        emailNguoiNhan: emailNguoiNhan || null,
+        diaChiGiaoHang: diaChiGiaoHang,
+        phuongThucThanhToanId: phuongThucThanhToan,
+        ghiChu: document.getElementById('ghiChu').value || '',
+        usePoint: requestedUsedPoints > 0,
+        requestedUsedPoints: requestedUsedPoints,
+        tongTien: Math.max(0, tongTien - (discountValue || 0) - (requestedUsedPoints * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
+        tienGiam: discountValue || 0,
+        phiVanChuyen: window.currentShippingFee || 0,
+        phiVanChuyenDaGiam: true,
+        phiVanChuyenGoc: window.currentShippingOriginalFee || 0,
+        soTienGiamPhiVanChuyen: window.currentShippingDiscountAmount || 0,
+        shippingDiscountMessage: window.currentShippingDiscountMessage || '',
+        province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
+        district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
+        toDistrictId: getSelectedToDistrictId(),
+        toWardCode: getSelectedToWardCode(),
+        weight: calculateShippingWeight(),
+        maGiamGia: voucherCode,
+        selectedCartItemIds: selectedCartItemIds
+    };
 
-			if (!cartItems || cartItems.length === 0) {
-					alert('Giỏ hàng trống');
-					return;
-				}
+    try {
+        const response = await fetch('/Checkout/ProcessOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(checkoutData)
+        });
 
-			// Tính tổng tiền từ server-side data
-			let tongTien = 0;
-			cartItems.forEach(item => {
-				const giaBan = parseFloat(item.GiaBan) || 0;
-				const soLuong = parseInt(item.SoLuong) || 0;
-				tongTien += giaBan * soLuong;
-			});
+        const result = await response.json();
 
-			// Nếu tính toán bị sai, sử dụng dữ liệu từ server
-			if (tongTien === 0) {
-				tongTien = parseFloat(serverTongTien) || 0;
-			}
+        if (result.success) {
+            showNotification(result.message || 'Đặt hàng thành công!', 'success');
+            sessionStorage.removeItem('appliedDiscount');
 
-			console.log('datHang - tongTien calculation:', {
-				cartItems: cartItems,
-				calculatedTongTien: tongTien,
-				serverTongTien: serverTongTien,
-				discountValue: discountValue
-			});
-
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				const requestedUsedPoints = getClampedRequestedUsedPoints(tongTien, discountValue);
-				const voucherInput = document.getElementById('maGiamGia').value || '';
-				const voucherCode = voucherInput.split(' - ')[0].trim() || null;
-
-				// Tạo dữ liệu đặt hàng
-				const checkoutData = {
-				// Không cần gửi KhachHangId vì server sẽ lấy từ claims
-					tenNguoiNhan: tenNguoiNhan,
-					soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
-					diaChiGiaoHang: diaChiGiaoHang,
-					phuongThucThanhToanId: phuongThucThanhToan,
-					ghiChu: document.getElementById('ghiChu').value,
-				usePoint: requestedUsedPoints > 0,
-				requestedUsedPoints: requestedUsedPoints,
-				tongTien: Math.max(0, tongTien - discountValue - (requestedUsedPoints * (moneyPerPoint || 0)) + (window.currentShippingFee || 0)),
-				tienGiam: discountValue || 0,
-				phiVanChuyen: window.currentShippingFee || 0,
-				phiVanChuyenDaGiam: true,
-				phiVanChuyenGoc: window.currentShippingOriginalFee || 0,
-				soTienGiamPhiVanChuyen: window.currentShippingDiscountAmount || 0,
-				shippingDiscountMessage: window.currentShippingDiscountMessage || '',
-				province: $('#tinh option:selected').text() !== 'Tỉnh Thành' ? $('#tinh option:selected').text() : '',
-				district: $('#quan option:selected').text() !== 'Quận Huyện' ? $('#quan option:selected').text() : '',
-				toDistrictId: getSelectedToDistrictId(),
-				toWardCode: getSelectedToWardCode(),
-				weight: calculateShippingWeight(),
-				maGiamGia: voucherCode
-				};
-
-			console.log('checkoutData being sent:', checkoutData);
-
-				try {
-					const response = await fetch('/Checkout/ProcessOrder', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(checkoutData)
-					});
-
-					const result = await response.json();
-
-					if (result.success) {
-						// Kiểm tra xem có cần chuyển hướng đến VNPay không
-						if (result.redirectToVnPay && result.paymentUrl) {
-							showNotification('Chuyển hướng đến VNPay để thanh toán...', 'info');
-							// Chuyển hướng đến VNPay sau 2 giây
-							setTimeout(() => {
-								window.location.href = result.paymentUrl;
-							}, 2000);
-						} else if (result.redirect && result.redirectUrl) {
-							// Chuyển hướng đến trang Success với đầy đủ thông tin
-							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
-							sessionStorage.removeItem('appliedDiscount');
-
-							setTimeout(() => {
-								window.location.href = result.redirectUrl;
-							}, 2000);
-						} else {
-							// Thanh toán thường (tiền mặt, COD) - fallback cũ
-							showNotification(result.message || 'Đặt hàng thành công!', 'success');
-							// Xóa giỏ hàng session và thông tin giảm giá
-							await fetch('/Checkout/ClearCart', { method: 'POST' });
-							sessionStorage.removeItem('appliedDiscount');
-
-							// Trích xuất mã đơn hàng từ message
-							let orderCode = '';
-							if (result.message && result.message.includes('Mã đơn hàng')) {
-								const match = result.message.match(/Mã đơn hàng của bạn là: ([A-Z0-9_]+)/);
-								if (match) {
-									orderCode = match[1];
-								}
-							}
-
-							setTimeout(() => {
-								if (orderCode) {
-									window.location.href = `/Checkout/Success?orderCode=${encodeURIComponent(orderCode)}`;
-								} else {
-									window.location.href = '/Home/Index';
-								}
-							}, 3000);
-						}
-					} else {
-						showNotification(result.message || 'Có lỗi xảy ra khi đặt hàng', 'danger');
-					}
-				} catch (error) {
-					console.error('Lỗi khi đặt hàng:', error);
-					showNotification('Có lỗi xảy ra khi đặt hàng', 'danger');
-				}
-			}
+            if (result.redirectToVnPay && result.paymentUrl) {
+                setTimeout(() => window.location.href = result.paymentUrl, 1500);
+            } else if (result.redirectUrl) {
+                setTimeout(() => window.location.href = result.redirectUrl, 1500);
+            }
+        } else {
+            showNotification(result.message || 'Đặt hàng thất bại', 'danger');
+        }
+    } catch (error) {
+        console.error('Lỗi khi đặt hàng:', error);
+        showNotification('Có lỗi xảy ra khi đặt hàng', 'danger');
+    }
+}
 
 			// Thêm function để load thông tin khách hàng và tự động điền địa chỉ
 			async function loadCustomerInfo() {
@@ -2390,47 +2391,92 @@
 				$('#addressList').html(html);
 			}
 
+			// Nice Confirmation Modal
+			async function showConfirmModal(message, confirmText = "Xóa", cancelText = "Hủy") {
+				return new Promise((resolve) => {
+					const modalId = 'confirmModal_' + Date.now();
+					
+					const modalHTML = `
+						<div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+							<div class="modal-dialog modal-dialog-centered">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title text-danger">
+											<i class="fa fa-exclamation-triangle"></i> Xác nhận
+										</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									</div>
+									<div class="modal-body">
+										<p class="mb-0">${message}</p>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+											${cancelText}
+										</button>
+										<button type="button" class="btn btn-danger" id="confirmActionBtn">
+											<i class="fa fa-trash"></i> ${confirmText}
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
 
+					$('body').append(modalHTML);
+					const modalElement = $('#' + modalId);
+					const modal = new bootstrap.Modal(modalElement[0]);
+
+					modal.show();
+
+					// Handle Confirm
+					$('#confirmActionBtn').one('click', function() {
+						modal.hide();
+						resolve(true);
+					});
+
+					// Handle Cancel / Close
+					modalElement.one('hidden.bs.modal', function() {
+						modalElement.remove();
+						resolve(false);
+					});
+				});
+			}
 			// Xóa địa chỉ theo ID (dùng trong modal danh sách hoặc theo ID đã chọn)
 			async function deleteAddress(addressId) {
 				if (!addressId) {
 					showNotification('ID địa chỉ không hợp lệ', 'danger');
 					return;
 				}
-				if (!confirm('Bạn có chắc muốn xóa địa chỉ này?')) return;
+
+				// Use nice modal instead of confirm()
+				const confirmed = await showConfirmModal('Bạn có chắc muốn xóa địa chỉ này?');
+				if (!confirmed) return;
+
 				try {
-					const res = await fetch('/Checkout/DeleteAddress?id=' + encodeURIComponent(addressId), { method: 'DELETE' });
+					const res = await fetch('/Checkout/DeleteAddress?id=' + encodeURIComponent(addressId), { 
+						method: 'DELETE' 
+					});
+					
 					const data = await res.json().catch(() => ({}));
+
 					if (res.ok && (data.success === true || data.message)) {
-						showNotification('Xóa địa chỉ thành công', 'success');
-						// Nếu đang xóa đúng địa chỉ đang chọn, dọn form và tắt nút xóa
+						showNotification('✅ Xóa địa chỉ thành công', 'success');
+
 						const idInput = document.getElementById('selectedAddressId');
-						const btnDel = document.getElementById('btnDeleteSelectedAddress');
 						if (idInput && idInput.value === addressId) {
 							idInput.value = '';
-							if (btnDel) btnDel.disabled = true;
 							clearAddressForm();
 						}
-						// Reload danh sách trong modal nếu đang mở
-						try {
-							const response = await fetch('/Checkout/GetCustomerAddresses');
-							if (response.ok) {
-								const result = await response.json();
-								if (result.success && result.addresses) {
-									const list = document.getElementById('addressList');
-									if (result.addresses.length > 0) {
-										renderAddressList(result.addresses);
-										if (list) { $('#addressList').show(); $('#noAddressMessage').hide(); }
-									} else {
-										if (list) { $('#addressList').hide(); $('#noAddressMessage').show(); }
-									}
-								}
-							}
-						} catch {}
+
+						// Refresh address list if modal is open
+						if ($('#addressModal').hasClass('show')) {
+							setTimeout(() => openAddressModal(), 600);
+						}
 					} else {
 						showNotification((data && data.message) || 'Xóa địa chỉ thất bại', 'danger');
 					}
 				} catch (err) {
+					console.error(err);
 					showNotification('Lỗi khi xóa địa chỉ', 'danger');
 				}
 			}
@@ -2939,17 +2985,28 @@
 
 					// Ensure we send a numeric value
 					total = Number(total) || 0;
+					const soDienThoaiNguoiNhan = (document.getElementById('soDienThoaiNguoiNhan')?.value || '').trim();
+					const emailNguoiNhan = (document.getElementById('emailNguoiNhan')?.value || '').trim();
 
 					$.get('/Checkout/GetCustomerVouchers',
-						{ tongTien: total },
+						{
+							tongTien: total,
+							soDienThoaiNguoiNhan: soDienThoaiNguoiNhan,
+							emailNguoiNhan: emailNguoiNhan
+						},
 						function (data) {
 
 							console.log("Public vouchers response:", data);
 
 							if (data && data.length > 0) {
-								renderVoucherList(data, total);
-								$('#voucherList').show();
-								$('#noVoucherMessage').hide();
+								const usableVoucherCount = renderVoucherList(data, total);
+								if (usableVoucherCount > 0) {
+									$('#voucherList').show();
+									$('#noVoucherMessage').hide();
+								} else {
+									$('#voucherList').hide();
+									$('#noVoucherMessage').show();
+								}
 							} else {
 								$('#voucherList').hide();
 								$('#noVoucherMessage').show();
@@ -2990,11 +3047,15 @@
 				};
 			});
 
-			// ✅ SORT: usable lên đầu + giảm nhiều hơn đứng trước
-			mapped.sort((a, b) => {
-				if (a.isUsable !== b.isUsable) return b.isUsable - a.isUsable;
-				return b.realDiscount - a.realDiscount;
-			});
+			// Chỉ hiển thị mã có thể sử dụng được ngay và còn hợp lệ theo backend.
+			mapped = mapped.filter(v => v.isUsable && v.hopLe !== false);
+			if (mapped.length === 0) {
+				$('#voucherList').html('');
+				return 0;
+			}
+
+			// SORT: giảm nhiều hơn đứng trước
+			mapped.sort((a, b) => b.realDiscount - a.realDiscount);
 
 			// ✅ tìm BEST voucher
 			let bestVoucher = mapped.find(v => v.isUsable);
@@ -3069,6 +3130,7 @@
 
 			html += '</div>';
 			$('#voucherList').html(html);
+			return mapped.length;
 		}
 				// Chọn phiếu giảm giá
 			function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
@@ -3590,7 +3652,7 @@
 				// Kiểm tra user có đăng nhập không
 				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
 				if (!customerIdClaim || customerIdClaim === '') {
-					alert('Vui lòng đăng nhập để lưu địa chỉ!');
+					showNotification('Vui lòng đăng nhập để lưu địa chỉ!', 'warning');
 					return;
 				}
 
@@ -3653,19 +3715,19 @@
 
 				// --- Validation ---
 				if (!addressData.tenNguoiNhan || addressData.tenNguoiNhan.trim() === '') {
-					alert('Vui lòng nhập tên người nhận!');
+					showNotification('Vui lòng nhập tên người nhận!', 'warning');
 					$('#saveAddressName').focus();
 					return;
 				}
 
 				if (!addressData.diaChiChiTiet || addressData.diaChiChiTiet.trim() === '' || $("#saveAddressTinh").val() === '0') {
-					alert('Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã!');
+					showNotification('Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã!', 'warning');
 					return;
 				}
 
 				if (addressData.sdtNguoiNhan && addressData.sdtNguoiNhan.trim() !== '') {
 					if (typeof validateVietnamesePhoneNumber === "function" && !validateVietnamesePhoneNumber(addressData.sdtNguoiNhan)) {
-						alert('Số điện thoại không hợp lệ.');
+						showNotification('Số điện thoại không hợp lệ.', 'warning');
 						$('#saveAddressPhone').focus();
 						return;
 					}
@@ -3678,18 +3740,44 @@
 					contentType: 'application/json',
 					data: JSON.stringify(addressData),
 					success: function(response) {
-						alert('Lưu địa chỉ thành công!');
 						$('#saveAddressModal').modal('hide');
+						
+						showNotification(`
+							<strong>✅ Lưu địa chỉ thành công!</strong><br>
+							<small>Địa chỉ đã được thêm vào danh sách của bạn.</small>
+						`, 'success');
 
-						// Update main checkout form if checked as default
+						// Update main checkout form if set as default
 						if (addressData.laMacDinh) {
-							$('#tenNguoiNhan').val(addressData.tenNguoiNhan);
-							$('#soDienThoaiNguoiNhan').val(addressData.sdtNguoiNhan);
-							$('#diaChiGiaoHang').val(addressData.diaChiChiTiet);
-							
-							// Also update the main page dropdowns if you have them
-							// Note: This requires your main page to have the same logic/IDs
+							$('#tenNguoiNhan').val(addressData.tenNguoiNhan || '');
+							$('#soDienThoaiNguoiNhan').val(addressData.sdtNguoiNhan || '');
+							$('#diaChiGiaoHang').val(addressData.diaChiChiTiet || '');
+
+							if (addressData.diaChiChiTiet) {
+								const parsed = parseAddressString(addressData.diaChiChiTiet);
+								if (parsed.success) {
+									populateDropdownsFromParsedAddress(parsed);
+								} else {
+									updateFullAddress();
+								}
+							} else {
+								updateFullAddress();
+							}
+
+							// Recalculate shipping
+							setTimeout(async () => {
+								await recalcShipping();
+							}, 800);
+
+							showNotification('✅ Địa chỉ mặc định đã được cập nhật!', 'success');
 						}
+
+						// Refresh address list if modal is open
+						setTimeout(() => {
+							if ($('#addressModal').hasClass('show')) {
+								openAddressModal();
+							}
+						}, 1000);
 					},
 					error: function(xhr) {
 						let errorMessage = 'Lỗi khi lưu địa chỉ!';
@@ -3699,7 +3787,7 @@
 						} catch (e) {
 							errorMessage = xhr.responseText || errorMessage;
 						}
-						alert(errorMessage);
+						showNotification(errorMessage, 'danger');
 					}
 				});
 			}

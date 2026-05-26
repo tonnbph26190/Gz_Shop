@@ -223,13 +223,16 @@
 
                                 var isReset = Context.Request.Query["reset"].ToString();
 
-                                if (string.IsNullOrEmpty(qTrangThai) && string.IsNullOrEmpty(isReset))
+                                if (string.IsNullOrEmpty(qTrangThai)
+                                && string.IsNullOrEmpty(isReset)
+                                && string.IsNullOrEmpty(Context.Request.Query["page"]))
                                 {
                                     qTrangThai = "Chờ xác nhận";
                                 }
                             }
                             <select class="form-control" id="trangThai" name="trangThai">
-                                <option value="all">
+                                <option value="all"
+                                        selected="@(qTrangThai == "all" ? "selected" : null)">
                                     Tất cả trạng thái
                                 </option>
                                 <option value="Chờ xác nhận"
@@ -252,6 +255,14 @@
                                     hàng</option>
                                     <option value="Đã giao" selected="@(qTrangThai == "Đã giao" ? "selected" : null)">Đã
                                         giao</option>
+                                <option value="DaThanhToan"
+                                        selected="@(qTrangThai == "DaThanhToan" ? "selected" : null)">
+                                    Đã thanh toán
+                                </option>
+                                <option value="Chờ hoàn tiền"
+                                        selected="@(qTrangThai == "Chờ hoàn tiền" ? "selected" : null)">
+                                    Chờ hoàn tiền
+                                </option>
                                        @*  <option value="Giao hàng thành công"
                                                 selected="@(qTrangThai == "Giao hàng thành công" ? "selected" : null)">
                                             Giao hàng thành công</option> *@
@@ -420,6 +431,7 @@
                                                     <th>Khách hàng</th>
                                                     <th>Tổng tiền</th>
                                                     <th>Trạng thái</th>
+                                                    <th>Loại đơn hàng</th>
                                 @{
                                     var currentSort = Context.Request.Query["sapXep"].ToString();
                                     if (string.IsNullOrEmpty(currentSort))
@@ -479,20 +491,46 @@
                                                                     "Chờ giao hàng" => "status-shipping",
                                                                     "Đang giao hàng" => "status-shipping",
                                                                     "Đã giao" => "status-delivered",
+                                                "DaThanhToan" => "status-completed",
                                                                     "Giao hàng thành công" => "status-success",
+                                                                    "Chờ hoàn tiền" => "status-transfer-pending",
                                                                     "Đã hủy" => "status-cancelled",
                                                                     "Đã hoàn tiền" => "status-completed",
                                                                     _ => "status-pending"
+
                                                                 };
                                                             }
-                                                            <span class="status-badge @statusClass">
-                                                                @hoaDon.TrangThai
-                                                            </span>
+                                        @{
+                                            var tenTrangThai = hoaDon.TrangThai == "DaThanhToan"
+                                            ? "Đã thanh toán"
+                                            : hoaDon.TrangThai;
+                                        }
+
+                                        <span class="status-badge @statusClass">
+                                            @tenTrangThai
+                                        </span>
                                                             @if (isHighlighted && !string.IsNullOrWhiteSpace(highlightNote))
                                                             {
                                                                 <div>
                                                                     <small class="text-success font-weight-bold">@highlightNote</small>
                                                                 </div>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            @if (hoaDon.BanTaiQuay)
+                                                            {
+                                                                if (!string.IsNullOrWhiteSpace(hoaDon.DiaChiGiaoHang))
+                                                                {
+                                                                    <span class="badge badge-warning">Tại quầy (ship về)</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge badge-secondary">Tại quầy</span>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-primary">Online</span>
                                                             }
                                                         </td>
                                                         <td>
@@ -525,69 +563,128 @@
                                             </select>
                                         </div>
 
-                                        <nav aria-label="Phân trang">
-                                            <ul class="pagination mb-0">
-                                                <!-- Nút Trang đầu -->
-                                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                                    <a class="page-link"
-                                   href="@Url.Action("Index", new { page = 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"], sapXep = Context.Request.Query["sapXep"] })">
-                                                        <i class="fas fa-angle-double-left"></i>
-                                                    </a>
-                                                </li>
+                    <nav aria-label="Phân trang">
+                        <ul class="pagination mb-0">
+                            <!-- Nút Trang đầu -->
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("Index", new {
+                   page = 1,
+                   pageSize = pageSize,
+                   reset = Context.Request.Query["reset"],
+                   quickDate = Context.Request.Query["quickDate"],
+                   trangThai = Context.Request.Query["trangThai"],
+                   tuNgay = Context.Request.Query["tuNgay"],
+                   denNgay = Context.Request.Query["denNgay"],
+                   loaiDonHang = Context.Request.Query["loaiDonHang"],
+                   khachHang = Context.Request.Query["khachHang"],
+                   maDonHang = Context.Request.Query["maDonHang"],
+                   sapXep = Context.Request.Query["sapXep"]
+               })">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
 
-                                                <!-- Nút Trang trước -->
-                                                <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
-                                                    <a class="page-link"
-                                                           href="@Url.Action("Index", new { page = currentPage - 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                                        <i class="fas fa-angle-left"></i>
-                                                    </a>
-                                                </li>
+                            <!-- Nút Trang trước -->
+                            <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("Index", new {
+                   page = currentPage - 1,
+                   pageSize = pageSize,
+                   reset = Context.Request.Query["reset"],
+                   quickDate = Context.Request.Query["quickDate"],
+                   trangThai = Context.Request.Query["trangThai"],
+                   tuNgay = Context.Request.Query["tuNgay"],
+                   denNgay = Context.Request.Query["denNgay"],
+                   loaiDonHang = Context.Request.Query["loaiDonHang"],
+                   khachHang = Context.Request.Query["khachHang"],
+                   maDonHang = Context.Request.Query["maDonHang"],
+                   sapXep = Context.Request.Query["sapXep"]
+               })">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
 
-                                                <!-- Hiển thị các trang -->
-                                                @{
-                                                    var startPage = Math.Max(1, currentPage - 2);
-                                                    var endPage = Math.Min(totalPages, currentPage + 2);
+                            @{
+                                var startPage = Math.Max(1, currentPage - 2);
+                                var endPage = Math.Min(totalPages, currentPage + 2);
 
-                                                    if (startPage > 1)
-                                                    {
-                                                        <li class="page-item">
-                                                            <span class="page-link">...</span>
-                                                        </li>
-                                                    }
+                                if (startPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
 
-                                                    for (int i = startPage; i <= endPage; i++)
-                                                    {
-                                                        <li class="page-item @(i == currentPage ? "active" : "")">
-                                                            <a class="page-link"
-                                                               href="@Url.Action("Index", new { page = i, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">@i</a>
-                                                        </li>
-                                                    }
+                                for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                           page = i,
+                           pageSize = pageSize,
+                           reset = Context.Request.Query["reset"],
+                           quickDate = Context.Request.Query["quickDate"],
+                           trangThai = Context.Request.Query["trangThai"],
+                           tuNgay = Context.Request.Query["tuNgay"],
+                           denNgay = Context.Request.Query["denNgay"],
+                           loaiDonHang = Context.Request.Query["loaiDonHang"],
+                           khachHang = Context.Request.Query["khachHang"],
+                           maDonHang = Context.Request.Query["maDonHang"],
+                           sapXep = Context.Request.Query["sapXep"]
+                       })">@i</a>
+                                    </li>
+                                }
 
-                                                    if (endPage < totalPages)
-                                                    {
-                                                        <li class="page-item">
-                                                            <span class="page-link">...</span>
-                                                        </li>
-                                                    }
-                                                }
+                                if (endPage < totalPages)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
+                            }
 
-                                                <!-- Nút Trang sau -->
-                                                <li class="page-item @(!hasNextPage ? "disabled" : "")">
-                                                    <a class="page-link"
-                                                           href="@Url.Action("Index", new { page = currentPage + 1, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                                        <i class="fas fa-angle-right"></i>
-                                                    </a>
-                                                </li>
+                            <!-- Nút Trang sau -->
+                            <li class="page-item @(!hasNextPage ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("Index", new {
+                   page = currentPage + 1,
+                   pageSize = pageSize,
+                   reset = Context.Request.Query["reset"],
+                   quickDate = Context.Request.Query["quickDate"],
+                   trangThai = Context.Request.Query["trangThai"],
+                   tuNgay = Context.Request.Query["tuNgay"],
+                   denNgay = Context.Request.Query["denNgay"],
+                   loaiDonHang = Context.Request.Query["loaiDonHang"],
+                   khachHang = Context.Request.Query["khachHang"],
+                   maDonHang = Context.Request.Query["maDonHang"],
+                   sapXep = Context.Request.Query["sapXep"]
+               })">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
 
-                                                <!-- Nút Trang cuối -->
-                                                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                                    <a class="page-link"
-                                                           href="@Url.Action("Index", new { page = totalPages, pageSize, trangThai = Context.Request.Query["trangThai"], tuNgay = Context.Request.Query["tuNgay"], denNgay = Context.Request.Query["denNgay"], loaiDonHang = Context.Request.Query["loaiDonHang"], khachHang = Context.Request.Query["khachHang"], maDonHang = Context.Request.Query["maDonHang"] })">
-                                                        <i class="fas fa-angle-double-right"></i>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </nav>
+                            <!-- Nút Trang cuối -->
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("Index", new {
+                   page = totalPages,
+                   pageSize = pageSize,
+                   reset = Context.Request.Query["reset"],
+                   quickDate = Context.Request.Query["quickDate"],
+                   trangThai = Context.Request.Query["trangThai"],
+                   tuNgay = Context.Request.Query["tuNgay"],
+                   denNgay = Context.Request.Query["denNgay"],
+                   loaiDonHang = Context.Request.Query["loaiDonHang"],
+                   khachHang = Context.Request.Query["khachHang"],
+                   maDonHang = Context.Request.Query["maDonHang"],
+                   sapXep = Context.Request.Query["sapXep"]
+               })">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                                     </div>
                                 }
                             </div>
@@ -634,11 +731,12 @@
             const isReset = urlParams.get('reset');
 
             // 👉 RESET
-            if (isReset) {
+            if (isReset === "1") {
                 quickDate.value = "";
                 tuNgay.value = "";
                 denNgay.value = "";
                 document.getElementById('trangThai').value = "all";
+                return;
             }
             else {
                 const qd = urlParams.get('quickDate');
@@ -650,20 +748,19 @@
                 }
                 else if (!urlParams.get('tuNgay') && !urlParams.get('denNgay')) {
 
-                    if (!qd) {
-                        // 👉 mặc định hôm nay
+                    // Lần đầu vào trang, chưa có query gì thì tự lọc mặc định hôm nay + chờ xác nhận
+                    if (!qd && !urlParams.get('trangThai') && !urlParams.get('page')) {
                         setDateRange('today');
                         quickDate.value = 'today';
-                    } else {
+                        document.getElementById('trangThai').value = "Chờ xác nhận";
+                        form.submit();
+                        return;
+                    }
+
+                    // Nếu URL có quickDate thì set ngày theo quickDate
+                    if (qd && qd !== "" && qd !== "custom") {
                         setDateRange(qd);
                     }
-
-                    // 👉 default trạng thái
-                    if (!urlParams.get('trangThai')) {
-                        document.getElementById('trangThai').value = "Chờ xác nhận";
-                    }
-
-                    form.submit();
                 }
             }
 

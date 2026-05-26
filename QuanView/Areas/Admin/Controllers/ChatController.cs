@@ -28,18 +28,29 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var rooms = await _context.PhongTroChuyens
                 .AsNoTracking()
-                .Include(p => p.KhachHang)
-                .Include(p => p.NhanVien)
                 .Where(p => p.TrangThai)
                 .Select(p => new
                 {
                     id = p.IDPhongTroChuyen,
+                    customerId = p.IDKhachHang,
                     customerName = p.KhachHang != null ? p.KhachHang.TenKhachHang : "Khach hang",
                     customerPhone = p.KhachHang != null ? p.KhachHang.SoDienThoai : "",
+                    customerRank = p.KhachHang != null && p.KhachHang.HangKhachHang != null ? p.KhachHang.HangKhachHang.TenHang : "Chưa xếp hạng",
+                    rankPriority = p.KhachHang != null && p.KhachHang.HangKhachHang != null ? p.KhachHang.HangKhachHang.DiemTu : -1,
+                    customerPoints = p.KhachHang != null ? p.KhachHang.SoDiemHienTai : 0,
+                    customerAddress = p.KhachHang != null && p.KhachHang.DiaChis != null
+                        ? p.KhachHang.DiaChis
+                            .Where(d => d.TrangThai)
+                            .OrderByDescending(d => d.LaMacDinh)
+                            .ThenByDescending(d => d.LanCapNhatCuoi ?? d.NgayTao)
+                            .Select(d => d.DiaChiChiTiet)
+                            .FirstOrDefault()
+                        : null,
                     staffName = p.NhanVien != null ? p.NhanVien.TenNhanVien : "Nhan vien",
                     updatedAt = p.LanCapNhatCuoi ?? p.NgayTao
                 })
-                .OrderByDescending(p => p.updatedAt)
+                .OrderByDescending(p => p.rankPriority)
+                .ThenByDescending(p => p.updatedAt)
                 .ToListAsync();
 
             var roomIds = rooms.Select(r => r.id).ToList();
@@ -61,8 +72,13 @@ namespace QuanView.Areas.Admin.Controllers
             var result = rooms.Select(room => new
             {
                 room.id,
+                room.customerId,
                 room.customerName,
                 room.customerPhone,
+                room.customerRank,
+                room.rankPriority,
+                room.customerPoints,
+                room.customerAddress,
                 room.staffName,
                 room.updatedAt,
                 lastMessage = lastMessageByRoom.GetValueOrDefault(room.id)
@@ -75,14 +91,25 @@ namespace QuanView.Areas.Admin.Controllers
         public async Task<IActionResult> Rooms()
         {
             var rooms = await _context.PhongTroChuyens
-                .Include(p => p.KhachHang)
-                .Include(p => p.NhanVien)
+                .AsNoTracking()
                 .Where(p => p.TrangThai)
                 .Select(p => new
                 {
                     id = p.IDPhongTroChuyen,
+                    customerId = p.IDKhachHang,
                     customerName = p.KhachHang != null ? p.KhachHang.TenKhachHang : "Khách hàng",
                     customerPhone = p.KhachHang != null ? p.KhachHang.SoDienThoai : "",
+                    customerRank = p.KhachHang != null && p.KhachHang.HangKhachHang != null ? p.KhachHang.HangKhachHang.TenHang : "Chưa xếp hạng",
+                    rankPriority = p.KhachHang != null && p.KhachHang.HangKhachHang != null ? p.KhachHang.HangKhachHang.DiemTu : -1,
+                    customerPoints = p.KhachHang != null ? p.KhachHang.SoDiemHienTai : 0,
+                    customerAddress = p.KhachHang != null && p.KhachHang.DiaChis != null
+                        ? p.KhachHang.DiaChis
+                            .Where(d => d.TrangThai)
+                            .OrderByDescending(d => d.LaMacDinh)
+                            .ThenByDescending(d => d.LanCapNhatCuoi ?? d.NgayTao)
+                            .Select(d => d.DiaChiChiTiet)
+                            .FirstOrDefault()
+                        : null,
                     staffName = p.NhanVien != null ? p.NhanVien.TenNhanVien : "Nhân viên",
                     updatedAt = p.LanCapNhatCuoi ?? p.NgayTao,
                     lastMessage = p.TinNhans != null
@@ -93,7 +120,8 @@ namespace QuanView.Areas.Admin.Controllers
                             .FirstOrDefault()
                         : null
                 })
-                .OrderByDescending(p => p.updatedAt)
+                .OrderByDescending(p => p.rankPriority)
+                .ThenByDescending(p => p.updatedAt)
                 .ToListAsync();
 
             return Json(new { success = true, data = rooms });
@@ -147,6 +175,9 @@ namespace QuanView.Areas.Admin.Controllers
         {
             var room = await _context.PhongTroChuyens
                 .Include(p => p.KhachHang)
+                    .ThenInclude(k => k.HangKhachHang)
+                .Include(p => p.KhachHang)
+                    .ThenInclude(k => k.DiaChis)
                 .Include(p => p.NhanVien)
                 .FirstOrDefaultAsync(p => p.IDPhongTroChuyen == id && p.TrangThai);
 
@@ -176,8 +207,19 @@ namespace QuanView.Areas.Admin.Controllers
                 room = new
                 {
                     id = room.IDPhongTroChuyen,
+                    customerId = room.IDKhachHang,
                     customerName = room.KhachHang?.TenKhachHang ?? "Khách hàng",
                     customerPhone = room.KhachHang?.SoDienThoai ?? "",
+                    customerRank = room.KhachHang?.HangKhachHang?.TenHang ?? "Chưa xếp hạng",
+                    customerPoints = room.KhachHang?.SoDiemHienTai ?? 0,
+                    customerAddress = room.KhachHang != null && room.KhachHang.DiaChis != null
+                        ? room.KhachHang.DiaChis
+                            .Where(d => d.TrangThai)
+                            .OrderByDescending(d => d.LaMacDinh)
+                            .ThenByDescending(d => d.LanCapNhatCuoi ?? d.NgayTao)
+                            .Select(d => d.DiaChiChiTiet)
+                            .FirstOrDefault()
+                        : null,
                     staffName = room.NhanVien?.TenNhanVien ?? "Nhân viên"
                 },
                 data = messages

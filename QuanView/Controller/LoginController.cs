@@ -127,12 +127,13 @@ namespace QuanView.Controllers
 			}
 
 			var khachClaims = new List<Claim>
-	{
-		new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
-		new Claim(ClaimTypes.Email, khachHang.Email),
-		new Claim(ClaimTypes.Role, "KhachHang"),
-		new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
-	};
+{
+	new Claim(ClaimTypes.NameIdentifier, khachHang.IDKhachHang.ToString()),
+	new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
+	new Claim(ClaimTypes.Email, khachHang.Email),
+	new Claim(ClaimTypes.Role, "KhachHang"),
+	new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
+};
 
 			await SignInUser(khachClaims);
 			HttpContext.Session.SetString("CustomerId", khachHang.IDKhachHang.ToString());
@@ -172,13 +173,17 @@ namespace QuanView.Controllers
                 Console.WriteLine("❌ ModelState không hợp lệ");
                 return View("Index", model);
             }
+			var email = model.Email.Trim().ToLower();
+			var password = model.Password.Trim();
+			// Check nhân viên
+			var nhanVien = await _context.NhanViens
+	.Include(nv => nv.VaiTro)
+	.FirstOrDefaultAsync(nv =>
+		nv.Email.ToLower() == email &&
+		nv.MatKhau == password &&
+		nv.TrangThai);
 
-            // Check nhân viên
-            var nhanVien = await _context.NhanViens
-                .Include(nv => nv.VaiTro)
-                .FirstOrDefaultAsync(nv => nv.Email == model.Email && nv.MatKhau == model.Password && nv.TrangThai);
-
-            Console.WriteLine($"🔍 Tìm thấy nhân viên: {(nhanVien != null ? "Có" : "Không")}");
+			Console.WriteLine($"🔍 Tìm thấy nhân viên: {(nhanVien != null ? "Có" : "Không")}");
             if (nhanVien != null)
             {
                 Console.WriteLine($"🔍 Vai trò nhân viên: {(nhanVien.VaiTro != null ? nhanVien.VaiTro.MaVaiTro : "NULL")}");
@@ -200,22 +205,28 @@ namespace QuanView.Controllers
 				return RedirectToAction("Index", "ThongKe", new { area = "Admin" });
 			}
 
-            var khachHang = await _context.KhachHang
-                .FirstOrDefaultAsync(kh => kh.Email == model.Email && kh.MatKhau == model.Password && kh.TrangThai);
+		
 
-            Console.WriteLine($"🔍 Tìm thấy khách hàng: {(khachHang != null ? "Có" : "Không")}");
+			var khachHang = await _context.KhachHang
+				.FirstOrDefaultAsync(kh =>
+					kh.Email.ToLower() == email &&
+					kh.MatKhau == password &&
+					kh.TrangThai);
+
+			Console.WriteLine($"🔍 Tìm thấy khách hàng: {(khachHang != null ? "Có" : "Không")}");
 
             if (khachHang != null)
             {
                 Console.WriteLine("✅ Đăng nhập thành công với vai trò khách hàng");
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
-                    new Claim(ClaimTypes.Email, khachHang.Email),
-                    new Claim(ClaimTypes.Role, "KhachHang"),
-                    new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
-                };
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+				var claims = new List<Claim>
+{
+	new Claim(ClaimTypes.NameIdentifier, khachHang.IDKhachHang.ToString()),
+	new Claim(ClaimTypes.Name, khachHang.TenKhachHang),
+	new Claim(ClaimTypes.Email, khachHang.Email),
+	new Claim(ClaimTypes.Role, "KhachHang"),
+	new Claim("custom:id_khachhang", khachHang.IDKhachHang.ToString())
+};
+				var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties
                 {
                     IsPersistent = false, // Không lưu trữ lâu dài
@@ -251,8 +262,10 @@ namespace QuanView.Controllers
                 return View(model);
             }
 
-            if (await _context.KhachHang.AnyAsync(kh => kh.Email == model.Email))
-            {
+			var emailDangKy = model.Email.Trim().ToLower();
+
+			if (await _context.KhachHang.AnyAsync(kh => kh.Email.ToLower() == emailDangKy))
+			{
                 ModelState.AddModelError("Email", "Email đã được sử dụng.");
                 return View(model);
             }
@@ -267,8 +280,8 @@ namespace QuanView.Controllers
                 IDKhachHang = Guid.NewGuid(),
                 MaKhachHang = "KH" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 TenKhachHang = model.TenKhachHang,
-                Email = model.Email,
-                MatKhau = model.Password,
+				Email = emailDangKy,
+				MatKhau = model.Password,
                 SoDienThoai = model.SoDienThoai,
                 NgayTao = DateTime.UtcNow,
                 TrangThai = true
@@ -282,17 +295,17 @@ namespace QuanView.Controllers
             return RedirectToAction("Index", "Login");
         }
 
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+		public async Task<IActionResult> Logout()
+		{
+			HttpContext.Session.Remove("Cart");
+			HttpContext.Session.Remove("CustomerId");
 
-            // Xóa thông tin khách hàng khỏi session
-            HttpContext.Session.Remove("CustomerId");
+			await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            return RedirectToAction("Index", "Home");
-        }
+			return RedirectToAction("Index", "Home");
+		}
 
-        public IActionResult AccessDenied()
+		public IActionResult AccessDenied()
         {
             return View();
         }

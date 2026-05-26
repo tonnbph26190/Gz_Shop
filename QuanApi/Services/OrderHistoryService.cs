@@ -22,6 +22,8 @@ namespace QuanApi.Services
             ["Chờ giao hàng"] = new List<string> { "Đang giao", "Đã hủy" },
             ["Đang giao hàng"] = new List<string> { "Đã giao", "Đã hủy" },
             ["Giao hàng thành công"] = new List<string>(), // Không thể chuyển sang trạng thái khác
+            ["Chờ hoàn tiền"] = new List<string> { "Đã hoàn tiền" },
+            ["Đã hoàn tiền"] = new List<string> { "Đã hủy" },
             ["Đã hủy"] = new List<string>() // Không thể chuyển sang trạng thái khác
         };
 
@@ -36,6 +38,8 @@ namespace QuanApi.Services
             ["Chờ giao hàng"] = new List<string> { "Đã lấy hàng" },
             ["Đang giao hàng"] = new List<string> { "Chờ giao hàng" },
             ["Giao hàng thành công"] = new List<string> { "Đã giao" },
+            ["Chờ hoàn tiền"] = new List<string>(),
+            ["Đã hoàn tiền"] = new List<string> { "Chờ hoàn tiền" },
             ["Đã hủy"] = new List<string>() // Không cho phép rollback từ trạng thái đã hủy
         };
 

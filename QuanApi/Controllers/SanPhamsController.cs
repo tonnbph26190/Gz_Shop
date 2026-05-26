@@ -130,7 +130,7 @@ namespace QuanApi.Controllers
             int? qtyFrom = null,
             int? qtyTo = null,
 			 string? sortDate = null,
-
+			 string? stockFilter = null,
 			DateTime? dateFrom = null,
             DateTime? dateTo = null)
         {
@@ -194,6 +194,12 @@ namespace QuanApi.Controllers
 					s.SanPhamChiTiets
 						.Where(ct => ct.TrangThai)
 						.Sum(ct => ct.SoLuong - ct.SoLuongDatCho) <= qtyTo.Value
+				);
+			}
+			if (stockFilter == "variant-out")
+			{
+				baseQuery = baseQuery.Where(s =>
+					s.SanPhamChiTiets.Any(ct => ct.SoLuong <= 0)
 				);
 			}
 			// ✅ SORT NGÀY TẠO
@@ -597,44 +603,43 @@ namespace QuanApi.Controllers
             return Ok("Đã xóa ảnh sản phẩm.");
         }
 
-        // Đặt ảnh chính
-        [HttpPut("images/{imageId}/set-main")]
-        public async Task<IActionResult> SetMainImage(Guid imageId)
-        {
-            var anhSanPham = await _context.AnhSanPhams.FindAsync(imageId);
-            if (anhSanPham == null)
-                return NotFound("Không tìm thấy ảnh sản phẩm.");
+		// Đặt ảnh chính
+		[HttpPut("images/{imageId}/set-main")]
+		public async Task<IActionResult> SetMainImage(Guid imageId)
+		{
+			var anhSanPham = await _context.AnhSanPhams
+				.Include(a => a.SanPhamChiTiet)
+				.FirstOrDefaultAsync(x => x.IDAnhSanPham == imageId && x.TrangThai);
 
-            if (!anhSanPham.TrangThai)
-                return BadRequest("Ảnh sản phẩm đã bị vô hiệu hóa.");
+			if (anhSanPham == null)
+				return NotFound("Không tìm thấy ảnh sản phẩm.");
 
-            // Bỏ ảnh chính cũ
-            var anhChinhCu = await _context.AnhSanPhams
-                .Where(a => a.IDSanPhamChiTiet == anhSanPham.IDSanPhamChiTiet &&
-                           a.LaAnhChinh &&
-                           a.TrangThai &&
-                           a.IDAnhSanPham != imageId)
-                .FirstOrDefaultAsync();
+			var idSanPham = anhSanPham.SanPhamChiTiet.IDSanPham;
 
-            if (anhChinhCu != null)
-            {
-                anhChinhCu.LaAnhChinh = false;
-                anhChinhCu.LanCapNhatCuoi = DateTime.UtcNow;
-                anhChinhCu.NguoiCapNhat = User.Identity?.Name ?? "System";
-            }
+			var allImagesOfProduct = await _context.AnhSanPhams
+				.Include(a => a.SanPhamChiTiet)
+				.Where(a => a.TrangThai &&
+							a.SanPhamChiTiet.IDSanPham == idSanPham)
+				.ToListAsync();
 
-            // Đặt ảnh mới làm chính
-            anhSanPham.LaAnhChinh = true;
-            anhSanPham.LanCapNhatCuoi = DateTime.UtcNow;
-            anhSanPham.NguoiCapNhat = User.Identity?.Name ?? "System";
+			foreach (var img in allImagesOfProduct)
+			{
+				img.LaAnhChinh = false;
+				img.LanCapNhatCuoi = DateTime.UtcNow;
+				img.NguoiCapNhat = User?.Identity?.Name ?? "System";
+			}
 
-            await _context.SaveChangesAsync();
+			anhSanPham.LaAnhChinh = true;
+			anhSanPham.LanCapNhatCuoi = DateTime.UtcNow;
+			anhSanPham.NguoiCapNhat = User?.Identity?.Name ?? "System";
 
-            return Ok("Đã đặt ảnh làm ảnh chính.");
-        }
+			await _context.SaveChangesAsync();
 
-        // Lấy danh sách ảnh của sản phẩm chi tiết
-        [HttpGet("chitiet/{sanPhamChiTietId}/images")]
+			return Ok("Đã đặt ảnh làm ảnh đại diện sản phẩm.");
+		}
+
+		// Lấy danh sách ảnh của sản phẩm chi tiết
+		[HttpGet("chitiet/{sanPhamChiTietId}/images")]
         public async Task<IActionResult> GetProductImages(Guid sanPhamChiTietId)
         {
             var sanPhamChiTiet = await _context.SanPhamChiTiets.FindAsync(sanPhamChiTietId);
@@ -698,11 +703,11 @@ namespace QuanApi.Controllers
 
 			var urlAnh = $"/uploads/{fileName}";
 
-			var daCoAnh = await _context.AnhSanPhams
-				.AnyAsync(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai);
+			//var daCoAnh = await _context.AnhSanPhams
+			//	.AnyAsync(a => a.IDSanPhamChiTiet == sanPhamChiTietId && a.TrangThai);
 
-			if (!daCoAnh)
-				laAnhChinh = true;
+			//if (!daCoAnh)
+			//	laAnhChinh = true;
 
 			if (laAnhChinh)
 			{
@@ -750,31 +755,25 @@ namespace QuanApi.Controllers
 		{
 			try
 			{
-				var tongSanPham = await _context.SanPhams
-	.Where(x => x.TrangThai)
-	.CountAsync();
-				var tongBienThe = await _context.SanPhamChiTiets
-		.Where(x => x.TrangThai && x.SanPham.TrangThai)
-		.CountAsync();
+				var tongSanPham = await _context.SanPhams.CountAsync();
 
-				// 🔥 Sản phẩm hết hàng (group by product, ensure product navigation exists and is active)
+				var tongBienThe = await _context.SanPhamChiTiets.CountAsync();
+
 				var sanPhamHetHang = await _context.SanPhamChiTiets
-	.Where(ct => ct.TrangThai && ct.SanPham != null && ct.SanPham.TrangThai) // 👈 thêm dòng này
-	.GroupBy(ct => ct.IDSanPham)
-	.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
-	.CountAsync();
+					.GroupBy(ct => ct.IDSanPham)
+					.Where(g => g.Sum(x => x.SoLuong - x.SoLuongDatCho) <= 0)
+					.CountAsync();
 
-				// 🔥 Biến thể hết hàng
 				var bienTheHetHang = await _context.SanPhamChiTiets
-		.Where(x => x.TrangThai && (x.SoLuong - x.SoLuongDatCho) <= 0)
-		.CountAsync();
+	.Where(x => x.SoLuong <= 0)
+	.CountAsync();
 
 				return Ok(new
 				{
 					tongSanPham,
 					tongBienThe,
 					sanPhamHetHang,
-					bienTheHetHang // 👈 thêm dòng này
+					bienTheHetHang
 				});
 			}
 			catch (Exception ex)

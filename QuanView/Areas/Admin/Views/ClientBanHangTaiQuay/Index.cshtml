@@ -775,6 +775,14 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+
+                <div class="mb-3">
+                    <input type="text"
+                           id="searchVoucherInput"
+                           class="form-control"
+                           placeholder="Tìm theo tên hoặc mã phiếu giảm giá...">
+                </div>
+
                 <div id="voucherList">
                     <!-- Danh sách voucher sẽ được load ở đây -->
                 </div>
@@ -785,6 +793,40 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nhập nhanh thông tin khách vãng lai khi dùng mã giảm giá -->
+<div class="modal fade" id="guestContactDiscountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thông tin khách vãng lai</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" id="guestContactDiscountMessage">
+                    Vui lòng nhập SĐT hoặc email trước khi dùng mã giảm giá.
+                </p>
+                <div class="mb-2">
+                    <label class="form-label">Tên khách hàng (không bắt buộc)</label>
+                    <input type="text" class="form-control" id="guestContactName" placeholder="Nhập họ và tên">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" class="form-control" id="guestContactPhone" placeholder="Nhập số điện thoại">
+                </div>
+                <div class="mb-0">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="guestContactEmail" placeholder="Nhập email">
+                </div>
+                <small class="text-danger d-block mt-2">* Chỉ cần nhập SĐT hoặc email.</small>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Để sau</button>
+                <button class="btn btn-primary" type="button" onclick="saveGuestContactForDiscount()">Lưu thông tin</button>
             </div>
         </div>
     </div>
@@ -899,6 +941,7 @@
     let customers = [];
     let lastRenderedCustomerList = []; // Danh sách đang hiển thị (full hoặc kết quả tìm kiếm) để chọn đúng
     let selectedCustomer = null;
+    let selectedCustomerId = null;
     let discountValue = 0; // Giá trị giảm giá hiện tại
     let useShipping = false; // Có sử dụng giao hàng không
     let useGHN = false; // Địa chỉ từ API GHN (để tính phí ship chính xác)
@@ -913,6 +956,90 @@
     let isHandlingQrScan = false;
     let html5QrCodeInstance = null;
     let qrDecodeHandled = false;
+    let shouldOpenVoucherAfterGuestContact = false;
+    let shouldRetryPaymentAfterGuestContact = false;
+    let pendingVoucherSelection = null;
+
+    function cloneCustomerForCart(customer) {
+        if (!customer) return null;
+        return {
+            id: customer.id || customer.iDKhachHang || null,
+            name: customer.name || customer.ten || customer.tenKhachHang || 'Khách vãng lai',
+            phone: customer.phone || customer.sdt || customer.soDienThoai || '',
+            email: customer.email || '',
+            point: customer.point != null ? customer.point : (customer.diem || 0),
+            rankName: customer.rankName || customer.tenHang || '',
+            isGuest: !!customer.isGuest
+        };
+    }
+
+    function getCurrentCart() {
+        return gioHangs.length > 0 ? gioHangs[currentGioHang] : null;
+    }
+
+    function setSelectedCustomerForCurrentCart(customer) {
+        const normalizedCustomer = cloneCustomerForCart(customer);
+        selectedCustomer = normalizedCustomer;
+        selectedCustomerId = normalizedCustomer && !normalizedCustomer.isGuest ? normalizedCustomer.id : null;
+
+        const gh = getCurrentCart();
+        if (gh) {
+            gh.customer = normalizedCustomer;
+        }
+
+        renderSelectedCustomer();
+        saveGioHangsToStorage();
+    }
+
+    function restoreSelectedCustomerFromCurrentCart() {
+        const gh = getCurrentCart();
+        selectedCustomer = cloneCustomerForCart(gh && gh.customer);
+        selectedCustomerId = selectedCustomer && !selectedCustomer.isGuest ? selectedCustomer.id : null;
+        renderSelectedCustomer();
+    }
+
+    function renderSelectedCustomer() {
+        if (!selectedCustomer) {
+            $('#customerName').text('khách lẻ').removeClass('bg-info bg-warning text-dark').addClass('bg-secondary');
+            $('#customerDetails').hide();
+            $('#customerPhone').text('');
+            $('#customerEmail').text('');
+            $('#customerPoint').text('0');
+            $('#requestedUsedPoints').val(0).attr('max', 0);
+            $('#pointSwitch').prop('checked', false);
+            $('#btnClearCustomer').hide();
+            $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
+            usePoint = false;
+            return;
+        }
+
+        if (selectedCustomer.isGuest) {
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-info').addClass('bg-warning text-dark');
+            $('#customerPhone').text('—');
+            $('#customerEmail').text('—');
+            $('#customerPoint').text('0');
+            $('#requestedUsedPoints').val(0).attr('max', 0);
+            $('#pointSwitch').prop('checked', false);
+            $('#btnShowAddress').hide();
+            $('#btnAddAddress').hide();
+            usePoint = false;
+        } else {
+            const currentPoint = selectedCustomer.point != null ? selectedCustomer.point : 0;
+            $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-warning text-dark').addClass('bg-info');
+            $('#customerPhone').text(selectedCustomer.phone || '—');
+            $('#customerEmail').text(selectedCustomer.email || '—');
+            $('#customerPoint').text(currentPoint);
+            $('#requestedUsedPoints').val(0).attr('max', getPointLimitByConfig(currentPoint));
+            $('#pointSwitch').prop('checked', false);
+            @* $('#btnShowAddress').show();
+            $('#btnAddAddress').show(); *@
+            usePoint = false;
+        }
+
+        $('#customerDetails').show();
+        $('#btnClearCustomer').show();
+    }
 
     function getPointLimitByConfig(available) {
         if (maxPointsPerOrder > 0) {
@@ -1253,7 +1380,7 @@
 
     // Chọn khách vãng lai (không lưu DB, chỉ dùng cho đơn này)
     function selectGuestCustomer() {
-        selectedCustomer = { id: null, name: 'Khách vãng lai', phone: '', email: '', point: 0, isGuest: true };
+        setSelectedCustomerForCurrentCart({ id: null, name: 'Khách vãng lai', phone: '', email: '', point: 0, isGuest: true });
         $('#customerModal').modal('hide');
         $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary').addClass('bg-warning text-dark');
         $('#customerDetails').show();
@@ -1308,8 +1435,121 @@
 
     // Áp dụng mã giảm giá
     function applyDiscount() {
+        if (!ensureGuestContactBeforeApplyDiscount()) {
+            return;
+        }
         loadCustomerDiscountVouchers();
     }
+
+    function isGuestCustomerForDiscountFlow() {
+        return !selectedCustomer || !!selectedCustomer.isGuest;
+    }
+
+    function getGuestContactInfo() {
+        return {
+            phone: ($('#shipPhone').val() || '').trim(),
+            email: ($('#shipEmail').val() || '').trim()
+        };
+    }
+
+    function hasGuestContactInfo() {
+        const contact = getGuestContactInfo();
+        return !!(contact.phone || contact.email);
+    }
+
+    function focusGuestContactModalInput() {
+        const phone = ($('#guestContactPhone').val() || '').trim();
+        const email = ($('#guestContactEmail').val() || '').trim();
+        if (!phone) {
+            $('#guestContactPhone').trigger('focus');
+            return;
+        }
+        if (!email) {
+            $('#guestContactEmail').trigger('focus');
+        }
+    }
+
+    function requestGuestContactForDiscount(message, options = {}) {
+        shouldOpenVoucherAfterGuestContact = !!options.afterOpenVoucher;
+        shouldRetryPaymentAfterGuestContact = !!options.afterPayInvoice;
+        pendingVoucherSelection = options.voucherSelection || null;
+
+        $('#guestContactDiscountMessage').text(message || 'Vui lòng nhập số điện thoại hoặc email cho khách vãng lai.');
+        $('#guestContactName').val(($('#shipName').val() || '').trim());
+        $('#guestContactPhone').val(($('#shipPhone').val() || '').trim());
+        $('#guestContactEmail').val(($('#shipEmail').val() || '').trim());
+        $('#guestContactDiscountModal').modal('show');
+        setTimeout(focusGuestContactModalInput, 150);
+    }
+
+    function saveGuestContactForDiscount() {
+        const name = ($('#guestContactName').val() || '').trim();
+        const phone = ($('#guestContactPhone').val() || '').trim();
+        const email = ($('#guestContactEmail').val() || '').trim();
+
+        if (!phone && !email) {
+            showWarning('Vui lòng nhập SĐT hoặc email.');
+            focusGuestContactModalInput();
+            return;
+        }
+
+        $('#shipName').val(name);
+        $('#shipPhone').val(phone);
+        $('#shipEmail').val(email);
+        $('#guestContactDiscountModal').modal('hide');
+        showSuccess('Đã lưu thông tin khách vãng lai.');
+
+        if (pendingVoucherSelection) {
+            const voucher = pendingVoucherSelection;
+            pendingVoucherSelection = null;
+            shouldOpenVoucherAfterGuestContact = false;
+            shouldRetryPaymentAfterGuestContact = false;
+            selectVoucher(voucher.code, voucher.giaTriGiam, voucher.giaTriGiamToiDa, voucher.donToiThieu);
+            return;
+        }
+
+        if (shouldOpenVoucherAfterGuestContact) {
+            shouldOpenVoucherAfterGuestContact = false;
+            shouldRetryPaymentAfterGuestContact = false;
+            loadCustomerDiscountVouchers();
+            return;
+        }
+
+        if (shouldRetryPaymentAfterGuestContact) {
+            shouldRetryPaymentAfterGuestContact = false;
+            shouldOpenVoucherAfterGuestContact = false;
+            payInvoice();
+            return;
+        }
+
+        shouldOpenVoucherAfterGuestContact = false;
+        shouldRetryPaymentAfterGuestContact = false;
+    }
+
+    function ensureGuestContactBeforeApplyDiscount() {
+        if (!isGuestCustomerForDiscountFlow()) {
+            return true;
+        }
+        if (hasGuestContactInfo()) {
+            return true;
+        }
+        requestGuestContactForDiscount('Khách vãng lai cần nhập SĐT hoặc email trước khi dùng mã giảm giá.', { afterOpenVoucher: true });
+        return false;
+    }
+
+    function ensureGuestContactForAppliedDiscount() {
+        const discountCode = ($('#discountCode').val() || '').trim();
+        const hasDiscountApplied = !!discountCode || Number(discountValue || 0) > 0;
+        if (!hasDiscountApplied || !isGuestCustomerForDiscountFlow()) {
+            return true;
+        }
+        if (hasGuestContactInfo()) {
+            return true;
+        }
+        requestGuestContactForDiscount('Khách vãng lai đã dùng mã giảm giá cần nhập SĐT hoặc email.', { afterPayInvoice: true });
+        return false;
+    }
+
     function tinhTienGiam(v, tongTien) {
         let discount = 0;
 
@@ -1368,6 +1608,15 @@
         const query = { tongTien: tongTien };
         if (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) {
             query.customerId = selectedCustomer.id;
+        } else {
+            const guestPhone = ($('#shipPhone').val() || '').trim();
+            const guestEmail = ($('#shipEmail').val() || '').trim();
+            if (guestPhone) {
+                query.soDienThoai = guestPhone;
+            }
+            if (guestEmail) {
+                query.email = guestEmail;
+            }
         }
 
         $.get('/Admin/ClientBanHangTaiQuay/danh-sach-phieu-giam-gia-khach-hang', query, function (data) {
@@ -1375,9 +1624,8 @@
             console.log("Voucher response:", data);
 
             if (data && data.length > 0) {
-
-                // ✅ dùng toàn bộ list (KHÔNG filter)
-                let finalVouchers = [...data];
+                // Chỉ giữ voucher khả dụng để ẩn hoàn toàn mã đã dùng/không đủ điều kiện.
+                let finalVouchers = [...data].filter(v => v && v.hopLe === true);
 
                 // reset best
                 finalVouchers.forEach(v => v.isBest = false);
@@ -1385,38 +1633,33 @@
                 // 🔥 SORT CHUẨN NHẤT
                 finalVouchers.sort((a, b) => {
 
-                    // 1. Ưu tiên dùng được
-                    if (a.hopLe !== b.hopLe) return b.hopLe - a.hopLe;
+                    // 1. Voucher dùng được lên trước
+                    if (a.hopLe !== b.hopLe)
+                        return b.hopLe - a.hopLe;
 
-                    // 2. 🔥 giảm thực tế
-                    let giamA = tinhTienGiam(a, tongTien);
-                    let giamB = tinhTienGiam(b, tongTien);
+                    // 2. Sắp xếp % giảm từ cao -> thấp
+                    if (a.giaTriGiam !== b.giaTriGiam)
+                        return b.giaTriGiam - a.giaTriGiam;
 
-                    if (giamA !== giamB) return giamB - giamA;
+                    // 3. Nếu % bằng nhau thì ưu tiên giảm tối đa cao hơn
+                    if (a.giaTriGiamToiDa !== b.giaTriGiamToiDa)
+                        return b.giaTriGiamToiDa - a.giaTriGiamToiDa;
 
-                    // 3. gần đạt đơn tối thiểu
-                    let lechA = Math.abs((a.donToiThieu || 0) - tongTien);
-                    let lechB = Math.abs((b.donToiThieu || 0) - tongTien);
-
-                    if (lechA !== lechB) return lechA - lechB;
-
-                    // 4. còn nhiều lượt
-                    if (a.soLuongConLai !== b.soLuongConLai)
-                        return b.soLuongConLai - a.soLuongConLai;
-
-                    // 5. sắp hết hạn
+                    // 4. Sắp hết hạn lên trước
                     return new Date(a.ngayKetThuc) - new Date(b.ngayKetThuc);
                 });
 
-                // 🥇 đánh dấu tốt nhất
-                if (finalVouchers.length > 0) {
+                const usableVoucherCount = finalVouchers.length;
+                if (usableVoucherCount > 0) {
+                    // 🥇 đánh dấu tốt nhất
                     finalVouchers[0].isBest = true;
+                    renderVoucherList(finalVouchers);
+                    $('#voucherList').show();
+                    $('#noVoucherMessage').hide();
+                } else {
+                    $('#voucherList').hide();
+                    $('#noVoucherMessage').show();
                 }
-
-                renderVoucherList(finalVouchers);
-
-                $('#voucherList').show();
-                $('#noVoucherMessage').hide();
 
             } else {
                 $('#voucherList').hide();
@@ -1436,12 +1679,18 @@
 
     // Render danh sách phiếu giảm giá
     function renderVoucherList(vouchers) {
+        const usableVouchers = (vouchers || []).filter(v => v && v.hopLe === true);
+        if (usableVouchers.length === 0) {
+            $('#voucherList').html('');
+            return 0;
+        }
+
         // Tính tổng tiền đơn hàng hiện tại
         let gh = gioHangs[currentGioHang];
         let orderTotal = (gh && gh.products) ? gh.products.reduce((sum, p) => sum + p.thanhTien, 0) : 0;
 
         let html = '<div class="row">';
-        vouchers.forEach(function (voucher, index) {
+        usableVouchers.forEach(function (voucher, index) {
             let isExpired = new Date(voucher.ngayKetThuc) < new Date();
             let isActive = !isExpired && new Date(voucher.ngayBatDau) <= new Date();
             let meetsMinimum = orderTotal >= voucher.donToiThieu;
@@ -1473,7 +1722,9 @@
             let buttonClass = isDisabled ? 'disabled' : '';
 
             html += `
-                <div class="col-md-6 mb-3">
+                   <div class="col-md-6 mb-3 voucher-item"
+         data-name="${voucher.tenPhieu || ''}"
+         data-code="${voucher.maCode || ''}">
                     <div class="card voucher-ticket h-100 border-0 ${!isActive ? 'opacity-75' : ''}" 
                         style="border-radius: 12px; overflow: hidden; position: relative; min-height: 130px;">
                         
@@ -1532,10 +1783,18 @@
         });
         html += '</div>';
         $('#voucherList').html(html);
+        return usableVouchers.length;
     }
 
     // Chọn phiếu giảm giá
     function selectVoucher(code, giaTriGiam, giaTriGiamToiDa, donToiThieu) {
+        if (isGuestCustomerForDiscountFlow() && !hasGuestContactInfo()) {
+            requestGuestContactForDiscount('Nhập SĐT hoặc email trước khi áp dụng mã giảm giá cho khách vãng lai.', {
+                voucherSelection: { code: code, giaTriGiam: giaTriGiam, giaTriGiamToiDa: giaTriGiamToiDa, donToiThieu: donToiThieu }
+            });
+            return;
+        }
+
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products) {
             showWarning('Không có giỏ hàng nào được chọn!');
@@ -1644,7 +1903,7 @@
     // Lưu tất cả giỏ hàng vào localStorage
     function saveGioHangsToStorage() {
         const gioHangData = {
-            gioHangs: gioHangs.map(gh => ({ id: gh.id, ma: gh.ma })),
+            gioHangs: gioHangs.map(gh => ({ id: gh.id, ma: gh.ma, customer: gh.customer || null })),
             currentGioHang: currentGioHang
         };
         localStorage.setItem('gioHangData', JSON.stringify(gioHangData));
@@ -1657,7 +1916,7 @@
             return;
         }
         const dto = {
-            idKhachHang: (selectedCustomer && !selectedCustomer.isGuest && selectedCustomer.id) ? selectedCustomer.id : null,
+            idKhachHang: null,
             nguoiTao: "Admin"
         };
 
@@ -1670,10 +1929,12 @@
                 const gioHang = {
                     id: res.idGioHang,
                     ma: res.maGioHang,
-                    products: []
+                    products: [],
+                    customer: null
                 };
                 gioHangs.push(gioHang);
                 currentGioHang = gioHangs.length - 1;
+                restoreSelectedCustomerFromCurrentCart();
 
                 saveGioHangsToStorage();
                 renderTabs();
@@ -1740,6 +2001,7 @@
     // Chuyển giỏ hàng
     function switchGioHang(idx) {
         currentGioHang = idx;
+        restoreSelectedCustomerFromCurrentCart();
         saveGioHangsToStorage();
         renderTabs();
         loadGioHang();
@@ -1752,6 +2014,10 @@
         const gioHang = gioHangs[currentGioHang];
         $.get(`/Admin/ClientBanHangTaiQuay/gio-hang/${gioHang.id}`, function (data) {
             gioHang.products = data.sanPhams || [];
+            if (!gioHang.customer && data.khachHang) {
+                gioHang.customer = cloneCustomerForCart(data.khachHang);
+            }
+            restoreSelectedCustomerFromCurrentCart();
             renderGioHang();
             updatePaymentInfo(); // Cập nhật thông tin thanh toán
         }).fail(function () {
@@ -2371,6 +2637,7 @@
         if (!c) return showWarning('Không tìm thấy khách hàng.');
         selectedCustomer = c;
         selectedCustomer.isGuest = false;
+        setSelectedCustomerForCurrentCart(selectedCustomer);
         $('#customerModal').modal('hide');
         $('#customerName').text(selectedCustomer.name).removeClass('bg-secondary bg-warning text-dark').addClass('bg-info');
         $('#customerDetails').show();
@@ -2406,6 +2673,12 @@
     // Hủy chọn khách hàng
     function clearCustomer() {
         selectedCustomer = null;
+        selectedCustomerId = null;
+        const currentCart = getCurrentCart();
+        if (currentCart) {
+            currentCart.customer = null;
+        }
+        saveGioHangsToStorage();
 
         // Reset thông tin hiển thị về khách lẻ
         $('#customerName').text('khách lẻ').removeClass('bg-info bg-warning text-dark').addClass('bg-secondary');
@@ -2467,6 +2740,7 @@
         selectedCustomerId = null;
 
         // Nếu có cache
+        restoreSelectedCustomerFromCurrentCart();
         if (typeof lastRenderedCustomerList !== 'undefined') {
             lastRenderedCustomerList = [];
         }
@@ -2715,6 +2989,7 @@
         let gh = gioHangs[currentGioHang];
         if (!gh || !gh.products || gh.products.length === 0) return showError('Không có sản phẩm trong giỏ hàng!');
         if (!validateShippingAddressForPayment()) return;
+        if (!ensureGuestContactForAppliedDiscount()) return;
 
         // API cần MÃ phương thức (MaPhuongThuc, vd: "cash", "bank") chứ không phải tên hiển thị
         let paymentMethodCode = ($('#paymentMethod').val() || selectedPaymentCode || 'cash').trim();
@@ -2801,7 +3076,8 @@
             data: JSON.stringify(dto),
             success: function (res) {
                 showSuccess('Thanh toán thành công!');
-                // RESET KHÁCH HÀNG
+                // RESET KHÁCH HÀNG (bao gồm cả card "Tài khoản" đang chọn)
+                clearCustomer();
                 clearCustomerForm();
 
                 // Tắt giao hàng
@@ -2884,7 +3160,8 @@
                                     return {
                                         id: data.idGioHang,
                                         ma: data.maGioHang,
-                                        products: data.sanPhams || []
+                                        products: data.sanPhams || [],
+                                        customer: cloneCustomerForCart(gh.customer || data.khachHang)
                                     };
                                 }
                                 return null;
@@ -2899,6 +3176,7 @@
                         if (gioHangs.length > 0) {
                             // Khôi phục currentGioHang, đảm bảo không vượt quá số lượng giỏ hàng
                             currentGioHang = Math.min(gioHangData.currentGioHang || 0, gioHangs.length - 1);
+                            restoreSelectedCustomerFromCurrentCart();
                             renderTabs();
                             loadGioHang();
                         } else {
@@ -3363,7 +3641,7 @@
                                             </div>
                                             <div>
                                                 ${isDefault}
-                                                <button class="btn btn-danger btn-sm ms-2" onclick="event.stopPropagation(); deleteAddress('${addr.idDiaChi}')" title="Xóa địa chỉ">
+                                                <button class="btn btn-danger btn-sm ms-2" onclick="event.stopPropagation(); deleteAddress('${addrId}')" title="Xóa địa chỉ">
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </div>
@@ -4089,7 +4367,20 @@
         $(document).on('input', '#saveAddressChiTiet', function () {
             updateSaveAddressDetail();
         });
+        $(document).on('input', '#searchVoucherInput', function () {
+            const keyword = ($(this).val() || '').toLowerCase().trim();
 
+            $('.voucher-item').each(function () {
+                const name = ($(this).data('name') || '').toString().toLowerCase();
+                const code = ($(this).data('code') || '').toString().toLowerCase();
+
+                if (name.includes(keyword) || code.includes(keyword)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
         // Reset modal khi đóng
         $('#saveAddressModal').on('hidden.bs.modal', function () {
             resetSaveAddressDropdowns();

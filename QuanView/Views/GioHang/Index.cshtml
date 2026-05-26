@@ -5,6 +5,11 @@
     var lang = Context.Request.Cookies["UserLanguage"] ?? "vi"; 
     var chiTietList = gioHang?.ChiTietGioHangs?.ToList() ?? new List<QuanApi.Data.ChiTietGioHang>();
     decimal tongTien = chiTietList.Sum(x => x.GiaBan * x.SoLuong);
+    decimal tongTienGoc = chiTietList.Sum(x =>
+    {
+        var giaGoc = x.SanPhamChiTiet?.GiaBan ?? x.GiaBan;
+        return (giaGoc > x.GiaBan ? giaGoc : x.GiaBan) * x.SoLuong;
+    });
 }
 
 @if (Model == null || Model.ChiTietGioHangs == null || !Model.ChiTietGioHangs.Any())
@@ -30,7 +35,7 @@
         background: #fff;
         border-radius: 16px;
         box-shadow: 0 4px 24px rgba(0,0,0,0.04);
-        padding: 20px;
+        padding: 24px;
     }
 
     .cart-table thead th {
@@ -47,6 +52,20 @@
         transition: background 0.2s;
     }
 
+    .cart-check-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px; /* Aligns vertically balanced with image height */
+    }
+
+    .cart-check-input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        margin: 0;
+    }
+
     .cart-img {
         width: 80px;
         height: 100px;
@@ -60,6 +79,29 @@
         font-size: 1.1rem;
         color: #111;
         text-decoration: none;
+        line-height: 1.4;
+    }
+
+    .cart-sale-price {
+        color: var(--accent-red);
+        font-weight: 800;
+    }
+
+    .cart-old-price {
+        color: #9ca3af;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: line-through;
+        text-decoration-thickness: 1.5px;
+    }
+
+    .cart-discount-badge {
+        background: rgba(211, 47, 47, 0.1);
+        border-radius: 999px;
+        color: var(--accent-red);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
     }
 
     .cart-qty-control {
@@ -70,6 +112,17 @@
         padding: 4px;
     }
 
+    /* Hide spin buttons */
+    .quantity-input::-webkit-outer-spin-button,
+    .quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .quantity-input {
+        -moz-appearance: textfield;
+    }
+
     .cart-qty-btn {
         width: 32px;
         height: 32px;
@@ -77,29 +130,37 @@
         background: #fff;
         border-radius: 50%;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         transition: transform 0.1s;
+        padding: 0;
     }
 
     .cart-qty-btn:active { transform: scale(0.9); }
     .cart-qty-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .cart-qty-input {
-        width: 40px;
+        width: 44px;
         background: transparent;
         border: none;
         text-align: center;
         font-weight: bold;
+        padding: 0;
     }
 
     .cart-remove-link {
         color: #bbb;
-        font-size: 0.9rem;
+        font-size: 1rem;
         text-decoration: none;
         transition: color 0.2s;
         cursor: pointer;
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .cart-remove-link:hover { color: var(--accent-red); }
@@ -110,7 +171,7 @@
         border: 1px solid var(--border-color);
         padding: 30px;
         position: sticky;
-        top: 20px;
+        top: 24px;
     }
 
     .checkout-btn {
@@ -145,78 +206,119 @@
 
     <div class="d-flex align-items-center justify-content-between mb-4">
         <h2 class="fw-bold m-0">@((lang == "vi") ? "Giỏ hàng" : "Shopping Cart")</h2>
-        <span class="text-muted">@chiTietList.Count items</span>
+        <span class="text-muted fw-medium">@chiTietList.Count items</span>
     </div>
 
-    <div class="row g-4">
+    <div class="row gx-lg-5 gy-4">
         <div class="col-lg-8">
             <div class="cart-wrapper">
-                <table class="table cart-table align-middle">
-                    <thead>
-                        <tr>
-                            <th colspan="2">@((lang == "vi") ? "Sản phẩm" : "Product")</th>
-                            <th class="text-center">@((lang == "vi") ? "Số lượng" : "Quantity")</th>
-                            <th class="text-end">@((lang == "vi") ? "Tổng cộng" : "Total")</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in chiTietList)
-                        {
-                            var spct = item.SanPhamChiTiet;
-                            var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
-                            
-                            <tr class="cart-item-row">
-                                <td style="width: 100px;">
-                                    <img src="@img" class="cart-img" alt="Product">
-                                </td>
-                                <td>
-                                    <div class="cart-product-title">@spct?.SanPham?.TenSanPham</div>
-                                    <div class="d-flex gap-3 text-muted small mt-1">
-                                        <span>Color: <strong class="text-dark">@(spct?.MauSac?.TenMauSac ?? "N/A")</strong></span>
-                                        <span>Size: <strong class="text-dark">@(spct?.KichCo?.TenKichCo ?? "N/A")</strong></span>
+                <div class="table-responsive">
+                    <table class="table cart-table align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 50px;">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <input type="checkbox" id="selectAllItems" class="cart-check-input" checked />
                                     </div>
-                                    <div class="fw-bold mt-2">@item.GiaBan.ToString("N0") VND</div>
-                                </td>
-                                <td class="text-center">
-                                    <div class="cart-qty-control">
-                                        <form method="post" action="/GioHang/Update" class="d-inline">
-                                            <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
-                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
-                                            <button type="submit" name="soluong" value="@(item.SoLuong-1)" class="cart-qty-btn" @(item.SoLuong <= 1 ? "disabled" : "")>
-                                                <i class="fas fa-minus fa-xs"></i>
-                                            </button>
-                                        </form>
-                                        
-                                        <input type="text" class="cart-qty-input" value="@item.SoLuong" readonly />
-
-                                        <form method="post" action="/GioHang/Update" class="d-inline">
-                                            <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
-                                            <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
-                                            <button type="submit" name="soluong" value="@(item.SoLuong+1)" class="cart-qty-btn" @(item.SoLuong >= (spct?.SoLuong ?? 0) ? "disabled" : "")>
-                                                <i class="fas fa-plus fa-xs"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                                <td class="text-end fw-bold">
-                                    @((item.GiaBan * item.SoLuong).ToString("N0")) <small>VND</small>
-                                </td>
-                                <td class="text-end">
-                                    <form method="post" action="/GioHang/Delete" onsubmit="return confirm('@((lang == "vi") ? "Xóa sản phẩm này?" : "Remove this item?")');">
-                                        <input type="hidden" name="idgiohang" value="@item.IDChiTietGioHang" />
-                                        <input type="hidden" name="iduser" value="@gioHang.IDKhachHang" />
-                                        <button type="submit" class="btn btn-link cart-remove-link p-0">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
-                                </td>
+                                </th>
+                                <th colspan="2" class="ps-2">@((lang == "vi") ? "Sản phẩm" : "Product")</th>
+                                <th class="text-center" style="width: 150px;">@((lang == "vi") ? "Số lượng" : "Quantity")</th>
+                                <th class="text-end" style="width: 140px;">@((lang == "vi") ? "Tổng cộng" : "Total")</th>
+                                <th class="text-end" style="width: 50px;"></th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-                <div class="mt-4">
-                    <a href="/SanPhamNguoiDung/Index" class="text-dark text-decoration-none fw-bold small">
+                        </thead>
+                        <tbody>
+                            @foreach (var item in chiTietList)
+                            {
+                                var spct = item.SanPhamChiTiet;
+                                var img = spct?.AnhSanPhams?.FirstOrDefault(a => a.LaAnhChinh)?.UrlAnh ?? "/img/default-product.jpg";
+                                var giaSauGiam = item.GiaBan;
+                                var giaGoc = spct?.GiaBan ?? item.GiaBan;
+                                var coGiamGia = giaGoc > giaSauGiam;
+                                var phanTramGiam = coGiamGia && giaGoc > 0 ? (int)Math.Round((1 - giaSauGiam / giaGoc) * 100) : 0;
+                                var thanhTien = giaSauGiam * item.SoLuong;
+                                var thanhTienGoc = giaGoc * item.SoLuong;
+                                
+                                <tr class="cart-item-row"
+                                    data-line-total="@thanhTien.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-line-original="@((coGiamGia ? thanhTienGoc : thanhTien).ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                    <td class="text-center">
+                                        <div class="cart-check-wrapper">
+                                            <input type="checkbox"
+                                                   class="cart-check-input item-checkbox"
+                                                   data-item-id="@item.IDChiTietGioHang"
+                                                   checked />
+                                        </div>
+                                    </td>
+                                    <td style="width: 90px;" class="ps-2">
+                                        <img src="@img" class="cart-img" alt="Product">
+                                    </td>
+                                    <td>
+                                        <div class="cart-product-title mb-1">@spct?.SanPham?.TenSanPham</div>
+                                        <div class="d-flex flex-wrap gap-x-3 gap-y-1 text-muted small mb-2">
+                                            <span class="me-3">Color: <strong class="text-dark">@(spct?.MauSac?.TenMauSac ?? "N/A")</strong></span>
+                                            <span>Size: <strong class="text-dark">@(spct?.KichCo?.TenKichCo ?? "N/A")</strong></span>
+                                        </div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <span class="cart-sale-price">@giaSauGiam.ToString("N0")đ</span>
+                                            @if (coGiamGia)
+                                            {
+                                                <span class="cart-old-price">@giaGoc.ToString("N0")đ</span>
+                                                <span class="cart-discount-badge">-@phanTramGiam%</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="cart-qty-control">
+                                            <form method="post" action="/GioHang/Update" class="m-0 d-flex">
+                                                <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
+                                                <button type="submit" name="soluong" value="@(item.SoLuong-1)" class="cart-qty-btn" @(item.SoLuong <= 1 ? "disabled" : "")>
+                                                    <i class="fas fa-minus fa-xs"></i>
+                                                </button>
+                                            </form>
+
+                                            <input type="number"
+                                                   class="cart-qty-input quantity-input"
+                                                   value="@item.SoLuong"
+                                                   min="1"
+                                                   max="@(spct?.SoLuong ?? 1)"
+                                                   data-id="@item.IDChiTietGioHang" />
+
+                                            <form method="post" action="/GioHang/Update" class="update-cart-form d-none">
+                                                <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
+                                                <input type="hidden" name="soluong" class="hidden-qty" value="@item.SoLuong" />
+                                            </form>
+
+                                            <form method="post" action="/GioHang/Update" class="m-0 d-flex">
+                                                <input type="hidden" name="idghct" value="@item.IDChiTietGioHang" />
+                                                <button type="submit" name="soluong" value="@(item.SoLuong+1)" class="cart-qty-btn" @(item.SoLuong >= (spct?.SoLuong ?? 0) ? "disabled" : "")>
+                                                    <i class="fas fa-plus fa-xs"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="cart-sale-price">@thanhTien.ToString("N0")đ</div>
+                                        @if (coGiamGia)
+                                        {
+                                            <div class="cart-old-price">@thanhTienGoc.ToString("N0")đ</div>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-0">
+                                        <form method="post" action="/GioHang/Delete" class="delete-item-form m-0">
+                                            <input type="hidden" name="idgiohang" value="@item.IDChiTietGioHang" />
+                                            <button type="button" class="cart-remove-link btn-trigger-delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 pt-2">
+                    <a href="/SanPhamNguoiDung/Index" class="text-dark text-decoration-none fw-bold small d-inline-flex align-items-center">
                         <i class="fas fa-arrow-left me-2"></i> @((lang == "vi") ? "TIẾP TỤC MUA SẮM" : "CONTINUE SHOPPING")
                     </a>
                 </div>
@@ -226,32 +328,57 @@
         <div class="col-lg-4">
             <div class="cart-summary-card">
                 <h5 class="fw-bold mb-4">@((lang == "vi") ? "TỔNG ĐƠN HÀNG" : "ORDER SUMMARY")</h5>
-                
-                <div class="d-flex justify-content-between mb-3">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">@((lang == "vi") ? "Tạm tính" : "Subtotal")</span>
-                    <span class="fw-bold" id="tamTinh">@tongTien.ToString("N0") VND</span>
+                    <span class="fw-bold text-dark" id="tamTinh">@tongTienGoc.ToString("N0")đ</span>
                 </div>
-                
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted">@((lang == "vi") ? "Vận chuyển" : "Shipping")</span>
-                    <span class="text-success small">@((lang == "vi") ? "Miễn phí" : "Free")</span>
+
+                <div class="d-flex justify-content-between align-items-center mb-3" id="tongGiamWrap" style="@(tongTienGoc > tongTien ? "" : "display:none;")">
+                    <span class="text-muted">@((lang == "vi") ? "Đã giảm" : "Discount")</span>
+                    <span class="fw-bold text-danger" id="tongGiam">-@((tongTienGoc - tongTien).ToString("N0"))đ</span>
                 </div>
 
                 <hr class="my-4">
 
-                <div class="d-flex justify-content-between mb-4">
-                    <span class="h5 fw-bold">@((lang == "vi") ? "Tổng cộng" : "Total")</span>
-                    <span class="h5 fw-bold text-danger" id="tongCong">@tongTien.ToString("N0") VND</span>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="h5 fw-bold m-0">@((lang == "vi") ? "Tổng cộng" : "Total")</span>
+                    <span class="h5 fw-bold text-danger m-0" id="tongCong">@tongTien.ToString("N0")đ</span>
                 </div>
 
-                <a href="/Checkout/Index" class="btn checkout-btn text-light">
-                    @((lang == "vi") ? "Tiến hành thanh toán" : "Checkout Now")
-                </a>
+                <form method="post" action="/GioHang/CheckoutSelected" id="checkoutSelectedForm">
+                    <input type="hidden" name="selectedItemIds" id="selectedItemIds" />
+                    <button type="submit" class="btn checkout-btn text-light" id="checkoutSelectedBtn">
+                        @((lang == "vi") ? "Tiến hành thanh toán" : "Checkout Now")
+                    </button>
+                </form>
                 
-                <div class="mt-4 text-center">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" height="20" class="me-2 opacity-50">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" height="15" class="me-2 opacity-50">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" height="20" class="opacity-50">
+                <div class="mt-4 d-flex align-items-center justify-content-center gap-3">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" height="18" class="opacity-50" alt="PayPal">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" height="13" class="opacity-50" alt="Visa">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" height="18" class="opacity-50" alt="MasterCard">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-body text-center pt-4 pb-3">
+                <div class="text-danger mb-3">
+                    <i class="fas fa-exclamation-circle fa-3x opacity-75"></i>
+                </div>
+                <h5 class="fw-bold mb-2">@((lang == "vi") ? "Xác nhận xóa?" : "Remove Item?")</h5>
+                <p class="text-muted small mb-4 px-2">@((lang == "vi") ? "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?" : "Are you sure you want to remove this item from your cart?")</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light px-4 rounded-3 text-muted small fw-bold" data-bs-dismiss="modal">
+                        @((lang == "vi") ? "Hủy" : "Cancel")
+                    </button>
+                    <button type="button" id="confirmDeleteBtn" class="btn btn-danger px-4 rounded-3 small fw-bold">
+                        @((lang == "vi") ? "Xóa" : "Delete")
+                    </button>
                 </div>
             </div>
         </div>
@@ -260,23 +387,108 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // This script mirrors your logic but adds a small animation feel
-    function updatePaymentInfo() {
-        let total = 0;
-        @foreach (var item in chiTietList)
-        {
-            <text>total += @((double)(item.GiaBan * item.SoLuong));</text>
-        }
+    let activeDeleteForm = null;
+    $(document).on('click', '.btn-trigger-delete', function () {
+        activeDeleteForm = $(this).closest('.delete-item-form'); 
+        $('#deleteConfirmModal').modal('show'); 
+    });
 
-        const formattedTotal = total.toLocaleString() + ' VND';
-        
-        // Update both fields
-        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
-        $('#tongCong').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+    $('#confirmDeleteBtn').on('click', function () {
+        if (activeDeleteForm) {
+            activeDeleteForm.submit(); 
+        }
+    });
+    
+    function formatVnd(value) {
+        return value.toLocaleString('vi-VN') + 'đ';
     }
 
-    // Initialize on load
+    function updatePaymentInfo() {
+        let total = 0;
+        let originalTotal = 0;
+        $('.item-checkbox:checked').each(function () {
+            const row = $(this).closest('tr');
+            const lineTotal = Number(row.attr('data-line-total')) || 0;
+            const lineOriginal = Number(row.attr('data-line-original')) || lineTotal;
+            total += lineTotal;
+            originalTotal += lineOriginal;
+        });
+
+        const formattedTotal = formatVnd(total);
+        const formattedOriginalTotal = formatVnd(originalTotal);
+        const discountTotal = Math.max(0, originalTotal - total);
+        const hasSelection = $('.item-checkbox:checked').length > 0;
+        
+        $('#tamTinh').fadeOut(100, function() { $(this).text(formattedOriginalTotal).fadeIn(100); });
+        $('#tongCong').fadeOut(100, function() { $(this).text(formattedTotal).fadeIn(100); });
+        $('#tongGiam').text('-' + formatVnd(discountTotal));
+        $('#tongGiamWrap').toggle(discountTotal > 0);
+        $('#checkoutSelectedBtn').prop('disabled', !hasSelection);
+    }
+
+    function syncSelectAllState() {
+        const totalItems = $('.item-checkbox').length;
+        const checkedItems = $('.item-checkbox:checked').length;
+        $('#selectAllItems').prop('checked', totalItems > 0 && totalItems === checkedItems);
+    }
+
     $(document).ready(function() {
+        $(document).on('input', '.quantity-input', function () {
+            let value = ($(this).val() ?? '').toString();
+            let max = parseInt($(this).attr('max')) || 1;
+
+            value = value.replace(/[^0-9]/g, '');
+            if (value === '') {
+                return;
+            }
+
+            let parsedValue = parseInt(value);
+            if (parsedValue < 1) {
+                parsedValue = 1;
+            }
+            if (parsedValue > max) {
+                alert(`Số lượng vượt quá tồn kho! Chỉ còn ${max} sản phẩm.`);
+                parsedValue = max;
+            }
+
+            $(this).val(parsedValue);
+        });
+
+        $(document).on('change', '.quantity-input', function () {
+            let value = parseInt($(this).val()) || 1;
+            const form = $(this)
+                .closest('.cart-qty-control')
+                .find('.update-cart-form');
+
+            form.find('.hidden-qty').val(value);
+            form.submit();
+        });
+
+        $('#selectAllItems').on('change', function () {
+            $('.item-checkbox').prop('checked', $(this).is(':checked'));
+            updatePaymentInfo();
+        });
+
+        $(document).on('change', '.item-checkbox', function () {
+            syncSelectAllState();
+            updatePaymentInfo();
+        });
+
+        $('#checkoutSelectedForm').on('submit', function (e) {
+            const selectedIds = $('.item-checkbox:checked').map(function () {
+                return $(this).data('item-id');
+            }).get();
+
+            if (selectedIds.length === 0) {
+                e.preventDefault();
+                alert('@((lang == "vi") ? "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán." : "Please select at least one product to checkout.")');
+                return;
+            }
+
+            $('#selectedItemIds').val(selectedIds.join(','));
+        });
+
+        syncSelectAllState();
         updatePaymentInfo();
     });
 </script>

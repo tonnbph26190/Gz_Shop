@@ -166,11 +166,11 @@ namespace QuanApi.Controllers
             return Ok("Đã reset số lượng sử dụng phiếu giảm giá.");
         }
 
-        // GET: api/PhieuGiamGia/kiem-tra?code=ABC
+        // GET: api/PhieuGiamGia/kiem-tra?code=ABC&tongTien=100000
         [HttpGet("kiem-tra")]
-        public async Task<IActionResult> KiemTraMaGiamGia([FromQuery] string code)
+        public async Task<IActionResult> KiemTraMaGiamGia([FromQuery] string code, [FromQuery] decimal? tongTien = null)
         {
-            var result = await _service.CheckVoucherCodeAsync(code);
+            var result = await _service.CheckVoucherCodeAsync(code, tongTien);
             return Ok(result);
         }
 

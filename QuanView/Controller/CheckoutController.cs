@@ -61,6 +61,158 @@ namespace QuanView.Controllers
             return null;
         }
 
+        private List<Guid> GetSelectedCartItemIds()
+        {
+            return HttpContext.Session.GetObjectFromJson<List<Guid>>("SelectedCartItemIds") ?? new List<Guid>();
+        }
+
+        private List<ChiTietGioHang> FilterCartBySelectedItems(IEnumerable<ChiTietGioHang> cart, List<Guid> selectedItemIds)
+        {
+            var source = cart?.ToList() ?? new List<ChiTietGioHang>();
+            if (selectedItemIds == null || selectedItemIds.Count == 0)
+            {
+                return source;
+            }
+
+            var selectedLookup = selectedItemIds.ToHashSet();
+            return source.Where(item => selectedLookup.Contains(item.IDChiTietGioHang)).ToList();
+        }
+
+        private async Task<List<ChiTietGioHang>> GetCurrentCartAsync(Guid? customerId = null)
+        {
+            var effectiveCustomerId = customerId ?? ResolveCurrentCustomerId();
+            if (!effectiveCustomerId.HasValue)
+            {
+                return HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart")
+                    ?? new List<QuanApi.Data.ChiTietGioHang>();
+            }
+
+            var response = await _httpClient.GetAsync($"GioHangs/user/{effectiveCustomerId.Value}");
+            if (!response.IsSuccessStatusCode)
+            {
+                return new List<QuanApi.Data.ChiTietGioHang>();
+            }
+
+            var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
+            return gioHang?.ChiTietGioHangs?.ToList() ?? new List<QuanApi.Data.ChiTietGioHang>();
+        }
+
+        private async Task EnrichCartItemDetailsAsync(List<ChiTietGioHang> cart)
+        {
+            foreach (var item in cart)
+            {
+                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
+                if (!responseSpct.IsSuccessStatusCode)
+                {
+                    continue;
+                }
+
+                var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
+                if (spct == null)
+                {
+                    continue;
+                }
+
+                item.GiaBan = spct.price;
+                item.SanPhamChiTiet = new SanPhamChiTiet
+                {
+                    SanPham = new SanPham
+                    {
+                        TenSanPham = spct.TenSanPham
+                    },
+                    GiaBan = spct.price,
+                    SoLuong = spct.SoLuongKhaDung,
+                    AnhSanPhams = new List<AnhSanPham>
+                    {
+                        new AnhSanPham
+                        {
+                            UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
+                            LaAnhChinh = true
+                        }
+                    }
+                };
+            }
+        }
+
+        private async Task RemovePurchasedItemsFromCurrentCartAsync(List<Guid> purchasedItemIds, Guid? customerId = null)
+        {
+            if (purchasedItemIds == null || purchasedItemIds.Count == 0)
+            {
+                return;
+            }
+
+            var effectiveCustomerId = customerId ?? ResolveCurrentCustomerId();
+            if (effectiveCustomerId.HasValue)
+            {
+                var dbCart = await GetCurrentCartAsync(effectiveCustomerId.Value);
+                var purchasedLookup = purchasedItemIds.ToHashSet();
+                var toDelete = dbCart
+                    .Where(item => purchasedLookup.Contains(item.IDChiTietGioHang))
+                    .Select(item => item.IDChiTietGioHang)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var idChiTiet in toDelete)
+                {
+                    await _httpClient.DeleteAsync($"GioHangs/item/{idChiTiet}");
+                }
+
+                return;
+            }
+
+            var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+            if (cart.Count == 0)
+            {
+                return;
+            }
+
+            var sessionLookup = purchasedItemIds.ToHashSet();
+            cart = cart.Where(item => !sessionLookup.Contains(item.IDChiTietGioHang)).ToList();
+            HttpContext.Session.SetObjectAsJson("Cart", cart);
+        }
+
+        private async Task<PhieuGiamGiaResponse?> KiemTraPhieuGiamGiaHopLeAsync(string maGiamGia, decimal? tongTien = null)
+        {
+            if (string.IsNullOrWhiteSpace(maGiamGia))
+            {
+                return null;
+            }
+
+            var code = Uri.EscapeDataString(maGiamGia.Trim());
+            var tongTienQuery = tongTien.HasValue
+                ? $"&tongTien={tongTien.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+                : string.Empty;
+            var endpoints = new[]
+            {
+                $"PhieuGiamGia/kiem-tra?code={code}{tongTienQuery}",
+                $"PhieuGiamGias/kiem-tra?code={code}{tongTienQuery}"
+            };
+
+            foreach (var endpoint in endpoints)
+            {
+                try
+                {
+                    var response = await _httpClient.GetAsync(endpoint);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+
+                    var result = await response.Content.ReadFromJsonAsync<PhieuGiamGiaResponse>();
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+                catch
+                {
+                    // Thử endpoint dự phòng
+                }
+            }
+
+            return null;
+        }
+
         private bool ValidateVietnamesePhoneNumber(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -95,43 +247,20 @@ namespace QuanView.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+            var customerId = ResolveCurrentCustomerId();
+            var cart = await GetCurrentCartAsync(customerId);
+            var selectedItemIds = GetSelectedCartItemIds();
+
+            cart = FilterCartBySelectedItems(cart, selectedItemIds);
 
             if (!cart.Any())
             {
+                TempData["ErrorMessage"] = "Không tìm thấy sản phẩm đã chọn để thanh toán. Vui lòng chọn lại.";
+                HttpContext.Session.Remove("SelectedCartItemIds");
                 return RedirectToAction("Index", "GioHang");
             }
 
-            // Cập nhật thông tin sản phẩm cho từng item
-            foreach (var item in cart)
-            {
-                var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
-                if (responseSpct.IsSuccessStatusCode)
-                {
-                    var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                    if (spct != null)
-                    {
-                        item.GiaBan = spct.price;
-                        item.SanPhamChiTiet = new SanPhamChiTiet
-                        {
-                            SanPham = new SanPham
-                            {
-                                TenSanPham = spct.TenSanPham
-                            },
-                            GiaBan = spct.price,
-                            SoLuong = spct.SoLuongKhaDung,
-                            AnhSanPhams = new List<AnhSanPham>
-                            {
-                                new AnhSanPham
-                                {
-                                    UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
-                                    LaAnhChinh = true
-                                }
-                            }
-                        };
-                    }
-                }
-            }
+            await EnrichCartItemDetailsAsync(cart);
 
             // Tính tổng tiền
             var tongTien = cart.Sum(item => item.GiaBan * item.SoLuong);
@@ -146,6 +275,21 @@ namespace QuanView.Controllers
         {
             try
             {
+                var selectedItemIds = (checkoutData.SelectedCartItemIds ?? new List<Guid>())
+                    .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList();
+
+                if (!selectedItemIds.Any())
+                {
+                    selectedItemIds = GetSelectedCartItemIds();
+                }
+
+                if (!selectedItemIds.Any())
+                {
+                    return Json(new { success = false, message = "Không xác định được sản phẩm đã chọn. Vui lòng quay lại giỏ hàng và chọn lại." });
+                }
+
                 // Validate số điện thoại người nhận
                 if (string.IsNullOrWhiteSpace(checkoutData.SoDienThoaiNguoiNhan))
                 {
@@ -177,12 +321,13 @@ namespace QuanView.Controllers
                     return Json(new { success = false, message = "Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã trước khi thanh toán" });
                 }
 
-                // Lấy giỏ hàng từ session
-                var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                // Lấy giỏ hàng theo trạng thái đăng nhập (DB cho user, session cho guest)
+                var cart = await GetCurrentCartAsync();
+                cart = FilterCartBySelectedItems(cart, selectedItemIds);
 
                 if (!cart.Any())
                 {
-                    return Json(new { success = false, message = "Giỏ hàng trống" });
+                    return Json(new { success = false, message = "Không có sản phẩm nào được chọn để thanh toán" });
                 }
 
                 // Cập nhật lại thông tin sản phẩm và giá trước khi tạo hóa đơn
@@ -236,25 +381,27 @@ namespace QuanView.Controllers
 
                 // Xử lý phiếu giảm giá nếu có
                 Guid? phieuGiamGiaId = null;
-                if (!string.IsNullOrEmpty(checkoutData.MaGiamGia))
+                var maGiamGia = checkoutData.MaGiamGia?.Trim();
+                if (!string.IsNullOrWhiteSpace(maGiamGia))
                 {
-                    try
+                    var tongTienHang = chiTietHoaDons.Sum(x => x.thanhTien);
+                    var phieuResult = await KiemTraPhieuGiamGiaHopLeAsync(maGiamGia, tongTienHang);
+                    if (phieuResult == null || !phieuResult.Success || !phieuResult.IdPhieuGiamGia.HasValue)
                     {
-                        // Tìm phiếu giảm giá theo mã
-                        var responsePhieu = await _httpClient.GetAsync($"PhieuGiamGias/kiem-tra?code={Uri.EscapeDataString(checkoutData.MaGiamGia)}");
-                        if (responsePhieu.IsSuccessStatusCode)
-                        {
-                            var phieuResult = await responsePhieu.Content.ReadFromJsonAsync<PhieuGiamGiaResponse>();
-                            if (phieuResult != null && phieuResult.Success && phieuResult.IdPhieuGiamGia.HasValue)
-                            {
-                                phieuGiamGiaId = phieuResult.IdPhieuGiamGia.Value;
-                            }
-                        }
+                        return Json(new { success = false, message = "Mã giảm giá không hợp lệ hoặc đã hết hiệu lực." });
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Lỗi khi xử lý phiếu giảm giá: {ex.Message}");
-                    }
+
+                    phieuGiamGiaId = phieuResult.IdPhieuGiamGia.Value;
+                    checkoutData.MaGiamGia = maGiamGia;
+                }
+                else
+                {
+                    checkoutData.MaGiamGia = null;
+                }
+
+                if (!phieuGiamGiaId.HasValue && (checkoutData.TienGiam ?? 0) > 0)
+                {
+                    return Json(new { success = false, message = "Giảm giá không hợp lệ. Vui lòng chọn lại mã giảm giá." });
                 }
 
                 Console.WriteLine($"KhachHangId from claims: {khachHangId}");
@@ -319,12 +466,14 @@ namespace QuanView.Controllers
                             PhiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
                             TenNguoiNhan = checkoutData.TenNguoiNhan,
                             SoDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                            EmailNguoiNhan = checkoutData.EmailNguoiNhan,
                             DiaChiGiaoHang = checkoutData.DiaChiGiaoHang,
                             GhiChu = checkoutData.GhiChu,
                             PhieuGiamGiaId = phieuGiamGiaId,
                             Province = checkoutData.Province,
                             District = checkoutData.District,
-                            MaGiamGia = checkoutData.MaGiamGia
+                            MaGiamGia = checkoutData.MaGiamGia,
+                            SelectedCartItemIds = selectedItemIds
                         };
 
                         HttpContext.Session.SetObjectAsJson("PendingOrder", orderInfo);
@@ -367,8 +516,11 @@ namespace QuanView.Controllers
                     requestedUsedPoints = checkoutData.RequestedUsedPoints,
                     phiVanChuyen = checkoutData.PhiVanChuyen, // Dùng phí đã tính từ API nếu có
                     phiVanChuyenDaGiam = checkoutData.PhiVanChuyenDaGiam,
+                    phiVanChuyenGoc = checkoutData.PhiVanChuyenGoc,
+                    soTienGiamPhiVanChuyen = checkoutData.SoTienGiamPhiVanChuyen,
                     tenNguoiNhan = checkoutData.TenNguoiNhan,
                     soDienThoaiNguoiNhan = checkoutData.SoDienThoaiNguoiNhan,
+                    emailNguoiNhan = checkoutData.EmailNguoiNhan,
                     diaChiGiaoHang = checkoutData.DiaChiGiaoHang,
                     ghiChu = checkoutData.GhiChu,
                     chiTietHoaDons = chiTietHoaDons
@@ -384,6 +536,7 @@ namespace QuanView.Controllers
                     Console.WriteLine($"API Response: {responseContent}");
 
                     string maHoaDon = $"HD_{DateTime.Now:yyyyMMddHHmmss}"; // Fallback
+                    decimal finalOrderTotal = checkoutData.TongTien;
                     decimal soTienGiamTuDiem = 0;
                     decimal tyLeQuyDoiDiem = 0;
                     int diemDaDung = checkoutData.RequestedUsedPoints ?? 0;
@@ -410,6 +563,7 @@ namespace QuanView.Controllers
                             // Thử parse như HoaDon object
                             var hoaDonResponse = JsonSerializer.Deserialize<HoaDon>(responseContent);
                             maHoaDon = hoaDonResponse?.MaHoaDon ?? maHoaDon;
+                            finalOrderTotal = hoaDonResponse?.TongTien ?? finalOrderTotal;
                             soTienGiamTuDiem = hoaDonResponse?.SoTienGiamTuDiem ?? 0;
                             tyLeQuyDoiDiem = hoaDonResponse?.TyLeQuyDoiDiem ?? 0;
                             diemDaDung = hoaDonResponse?.DiemDaDung ?? diemDaDung;
@@ -426,6 +580,14 @@ namespace QuanView.Controllers
                         if (responseData.TryGetProperty("diemDaDung", out var diemDaDungElement))
                         {
                             diemDaDung = diemDaDungElement.GetInt32();
+                        }
+                        if (responseData.TryGetProperty("tongTien", out var tongTienElement))
+                        {
+                            finalOrderTotal = tongTienElement.GetDecimal();
+                        }
+                        else if (responseData.TryGetProperty("TongTien", out var tongTienPascalElement))
+                        {
+                            finalOrderTotal = tongTienPascalElement.GetDecimal();
                         }
                         if (responseData.TryGetProperty("phiVanChuyen", out var phiVanChuyenElement))
                         {
@@ -448,7 +610,7 @@ namespace QuanView.Controllers
 
                     // Chuẩn bị dữ liệu cho trang Success
                     ViewBag.OrderCode = maHoaDon;
-                    ViewBag.OrderTotal = checkoutData.TongTien;
+                    ViewBag.OrderTotal = finalOrderTotal;
                     ViewBag.PaymentMethod = "Thanh toán khi nhận hàng";
                     ViewBag.OrderDate = DateTime.Now;
                     ViewBag.CustomerName = checkoutData.TenNguoiNhan;
@@ -459,7 +621,8 @@ namespace QuanView.Controllers
                     ViewBag.ShippingDiscountAmount = soTienGiamPhiVanChuyen;
                     ViewBag.ShippingDiscountMessage = shippingDiscountMessage;
 
-                    HttpContext.Session.Remove("Cart");
+                    await RemovePurchasedItemsFromCurrentCartAsync(selectedItemIds, khachHangId);
+                    HttpContext.Session.Remove("SelectedCartItemIds");
 
                     return Json(new
                     {
@@ -468,7 +631,7 @@ namespace QuanView.Controllers
                         redirectUrl = Url.Action("Success", "Checkout", new
                         {
                             orderCode = maHoaDon,
-                            total = checkoutData.TongTien,
+                            total = finalOrderTotal,
                             paymentMethod = "Thanh toán khi nhận hàng",
                             customerName = checkoutData.TenNguoiNhan,
                             customerPhone = checkoutData.SoDienThoaiNguoiNhan,
@@ -552,14 +715,13 @@ namespace QuanView.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> KiemTraMaGiamGia(string code)
+        public async Task<IActionResult> KiemTraMaGiamGia(string code, decimal? tongTien = null)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"PhieuGiamGias/kiem-tra?code={Uri.EscapeDataString(code)}");
-                if (response.IsSuccessStatusCode)
+                var result = await KiemTraPhieuGiamGiaHopLeAsync(code, tongTien);
+                if (result != null)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<object>();
                     return Json(result);
                 }
                 return Json(new { success = false, message = "Mã giảm giá không hợp lệ" });
@@ -571,9 +733,11 @@ namespace QuanView.Controllers
         }
 
         [HttpPost]
-        public IActionResult ClearCart()
+        public async Task<IActionResult> ClearCart()
         {
-            HttpContext.Session.Remove("Cart");
+            var selectedItemIds = GetSelectedCartItemIds();
+            await RemovePurchasedItemsFromCurrentCartAsync(selectedItemIds);
+            HttpContext.Session.Remove("SelectedCartItemIds");
             return Json(new { success = true });
         }
 
@@ -801,88 +965,11 @@ namespace QuanView.Controllers
         {
             try
             {
-                var customerIdClaim = User.FindFirst("custom:id_khachhang");
-                if (customerIdClaim == null || !Guid.TryParse(customerIdClaim.Value, out var customerId))
-                {
-                    // Khách hàng - trả về giỏ hàng session với thông tin sản phẩm đầy đủ
-                    var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
-
-                    // Cập nhật thông tin sản phẩm cho từng item (giống như trong GioHangController)
-                    foreach (var item in cart)
-                    {
-                        var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
-                        if (responseSpct.IsSuccessStatusCode)
-                        {
-                            var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                            if (spct != null)
-                            {
-                                item.GiaBan = spct.price;
-                                item.SanPhamChiTiet = new SanPhamChiTiet
-                                {
-                                    SanPham = new SanPham
-                                    {
-                                        TenSanPham = spct.TenSanPham
-                                    },
-                                    GiaBan = spct.price,
-                                    SoLuong = spct.SoLuongKhaDung,
-                                    AnhSanPhams = new List<AnhSanPham>
-                                    {
-                                        new AnhSanPham
-                                        {
-                                            UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
-                                            LaAnhChinh = true
-                                        }
-                                    }
-                                };
-                            }
-                        }
-                    }
-
-                    return Json(new { success = true, chiTietGioHangs = cart });
-                }
-
-                // Người dùng đã đăng nhập - trả về giỏ hàng từ database
-                var response = await _httpClient.GetAsync($"GioHangs/getbyuser?iduser={customerId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    var gioHang = await response.Content.ReadFromJsonAsync<QuanApi.Data.GioHang>();
-                    var chiTietGioHangs = gioHang?.ChiTietGioHangs ?? new List<QuanApi.Data.ChiTietGioHang>();
-
-                    // Cập nhật thông tin sản phẩm cho từng item
-                    foreach (var item in chiTietGioHangs)
-                    {
-                        var responseSpct = await _httpClient.GetAsync($"SanPhamChiTiets/{item.IDSanPhamChiTiet}");
-                        if (responseSpct.IsSuccessStatusCode)
-                        {
-                            var spct = await responseSpct.Content.ReadFromJsonAsync<SanPhamChiTietDto>();
-                            if (spct != null)
-                            {
-                                item.GiaBan = spct.price;
-                                item.SanPhamChiTiet = new SanPhamChiTiet
-                                {
-                                    SanPham = new SanPham
-                                    {
-                                        TenSanPham = spct.TenSanPham
-                                    },
-                                    GiaBan = spct.price,
-                                    SoLuong = spct.SoLuongKhaDung,
-                                    AnhSanPhams = new List<AnhSanPham>
-                                    {
-                                        new AnhSanPham
-                                        {
-                                            UrlAnh = spct.AnhDaiDien ?? "/img/default-product.jpg",
-                                            LaAnhChinh = true
-                                        }
-                                    }
-                                };
-                            }
-                        }
-                    }
-
-                    return Json(new { success = true, chiTietGioHangs = chiTietGioHangs });
-                }
-
-                return Json(new { success = true, chiTietGioHangs = new List<QuanApi.Data.ChiTietGioHang>() });
+                var selectedItemIds = GetSelectedCartItemIds();
+                var cart = await GetCurrentCartAsync();
+                await EnrichCartItemDetailsAsync(cart);
+                cart = FilterCartBySelectedItems(cart, selectedItemIds);
+                return Json(new { success = true, chiTietGioHangs = cart });
             }
             catch (Exception ex)
             {
@@ -912,11 +999,30 @@ namespace QuanView.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCustomerVouchers(decimal tongTien)
+        public async Task<IActionResult> GetCustomerVouchers(decimal tongTien, string? soDienThoaiNguoiNhan = null, string? emailNguoiNhan = null)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"KhachHangPhieuGiam/phieu-giam-gia-cong-khai?tongTien={tongTien}");
+                var customerId = ResolveCurrentCustomerId();
+                var query = $"KhachHangPhieuGiam/phieu-giam-gia-cong-khai?tongTien={tongTien}";
+                if (customerId.HasValue)
+                {
+                    query += $"&customerId={customerId.Value}";
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(soDienThoaiNguoiNhan))
+                    {
+                        query += $"&soDienThoai={Uri.EscapeDataString(soDienThoaiNguoiNhan.Trim())}";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(emailNguoiNhan))
+                    {
+                        query += $"&email={Uri.EscapeDataString(emailNguoiNhan.Trim())}";
+                    }
+                }
+
+                var response = await _httpClient.GetAsync(query);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -1046,8 +1152,15 @@ namespace QuanView.Controllers
                             return RedirectToAction("Index", "GioHang");
                         }
 
-                        // Lấy chi tiết hóa đơn từ giỏ hàng
-                        var cart = HttpContext.Session.GetObjectFromJson<List<QuanApi.Data.ChiTietGioHang>>("Cart") ?? new List<QuanApi.Data.ChiTietGioHang>();
+                        // Lấy chi tiết hóa đơn từ nguồn giỏ hàng hiện tại
+                        var cart = await GetCurrentCartAsync(checkoutInfo.KhachHangId);
+                        var selectedItemIds = checkoutInfo.SelectedCartItemIds ?? GetSelectedCartItemIds();
+                        cart = FilterCartBySelectedItems(cart, selectedItemIds);
+                        if (!cart.Any())
+                        {
+                            TempData["ErrorMessage"] = "Không tìm thấy sản phẩm đã chọn để tạo đơn hàng.";
+                            return RedirectToAction("Index", "GioHang");
+                        }
                         var chiTietHoaDons = cart.Select(item => new
                         {
                             idSanPhamChiTiet = item.IDSanPhamChiTiet,
@@ -1070,8 +1183,11 @@ namespace QuanView.Controllers
                             requestedUsedPoints = checkoutInfo.RequestedUsedPoints,
                             phiVanChuyen = checkoutInfo.PhiVanChuyen,
                             phiVanChuyenDaGiam = checkoutInfo.PhiVanChuyenDaGiam,
+                            phiVanChuyenGoc = checkoutInfo.PhiVanChuyenGoc,
+                            soTienGiamPhiVanChuyen = checkoutInfo.SoTienGiamPhiVanChuyen,
                             tenNguoiNhan = checkoutInfo.TenNguoiNhan,
                             soDienThoaiNguoiNhan = checkoutInfo.SoDienThoaiNguoiNhan,
+                            emailNguoiNhan = checkoutInfo.EmailNguoiNhan,
                             diaChiGiaoHang = checkoutInfo.DiaChiGiaoHang,
                             ghiChu = checkoutInfo.GhiChu,
                             chiTietHoaDons = chiTietHoaDons
@@ -1093,6 +1209,11 @@ namespace QuanView.Controllers
                                 var diemDaDung = root.TryGetProperty("diemDaDung", out var diemDaDungEl)
                                     ? diemDaDungEl.GetInt32()
                                     : (checkoutInfo.RequestedUsedPoints ?? 0);
+                                var finalOrderTotal = root.TryGetProperty("tongTien", out var tongTienEl)
+                                    ? tongTienEl.GetDecimal()
+                                    : (root.TryGetProperty("TongTien", out var tongTienPascalEl)
+                                        ? tongTienPascalEl.GetDecimal()
+                                        : checkoutInfo.TongTien);
                                 var soTienGiamTuDiem = root.TryGetProperty("soTienGiamTuDiem", out var soTienGiamTuDiemEl)
                                     ? soTienGiamTuDiemEl.GetDecimal()
                                     : 0m;
@@ -1111,7 +1232,7 @@ namespace QuanView.Controllers
 
                                 // Chuẩn bị dữ liệu cho trang Success
                                 ViewBag.OrderCode = maHoaDon;
-                                ViewBag.OrderTotal = checkoutInfo.TongTien;
+                                ViewBag.OrderTotal = finalOrderTotal;
                                 ViewBag.PaymentMethod = "Thanh toán VNPay";
                                 ViewBag.OrderDate = DateTime.Now;
                                 ViewBag.CustomerName = checkoutInfo.TenNguoiNhan;
@@ -1126,7 +1247,8 @@ namespace QuanView.Controllers
                                 ViewBag.PointRate = tyLeQuyDoiDiem;
 
                                 // Xóa giỏ hàng và thông tin đơn hàng tạm
-                                HttpContext.Session.Remove("Cart");
+                                await RemovePurchasedItemsFromCurrentCartAsync(selectedItemIds, checkoutInfo.KhachHangId);
+                                HttpContext.Session.Remove("SelectedCartItemIds");
                                 HttpContext.Session.Remove("PendingOrder");
 
                                 // Chuyển hướng đến trang Success
@@ -1205,6 +1327,7 @@ namespace QuanView.Controllers
         public Guid? KhachHangId { get; set; }
         public string TenNguoiNhan { get; set; }
         public string SoDienThoaiNguoiNhan { get; set; }
+        public string? EmailNguoiNhan { get; set; }
         public string DiaChiGiaoHang { get; set; }
         public string Province { get; set; }
         public string District { get; set; }
@@ -1224,6 +1347,7 @@ namespace QuanView.Controllers
         public int? ToDistrictId { get; set; }
         public string? ToWardCode { get; set; }
         public int? Weight { get; set; } = 500;
+        public List<Guid>? SelectedCartItemIds { get; set; }
     }
 
     public class PhieuGiamGiaResponse

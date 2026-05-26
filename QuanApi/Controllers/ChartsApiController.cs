@@ -38,7 +38,7 @@ public class ChartsApiController : ControllerBase
                             && h.TrangThaiHoaDon
                             && h.NgayTao >= startOfToday
                             && h.NgayTao < startOfTomorrow)
-                .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
+                .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
             // month revenue (use half-open range)
             var monthRevenue = await _context.HoaDons
@@ -46,7 +46,7 @@ public class ChartsApiController : ControllerBase
                         && h.TrangThaiHoaDon
                         && h.NgayTao >= firstDayOfMonth
                         && h.NgayTao < firstDayOfNextMonth)
-            .SumAsync(h => (decimal?)(h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)) ?? 0m);
+            .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
 
             var monthProductQuantity = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
@@ -97,12 +97,15 @@ public class ChartsApiController : ControllerBase
             var totalProducts = await _context.SanPhams.CountAsync();
             var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => (int?)spct.SoLuong ?? 0);
             var outOfStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) == 0)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 0)
                 .CountAsync();
             var lowStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) > 0 && g.Sum(spct => spct.SoLuong) <= 10)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) > 0
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 10)
                 .CountAsync();
 
             return Ok(new
@@ -138,7 +141,7 @@ public class ChartsApiController : ControllerBase
             var today = DateTime.UtcNow.Date;
             var revenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao.Date == today)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -155,7 +158,7 @@ public class ChartsApiController : ControllerBase
             var revenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
                             h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -223,12 +226,15 @@ public class ChartsApiController : ControllerBase
             var totalVariants = await _context.SanPhamChiTiets.CountAsync();
             var totalQuantity = await _context.SanPhamChiTiets.SumAsync(spct => spct.SoLuong);
             var outOfStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) == 0)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 0)
                 .CountAsync();
             var lowStockProducts = await _context.SanPhamChiTiets
-                .GroupBy(spct => spct.IDSanPham)
-                .Where(g => g.Sum(spct => spct.SoLuong) > 0 && g.Sum(spct => spct.SoLuong) <= 10)
+                .Where(spct => spct.TrangThai
+                               && spct.SanPham.TrangThai
+                               && (spct.SoLuong - spct.SoLuongDatCho) > 0
+                               && (spct.SoLuong - spct.SoLuongDatCho) <= 10)
                 .CountAsync();
             return Ok(new
             {
@@ -262,7 +268,7 @@ public class ChartsApiController : ControllerBase
                 {
                     g.Key.Year,
                     g.Key.Month,
-                    Revenue = g.Sum(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0)),
+                    Revenue = g.Sum(h => h.TongTien - (h.PhiVanChuyen ?? 0)),
                     OrderCount = g.Count()
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month)
@@ -495,12 +501,21 @@ public class ChartsApiController : ControllerBase
 		{
 			var list = await _context.SanPhamChiTiets
 				.Include(ct => ct.SanPham)
-				.GroupBy(ct => ct.IDSanPham)
-				.Where(g => g.Sum(ct => (int?)ct.SoLuong) == 0)
-				.Select(g => new
+				.Include(ct => ct.KichCo)
+				.Include(ct => ct.MauSac)
+				.Include(ct => ct.HoaTiet)
+				.Where(ct => ct.TrangThai
+					&& ct.SanPham.TrangThai
+					&& (ct.SoLuong - ct.SoLuongDatCho) <= 0)
+				.Select(ct => new
 				{
-					Id = g.Key, // ✅ THÊM DÒNG NÀY
-					TenSanPham = g.First().SanPham.TenSanPham,
+					Id = ct.IDSanPham,
+					VariantId = ct.IDSanPhamChiTiet,
+					TenSanPham = ct.SanPham.TenSanPham,
+					MaBienThe = ct.MaSPChiTiet,
+					KichCo = ct.KichCo.TenKichCo,
+					MauSac = ct.MauSac.TenMauSac,
+					HoaTiet = ct.HoaTiet != null ? ct.HoaTiet.TenHoaTiet : "",
 					SoLuong = 0
 				})
 				.ToListAsync();
@@ -519,14 +534,23 @@ public class ChartsApiController : ControllerBase
 		{
 			var data = await _context.SanPhamChiTiets
 				.Include(x => x.SanPham)
-				.GroupBy(x => x.IDSanPham)
-				.Where(g => g.Sum(x => (int?)x.SoLuong) > 0
-						 && g.Sum(x => (int?)x.SoLuong) <= 10)
-				.Select(g => new
+				.Include(x => x.KichCo)
+				.Include(x => x.MauSac)
+				.Include(x => x.HoaTiet)
+				.Where(x => x.TrangThai
+					&& x.SanPham.TrangThai
+					&& (x.SoLuong - x.SoLuongDatCho) > 0
+					&& (x.SoLuong - x.SoLuongDatCho) <= 10)
+				.Select(x => new
 				{
-					Id = g.Key, // ✅ QUAN TRỌNG
-					TenSanPham = g.First().SanPham.TenSanPham,
-					SoLuong = g.Sum(x => (int?)x.SoLuong) ?? 0
+					Id = x.IDSanPham,
+					VariantId = x.IDSanPhamChiTiet,
+					TenSanPham = x.SanPham.TenSanPham,
+					MaBienThe = x.MaSPChiTiet,
+					KichCo = x.KichCo.TenKichCo,
+					MauSac = x.MauSac.TenMauSac,
+					HoaTiet = x.HoaTiet != null ? x.HoaTiet.TenHoaTiet : "",
+					SoLuong = x.SoLuong - x.SoLuongDatCho
 				})
 				.ToListAsync();
 
@@ -549,7 +573,7 @@ public class ChartsApiController : ControllerBase
 
             var monthlyRevenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.TienGiam ?? 0) - (h.PhiVanChuyen ?? 0));
+                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
 
             var todayOrders = await _context.HoaDons.CountAsync(h => h.NgayTao.Date == today && h.TrangThaiHoaDon);
             var totalCustomers = await _context.KhachHang.CountAsync(k => k.TrangThai);

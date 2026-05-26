@@ -41,7 +41,7 @@
 		</div>
 
 		<div class="col-xl-3 col-md-6 mb-4 position-relative">
-			<div class="card border-left-info shadow h-100 py-2 hover-card" style="cursor:pointer">
+			<div class="card border-left-info shadow h-100 py-2 hover-card detail-card" data-detail-type="sold" style="cursor:pointer">
 
 				<div class="card-body">
 					<div class="row no-gutters align-items-center">
@@ -158,7 +158,7 @@
 
 		<!-- Sắp hết hàng -->
 		<div class="col-xl-3 col-md-6 mb-4 position-relative">
-			<div class="card border-left-warning shadow h-100 py-2 hover-card" style="cursor:pointer">
+			<div class="card border-left-warning shadow h-100 py-2 hover-card detail-card" data-detail-type="low" style="cursor:pointer">
 
 				<div class="card-body">
 					<div class="row no-gutters align-items-center">
@@ -169,7 +169,7 @@
 							</div>
 
 							<div class="h6 mb-2 font-weight-bold text-gray-800" id="sanPhamSapHetHang">
-								0 sản phẩm
+								0 biến thể
 							</div>
 
 						</div>
@@ -188,7 +188,7 @@
 			</div>
 		</div>
 		<div class="col-xl-3 col-md-6 mb-4 position-relative">
-			<div class="card border-left-danger shadow h-100 py-2 hover-card" style="cursor:pointer">
+			<div class="card border-left-danger shadow h-100 py-2 hover-card detail-card" data-detail-type="out" style="cursor:pointer">
 
 				<div class="card-body">
 					<div class="row no-gutters align-items-center">
@@ -199,7 +199,7 @@
 							</div>
 
 							<div class="h6 mb-2 font-weight-bold text-gray-800" id="sanPhamHetHang">
-								0 sản phẩm
+								0 biến thể
 							</div>
 
 						</div>
@@ -219,6 +219,30 @@
 		</div>
 
 
+	</div>
+
+	<div class="row mb-4" id="quickDetailSection" style="display:none;">
+		<div class="col-12">
+			<div class="card shadow quick-detail-card">
+				<div class="card-header py-3 d-flex align-items-center justify-content-between">
+					<div>
+						<h6 class="m-0 font-weight-bold text-primary" id="quickDetailTitle">Chi tiết</h6>
+						<small class="text-muted" id="quickDetailMeta"></small>
+					</div>
+					<button type="button" class="btn btn-sm btn-outline-secondary" id="quickDetailClose">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="card-body">
+					<div class="table-responsive">
+						<table class="table table-bordered table-hover align-middle mb-0" id="quickDetailTable">
+							<thead></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<!-- Biểu đồ chính -->
@@ -595,6 +619,38 @@
 	.dropdown-hover {
 		transition: all 0.2s ease-in-out;
 	}
+
+	.dropdown-hover .detail-open {
+		border-radius: 8px;
+		font-weight: 600;
+	}
+
+	#quickDetailSection .quick-detail-card {
+		border: 0;
+		border-radius: 10px;
+		overflow: hidden !important;
+	}
+
+	#quickDetailSection .card-header {
+		background: #fff;
+	}
+
+	#quickDetailTable th {
+		white-space: nowrap;
+		background: #f8f9fc;
+		color: #5a5c69;
+		font-size: 12px;
+		text-transform: uppercase;
+	}
+
+	#quickDetailTable td {
+		vertical-align: middle;
+	}
+
+	#quickDetailTable .row-index {
+		width: 64px;
+		text-align: center;
+	}
 </style>
 
 @section Scripts {
@@ -623,6 +679,7 @@
 			// Configurable base for product edit/update route.
 			// Change this to match your application's route if different.
 			var productEditBase = '/Admin/SanPham/Edit/';
+			var quickDetailData = { sold: [], low: [], out: [] };
 
 			// Formatting helpers (available to all functions inside this ready block)
 			function fmtVnd(n) { return (n || 0).toLocaleString('vi-VN') + ' đ'; }
@@ -634,15 +691,35 @@
 				});
 			}
 
-			// Delegated click handler: navigate to product update/edit page when a dropdown item is clicked
-			$(document).on('click', '#sapHetHangList .item, #hetHangList .item, #daBanList .item', function (e) {
+			// Delegated click handler: navigate to product update/edit page when a stock dropdown item is clicked
+			$(document).on('click', '#sapHetHangList .item, #hetHangList .item', function (e) {
+				if ($(e.target).closest('.detail-open').length) return;
 				var id = $(this).attr('data-id') || $(this).data('id');
 				if (!id) return;
-				// Build URL and navigate
 				var url = productEditBase + encodeURIComponent(id);
 				window.location.href = url;
 			});
 
+			$(document).on('click', '#daBanList .item', function (e) {
+				e.preventDefault();
+				e.stopPropagation();
+				renderQuickDetail('sold');
+			});
+
+			$(document).on('click', '.detail-open', function (e) {
+				e.preventDefault();
+				e.stopPropagation();
+				renderQuickDetail($(this).data('type'));
+			});
+
+			$(document).on('click', '.detail-card', function (e) {
+				if ($(e.target).closest('.item, .detail-open').length) return;
+				renderQuickDetail($(this).data('detail-type'));
+			});
+
+			$('#quickDetailClose').on('click', function () {
+				$('#quickDetailSection').hide();
+			});
 			// KPI setters
 			function setKpisFromSummary(data) {
 				if (!data) return;
@@ -654,18 +731,58 @@
 				$('#soDonVanChuyenHomNay').text((data.todayShippingCount || 0) + ' đơn');
 				$('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
 				$('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
-				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
-				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' biến thể');
+				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' biến thể');
 			}
 
 			function setInventoryKpis(data) {
 				if (!data) return;
 				$('#tongSoSanPham').text((data.totalProducts || 0) + ' sản phẩm');
 				$('#tongSoLuongTonKho').text(fmtNum(data.totalQuantity));
-				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' sản phẩm');
-				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' sản phẩm');
+				$('#sanPhamSapHetHang').text((data.lowStockProducts || 0) + ' biến thể');
+				$('#sanPhamHetHang').text((data.outOfStockProducts || 0) + ' biến thể');
 			}
 
+			function variantText(p) {
+				var parts = [];
+				if (p.maBienThe) parts.push(p.maBienThe);
+				if (p.kichCo) parts.push('Size ' + p.kichCo);
+				if (p.mauSac) parts.push(p.mauSac);
+				if (p.hoaTiet) parts.push(p.hoaTiet);
+				return parts.join(' - ');
+			}
+
+			function renderQuickDetail(type) {
+				var data = quickDetailData[type] || [];
+				var titleMap = { sold: 'Chi tiết sản phẩm đã bán', low: 'Chi tiết biến thể sắp hết hàng', out: 'Chi tiết biến thể hết hàng' };
+				var metaMap = { sold: 'Bảng sản phẩm đã bán trong tháng', low: 'Bấm Sửa để cập nhật sản phẩm', out: 'Bấm Sửa để cập nhật sản phẩm' };
+				var head = '';
+				var body = '';
+				$('#quickDetailTitle').text(titleMap[type] || 'Chi tiết');
+				$('#quickDetailMeta').text((metaMap[type] || '') + ' - ' + data.length.toLocaleString('vi-VN') + ' dòng');
+				if (type === 'sold') {
+					head = '<tr><th class="row-index">STT</th><th>Sản phẩm</th><th class="text-right">Đã bán</th></tr>';
+					body = data.map(function (p, index) {
+						return '<tr><td class="row-index">' + (index + 1) + '</td>' +
+							'<td>' + escapeHtml(p.tenSanPham || 'Không tên') + '</td>' +
+							'<td class="text-right font-weight-bold">' + num(p.soLuong) + '</td></tr>';
+					}).join('');
+				} else {
+					head = '<tr><th class="row-index">STT</th><th>Sản phẩm</th><th>Biến thể</th><th class="text-right">Tồn khả dụng</th><th class="text-right">Thao tác</th></tr>';
+					body = data.map(function (p, index) {
+						return '<tr><td class="row-index">' + (index + 1) + '</td>' +
+							'<td>' + escapeHtml(p.tenSanPham || 'Không tên') + '</td>' +
+							'<td>' + escapeHtml(variantText(p) || '-') + '</td>' +
+							'<td class="text-right font-weight-bold">' + num(p.soLuong) + '</td>' +
+							'<td class="text-right"><a class="btn btn-sm btn-outline-primary" href="' + productEditBase + encodeURIComponent(p.id) + '">Sửa</a></td></tr>';
+					}).join('');
+				}
+				if (!body) body = '<tr><td colspan="' + (type === 'sold' ? 3 : 5) + '" class="text-muted text-center py-3">Không có dữ liệu</td></tr>';
+				$('#quickDetailTable thead').html(head);
+				$('#quickDetailTable tbody').html(body);
+				$('#quickDetailSection').show();
+				document.getElementById('quickDetailSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
 			function loadKpisFallback() {
 				$.get(api + '/today-revenue', function (v) { $('#doanhThuHomNay').text(fmtVnd(v)); });
 				$.get(api + '/month-revenue', function (v) { $('#doanhThuThang').text(fmtVnd(v)); });
@@ -783,12 +900,13 @@
 				$.get(api + '/SanPhamSapHetHang')
 					.done(function (res) {
 						var data = Array.isArray(res) ? res : (res && res.data) || [];
+						quickDetailData.low = data;
 						if (!data.length) {
 							$('#sapHetHangList').html('<div class="text-muted p-2">Không có</div>');
 							return;
 						}
 						var html = data.map(function (p) {
-							var ten = escapeHtml(p.tenSanPham || 'Không tên');
+							var ten = escapeHtml((p.tenSanPham || 'Không tên') + (variantText(p) ? ' - ' + variantText(p) : ''));
 							var soLuong = num(p.soLuong);
 							// Render non-navigating item (no anchor)
 							return `
@@ -798,6 +916,7 @@
 								</div>
 							`;
 						}).join('');
+						html += '<button type="button" class="btn btn-sm btn-outline-warning w-100 mt-2 detail-open" data-type="low">Xem bảng chi tiết</button>';
 						$('#sapHetHangList').html(html);
 					})
 					.fail(function () {
@@ -821,12 +940,13 @@
 				$.get(api + '/SanPhamHetHang')
 					.done(function (res) {
 						var data = Array.isArray(res) ? res : (res && res.data) || [];
+						quickDetailData.out = data;
 						if (!data.length) {
 							$('#hetHangList').html('<div class="text-muted p-2">Không có</div>');
 							return;
 						}
 						var html = data.map(function (p) {
-							var ten = escapeHtml(p.tenSanPham || 'Không tên');
+							var ten = escapeHtml((p.tenSanPham || 'Không tên') + (variantText(p) ? ' - ' + variantText(p) : ''));
 							// Some APIs may include quantity; default to 0 if missing
 							var soLuong = (typeof p.soLuong !== 'undefined') ? num(p.soLuong) : '0';
 							return `
@@ -836,6 +956,7 @@
 								</div>
 							`;
 						}).join('');
+						html += '<button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 detail-open" data-type="out">Xem bảng chi tiết</button>';
 						$('#hetHangList').html(html);
 					})
 					.fail(function () {
@@ -859,6 +980,7 @@
 					.done(function (res) {
 
 						var data = Array.isArray(res) ? res : (res && res.data) || [];
+						quickDetailData.sold = data;
 
 						if (!data.length) {
 							$('#daBanList').html('<div class="text-muted p-2">Không có</div>');
@@ -880,6 +1002,7 @@
 
 						}).join('');
 
+						html += '<button type="button" class="btn btn-sm btn-outline-info w-100 mt-2 detail-open" data-type="sold">Xem bảng chi tiết</button>';
 						$('#daBanList').html(html);
 					})
 					.fail(function () {

@@ -1,9 +1,11 @@
-@model QuanApi.Data.DotGiamGia
+﻿@model QuanApi.Data.DotGiamGia
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Chỉnh sửa đợt giảm giá";
     var selectedIds = ViewBag.SelectedSanPhamList as List<SelectListItem>;
+    var ngayBatDauValue = Model.NgayBatDau.Year > 1900 ? Model.NgayBatDau.ToString("yyyy-MM-ddTHH:mm") : "";
+    var ngayKetThucValue = Model.NgayKetThuc.Year > 1900 ? Model.NgayKetThuc.ToString("yyyy-MM-ddTHH:mm") : "";
 }
 
 <style>
@@ -119,18 +121,18 @@
         <div class="row mb-3">
             <div class="col-md-4">
                 <label asp-for="PhanTramGiam" class="form-label fw-semibold">Giá trị giảm (%)</label>
-                <input asp-for="PhanTramGiam" type="number" min="1" max="40" step="0.01" class="form-control border-success" placeholder="20" oninput="validateDiscountPercentage(this)" />
+                <input asp-for="PhanTramGiam" type="number" min="1" max="90" step="1" class="form-control border-success" placeholder="20" oninput="validateDiscountPercentage(this)" />
                 <span asp-validation-for="PhanTramGiam" class="text-danger small"></span>
-                <small class="form-text text-muted">Nhập giá trị từ 1% đến 40%</small>
+                <small class="form-text text-muted">Nhập giá trị từ 1% đến 90%</small>
             </div>
             <div class="col-md-4">
                 <label asp-for="NgayBatDau" class="form-label fw-semibold">Ngày bắt đầu</label>
-                <input asp-for="NgayBatDau" type="datetime-local" class="form-control" />
+                <input id="NgayBatDau" name="NgayBatDau" type="datetime-local" class="form-control" value="@ngayBatDauValue" lang="vi-VN" step="60" />
                 <span asp-validation-for="NgayBatDau" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="NgayKetThuc" class="form-label fw-semibold">Ngày kết thúc</label>
-                <input asp-for="NgayKetThuc" type="datetime-local" class="form-control" />
+                <input id="NgayKetThuc" name="NgayKetThuc" type="datetime-local" class="form-control" value="@ngayKetThucValue" lang="vi-VN" step="60" />
                 <span asp-validation-for="NgayKetThuc" class="text-danger small"></span>
             </div>
             <input type="hidden" asp-for="IDDotGiamGia" />
@@ -183,10 +185,10 @@
 
         <div class="d-flex justify-content-end gap-2">
             <a asp-action="Index" class="btn btn-outline-secondary">
-                ⬅️ Quay lại
+                Quay lại
             </a>
             <button type="submit" class="btn btn-primary">
-                💾 Lưu thay đổi
+                Lưu thay đổi
             </button>
         </div>
 
@@ -210,9 +212,9 @@
                 return;
             }
 
-            if (value > 40) {
-                input.value = 40;
-                alert('Phần trăm giảm giá không được vượt quá 40%!');
+            if (value > 90) {
+                input.value = 90;
+                alert('Phần trăm giảm giá không được vượt quá 90%!');
                 return;
             }
         }

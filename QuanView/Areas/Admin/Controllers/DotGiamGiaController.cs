@@ -37,13 +37,26 @@ namespace QuanView.Areas.Admin.Controllers
         }
 
         // GET: Tạo mới
-        public IActionResult Create() => View();
+        public IActionResult Create()
+        {
+            var now = DateTime.Now;
+            return View(new DotGiamGia
+            {
+                MaDot = GenerateMaDot(now)
+            });
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create(DotGiamGia model, string selectedIds)
         {
             if (!ModelState.IsValid)
                 return View(model);
+
+            if (model.NgayKetThuc <= model.NgayBatDau)
+            {
+                ModelState.AddModelError("NgayKetThuc", "Ngày kết thúc phải lớn hơn ngày bắt đầu.");
+                return View(model);
+            }
 
 			model.NgayBatDau = model.NgayBatDau.ToUniversalTime();
 			model.NgayKetThuc = model.NgayKetThuc.ToUniversalTime();
@@ -143,15 +156,15 @@ namespace QuanView.Areas.Admin.Controllers
 
 			var now = DateTime.Now;
 
-			if (model.NgayBatDau < now)
+			if (model.NgayBatDau.Date < now.Date)
 			{
 				ModelState.AddModelError("NgayBatDau", "Ngày bắt đầu không được nhỏ hơn hiện tại!");
 				return View(model);
 			}
 
-			if (model.NgayKetThuc < model.NgayBatDau)
+			if (model.NgayKetThuc <= model.NgayBatDau)
             {
-                ModelState.AddModelError("NgayBatDau", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu !");
+                ModelState.AddModelError("NgayKetThuc", "Ngày kết thúc phải lớn hơn ngày bắt đầu.");
                 return View(model);
             }
 
@@ -266,6 +279,12 @@ namespace QuanView.Areas.Admin.Controllers
             }).ToList();
 
             return Json(result);
+        }
+
+        private static string GenerateMaDot(DateTime now)
+        {
+            var random = Random.Shared.Next(0, 1000).ToString("D3");
+            return $"DG{now:yyyyMMddHHmmss}{random}";
         }
 
 

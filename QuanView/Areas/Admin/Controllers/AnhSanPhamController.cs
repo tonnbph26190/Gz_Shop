@@ -87,9 +87,9 @@ namespace QuanView.Areas.Admin.Controllers
 
 					// Chỉ ảnh đầu tiên được set ảnh chính
 					formData.Add(
-						new StringContent((i == 0 && laAnhChinh).ToString()),
-						"laAnhChinh"
-					);
+	new StringContent(laAnhChinh.ToString().ToLower()),
+	"laAnhChinh"
+);
 
 					var response = await _http.PostAsync(
 						$"sanphams/chitiet/{sanPhamChiTietId}/upload-image",
