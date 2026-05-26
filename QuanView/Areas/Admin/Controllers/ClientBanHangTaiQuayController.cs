@@ -91,8 +91,18 @@ namespace QuanView.Areas.Admin.Controllers
         [Route("Admin/ClientBanHangTaiQuay/vnpay/init")]
         public IActionResult InitVnpay([FromBody] PaymentInformationModel model)
         {
-            // ReturnUrl riêng cho POS
-            var posReturnUrl = _configuration["PaymentCallBack:PosReturnUrl"] ?? Url.Action("VnPayPosCallback", "ClientBanHangTaiQuay", new { area = "Admin" }, Request.Scheme);
+            // Ưu tiên callback cùng host hiện tại để giữ đúng session/storage sau khi VNPay redirect về.
+            var generatedPosReturnUrl = Url.Action(
+                "VnPayPosCallback",
+                "ClientBanHangTaiQuay",
+                new { area = "Admin" },
+                Request.Scheme,
+                Request.Host.Value);
+            var requestedPosReturnUrl = ResolveRequestedPosReturnUrl(model.ReturnUrl, generatedPosReturnUrl);
+            var posReturnUrl = ResolvePosReturnUrl(
+                _configuration["PaymentCallBack:PosReturnUrl"],
+                generatedPosReturnUrl,
+                requestedPosReturnUrl);
             var url = _vnPayService.CreatePaymentUrl(model, HttpContext, posReturnUrl);
             return Json(new { success = true, paymentUrl = url });
         }
@@ -411,6 +421,59 @@ namespace QuanView.Areas.Admin.Controllers
             var response = await _httpClient.GetAsync($"HoaDons/{id}");
             var result = await response.Content.ReadAsStringAsync();
             return Content(result, "application/json");
+        }
+
+        private string ResolvePosReturnUrl(string? configuredUrl, string? generatedUrl, string? requestedUrl)
+        {
+            // Nếu frontend gửi callback URL cùng origin hiện tại thì ưu tiên dùng ngay.
+            if (!string.IsNullOrWhiteSpace(requestedUrl))
+            {
+                return requestedUrl;
+            }
+
+            if (string.IsNullOrWhiteSpace(generatedUrl))
+            {
+                return configuredUrl ?? string.Empty;
+            }
+
+            // Chỉ dùng URL cấu hình khi host trùng host hiện tại; tránh lệch cổng local làm mất trạng thái POS.
+            if (!string.IsNullOrWhiteSpace(configuredUrl)
+                && Uri.TryCreate(configuredUrl, UriKind.Absolute, out var configuredUri)
+                && Uri.TryCreate(generatedUrl, UriKind.Absolute, out var generatedUri)
+                && string.Equals(configuredUri.Host, generatedUri.Host, StringComparison.OrdinalIgnoreCase)
+                && configuredUri.Port == generatedUri.Port)
+            {
+                return configuredUrl;
+            }
+
+            return generatedUrl;
+        }
+
+        private string? ResolveRequestedPosReturnUrl(string? requestedUrl, string? fallbackGeneratedUrl)
+        {
+            if (string.IsNullOrWhiteSpace(requestedUrl))
+            {
+                return null;
+            }
+
+            if (!Uri.TryCreate(requestedUrl, UriKind.Absolute, out var requestedUri))
+            {
+                return null;
+            }
+
+            if (!Uri.TryCreate(fallbackGeneratedUrl, UriKind.Absolute, out var generatedUri))
+            {
+                return null;
+            }
+
+            // Chỉ chấp nhận URL cùng host/port để tránh redirect lạc origin làm mất sessionStorage.
+            if (!string.Equals(requestedUri.Host, generatedUri.Host, StringComparison.OrdinalIgnoreCase)
+                || requestedUri.Port != generatedUri.Port)
+            {
+                return null;
+            }
+
+            return requestedUri.ToString();
         }
     }
 }

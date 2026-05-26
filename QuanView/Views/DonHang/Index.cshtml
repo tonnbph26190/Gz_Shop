@@ -95,8 +95,8 @@
     .status-shipping { background: #e3f2fd; color: #1976d2; }    /* Delivering */
     .status-success { background: #e8f5e9; color: #2e7d32; }     /* Success */
     .status-cancel { background: #ffebee; color: #c62828; }      /* Cancelled */
-    .status-transfer-pending { background: #d4f2dd; color: #0f5132; }
-    .highlight-transfer-pending td { background: #e8f8ee !important; }
+    .status-refund-pending { background: #d4f2dd; color: #0f5132; }
+    .highlight-online-paid-transfer td { background: #e8f8ee !important; }
     .highlight-store-ship-paid td { background: #fff9e6 !important; }
     
     /* Buttons */
@@ -303,19 +303,18 @@
                         {
                             var statusClass = hoaDon.TrangThai switch {
                                 "Chờ xác nhận" => "status-cho-confirm",
-                                "Đã thanh toán chờ xác nhận" => "status-transfer-pending",
+                                "Đã thanh toán chờ xác nhận" => "status-cho-confirm",
                                 "Đang giao hàng" => "status-shipping",
                                 "Giao hàng thành công" => "status-success",
-                                "Chờ hoàn tiền" => "status-transfer-pending",
+                                "Chờ hoàn tiền" => "status-refund-pending",
                                 "Đã hoàn tiền" => "status-success",
                                 "Đã hủy" => "status-cancel",
                                 _ => "bg-light text-dark"
                             };
-                            var isTransferPending = string.Equals(hoaDon.TrangThai, "Đã thanh toán chờ xác nhận", StringComparison.OrdinalIgnoreCase);
                             var isOnlinePaidTransferConfirmed = IsOnlinePaidTransferConfirmed(hoaDon);
                             var isStoreShipPaidConfirmed = IsStoreShipPaidConfirmed(hoaDon);
-                            var rowClass = isTransferPending
-                                ? "highlight-transfer-pending"
+                            var rowClass = isOnlinePaidTransferConfirmed
+                                ? "highlight-online-paid-transfer"
                                 : (isStoreShipPaidConfirmed ? "highlight-store-ship-paid" : "");
 
                             <tr class="@rowClass">
@@ -326,9 +325,9 @@
                                     <span class="status-badge @statusClass">
                                         @GetTrangThaiText(hoaDon.TrangThai)
                                     </span>
-                                    @if (isTransferPending)
+                                    @if (isOnlinePaidTransferConfirmed)
                                     {
-                                        <div><small class="text-success fw-bold">Đơn đã thanh toán chuyển khoản, chờ xác nhận.</small></div>
+                                        <div><small class="text-success fw-bold">Đã trả tiền chuyển khoản.</small></div>
                                     }
                                     else if (isStoreShipPaidConfirmed)
                                     {
@@ -771,7 +770,7 @@
         {
             "Chờ xác nhận" => "Chờ xác nhận",
             "DaThanhToan" => "Đã thanh toán",
-            "Đã thanh toán chờ xác nhận" => "Đã thanh toán chờ xác nhận",
+            "Đã thanh toán chờ xác nhận" => "Đã thanh toán",
             "Đã xác nhận" => "Đã xác nhận",
             "Chờ lấy hàng" => "Chờ lấy hàng",
             "Đã lấy hàng" => "Đã lấy hàng",

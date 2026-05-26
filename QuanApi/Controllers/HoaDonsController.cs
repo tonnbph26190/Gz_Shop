@@ -67,13 +67,19 @@ namespace QuanApi.Controllers
 				{
 					if (string.Equals(trangThai, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
 					{
+						// Chỉ lọc đúng các đơn đang "Chờ xác nhận", không gộp cùng nhóm đã thanh toán.
+						query = query.Where(h => h.TrangThai == "Chờ xác nhận");
+					}
+					else if (string.Equals(trangThai, "DaThanhToan", StringComparison.OrdinalIgnoreCase))
+					{
+						// Nhóm "Đã thanh toán" bao gồm cả trạng thái cũ lưu trực tiếp trong TrangThai
+						// và đơn chuyển khoản đã thanh toán nhưng vẫn đang chờ xác nhận.
 						query = query.Where(h =>
-							h.TrangThai == "Chờ xác nhận" ||
-							(
-								(h.TrangThai == "DaThanhToan" || h.TrangThai == "Đã thanh toán")
-								&& (h.TrangThaiThanhToan == "Đã thanh toán"
-									|| h.TrangThai == "DaThanhToan"
-									|| h.TrangThai == "Đã thanh toán")
+							h.TrangThai == "DaThanhToan"
+							|| h.TrangThai == "Đã thanh toán"
+							|| (
+								h.TrangThai == "Chờ xác nhận"
+								&& h.TrangThaiThanhToan == "Đã thanh toán"
 								&& h.PhuongThucThanhToan != null
 								&& (
 									(h.PhuongThucThanhToan.MaPhuongThuc != null && (
@@ -195,7 +201,8 @@ namespace QuanApi.Controllers
 				var hoaDons = hoaDonsRaw
 					.Select(h =>
 					{
-						var canHighlight = IsPaidTransferPendingConfirmation(
+						var isStorePickupNoShipping = IsStorePickupNoShipping(h.BanTaiQuay, h.DiaChiGiaoHang);
+						var canHighlight = !isStorePickupNoShipping && IsPaidTransferPendingConfirmation(
 							h.TrangThai,
 							h.TrangThaiThanhToan,
 							h.PhuongThucThanhToan?.MaPhuongThuc,
@@ -214,7 +221,7 @@ namespace QuanApi.Controllers
 						var displayStatus = canHighlight
 							? "Đã thanh toán chờ xác nhận"
 							: h.TrangThai;
-						var highlightForAdmin = canHighlight || isOnlinePaidTransferConfirmed || isStoreShipPaidConfirmed;
+						var highlightForAdmin = !isStorePickupNoShipping && (canHighlight || isOnlinePaidTransferConfirmed || isStoreShipPaidConfirmed);
 						var highlightNote = canHighlight
 							? "Đơn đã thanh toán chuyển khoản, đang chờ quản lý xác nhận."
 							: isStoreShipPaidConfirmed
@@ -1327,6 +1334,11 @@ namespace QuanApi.Controllers
 				&& IsPaidStatus(orderStatus, paymentStatus);
 		}
 
+		private static bool IsStorePickupNoShipping(bool banTaiQuay, string? shippingAddress)
+		{
+			return banTaiQuay && string.IsNullOrWhiteSpace(shippingAddress);
+		}
+
 		private static bool IsPaidStatus(string? orderStatus, string? paymentStatus)
 		{
 			return OrderPaymentStatusRules.IsPaidOrder(orderStatus, paymentStatus);
@@ -1378,6 +1390,8 @@ namespace QuanApi.Controllers
 		{
 			return source
 				.OrderByDescending(h =>
+					(!h.BanTaiQuay || !string.IsNullOrWhiteSpace(h.DiaChiGiaoHang))
+					&&
 					(h.TrangThai == "Chờ xác nhận"
 						|| h.TrangThai == "DaThanhToan"
 						|| h.TrangThai == "Đã thanh toán")

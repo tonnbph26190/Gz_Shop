@@ -194,13 +194,25 @@
             const res = await fetch('/Admin/ClientBanHangTaiQuay/chuyen-gio-hang-thanh-hoa-don', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dto)
             });
+            if (!res.ok) {
+                const errorText = await res.text();
+                let message = errorText || 'Không tạo được hóa đơn sau khi thanh toán VNPay.';
+                try {
+                    const parsed = JSON.parse(errorText);
+                    message = parsed.message || parsed.title || message;
+                } catch (_) { }
+                throw new Error(message);
+            }
             const created = await res.json();
             const detailRes = await fetch(`/Admin/ClientBanHangTaiQuay/hoa-don/${created.idHoaDon}`);
+            if (!detailRes.ok) {
+                throw new Error('Tạo hóa đơn thành công nhưng không tải được chi tiết hóa đơn.');
+            }
             const detail = await detailRes.json();
             await renderOrder(detail);
             sessionStorage.removeItem('POS_PendingDTO');
         } catch (e) {
-            document.getElementById('order-detail').innerHTML = '<div class="alert alert-danger">Lỗi xử lý hóa đơn.</div>';
+            document.getElementById('order-detail').innerHTML = `<div class="alert alert-danger">${(e && e.message) ? e.message : 'Lỗi xử lý hóa đơn.'}</div>`;
         }
     })();
 </script>

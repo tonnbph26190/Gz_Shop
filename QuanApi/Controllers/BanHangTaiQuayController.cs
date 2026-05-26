@@ -587,7 +587,7 @@ namespace QuanApi.Controllers
             }
             else
             {
-                trangThaiHoaDon = "DaThanhToan";
+                trangThaiHoaDon = "Đã thanh toán";
             }
 
             // Khách vãng lai chọn giao hàng: tạo KhachHang + địa chỉ trong DB rồi gán vào hóa đơn
@@ -1699,7 +1699,7 @@ namespace QuanApi.Controllers
             }
             else
             {
-                trangThaiHoaDon = "DaThanhToan";
+                trangThaiHoaDon = "Đã thanh toán";
             }
 
             // Khách có tài khoản: ưu tiên CustomerId từ POS (chọn khách sau khi tạo giỏ thì GioHang.IDKhachHang thường vẫn null)

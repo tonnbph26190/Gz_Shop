@@ -3047,11 +3047,13 @@
         const codeLower = paymentMethodCode.toLowerCase();
         const isPosVnpay = codeLower === 'vnpay' || codeLower === 'bank' || codeLower === 'chuyển khoản' || codeLower === 'thẻ' || codeLower === 'chuyenkhoan';
         if (isPosVnpay) {
+            const origin = window.location.origin;
             const paymentInfo = {
                 orderType: 'billpayment',
                 amount: pay,
                 orderDescription: `Thanh toan don POS ${dto.customerName}`,
-                name: dto.customerName || 'Khach POS'
+                name: dto.customerName || 'Khach POS',
+                returnUrl: `${origin}/Admin/ClientBanHangTaiQuay/VnPayPosCallback`
             };
             fetch('/Admin/ClientBanHangTaiQuay/vnpay/init', {
                 method: 'POST',

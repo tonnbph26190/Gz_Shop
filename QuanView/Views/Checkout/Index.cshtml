@@ -3580,15 +3580,7 @@ async function datHang() {
 			// Bind event handlers cho các nút phiếu giảm giá
 			function bindVoucherButtons() {
 				console.log('Binding voucher buttons...');
-
-				// Kiểm tra xem user có đăng nhập không
-				const customerIdClaim = '@User.FindFirst("custom:id_khachhang")?.Value';
-				const isLoggedIn = customerIdClaim && customerIdClaim !== '';
-
-				if (!isLoggedIn) {
-					console.log('User not logged in, skipping voucher button binding');
-					return;
-				}
+				console.log('Binding public voucher buttons for guest + logged in users');
 
 				// Kiểm tra Bootstrap modal
 				if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {

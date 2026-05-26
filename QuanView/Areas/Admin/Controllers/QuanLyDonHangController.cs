@@ -199,10 +199,9 @@ namespace QuanView.Areas.Admin.Controllers
 					trangThai = null;
 				}
 
-				// 👉 FIX CHÍNH Ở ĐÂY
-				// 👉 chỉ khi cả 2 rỗng mới bỏ lọc
-				// 👉 nếu chọn "Tất cả"
-				if (string.IsNullOrEmpty(quickDate))
+				// Chỉ bỏ lọc ngày khi người dùng chọn quickDate = "Tất cả" (giá trị rỗng).
+				// Trường hợp thiếu tham số quickDate nhưng có tuNgay/denNgay thì vẫn giữ lọc.
+				if (quickDate == "")
 				{
 					tuNgay = null;
 					denNgay = null;
@@ -320,8 +319,7 @@ namespace QuanView.Areas.Admin.Controllers
                         if (string.Equals(sapXep, "asc", StringComparison.OrdinalIgnoreCase))
                         {
                             hoaDons = hoaDons
-                                .OrderByDescending(h => highlightedOrderIds.Contains(h.IDHoaDon))
-                                .ThenBy(h => h.NgayTao)
+                                .OrderBy(h => h.NgayTao)
                                 .ToList();
                         }
 						return View(hoaDons);

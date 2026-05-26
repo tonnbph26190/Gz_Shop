@@ -610,13 +610,15 @@
                                         || currentStatus == "Đang giao hàng"
                                         || currentStatus == "Giao hàng thành công";
                                     var isPendingConfirmationStage = currentStatus == "Chờ xác nhận"
+                                        || currentStatus == "DaThanhToan"
                                         || currentStatus == "Đã thanh toán"
-                                        || currentStatus == "Đã thanh toán"
+                                        || currentStatus == "Đã Thanh Toán"
                                         || currentStatus == "Đã thanh toán chờ xác nhận";
                                     var isCanceledStage = currentStatus == "Đã hủy";
                                     var canReturnOnCancel = !isCanceledStage && (isConfirmedStage || isPendingConfirmationStage);
-                                    var soLuongTonTruocXacNhan = hasStockSnapshot ? stockSnapshot.SoLuongTonTruocXacNhan : (isConfirmedStage ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
                                     var soLuongTonDuKienSauHuy = hasStockSnapshot ? stockSnapshot.SoLuongTonDuKienSauHuy : (canReturnOnCancel ? soLuongTonHienTai + chiTiet.SoLuong : soLuongTonHienTai);
+                                    var soLuongDangGiuChoDon = Math.Max(0, soLuongTonDuKienSauHuy - soLuongTonHienTai);
+                                    var laDonChuaXacNhan = isPendingConfirmationStage && !isConfirmedStage;
 
                                     <tr>
                                         <td>
@@ -633,9 +635,20 @@
                                                 Mã SPCT: @(chiTiet.SanPhamChiTiet?.MaSPChiTiet ?? "-")
                                             </div>
                                             <div class="small mt-1">
-                                                <span class="badge badge-light text-dark border mr-1">Tồn hiện tại: @soLuongTonHienTai</span>
-                                                <span class="badge badge-light text-dark border mr-1">Tồn trước xác nhận: @soLuongTonTruocXacNhan</span>
-                                                <span class="badge badge-light text-dark border">Tồn dự kiến sau hủy: @soLuongTonDuKienSauHuy</span>
+                                                <span class="badge badge-light text-dark border mr-1">Tồn kho khả dụng hiện tại: @soLuongTonHienTai</span>
+                                                <span class="badge badge-light text-dark border mr-1">Đang giữ cho đơn này: @soLuongDangGiuChoDon</span>
+                                                @if (!isCanceledStage)
+                                                {
+                                                    if (laDonChuaXacNhan)
+                                                    {
+                                                        <span class="badge badge-light text-dark border">Sau khi hủy đơn: @soLuongTonDuKienSauHuy (+@soLuongDangGiuChoDon hoàn lại tồn đặt trước)</span>
+                                                    }
+                                                    else if (canReturnOnCancel)
+                                                    {
+                                                        <span class="badge badge-light text-dark border mr-1">Số lượng hoàn kho khi hủy: @soLuongDangGiuChoDon</span>
+                                                        <span class="badge badge-light text-dark border">Tồn kho sau hủy: @soLuongTonDuKienSauHuy</span>
+                                                    }
+                                                }
                                             </div>
                                         </td>
                                         <td>@chiTiet.DonGia.ToString("N0") VNĐ</td>
