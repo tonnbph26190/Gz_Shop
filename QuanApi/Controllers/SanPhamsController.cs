@@ -359,7 +359,33 @@ namespace QuanApi.Controllers
                 }
             }
 
-            _context.Entry(sanPham).State = EntityState.Modified;
+            var existing = await _context.SanPhams.FindAsync(id);
+            if (existing == null)
+                return NotFound();
+
+            existing.MaSanPham = sanPham.MaSanPham;
+            existing.TenSanPham = sanPham.TenSanPham;
+            existing.IDDanhMuc = sanPham.IDDanhMuc;
+            existing.IDThuongHieu = sanPham.IDThuongHieu;
+            existing.IDChatLieu = sanPham.IDChatLieu;
+            existing.IDLoaiOng = sanPham.IDLoaiOng;
+            existing.IDKieuDang = sanPham.IDKieuDang;
+            existing.IDLungQuan = sanPham.IDLungQuan;
+            existing.CoXepLy = sanPham.CoXepLy;
+            existing.CoGian = sanPham.CoGian;
+            existing.TrangThai = sanPham.TrangThai;
+            existing.LanCapNhatCuoi = DateTime.UtcNow;
+            existing.NguoiCapNhat = sanPham.NguoiCapNhat ?? User.Identity?.Name;
+
+            // Ngưng bán SP cha => cascade ngưng tất cả biến thể; bật lại cha không tự bật biến thể
+            if (!sanPham.TrangThai)
+            {
+                var variants = await _context.SanPhamChiTiets
+                    .Where(ct => ct.IDSanPham == id)
+                    .ToListAsync();
+                foreach (var ct in variants)
+                    ct.TrangThai = false;
+            }
 
             try
             {
@@ -368,16 +394,33 @@ namespace QuanApi.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!SanPhamExists(id))
-                {
                     return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
+        }
+
+        /// <summary>Đếm số đơn đang xử lý có chứa sản phẩm (theo IDSanPham cha).</summary>
+        [HttpGet("{id}/active-orders-count")]
+        public async Task<IActionResult> GetActiveOrdersCount(Guid id)
+        {
+            if (!await _context.SanPhams.AnyAsync(s => s.IDSanPham == id))
+                return NotFound("Không tìm thấy sản phẩm.");
+
+            var count = await _context.ChiTietHoaDons
+                .AsNoTracking()
+                .Where(ct => ct.TrangThai
+                    && ct.HoaDon != null
+                    && ct.HoaDon.TrangThaiHoaDon
+                    && ct.SanPhamChiTiet != null
+                    && ct.SanPhamChiTiet.IDSanPham == id
+                    && OrderActiveStatusRules.ActiveOrderStatuses.Contains(ct.HoaDon.TrangThai))
+                .Select(ct => ct.IDHoaDon)
+                .Distinct()
+                .CountAsync();
+
+            return Ok(new { count });
         }
 
         // POST: api/SanPhams

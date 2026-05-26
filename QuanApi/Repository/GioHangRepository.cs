@@ -141,11 +141,14 @@ namespace QuanApi.Repository
 
             var sp = _db.SanPhamChiTiets
                 .Include(s => s.DotGiamGia)
+                .Include(s => s.SanPham)
                 .FirstOrDefault(s => s.IDSanPhamChiTiet == idsp);
             if (sp == null)
             {
                 throw new ArgumentException("Sản phẩm hoặc số lượng không hợp lệ.");
             }
+
+            EnsureProductAvailableForSale(sp);
 
             var existingLine = _db.ChiTietGioHangs
                 .FirstOrDefault(ghct => ghct.IDGioHang == nguoidung.IDGioHang && ghct.IDSanPhamChiTiet == idsp);
@@ -219,9 +222,19 @@ namespace QuanApi.Repository
             return spct.GiaBan;
         }
 
+        private static void EnsureProductAvailableForSale(SanPhamChiTiet sp)
+        {
+            if (!sp.TrangThai)
+                throw new InvalidOperationException("Sản phẩm đã ngưng bán, không thể thêm vào giỏ.");
+            if (sp.SanPham == null || !sp.SanPham.TrangThai)
+                throw new InvalidOperationException("Sản phẩm đã ngưng bán, không thể thêm vào giỏ.");
+        }
+
         public void UpdateChiTietGioHang(Guid idghct, int soluong)
         {
             var ghct = _db.ChiTietGioHangs
+                          .Include(ct => ct.SanPhamChiTiet)
+                              .ThenInclude(sp => sp.SanPham)
                           .Include(ct => ct.SanPhamChiTiet)
                           .ThenInclude(sp => sp.DotGiamGia)
                           .FirstOrDefault(ct => ct.IDChiTietGioHang == idghct);
@@ -233,6 +246,7 @@ namespace QuanApi.Repository
                 throw new ArgumentException("Số lượng không hợp lệ");
             if (ghct.SanPhamChiTiet != null)
             {
+                EnsureProductAvailableForSale(ghct.SanPhamChiTiet);
                 var soLuongKhaDung = Math.Max(0, ghct.SanPhamChiTiet.SoLuong - ghct.SanPhamChiTiet.SoLuongDatCho);
                 if (soluong > soLuongKhaDung)
                     throw new InvalidOperationException($"Số lượng vượt quá tồn kho khả dụng. Tồn khả dụng: {soLuongKhaDung}");

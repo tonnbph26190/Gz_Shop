@@ -217,7 +217,7 @@
                         @for (int i = 0; i < variantList.Count; i++)
                         {
                             var variant = variantList[i];
-                            <tr class="variant-row" data-variant-index="@i" data-status="@(variant.TrangThai ? "active" : "inactive")">
+                            <tr class="variant-row" data-variant-index="@i" data-variant-id="@variant.IdSanPhamChiTiet" data-status="@(variant.TrangThai ? "active" : "inactive")">
                                 <td class="align-middle">
                                     <input type="checkbox"
                                            class="variant-qr-selector"
@@ -548,37 +548,62 @@
                 syncSelectAllState();
             }
 
+            function buildStopSellingMessage(count) {
+                const orderNote = count > 0
+                    ? `Biến thể có ${count} đơn đang xử lý. `
+                    : '';
+                return orderNote + 'Khi ngưng bán: biến thể bị ẩn khỏi catalog, khách không thể đặt mới. Các đơn đã đặt vẫn được giao bình thường. Bạn có chắc?';
+            }
+
+            function confirmStopSellingVariant(variantId, onConfirmed) {
+                if (!variantId || variantId === '00000000-0000-0000-0000-000000000000') {
+                    if (confirm(buildStopSellingMessage(0))) onConfirmed();
+                    return;
+                }
+                fetch(`/Admin/SanPham/VariantActiveOrdersCount?id=${variantId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const count = data.count ?? 0;
+                        if (confirm(buildStopSellingMessage(count))) onConfirmed();
+                    })
+                    .catch(() => {
+                        if (confirm(buildStopSellingMessage(0))) onConfirmed();
+                    });
+            }
+
+            function markVariantRowDeleted(row) {
+                let delInput = row.querySelector('input[name$=".IsDeleted"]');
+                if (!delInput) {
+                    delInput = document.createElement('input');
+                    delInput.type = 'hidden';
+                    delInput.name = `ChiTietSanPhams[${row.dataset.variantIndex}].IsDeleted`;
+                    row.appendChild(delInput);
+                }
+                delInput.value = 'true';
+
+                row.style.display = 'none';
+                row.classList.add('deleted-row');
+                row.querySelectorAll('input, select, textarea, button').forEach(control => {
+                    if (!control.name || control === delInput) return;
+                    if (control.name === 'ChiTietSanPhams.Index' ||
+                        control.name.endsWith('.IdSanPhamChiTiet') ||
+                        control.name.endsWith('.IdSanPham')) {
+                        return;
+                    }
+                    control.disabled = true;
+                });
+                updateVariantCounts();
+                updateVariantEmptyState();
+                syncSelectAllState();
+            }
+
             // ==================== DELETE ====================
             document.getElementById('variantTable').addEventListener('click', function(e) {
                 if (e.target.closest('.btn-remove-variant')) {
                     const row = e.target.closest('tr.variant-row');
                     if (row && !row.classList.contains('new-variant-row') && row.id !== 'newVariantTemplateRow') {
-                        if (confirm('Xóa biến thể này khỏi sản phẩm?')) {
-                            let delInput = row.querySelector('input[name$=".IsDeleted"]');
-                            if (!delInput) {
-                                delInput = document.createElement('input');
-                                delInput.type = 'hidden';
-                                delInput.name = `ChiTietSanPhams[${row.dataset.variantIndex}].IsDeleted`;
-                                row.appendChild(delInput);
-                            }
-                            delInput.value = 'true';
-
-                            row.style.display = 'none';           // Hide visually
-                            row.classList.add('deleted-row');
-                            row.querySelectorAll('input, select, textarea, button').forEach(control => {
-                                if (!control.name || control === delInput) return;
-                                if (control.name === 'ChiTietSanPhams.Index' ||
-                                    control.name.endsWith('.IdSanPhamChiTiet') ||
-                                    control.name.endsWith('.IdSanPham')) {
-                                    return;
-                                }
-
-                                control.disabled = true;
-                            });
-                            updateVariantCounts();
-                            updateVariantEmptyState();
-                            syncSelectAllState();
-                        }
+                        const variantId = row.dataset.variantId;
+                        confirmStopSellingVariant(variantId, () => markVariantRowDeleted(row));
                     }
                 }
 
@@ -628,8 +653,19 @@
                 if (e.target.matches('input[type="checkbox"][name*=".TrangThai"]')) {
                     const row = e.target.closest('tr.variant-row');
                     if (row && row.id !== 'newVariantTemplateRow' && !row.classList.contains('deleted-row')) {
-                        row.dataset.status = e.target.checked ? 'active' : 'inactive';
-                        applyVariantTabFilter(currentVariantStatus);
+                        if (!e.target.checked) {
+                            const checkbox = e.target;
+                            const variantId = row.dataset.variantId;
+                            checkbox.checked = true;
+                            confirmStopSellingVariant(variantId, () => {
+                                checkbox.checked = false;
+                                row.dataset.status = 'inactive';
+                                applyVariantTabFilter(currentVariantStatus);
+                            });
+                        } else {
+                            row.dataset.status = 'active';
+                            applyVariantTabFilter(currentVariantStatus);
+                        }
                     }
                 }
             });

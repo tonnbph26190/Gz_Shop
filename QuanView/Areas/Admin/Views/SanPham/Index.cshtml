@@ -1180,6 +1180,67 @@ keyframes blink-warning {
             document.getElementById('trangThai')?.addEventListener('change', function () {
                 this.form.submit();
             });
+
+            // Toggle ngưng bán / bật lại sản phẩm
+            document.querySelectorAll('.product-status-toggle').forEach(toggle => {
+                toggle.addEventListener('change', function (e) {
+                    e.stopPropagation();
+                    const input = this;
+                    const id = input.dataset.id;
+                    const wasActive = input.dataset.current === 'true';
+                    const willBeActive = input.checked;
+
+                    input.checked = wasActive;
+
+                    const proceedToggle = () => {
+                        fetch(`/Admin/SanPham/ToggleStatus?id=${id}`, { method: 'POST' })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    input.checked = data.trangThai;
+                                    input.dataset.current = data.trangThai ? 'true' : 'false';
+                                    const label = input.nextElementSibling;
+                                    if (label) label.textContent = data.trangThai ? 'Hoạt động' : 'Ngưng';
+                                    input.title = data.trangThai ? 'Đang bán' : 'Ngưng bán';
+                                    showNotification(data.trangThai ? 'Đã bật bán sản phẩm.' : 'Đã ngưng bán sản phẩm.', 'success');
+                                    if (!data.trangThai) setTimeout(() => location.reload(), 800);
+                                } else {
+                                    showAlert('Lỗi: ' + (data.message || 'Không thể đổi trạng thái'));
+                                }
+                            })
+                            .catch(() => showAlert('Có lỗi xảy ra khi đổi trạng thái sản phẩm.'));
+                    };
+
+                    if (!willBeActive) {
+                        fetch(`/Admin/SanPham/ActiveOrdersCount?id=${id}`)
+                            .then(r => r.json())
+                            .then(data => {
+                                const count = data.count ?? 0;
+                                const orderNote = count > 0
+                                    ? `<p>Sản phẩm có <strong>${count}</strong> đơn đang xử lý.</p>`
+                                    : '';
+                                showConfirm(
+                                    `${orderNote}<p>Khi ngưng bán: sản phẩm bị ẩn khỏi catalog, khách không thể đặt mới. <strong>Các đơn đã đặt vẫn được giao bình thường.</strong></p><p>Bạn có chắc muốn ngưng bán?</p>`,
+                                    confirmed => { if (confirmed) proceedToggle(); },
+                                    'Xác nhận ngưng bán'
+                                );
+                            })
+                            .catch(() => {
+                                showConfirm(
+                                    '<p>Khi ngưng bán: sản phẩm bị ẩn khỏi catalog, khách không thể đặt mới. Các đơn đã đặt vẫn được giao bình thường.</p><p>Bạn có chắc?</p>',
+                                    confirmed => { if (confirmed) proceedToggle(); },
+                                    'Xác nhận ngưng bán'
+                                );
+                            });
+                    } else {
+                        showConfirm(
+                            '<p>Bật lại sản phẩm trên catalog. Các biến thể đã ngưng trước đó vẫn giữ trạng thái ngưng — cần bật từng biến thể nếu muốn bán lại.</p><p>Bạn có chắc?</p>',
+                            confirmed => { if (confirmed) proceedToggle(); },
+                            'Xác nhận bật bán'
+                        );
+                    }
+                });
+            });
         });
 
         // ====================== IMAGE FUNCTIONS ======================

@@ -622,10 +622,16 @@
                                     var soLuongDangGiuChoDon = Math.Max(0, soLuongTonDuKienSauHuy - soLuongTonHienTai);
                                     var laDonChuaXacNhan = isPendingConfirmationStage && !isConfirmedStage;
 
+                                    var variantInactive = chiTiet.SanPhamChiTiet != null && !chiTiet.SanPhamChiTiet.TrangThai;
+                                    var productInactive = chiTiet.SanPhamChiTiet?.SanPham != null && !chiTiet.SanPhamChiTiet.SanPham.TrangThai;
                                     <tr>
                                         <td>
                                             <div class="font-weight-bold">
                                                 @(chiTiet.SanPhamChiTiet?.SanPham?.TenSanPham ?? "Sản phẩm")
+                                                @if (variantInactive || productInactive)
+                                                {
+                                                    <span class="badge badge-warning text-dark ml-1" title="Sản phẩm đã ngưng bán trên catalog; đơn này vẫn được xử lý bình thường">Đã ngưng bán</span>
+                                                }
                                             </div>
                                             <div class="text-muted small">
                                                 Màu sắc: @(chiTiet.SanPhamChiTiet?.MauSac?.TenMauSac ?? "-")
