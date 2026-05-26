@@ -1,4 +1,4 @@
-﻿@model QuanApi.Data.HoaDon
+@model QuanApi.Data.HoaDon
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
     var tamTinh = (Model.ChiTietHoaDons ?? new List<QuanApi.Data.ChiTietHoaDon>()).Sum(x => x.ThanhTien);
@@ -117,18 +117,45 @@
             <div class="order-stepper">
                 @{
                     var status = Model.TrangThai;
-                    string[] stages = { "Chờ xác nhận", "Đã xác nhận", "Đang giao hàng", "Giao hàng thành công" };
+                    string[] stages = {
+            "Chờ xác nhận",
+            "Đã xác nhận",
+            "Chờ lấy hàng",
+            "Đang giao",
+            "Đã giao"
+                };
                     int currentIdx = Array.IndexOf(stages, status);
                     if (status == "Đã hủy") { stages = new string[] { "Chờ xác nhận", "Đã hủy" }; currentIdx = 1; }
                 }
                 @for (int i = 0; i < stages.Length; i++)
                 {
-                    bool isCompleted = currentIdx > i || status == "Giao hàng thành công";
+                    bool isCompleted =
+                    currentIdx > i ||
+                    status == "Đã giao" ||
+                    status == "Giao hàng thành công";
                     bool isActive = currentIdx == i;
                     <div class="step @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
                         <div class="step-icon">
-                            @if (isCompleted) { <i class="bi bi-check-lg"></i> }
-                            else { <span>@(i + 1)</span> }
+                            @if (i == 0)
+                            {
+                                <i class="bi bi-clock-history"></i>
+                            }
+                            else if (i == 1)
+                            {
+                                <i class="bi bi-check-circle"></i>
+                            }
+                            else if (i == 2)
+                            {
+                                <i class="bi bi-box-seam"></i>
+                            }
+                            else if (i == 3)
+                            {
+                                <i class="bi bi-truck"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-bag-check"></i>
+                            }
                         </div>
                         <div class="step-label">@GetTrangThaiText(stages[i])</div>
                     </div>
@@ -330,9 +357,11 @@
         {
             "Chờ xác nhận" => "Chờ xác nhận",
             "Đã xác nhận" => "Đã xác nhận",
-            "Chờ lấy hàng" => "Chuẩn bị hàng",
+            "Chờ lấy hàng" => "Chờ lấy hàng",
+            "Đang giao" => "Đang giao",
             "Đang giao hàng" => "Đang giao",
-            "Giao hàng thành công" => "Hoàn thành",
+            "Đã giao" => "Đã giao",
+            "Giao hàng thành công" => "Đã giao",
             "Đã hủy" => "Đã hủy",
             _ => trangThai
         };
