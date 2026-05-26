@@ -121,15 +121,15 @@
                                 <td>
                                     @if (item.TrangThai)
                                     {
-                                        <span class="badge bg-success text-light p-2">Đang kích hoạt</span>
+                                        <span class="badge text-bg-success text-light p-2">Đang kích hoạt</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-light p-2">Tạm ngưng</span>
+                                        <span class="badge text-bg-warning text-dark p-2">Tạm ngưng</span>
                                     }
                                 </td>
                                 <td>
-                                    <a asp-action="Edit" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-primary">✏️</a>
+                                    <a asp-action="Edit" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm bg-warning-subtle btn-primary">✏️</a>
                                     <a asp-action="Delete" asp-route-id="@item.IDDotGiamGia" class="btn btn-sm btn-danger">🗑️</a>
                                 </td>
                             </tr>
@@ -180,6 +180,11 @@
         }
     </style>
 }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
