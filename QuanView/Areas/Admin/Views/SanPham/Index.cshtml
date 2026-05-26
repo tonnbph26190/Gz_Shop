@@ -1336,7 +1336,21 @@
                 });
             });
         });
+        function showAddImageModal(sanPhamChiTietId) {
+            document.getElementById('sanPhamChiTietId').value = sanPhamChiTietId;
 
+            const fileInput = document.getElementById('imageFile');
+            const previewDiv = document.getElementById('imagePreview');
+            const isMainImage = document.getElementById('isMainImage');
+
+            fileInput.value = '';
+            previewDiv.innerHTML = '';
+            previewDiv.style.display = 'none';
+            isMainImage.checked = false;
+
+            const modal = new bootstrap.Modal(document.getElementById('addImageModal'));
+            modal.show();
+        }
         // ====================== IMAGE FUNCTIONS ======================
         function validateImageFiles(input) {
             const allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
@@ -1408,19 +1422,19 @@
                 body: formData
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Thêm ảnh thành công!', 'success');
-                    $('#addImageModal').modal('hide');
-                    if (data.urls && data.urls.length > 0) {
-                        data.urls.forEach((url, index) => {
-                            updateProductImageDisplay(sanPhamChiTietId, url, index === 0 && isMainImage);
-                        });
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Thêm ảnh thành công!', 'success');
+
+                        bootstrap.Modal.getInstance(document.getElementById('addImageModal'))?.hide();
+
+                        setTimeout(() => {
+                            location.reload();
+                        }, 800);
+                    } else {
+                        showAlert('Lỗi: ' + (data.message || 'Không thể thêm ảnh'));
                     }
-                } else {
-                    showAlert('Lỗi: ' + (data.message || 'Không thể thêm ảnh'));
-                }
-            })
+                })
             .catch(error => {
                 showAlert('Có lỗi xảy ra: ' + error.message);
             })
