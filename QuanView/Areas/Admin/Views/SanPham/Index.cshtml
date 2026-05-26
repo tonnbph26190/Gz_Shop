@@ -438,7 +438,9 @@ keyframes blink-warning {
                 <select class="form-control" id="trangThai" name="trangThai">
                     @foreach (var option in Model.TrangThaiOptions)
                     {
-                        <option value="@option.Value" selected="@(option.Value == Model.TrangThai)">@option.Text</option>
+                        <option value="@option.Value" selected="@(option.Value == Model.TrangThai && Model.TrangThai != "all")">
+                            @option.Text
+                        </option>
                     }
                 </select>
             </div>
@@ -1074,7 +1076,9 @@ keyframes blink-warning {
         });
     </script>
 }
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1100,17 +1104,55 @@ keyframes blink-warning {
         }
 
         // ====================== MODAL EVENT HANDLERS ======================
+        // ====================== PRODUCT STATUS TOGGLE ======================
         document.addEventListener('DOMContentLoaded', function () {
-            // Confirm Modal Yes button
-            document.getElementById('confirmYes').addEventListener('click', function () {
-                if (confirmCallback) confirmCallback(true);
-                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-            });
+            const toggles = document.querySelectorAll('.product-status-toggle');
+            
+            toggles.forEach(toggle => {
+                toggle.addEventListener('change', async function (e) {
+                    const id = this.getAttribute('data-id');
+                    const newStatus = this.checked;
+                    const originalStatus = this.getAttribute('data-current') === 'true';
 
-            // Confirm Modal Cancel button
-            document.getElementById('confirmCancel').addEventListener('click', function () {
-                if (confirmCallback) confirmCallback(false);
-                bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                    // Optional: Confirmation when turning OFF
+                    if (!newStatus) {
+                        if (!confirm('Bạn có chắc muốn NGƯNG HOẠT ĐỘNG sản phẩm này?')) {
+                            this.checked = true; // revert
+                            return;
+                        }
+                    }
+
+                    try {
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                        const response = await fetch(`/Admin/SanPham/ToggleStatus/${id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': token || ''
+                            },
+                            body: JSON.stringify({ trangThai: newStatus })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            showNotification(
+                                newStatus ? '✅ Sản phẩm đã hoạt động trở lại!' : '⛔ Sản phẩm đã ngưng hoạt động!', 
+                                'success'
+                            );
+                            
+                            // Update data attribute
+                            this.setAttribute('data-current', newStatus.toString());
+                        } else {
+                            showAlert('Lỗi: ' + (data.message || 'Không thể thay đổi trạng thái'));
+                            this.checked = originalStatus; // revert
+                        }
+                    } catch (err) {
+                        showAlert('Lỗi kết nối server!');
+                        this.checked = originalStatus;
+                    }
+                });
             });
         });
 

@@ -642,24 +642,35 @@ namespace QuanView.Areas.Admin.Controllers
 
 		/// <summary>Đổi trạng thái sản phẩm (Hoạt động / Ngưng) từ trang Index, trả JSON.</summary>
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> ToggleStatus(Guid id)
 		{
 			var getRes = await _http.GetAsync($"sanphams/{id}");
 			if (!getRes.IsSuccessStatusCode)
 				return Json(new { success = false, message = "Không tìm thấy sản phẩm." });
 
-			var sp = await getRes.Content.ReadFromJsonAsync<QuanApi.Data.SanPham>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+			var sp = await getRes.Content.ReadFromJsonAsync<QuanApi.Data.SanPham>(
+				new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
 			if (sp == null)
 				return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
 
 			sp.TrangThai = !sp.TrangThai;
+
 			var putRes = await _http.PutAsJsonAsync($"sanphams/{id}", sp, ApiVariantJsonOptions);
+
 			if (!putRes.IsSuccessStatusCode)
 			{
 				var msg = await putRes.Content.ReadAsStringAsync();
 				return Json(new { success = false, message = msg });
 			}
-			return Json(new { success = true, trangThai = sp.TrangThai });
+
+			return Json(new
+			{
+				success = true,
+				trangThai = sp.TrangThai,
+				message = sp.TrangThai ? "Đã bật hoạt động" : "Đã ngưng hoạt động"
+			});
 		}
 
 		public async Task<IActionResult> Delete(Guid id)

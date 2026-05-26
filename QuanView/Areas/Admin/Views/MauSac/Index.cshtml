@@ -2,14 +2,17 @@
 @using System.Web
 @model IEnumerable<QuanApi.Data.MauSac>
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 @{
     var currentKeyword = ViewBag.Keyword as string ?? "";
     var currentStatus = ViewBag.Status as string ?? "";
 }
+
 <h2>@ViewData["Title"]</h2>
 <partial name="_Notification" />
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <style>
     h6 {
         font-size: 200%;
@@ -41,63 +44,33 @@
         cursor: pointer;
         transition: all 0.3s;
     }
-    .btn-edit {
-        background: #ffc107;
-        color: white;
-    }
-    .btn-edit:hover {
-        background: #e0a800;
-        color: white;
-    }
-    .btn-details {
-        background: #17a2b8;
-        color: white;
-    }
-    .btn-details:hover {
-        background: #117a8b;
-        color: white;
-    }
-    .btn-delete {
-        background: #dc3545;
-        color: white;
-    }
-    .btn-delete:hover {
-        background: #bd2130;
-        color: white;
-    }
+    .btn-edit { background: #ffc107; color: white; }
+    .btn-edit:hover { background: #e0a800; color: white; }
+    .btn-details { background: #17a2b8; color: white; }
+    .btn-details:hover { background: #117a8b; color: white; }
+    .btn-delete { background: #dc3545; color: white; }
+    .btn-delete:hover { background: #bd2130; color: white; }
     .status-badge {
         display: inline-block;
         padding: 4px 16px;
         border-radius: 20px;
         font-size: 13px;
         font-weight: 500;
-        background: #e6f4ea;
-        color: #218838;
-        border: none;
     }
-    .status-inactive {
-        background: #f0f0f0;
-        color: #888;
-    }
-    .status-active {
-        background: #e6f4ea;
-        color: #218838;
-    }
+    .status-active { background: #e6f4ea; color: #218838; }
+    .status-inactive { background: #f0f0f0; color: #888; }
 </style>
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Danh Sách màu sắc</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Danh Sách Màu Sắc</h6>
         <a class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" asp-area="Admin" asp-controller="MauSac" asp-action="Create">+ Thêm màu sắc mới</a>
     </div>
     <div class="card-body">
-        <!-- Form tìm kiếm và bộ lọc -->
         <form method="get" class="mb-3 row g-2 align-items-end">
             <div class="col-md-5">
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="fas fa-search"></i>
-                    </span>
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search"></i></span>
                     <input type="text" id="keyword" name="keyword" value="@currentKeyword" class="form-control border-start-0" placeholder="Tìm kiếm màu sắc..." />
                 </div>
             </div>
@@ -115,6 +88,7 @@
                 <a href="@Url.Action("Index")" class="btn btn-secondary w-100">Xóa lọc</a>
             </div>
         </form>
+
         <div class="table-responsive">
             <table class="table table-hover mausac-table">
                 <thead>
@@ -162,6 +136,8 @@
                     }
                 </tbody>
             </table>
+
+            <!-- Pagination -->
             @{
                 int totalItems = ViewBag.TotalItems ?? 0;
                 int pageSize = ViewBag.PageSize ?? 10;
@@ -182,16 +158,48 @@
     </div>
 </div>
 
-<!-- CSRF Token -->
-<input type="hidden" name="__RequestVerificationToken" value="@Html.AntiForgeryToken()
+<!-- ==================== NOTIFICATION & CONFIRM MODALS ==================== -->
 
-<!-- Modal Thêm mới -->
+<!-- Notification Modal -->
+<div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationTitle">Thông báo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="notificationBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title text-dark">Xác nhận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="confirmCancel">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmYes">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
 <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="createModalLabel">Thêm màu sắc</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <h5 class="modal-title">Thêm màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="createModalBody"></div>
             <div class="modal-footer">
@@ -202,13 +210,13 @@
     </div>
 </div>
 
-<!-- Modal Sửa -->
+<!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-white">
-                <h5 class="modal-title" id="editModalLabel">Sửa màu sắc</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Sửa màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="editModalBody"></div>
             <div class="modal-footer">
@@ -219,13 +227,13 @@
     </div>
 </div>
 
-<!-- Modal Chi tiết -->
+<!-- Details Modal -->
 <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="detailsModalLabel">Chi tiết màu sắc</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <h5 class="modal-title">Chi tiết màu sắc</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="detailsModalBody"></div>
             <div class="modal-footer">
@@ -235,26 +243,6 @@
     </div>
 </div>
 
-<!-- CSS cho spinner -->
-<style>
-    .spinner {
-        display: inline-block;
-        width: 1rem;
-        height: 1rem;
-        vertical-align: text-bottom;
-        border: 0.25em solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner-border 0.75s linear infinite;
-    }
-
-    @@keyframes spinner-border {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-</style>
-
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
@@ -263,17 +251,41 @@
 
     <script>
         $(document).ready(function () {
+
+            // Utility Functions
+            function showNotification(message, title = "Thông báo", type = "info") {
+                $('#notificationTitle').text(title);
+                $('#notificationBody').html(message);
+                $('#notificationModal').modal('show');
+            }
+
+            function showConfirm(message, callback) {
+                $('#confirmBody').html(message);
+                $('#confirmModal').modal('show');
+
+                $('#confirmYes').off('click').on('click', function () {
+                    $('#confirmModal').modal('hide');
+                    callback(true);
+                });
+
+                $('#confirmCancel').off('click').on('click', function () {
+                    $('#confirmModal').modal('hide');
+                    callback(false);
+                });
+            }
+
+            // Load Create Modal
             $('#createModal').on('show.bs.modal', function () {
-                $('#createModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
+                $('#createModalBody').html('<div class="text-center py-4"><span class="spinner"></span><br>Đang tải...</div>');
                 $.get('@Url.Action("Create", "MauSac", new { area = "Admin" })', function (data) {
                     $('#createModalBody').html(data);
                     $.validator.unobtrusive.parse('#createForm');
-                }).fail(function (xhr) {
-                    $('#createModalBody').html('<div class="text-danger">Lỗi khi tải form</div>');
-                    alert("Lỗi khi tải form tạo màu sắc: " + (xhr.responseJSON?.message || xhr.statusText));
+                }).fail(function () {
+                    showNotification("Lỗi khi tải form tạo màu sắc", "Lỗi", "danger");
                 });
             });
 
+            // Save Create
             $('#saveCreateBtn').click(function () {
                 var form = $('#createForm');
                 if (form.valid()) {
@@ -287,16 +299,12 @@
                         beforeSend: function () {
                             $('#saveCreateBtn').prop('disabled', true).html('<span class="spinner"></span> Đang xử lý...');
                         },
-                        success: function (response) {
-                            if (response.success) {
-                                $('#createModal').modal('hide');
-                                location.reload();
-                            } else {
-                              location.reload();
-                            }
+                        success: function () {
+                            $('#createModal').modal('hide');
+                            location.reload();
                         },
                         error: function (xhr) {
-                            alert("Lỗi thêm: " + (xhr.responseJSON?.message || xhr.statusText));
+                            showNotification("Lỗi thêm: " + (xhr.responseJSON?.message || "Vui lòng thử lại"), "Lỗi", "danger");
                         },
                         complete: function () {
                             $('#saveCreateBtn').prop('disabled', false).text('Thêm');
@@ -305,19 +313,20 @@
                 }
             });
 
+            // Load Edit Modal
             $(document).on('click', '.edit-btn', function (e) {
                 e.preventDefault();
                 var id = encodeURIComponent($(this).data('id'));
-                $('#editModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
+                $('#editModalBody').html('<div class="text-center py-4"><span class="spinner"></span><br>Đang tải...</div>');
                 $.get('@Url.Action("Edit", "MauSac", new { area = "Admin" })/' + id, function (data) {
                     $('#editModalBody').html(data);
                     $.validator.unobtrusive.parse('#editForm');
-                }).fail(function (xhr) {
-                    $('#editModalBody').html('<div class="text-danger">Lỗi khi tải form</div>');
-                    alert("Lỗi khi tải form sửa: " + (xhr.responseJSON?.message || xhr.statusText));
+                }).fail(function () {
+                    showNotification("Lỗi khi tải form sửa", "Lỗi", "danger");
                 });
             });
 
+            // Save Edit
             $('#saveEditBtn').click(function () {
                 var form = $('#editForm');
                 if (form.valid()) {
@@ -326,6 +335,7 @@
                     formData.push({ name: 'NguoiCapNhat', value: '@Html.Raw(HttpUtility.JavaScriptStringEncode(User?.FindFirst(ClaimTypes.Name)?.Value ?? "unknown"))' });
 
                     var id = $('#editForm input[name="IDMauSac"]').val();
+
                     $.post({
                         url: '@Url.Action("Edit", "MauSac", new { area = "Admin" })/' + encodeURIComponent(id),
                         data: $.param(formData),
@@ -337,11 +347,11 @@
                                 $('#editModal').modal('hide');
                                 location.reload();
                             } else {
-                                alert(response.message || "Cập nhật thất bại");
+                                showNotification(response.message || "Cập nhật thất bại", "Thông báo", "warning");
                             }
                         },
                         error: function (xhr) {
-                            alert("Lỗi cập nhật: " + (xhr.responseJSON?.message || xhr.statusText));
+                            showNotification(xhr.responseJSON?.message || "Lỗi khi cập nhật", "Lỗi", "danger");
                         },
                         complete: function () {
                             $('#saveEditBtn').prop('disabled', false).text('Lưu');
@@ -350,46 +360,68 @@
                 }
             });
 
+            // Load Details Modal (Improved)
             $(document).on('click', '.details-btn', function (e) {
                 e.preventDefault();
                 var id = encodeURIComponent($(this).data('id'));
-                $('#detailsModalBody').html('<div class="text-center"><span class="spinner"></span> Đang tải...</div>');
-                $.get('@Url.Action("Details", "MauSac", new { area = "Admin" })/' + id, function (data) {
-                    $('#detailsModalBody').html(data);
-                }).fail(function (xhr) {
-                    $('#detailsModalBody').html('<div class="text-danger">Lỗi khi tải chi tiết</div>');
-                    alert("Lỗi khi tải chi tiết: " + (xhr.responseJSON?.message || xhr.statusText));
-                });
+                var $body = $('#detailsModalBody');
+
+                $body.html('<div class="text-center py-4"><span class="spinner"></span><br>Đang tải chi tiết...</div>');
+
+                $.get('@Url.Action("Details", "MauSac", new { area = "Admin" })/' + id)
+                    .done(function (data) {
+                        if (data && data.trim() !== '') {
+                            $body.html(data);
+                        } else {
+                            $body.html('<div class="text-warning">Không có dữ liệu chi tiết.</div>');
+                        }
+                    })
+                    .fail(function (xhr) {
+                        $body.html(`
+                            <div class="text-danger p-3">
+                                <strong>Lỗi khi tải chi tiết:</strong><br>
+                                ${xhr.responseJSON?.message || xhr.statusText || "Không thể kết nối server"}
+                            </div>
+                        `);
+                    });
             });
 
+            // Delete with Confirmation
             $(document).on('click', '.delete-btn', function (e) {
                 e.preventDefault();
                 var $btn = $(this);
                 var id = $btn.data('id');
-                if (confirm('Bạn có chắc muốn xóa màu sắc này?')) {
-                    $.post({
-                        url: '@Url.Action("Delete", "MauSac", new { area = "Admin" })',
-                        data: { id: id, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
-                        beforeSend: function () {
-                            $btn.prop('disabled', true).html('<span class="spinner"></span> Đang xóa...');
-                        },
-                        success: function (response) {
-                            if (response.success) {
-                                location.reload();
-                            } else {
-                                alert(response.message || "Xóa thất bại");
+
+                showConfirm('Bạn có chắc muốn xóa màu sắc này?', function (confirmed) {
+                    if (confirmed) {
+                        $.post({
+                            url: '@Url.Action("Delete", "MauSac", new { area = "Admin" })',
+                            data: { 
+                                id: id, 
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() 
+                            },
+                            beforeSend: function () {
+                                $btn.prop('disabled', true).html('<span class="spinner"></span>');
+                            },
+                            success: function (response) {
+                                if (response.success) {
+                                    location.reload();
+                                } else {
+                                    showNotification(response.message || "Không xóa được màu sắc", "Lỗi", "danger");
+                                }
+                            },
+                            error: function (xhr) {
+                                showNotification(xhr.responseJSON?.message || "Lỗi khi xóa", "Lỗi", "danger");
+                            },
+                            complete: function () {
+                                $btn.prop('disabled', false).html('<i class="fas fa-trash"></i>');
                             }
-                        },
-                        error: function (xhr) {
-                            alert("Lỗi xóa: " + (xhr.responseJSON?.message || xhr.statusText));
-                        },
-                        complete: function () {
-                            $btn.prop('disabled', false).text('🗑️');
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
 
+            // Toggle Status
             $(document).on('change', '.toggle-status', function () {
                 var checkbox = $(this);
                 var id = checkbox.data('id');
@@ -402,7 +434,7 @@
                     data: JSON.stringify({ id: id }),
                     beforeSend: function () {
                         checkbox.prop('disabled', true);
-                        checkbox.siblings('span').html('<span class="spinner"></span> Đang xử lý...').removeClass('status-active status-inactive');
+                        checkbox.siblings('span').html('<span class="spinner"></span> Đang xử lý...');
                     },
                     success: function (response) {
                         if (response.success) {
@@ -412,12 +444,12 @@
                                 .removeClass('status-active status-inactive')
                                 .addClass(isActive ? 'status-active' : 'status-inactive');
                         } else {
-                            alert("Không cập nhật được trạng thái");
+                            showNotification("Không cập nhật được trạng thái", "Lỗi", "danger");
                             checkbox.prop('checked', !isChecked);
                         }
                     },
-                    error: function (xhr) {
-                        alert("Lỗi khi gọi ToggleStatus: " + (xhr.responseJSON?.message || xhr.statusText));
+                    error: function () {
+                        showNotification("Lỗi khi gọi ToggleStatus", "Lỗi", "danger");
                         checkbox.prop('checked', !isChecked);
                     },
                     complete: function () {
@@ -425,11 +457,33 @@
                     }
                 });
             });
+
+            // Clear modal content when closed
+            $('#createModal, #editModal, #detailsModal').on('hidden.bs.modal', function () {
+                $(this).find('.modal-body').empty();
+            });
         });
     </script>
+
+    <style>
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            vertical-align: text-bottom;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
+        @@keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
     <script>
         $(function() {
             $('#trangThai').val('@currentStatus');
         });
     </script>
-} 
+}
