@@ -14,17 +14,40 @@
     };
 
     // Xác định trạng thái hiện tại và các trạng thái đã hoàn thành
-    var orderCurrentStatus = Model.TrangThai ?? string.Empty;
+    var orderCurrentStatus = Model.TrangThai?.Trim() ?? string.Empty;
+
+    // Improved normalization - handle both with and without accents
     var normalizedStatus = orderCurrentStatus switch
     {
-        "Đã lấy hàng" => "Đang giao",
-        "Chờ giao hàng" => "Đang giao",
-        "Đang giao hàng" => "Đang giao",
-        "Giao hàng thành công" => "Đã giao",
-        _ => orderCurrentStatus
+        // Existing mappings
+        "Đã lấy hàng" or "Da lay hang" or "Đã Lấy Hàng" => "Đang giao",
+        "Chờ giao hàng" or "Cho giao hang" or "Chờ Giao Hàng" => "Đang giao",
+        "Đang giao hàng" or "Dang giao hang" or "Đang Giao Hàng" => "Đang giao",
+        "Giao hàng thành công" or "Giao hang thanh cong" => "Đã giao",
+
+        // NEW: Handle payment status
+        "Đã Thanh Toán" or "Da Thanh Toan" or "DaThanhToan" or "ĐÃ THANH TOÁN" => "Đã Thanh Toán",
+
+        // Add more if needed
+        "Chờ xác nhận" or "Cho xac nhan" => "Chờ xác nhận",
+        "Đã xác nhận" or "Da xac nhan" => "Đã xác nhận",
+        "Chờ lấy hàng" or "Cho lay hang" => "Chờ lấy hàng",
+        "Đang giao" or "Dang giao" => "Đang giao",
+        "Đã giao" or "Da giao" => "Đã giao",
+        "Đã hủy" or "Da huy" => "Đã hủy",
+
+        _ => orderCurrentStatus  // fallback
     };
 
-    var statusOrder = new List<string> { "Chờ xác nhận", "Đã xác nhận", "Chờ lấy hàng", "Đang giao", "Đã giao" };
+    var statusOrder = new List<string> 
+    { 
+        "Chờ xác nhận", 
+        "Đã xác nhận", 
+        "Chờ lấy hàng", 
+        "Đang giao", 
+        "Đã giao" 
+    };
+    
     var completedStatuses = new List<string>();
     var currentStatusIndex = statusOrder.IndexOf(normalizedStatus);
     if (currentStatusIndex >= 0)
@@ -587,7 +610,7 @@
                                         || currentStatus == "Đang giao hàng"
                                         || currentStatus == "Giao hàng thành công";
                                     var isPendingConfirmationStage = currentStatus == "Chờ xác nhận"
-                                        || currentStatus == "DaThanhToan"
+                                        || currentStatus == "Đã thanh toán"
                                         || currentStatus == "Đã thanh toán"
                                         || currentStatus == "Đã thanh toán chờ xác nhận";
                                     var isCanceledStage = currentStatus == "Đã hủy";
