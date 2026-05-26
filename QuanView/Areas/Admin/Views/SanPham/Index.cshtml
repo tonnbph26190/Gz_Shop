@@ -1056,7 +1056,7 @@ keyframes blink-warning {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="confirmCancel">Hủy</button>
-                <button type="button" class="btn btn-danger" id="confirmYes">Đồng ý</button>
+                <button type="button" class="btn btn-primary" id="confirmYes">Đồng ý</button>
             </div>
         </div>
     </div>
@@ -1104,6 +1104,44 @@ keyframes blink-warning {
         }
 
         // ====================== MODAL EVENT HANDLERS ======================
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const confirmYesBtn = document.getElementById('confirmYes');
+            const confirmCancelBtn = document.getElementById('confirmCancel');
+            const confirmModalEl = document.getElementById('confirmModal');
+
+            if (confirmYesBtn) {
+                confirmYesBtn.addEventListener('click', function () {
+                    const modal = bootstrap.Modal.getInstance(confirmModalEl);
+
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    if (typeof confirmCallback === 'function') {
+                        confirmCallback(true);
+                    }
+
+                    confirmCallback = null;
+                });
+            }
+
+            if (confirmCancelBtn) {
+                confirmCancelBtn.addEventListener('click', function () {
+                    const modal = bootstrap.Modal.getInstance(confirmModalEl);
+
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    if (typeof confirmCallback === 'function') {
+                        confirmCallback(false);
+                    }
+
+                    confirmCallback = null;
+                });
+            }
+        });
         // ====================== PRODUCT STATUS TOGGLE ======================
         document.addEventListener('DOMContentLoaded', function () {
             const toggles = document.querySelectorAll('.product-status-toggle');
