@@ -12,7 +12,7 @@ public class ChartsApiController : ControllerBase
     private readonly BanQuanAu1DbContext _context;
 
     /// <summary>Trạng thái đơn hàng được coi là đã thanh toán / hoàn thành (dùng thống kê doanh thu).</summary>
-    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Đã giao", "Đã giao hàng", "Giao hàng thành công" };
+    private static readonly string[] CompletedOrderStatuses = { "DaThanhToan", "Đã thanh toán", "Đã giao", "Đã giao hàng", "Giao hàng thành công" };
 
     public ChartsApiController(BanQuanAu1DbContext context)
     {
@@ -32,21 +32,26 @@ public class ChartsApiController : ControllerBase
             var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
 
-            // today revenue (use range, avoid .Date)
+            // Doanh thu = Tạm tính (SUM ThanhTien) - voucher (TienGiam) - tiền đổi điểm (SoTienGiamTuDiem)
             var todayRevenue = await _context.HoaDons
                 .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
                             && h.TrangThaiHoaDon
                             && h.NgayTao >= startOfToday
                             && h.NgayTao < startOfTomorrow)
-                .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
+                .Select(h => (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem)
+                .SumAsync(v => (decimal?)v) ?? 0m;
 
-            // month revenue (use half-open range)
             var monthRevenue = await _context.HoaDons
-            .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
-                        && h.TrangThaiHoaDon
-                        && h.NgayTao >= firstDayOfMonth
-                        && h.NgayTao < firstDayOfNextMonth)
-            .SumAsync(h => (decimal?)(h.TongTien - (h.PhiVanChuyen ?? 0)) ?? 0m);
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= firstDayOfMonth
+                            && h.NgayTao < firstDayOfNextMonth)
+                .Select(h => (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem)
+                .SumAsync(v => (decimal?)v) ?? 0m;
 
             var monthProductQuantity = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
@@ -138,10 +143,18 @@ public class ChartsApiController : ControllerBase
     {
         try
         {
-            var today = DateTime.UtcNow.Date;
+            var startOfToday = DateTime.UtcNow.Date;
+            var startOfTomorrow = startOfToday.AddDays(1);
+            // Doanh thu = Tạm tính (SUM ThanhTien) - voucher (TienGiam) - tiền đổi điểm (SoTienGiamTuDiem)
             var revenue = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao.Date == today)
-                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= startOfToday
+                            && h.NgayTao < startOfTomorrow)
+                .Select(h => (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem)
+                .SumAsync(v => (decimal?)v) ?? 0m;
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -153,12 +166,17 @@ public class ChartsApiController : ControllerBase
         try
         {
             var now = DateTime.UtcNow;
-            var first = new DateTime(now.Year, now.Month, 1);
-            var last = first.AddMonths(1).AddDays(-1);
+            var first = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var firstOfNext = first.AddMonths(1);
             var revenue = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
-                            h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= first
+                            && h.NgayTao < firstOfNext)
+                .Select(h => (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem)
+                .SumAsync(v => (decimal?)v) ?? 0m;
             return Ok(revenue);
         }
         catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
@@ -260,16 +278,26 @@ public class ChartsApiController : ControllerBase
             var startDate = DateTime.UtcNow.AddMonths(-11).Date;
             var endDate = DateTime.UtcNow.Date.AddDays(1).AddTicks(-1);
 
+            // Doanh thu = Tạm tính (SUM ThanhTien) - voucher - tiền đổi điểm, group theo tháng
             var monthlyData = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon &&
-                            h.NgayTao >= startDate && h.NgayTao <= endDate)
-                .GroupBy(h => new { h.NgayTao.Year, h.NgayTao.Month })
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= startDate
+                            && h.NgayTao <= endDate)
+                .Select(h => new
+                {
+                    h.NgayTao.Year,
+                    h.NgayTao.Month,
+                    Revenue = (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem
+                })
+                .GroupBy(x => new { x.Year, x.Month })
                 .Select(g => new
                 {
                     g.Key.Year,
                     g.Key.Month,
-                    Revenue = g.Sum(h => h.TongTien - (h.PhiVanChuyen ?? 0)),
-                    OrderCount = g.Count()
+                    Revenue = g.Sum(x => x.Revenue)
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month)
                 .ToListAsync();
@@ -366,13 +394,44 @@ public class ChartsApiController : ControllerBase
         {
             var now = DateTime.UtcNow;
             var from = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-2);
-            var totalRevenue = await _context.ChiTietHoaDons
-            .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai)
-                         && ct.HoaDon.TrangThaiHoaDon
-                         && ct.TrangThai
-                         && ct.HoaDon.NgayTao >= from)
-            .SumAsync(ct => ct.ThanhTien);
 
+            // Lấy đơn + dòng chi tiết để phân bổ voucher / tiền đổi điểm theo tỉ lệ ThanhTien
+            var orders = await _context.HoaDons
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= from)
+                .Select(h => new
+                {
+                    h.TienGiam,
+                    h.SoTienGiamTuDiem,
+                    Items = h.ChiTietHoaDons!.Where(ct => ct.TrangThai)
+                        .Select(ct => new
+                        {
+                            ct.ThanhTien,
+                            CategoryName = ct.SanPhamChiTiet!.SanPham!.DanhMuc != null
+                                ? ct.SanPhamChiTiet.SanPham.DanhMuc!.TenDanhMuc
+                                : null
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            var perCategory = new Dictionary<string, decimal>();
+            foreach (var o in orders)
+            {
+                var tamTinh = o.Items.Sum(i => i.ThanhTien);
+                if (tamTinh <= 0) continue;
+                var totalDiscount = (o.TienGiam ?? 0m) + o.SoTienGiamTuDiem;
+                var factor = (tamTinh - totalDiscount) / tamTinh;
+                if (factor < 0) factor = 0;
+                foreach (var i in o.Items)
+                {
+                    var cat = string.IsNullOrWhiteSpace(i.CategoryName) ? "Không xác định" : i.CategoryName!;
+                    perCategory.TryGetValue(cat, out var cur);
+                    perCategory[cat] = cur + i.ThanhTien * factor;
+                }
+            }
+
+            var totalRevenue = perCategory.Values.Sum();
             if (totalRevenue == 0)
             {
                 return Ok(new
@@ -386,15 +445,10 @@ public class ChartsApiController : ControllerBase
                 });
             }
 
-            var categoryData = await _context.ChiTietHoaDons
-                .Include(ct => ct.SanPhamChiTiet).ThenInclude(spct => spct.SanPham).ThenInclude(sp => sp.DanhMuc)
-                .Include(ct => ct.HoaDon)
-                .Where(ct => CompletedOrderStatuses.Contains(ct.HoaDon.TrangThai) && ct.HoaDon.TrangThaiHoaDon && ct.TrangThai &&
-                             ct.HoaDon.NgayTao >= from)
-                .GroupBy(ct => ct.SanPhamChiTiet.SanPham.DanhMuc != null ? ct.SanPhamChiTiet.SanPham.DanhMuc.TenDanhMuc : null)
-                .Select(g => new { CategoryName = g.Key ?? "Không xác định", Revenue = g.Sum(ct => ct.ThanhTien) })
-                .OrderByDescending(x => x.Revenue)
-                .ToListAsync();
+            var categoryData = perCategory
+                .OrderByDescending(kv => kv.Value)
+                .Select(kv => new { CategoryName = kv.Key, Revenue = kv.Value })
+                .ToList();
 
             var labels = categoryData.Select(c => c.CategoryName).ToList();
             var data = categoryData.Select(c => c.Revenue).ToList();
@@ -567,13 +621,20 @@ public class ChartsApiController : ControllerBase
         try
         {
             var now = DateTime.UtcNow;
-            var first = new DateTime(now.Year, now.Month, 1);
-            var last = first.AddMonths(1).AddDays(-1);
+            var first = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var firstOfNext = first.AddMonths(1);
             var today = DateTime.UtcNow.Date;
 
+            // Doanh thu = Tạm tính (SUM ThanhTien) - voucher (TienGiam) - tiền đổi điểm (SoTienGiamTuDiem)
             var monthlyRevenue = await _context.HoaDons
-                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai) && h.TrangThaiHoaDon && h.NgayTao >= first && h.NgayTao <= last)
-                .SumAsync(h => h.TongTien - (h.PhiVanChuyen ?? 0));
+                .Where(h => CompletedOrderStatuses.Contains(h.TrangThai)
+                            && h.TrangThaiHoaDon
+                            && h.NgayTao >= first
+                            && h.NgayTao < firstOfNext)
+                .Select(h => (h.ChiTietHoaDons!.Where(ct => ct.TrangThai).Sum(ct => (decimal?)ct.ThanhTien) ?? 0m)
+                              - (h.TienGiam ?? 0m)
+                              - h.SoTienGiamTuDiem)
+                .SumAsync(v => (decimal?)v) ?? 0m;
 
             var todayOrders = await _context.HoaDons.CountAsync(h => h.NgayTao.Date == today && h.TrangThaiHoaDon);
             var totalCustomers = await _context.KhachHang.CountAsync(k => k.TrangThai);
