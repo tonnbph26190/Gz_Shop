@@ -157,10 +157,10 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-});
+//app.UseEndpoints(endpoints =>
+//{
+//    endpoints.MapControllers();
+//});
 
 // 8️⃣ ROUTING
 app.MapControllerRoute(
